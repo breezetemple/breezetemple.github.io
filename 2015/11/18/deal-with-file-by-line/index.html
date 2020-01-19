@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="$(document).ready(function(){         $(&quot;h2,h3,h4,h5,h6&quot;).each(function(i,item){             var tag &#x3D; $(item).get(0).localName;             $(item).attr(&quot;id&quot;,&quot;wow&quot;+i);             $(&quot;#category&quot;).app">
+<meta property="og:type" content="article">
+<meta property="og:title" content="逐行处理内存文本及正则表达式元字符列表">
+<meta property="og:url" content="http://yoursite.com/2015/11/18/deal-with-file-by-line/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="$(document).ready(function(){         $(&quot;h2,h3,h4,h5,h6&quot;).each(function(i,item){             var tag &#x3D; $(item).get(0).localName;             $(item).attr(&quot;id&quot;,&quot;wow&quot;+i);             $(&quot;#category&quot;).app">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2015-11-18T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.662Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="regexp">
+<meta property="article:tag" content="doline">
+<meta property="article:tag" content="sscanf">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2015/11/18/deal-with-file-by-line/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>逐行处理内存文本及正则表达式元字符列表 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/11/18/deal-with-file-by-line/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          逐行处理内存文本及正则表达式元字符列表
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-11-19 00:00:00" itemprop="dateCreated datePublished" datetime="2015-11-19T00:00:00+08:00">2015-11-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index">
+                    <span itemprop="name">C</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>6.4k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>6 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h2 id="文本内容"><a href="#文本内容" class="headerlink" title="文本内容"></a>文本内容</h2><pre><code>P:013.0:E:11054:H:27500:5DDC29D54BE4D7:F3381AD050DE3A
+P:091.5:E:03960:H:29700:DAE69F8B6E0106:E0DE2F8903AE55
+P:105.5:E:03960:H:27500:CEF7CE422FF89E:E42DB81767E02E
+P:166.0:E:03760:V:27690:7199819B0CF04F:7EE0F00CFFBF66
+P:138.0:E:03703:V:04444:AD5CDBA991505A:1E1376FD07FB13
+P:166.0:E:03830:H:14000:956D98AD9E6E84:842F2801182286</code></pre><p>或者：</p>
+<pre><code>B:042.0:E:11919:V:24444:00012:1000000000000000:TRT3
+B:042.0:E:11954:A:08800:00001:1111110011111800:EINTERCOM
+B:042.0:E:11953:A:02980:00001:1212123312121233:
+B:042.0:E:11996:V:27500:00300:A33130046167824A:Sci-Tech TV
+B:042.0:E:12015:H:27500:00009:1000001010000010:Teledunya 3D
+B:042.0:E:12130:V:27500:00024:1000000000000000:Radio Migros
+B:042.0:E:12130:V:27500:00025:1000000000000000:Radio Tansas</code></pre><h2 id="逐行读取文本strsep"><a href="#逐行读取文本strsep" class="headerlink" title="逐行读取文本strsep"></a>逐行读取文本strsep</h2><pre><code>char *tok = NULL;
+for (tok = strsep(&amp;p, &quot;\n&quot;); tok != NULL; tok = strsep(&amp;p, &quot;\n&quot;))
+{
+    printf(&quot;\033[33m%s\n\033[0m&quot;, tok);
+    //TODO
+}</code></pre><h2 id="处理单行格式化文本sscanf"><a href="#处理单行格式化文本sscanf" class="headerlink" title="处理单行格式化文本sscanf"></a>处理单行格式化文本sscanf</h2><p>sscanf() - 从一个字符串中读进与指定格式相符的数据.　函数原型:</p>
+<pre><code>int sscanf( string str, string fmt, mixed var1, mixed var2 ...  );
+int scanf( const char \*format [,argument]...  );</code></pre><p>说明：</p>
+<p>sscanf与scanf类似，都是用于输入的，只是后者以屏幕(stdin)为输入源，前者以固定字符串为输入源。<br>其中的format可以是一个或多个 %[*] [width] [{h | l | I64 | L}]type | ‘ ‘ | ‘\t’ | ‘\n’ | 非%符号：</p>
+<ol>
+<li>* 亦可用于格式中, (即 %*d 和 %*s) 加了星号 (*) 表示跳过此数据不读入. (也就是不把此数据读入参数中)</li>
+<li>{a|b|c}表示a,b,c中选一，[d],表示可以有d也可以没有d。</li>
+<li>width表示读取宽度。</li>
+<li>{h | l | I64 | L}:参数的size,通常h表示单字节size，I表示2字节size,L表示4字节size(double例外),l64表示8字节size。</li>
+<li>type :这就很多了，就是%s,%d,%c之类。</li>
+<li>特别的：%*[width] [{h | l | I64 | L}]type 表示满足该条件的被过滤掉，不会向目标参数中写入值</li>
+</ol>
+<p>支持集合操作：</p>
+<ol>
+<li>%[a-z] 表示匹配a到z中任意字符，贪婪性(尽可能多的匹配)</li>
+<li>%[A-Z] 表示匹配A到Z中任意字符，贪婪性(尽可能多的匹配)</li>
+<li>%[aB’] 匹配a、B、’中一员，贪婪性</li>
+<li>%[^a] 匹配非a的任意字符，贪婪性</li>
+</ol>
+<p>注意：在读入的字符串是空字符串时，sscanf函数并不改变待读入到的字符串的值。</p>
+<p><strong>针对格式化文本的处理：</strong></p>
+<pre><code>char longitude[6] = {0};
+char direction = 0;
+char frequency[6] = {0};
+char polar = 0;
+char symbol[6] = {0};
+char sid[6] = {0};
+char data0[EMU_KEY_STR_LEN] = {0};
+char data1[EMU_KEY_STR_LEN] = {0};
+
+if (type == 0)
+{
+    //B:004.0:W:11389:A:27500:00011:1A2B3C81C3B2A116:RTR                  
+    sscanf(tok, &quot;%*1c:%5c:%1c:%5c:%1c:%5c:%5c:%16c:%16c&quot;,
+            longitude, &amp;direction, frequency, &amp;polar, symbol, sid, data0, data1);
+}
+else
+{ 
+    //P:105.5:E:03960:H:27500:CEF7CE422FF89E:E42DB81767E02E
+    sscanf(tok, &quot;%*1c:%5c:%1c:%5c:%1c:%5c:%14c:%14c&quot;,
+            longitude, &amp;direction, frequency, &amp;polar, symbol, data0, data1);
+}
+pMinifs-&gt;symbol_rate = atoi(symbol);
+.
+.
+.</code></pre><p>注意：<strong>%s与%c的区别，注意buf的长度包含字符串结束符‘\0’，长度如果不对，后续处理可能出现问题。</strong></p>
+<h2 id="强制内存转换处理格式化文本"><a href="#强制内存转换处理格式化文本" class="headerlink" title="强制内存转换处理格式化文本"></a>强制内存转换处理格式化文本</h2><p>针对格式化文本还有一种内存强制转换的处理方式：</p>
+<pre><code>struct DevData{
+    char tag[2];
+    char longitude[6];
+    char direction[2];
+    char frequency[6];
+    char polar[2];
+    char symbol_rate[6];
+    char service_id[6];
+    char key[KEY_STR_LEN+1];
+    char prog_name[PROG_NAME_LENTH];
+    char line_feed[2];//tail(0x0d0a or 0x0a)
+} __attribute__((packed));
+
+//获取文件数据
+fd = fopen(path, &quot;r&quot;);
+p = (char *)mallocz(size);
+fseek(fd, 0, SEEK_SET);
+fread(fd, p, 1, size);
+
+//强制转换
+struct DevData *pRootData=NULL;
+for(i=0;i&lt;total_num;i++)
+{
+    pRootData = (struct DevData*)p1;
+    .
+    .
+    //处理当前结构体pRootData，并获得偏移量用来取下一个结构体数据
+    memset(atoi_buf,0,sizeof(atoi_buf));
+    memcpy(atoi_buf,pRootData-&gt;symbol_rate,sizeof(pRootData-&gt;symbol_rate)-1);
+    pMinifs-&gt;symbol_rate = atoi(atoi_buf);
+    .
+    p1 += offset;
+}</code></pre><h2 id="正则表达式"><a href="#正则表达式" class="headerlink" title="正则表达式"></a>正则表达式</h2><h3 id="特殊字符"><a href="#特殊字符" class="headerlink" title="特殊字符"></a><strong>特殊字符</strong></h3><h4 id=""><a href="#" class="headerlink" title="\"></a>\</h4><p>转义字符，将下一字符标记为特殊字符、文本、反向引用或八进制转义符</p>
+<pre><code>&#39;\n&#39;匹配换行，
+&#39;\\&#39;匹配&#39;\&#39;</code></pre><h4 id="-1"><a href="#-1" class="headerlink" title="^"></a>^</h4><p>匹配搜索字符串开始的位置。如果标志中包括 m（多行搜索）字符，^ 还将匹配 \n 或 \r 后面的位置。<br>如果将 ^ 用作括号表达式中的第一个字符，则会对字符集求反。</p>
+<pre><code>^\d{3} 与搜索字符串开始处的 3 个数字匹配。
+[^abc] 与除 a、b 和 c 以外的任何字符匹配。</code></pre><h4 id="-2"><a href="#-2" class="headerlink" title="$"></a>$</h4><p>匹配搜索字符串结尾的位置。 如果标志中包括 m（多行搜索）字符，^ 还将匹配 \n 或 \r 前面的位置。</p>
+<pre><code>\d{3}$ 与搜索字符串结尾处的 3 个数字匹配。</code></pre><h4 id="-3"><a href="#-3" class="headerlink" title="*"></a>*</h4><p>零次或多次匹配前面的字符或子表达式。等效于 {0,}。</p>
+<pre><code>zo\* 与“z”和“zoo”匹配。</code></pre><h4 id="-4"><a href="#-4" class="headerlink" title="+"></a>+</h4><p>一次或多次匹配前面的字符或子表达式。 等效于 {1,}。</p>
+<pre><code>zo+ 与“zo”和“zoo”匹配，但与“z”不匹配。</code></pre><h4 id="-5"><a href="#-5" class="headerlink" title="?"></a>?</h4><p>零次或一次匹配前面的字符或子表达式。 等效于 {0,1}。<br>当 ? 紧随任何其他限定符（*、+、?、{n}、{n,} 或 {n,m}）之后时，匹配模式是非贪婪的。<br>非贪婪模式匹配搜索到的、尽可能少的字符串， 而默认的贪婪模式匹配搜索到的、尽可能多的字符串。</p>
+<pre><code>zo? 与“z”和“zo”匹配，但与“zoo”不匹配。
+o+? 只与“oooo”中的单个“o”匹配，而 o+ 与所有“o”匹配。
+do(es)? 与“do”或“does”中的“do”匹配。</code></pre><h4 id="-6"><a href="#-6" class="headerlink" title="."></a>.</h4><p>匹配除换行符 \n 之外的任何单个字符。 若要匹配包括 \n 在内的任意字符，请使用诸如 [\s\S] 之类的模式。</p>
+<pre><code>a.c 与“abc”、“a1c”和“a-c”匹配</code></pre><h4 id="-7"><a href="#-7" class="headerlink" title="[]"></a>[]</h4><p>标记括号表达式的开始和结尾。</p>
+<pre><code>[1-4] 与“1”、“2”、“3”或“4”匹配。 [^aAeEiIoOuU] 与任何非元音字符匹配</code></pre><h4 id="-8"><a href="#-8" class="headerlink" title="{}"></a>{}</h4><p>标记限定符表达式的开始和结尾。</p>
+<pre><code>a{2,3} 与“aa”和“aaa”匹配</code></pre><h4 id="-9"><a href="#-9" class="headerlink" title="()"></a>()</h4><p>标记子表达式的开始和结尾。 可以保存子表达式以备将来之用。</p>
+<pre><code>A(\d) 与“A0”至“A9”匹配。 保存该数字以备将来之用</code></pre><h4 id="-10"><a href="#-10" class="headerlink" title="|"></a>|</h4><p>指示在两个或多个项之间进行选择。</p>
+<pre><code>z|food 与“z”或“food”匹配。 (z|f)ood 与“zood”或“food”匹配</code></pre><h3 id="元字符"><a href="#元字符" class="headerlink" title="元字符"></a>元字符</h3><h4 id="b"><a href="#b" class="headerlink" title="\b"></a>\b</h4><p>与一个字边界匹配；即字与空格间的位置。</p>
+<pre><code>er\b 与“never”中的“er”匹配，但与“verb”中的“er”不匹配</code></pre><h4 id="B"><a href="#B" class="headerlink" title="\B"></a>\B</h4><p>非边界字匹配。</p>
+<pre><code>er\B 与“verb”中的“er”匹配，但与“never”中的“er”不匹配</code></pre><h4 id="d"><a href="#d" class="headerlink" title="\d"></a>\d</h4><p>数字字符匹配。 等效于 [0-9]。</p>
+<pre><code>在搜索字符串“12 345”中，\d{2} 与“12”和“34”匹配。 \d 与“1”、“2”、“3”、“4”和“5”匹配。</code></pre><h4 id="D"><a href="#D" class="headerlink" title="\D"></a>\D</h4><p>非数字字符匹配。 等效于 [^0-9]。</p>
+<pre><code>\D+ 与“abc123 def”中的“abc”和“def”匹配。</code></pre><h4 id="w"><a href="#w" class="headerlink" title="\w"></a>\w</h4><p>与以下任意字符匹配：A-Z、a-z、0-9 和下划线。 等效于 [A-Za-z0-9_]。</p>
+<pre><code>在搜索字符串“The quick brown fox…”中，\w+ 与“The”、“quick”、“brown”和“fox”匹配。</code></pre><h4 id="W"><a href="#W" class="headerlink" title="\W"></a>\W</h4><p>与除 A-Z、a-z、0-9 和下划线以外的任意字符匹配。 等效于 [^A-Za-z0-9_]。</p>
+<pre><code>在搜索字符串“The quick brown fox…”中，\W+ 与“…”和所有空格匹配。</code></pre><h4 id="xyz"><a href="#xyz" class="headerlink" title="[xyz]"></a>[xyz]</h4><p>字符集。 与任何一个指定字符匹配。</p>
+<pre><code>[abc] 与“plain”中的“a”匹配。</code></pre><h4 id="xyz-1"><a href="#xyz-1" class="headerlink" title="[^xyz]"></a>[^xyz]</h4><p>反向字符集。 与未指定的任何字符匹配。</p>
+<pre><code>[^abc] 与“plain”中的“p”、“l”、“i”和“n”匹配。</code></pre><h4 id="a-z"><a href="#a-z" class="headerlink" title="[a-z]"></a>[a-z]</h4><p>字符范围。 匹配指定范围内的任何字符。</p>
+<pre><code>[a-z] 与“a”到“z”范围内的任何小写字母字符匹配。</code></pre><h4 id="a-z-1"><a href="#a-z-1" class="headerlink" title="[^a-z]"></a>[^a-z]</h4><p>反向字符范围。 与不在指定范围内的任何字符匹配。</p>
+<pre><code>[^a-z] 与不在范围“a”到“z”内的任何字符匹配。</code></pre><h4 id="n"><a href="#n" class="headerlink" title="{n}"></a>{n}</h4><p>正好匹配 n 次。 n 是非负整数。</p>
+<pre><code>o{2} 与“Bob”中的“o”不匹配，但与“food”中的两个“o”匹配。</code></pre><h4 id="n-1"><a href="#n-1" class="headerlink" title="{n,}"></a>{n,}</h4><p>至少匹配 n 次。 n 是非负整数。</p>
+<pre><code>* 与 {0,} 相等。
++ 与 {1,} 相等。
+o{2,} 与“Bob”中的“o”不匹配，但与“foooood”中的所有“o”匹配。</code></pre><h4 id="n-m"><a href="#n-m" class="headerlink" title="{n,m}"></a>{n,m}</h4><p>匹配至少 n 次，至多 m 次。 n 和 m 是非负整数，其中 n &lt;= m。 逗号和数字之间不能有空格。</p>
+<pre><code>? 与 {0,1} 相等。
+在搜索字符串“1234567”中，\d{1,3} 与“123”、“456”和“7”匹配。</code></pre><h4 id="pattern"><a href="#pattern" class="headerlink" title="(pattern)"></a>(pattern)</h4><p>与pattern 匹配并保存匹配项。 若要匹配括号字符 (  )，请使用“(”或者“)”。</p>
+<pre><code>(Chapter|Section) [1-9] 与“Chapter 5”匹配，保存“Chapter”以备将来之用。</code></pre><h4 id="pattern-1"><a href="#pattern-1" class="headerlink" title="(?:pattern)"></a>(?:pattern)</h4><p>与pattern 匹配，但不保存匹配项；即不会存储匹配项以备将来之用。 这对于用“or”字符 (|) 组合模式部件的情况很有用。</p>
+<pre><code>industr(?:y|ies) 与 industry|industries 相等。</code></pre><h4 id="pattern-2"><a href="#pattern-2" class="headerlink" title="(?=pattern)"></a>(?=pattern)</h4><p>正预测先行。 找到一个匹配项后，将在匹配文本之前开始搜索下一个匹配项。 不会保存匹配项以备将来之用。</p>
+<pre><code>^(?=.\*\d).{4,8}$ 对密码应用以下限制：其长度必须介于 4 到 8 个字符之间，并且必须至少包含一个数字。</code></pre><p>在该模式中，.*\d 查找后跟有数字的任意多个字符。 对于搜索字符串“abc3qr”，这与“abc3”匹配。<br>从该匹配项之前（而不是之后）开始，.{4,8} 与包含 4-8 个字符的字符串匹配。 这与“abc3qr”匹配。<br>^ 和 $ 指定搜索字符串的开始和结束位置。 这将在搜索字符串包含匹配字符之外的任何字符时阻止匹配。</p>
+<h4 id="pattern-3"><a href="#pattern-3" class="headerlink" title="(?!pattern)"></a>(?!pattern)</h4><p>负预测先行。 匹配与模式 不匹配的搜索字符串。 找到一个匹配项后，将在匹配文本之前开始搜索下一个匹配项。 不会保存匹配项以备将来之用。</p>
+<pre><code>\b(?!th)\w+\b 与不以“th”开头的单词匹配。</code></pre><p>在该模式中，\b 与一个字边界匹配。 对于搜索字符串“ quick ”，这与第一个空格匹配。 (?!th) 与非“th”字符串匹配。 这与“qu”匹配。<br>从该匹配项开始，\w+ 与一个字匹配。 这与“quick”匹配。</p>
+<h4 id="cx"><a href="#cx" class="headerlink" title="\cx"></a>\cx</h4><p>匹配 x 指示的控制字符。 x 的值必须在 A-Z 或 a-z 范围内。 如果不是这样，则假定 c 就是文本“c”字符本身。</p>
+<pre><code>\cM 与 Ctrl+M 或一个回车符匹配。</code></pre><h4 id="xn"><a href="#xn" class="headerlink" title="\xn"></a>\xn</h4><p>匹配 n，此处的 n 是一个十六进制转义码。<br>十六进制转义码必须正好是两位数长。 允许在正则表达式中使用 ASCII 代码。</p>
+<pre><code>\x41 与“A”匹配。 \x041 等效于后跟有“1”的“\x04”（因为 n 必须正好是两位数）。</code></pre><h4 id="num"><a href="#num" class="headerlink" title="\num"></a>\num</h4><p>匹配 num，此处的 num 是一个正整数。 这是对已保存的匹配项的引用。</p>
+<pre><code>(.)\1 与两个连续的相同字符匹配。</code></pre><h4 id="n-2"><a href="#n-2" class="headerlink" title="\n"></a>\n</h4><p>标识一个八进制转义码或反向引用。 如果 \n 前面至少有 n 个捕获子表达式，那么 n 是反向引用。<br>否则，如果 n 是八进制数 (0-7)，那么 n 是八进制转义码。</p>
+<pre><code>(\d)\1 与两个连续的相同数字匹配。</code></pre><h4 id="nm"><a href="#nm" class="headerlink" title="\nm"></a>\nm</h4><p>标识一个八进制转义码或反向引用。 如果 \nm 前面至少有 nm 个捕获子表达式，那么 nm 是反向引用。<br>如果 \nm 前面至少有 n 个捕获子表达式，则 n 是反向引用，后面跟有文本 m。<br>如果上述情况都不存在，当 n 和 m 是八进制数字 (0-7) 时，\nm 匹配八进制转义码 nm。</p>
+<pre><code>\11 与制表符匹配。</code></pre><h4 id="nml"><a href="#nml" class="headerlink" title="\nml"></a>\nml</h4><p>当 n 是八进制数字 (0-3)，m 和 l 是八进制数字 (0-7) 时，匹配八进制转义码 nml。</p>
+<pre><code>\011 与制表符匹配。</code></pre><h4 id="un"><a href="#un" class="headerlink" title="\un"></a>\un</h4><p>匹配 n，其中 n 是以四位十六进制数表示的 Unicode 字符。</p>
+<pre><code>\u00A9 与版权符号 (©) 匹配。</code></pre><h3 id="非打印字符"><a href="#非打印字符" class="headerlink" title="非打印字符"></a>非打印字符</h3><ul>
+<li>\f 换页符。 \x0c 和 \cL</li>
+<li>\n 换行符。 \x0a 和 \cJ</li>
+<li>\r 回车符。 \x0d 和 \cM</li>
+<li>\s 任何空白字符。 其中包括空格、制表符和换页符。 [ \f\n\r\t\v ]</li>
+<li>\S 任何非空白字符。 [^ \f\n\r\t\v]</li>
+<li>\t Tab 字符。 \x09 和 \cI</li>
+<li>\v 垂直制表符。 \x0b 和 \cK</li>
+</ul>
+<ol>
+<li><a href="http://blog.chinaunix.net/uid-26284412-id-3189214.html" target="_blank" rel="noopener">sscanf的高级用法</a></li>
+<li><a href="http://www.cnblogs.com/lyq105/archive/2009/11/28/1612677.html" target="_blank" rel="noopener">C语言函数sscanf()的用法</a></li>
+<li><a href="http://www.kryptosx.info/archives/60.html" target="_blank" rel="noopener">scanf的正则表达式总结</a></li>
+<li><a href="http://blog.csdn.net/tujiaw/article/details/6139896" target="_blank" rel="noopener">scanf、sscanf中的正则表达式</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/regexp/" rel="tag"># regexp</a>
+              <a href="/tags/doline/" rel="tag"># doline</a>
+              <a href="/tags/sscanf/" rel="tag"># sscanf</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2015/11/17/vim-tips-1/" rel="next" title="vim中使用grep、sed删除匹配行">
+                  <i class="fa fa-chevron-left"></i> vim中使用grep、sed删除匹配行
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2015/11/25/gdb-disassemble-debug/" rel="prev" title="gdb反汇编调试">
+                  gdb反汇编调试 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#文本内容"><span class="nav-number">1.</span> <span class="nav-text">文本内容</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#逐行读取文本strsep"><span class="nav-number">2.</span> <span class="nav-text">逐行读取文本strsep</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#处理单行格式化文本sscanf"><span class="nav-number">3.</span> <span class="nav-text">处理单行格式化文本sscanf</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#强制内存转换处理格式化文本"><span class="nav-number">4.</span> <span class="nav-text">强制内存转换处理格式化文本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#正则表达式"><span class="nav-number">5.</span> <span class="nav-text">正则表达式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#特殊字符"><span class="nav-number">5.1.</span> <span class="nav-text">特殊字符</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#null"><span class="nav-number">5.1.1.</span> <span class="nav-text">\</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#-1"><span class="nav-number">5.1.2.</span> <span class="nav-text">^</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#-2"><span class="nav-number">5.1.3.</span> <span class="nav-text">$</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#-3"><span class="nav-number">5.1.4.</span> <span class="nav-text">*</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#-4"><span class="nav-number">5.1.5.</span> <span class="nav-text">+</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#-5"><span class="nav-number">5.1.6.</span> <span class="nav-text">?</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#-6"><span class="nav-number">5.1.7.</span> <span class="nav-text">.</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#-7"><span class="nav-number">5.1.8.</span> <span class="nav-text">[]</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#-8"><span class="nav-number">5.1.9.</span> <span class="nav-text">{}</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#-9"><span class="nav-number">5.1.10.</span> <span class="nav-text">()</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#-10"><span class="nav-number">5.1.11.</span> <span class="nav-text">|</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#元字符"><span class="nav-number">5.2.</span> <span class="nav-text">元字符</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#b"><span class="nav-number">5.2.1.</span> <span class="nav-text">\b</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#B"><span class="nav-number">5.2.2.</span> <span class="nav-text">\B</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#d"><span class="nav-number">5.2.3.</span> <span class="nav-text">\d</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#D"><span class="nav-number">5.2.4.</span> <span class="nav-text">\D</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#w"><span class="nav-number">5.2.5.</span> <span class="nav-text">\w</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#W"><span class="nav-number">5.2.6.</span> <span class="nav-text">\W</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#xyz"><span class="nav-number">5.2.7.</span> <span class="nav-text">[xyz]</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#xyz-1"><span class="nav-number">5.2.8.</span> <span class="nav-text">[^xyz]</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#a-z"><span class="nav-number">5.2.9.</span> <span class="nav-text">[a-z]</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#a-z-1"><span class="nav-number">5.2.10.</span> <span class="nav-text">[^a-z]</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#n"><span class="nav-number">5.2.11.</span> <span class="nav-text">{n}</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#n-1"><span class="nav-number">5.2.12.</span> <span class="nav-text">{n,}</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#n-m"><span class="nav-number">5.2.13.</span> <span class="nav-text">{n,m}</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#pattern"><span class="nav-number">5.2.14.</span> <span class="nav-text">(pattern)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#pattern-1"><span class="nav-number">5.2.15.</span> <span class="nav-text">(?:pattern)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#pattern-2"><span class="nav-number">5.2.16.</span> <span class="nav-text">(?&#x3D;pattern)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#pattern-3"><span class="nav-number">5.2.17.</span> <span class="nav-text">(?!pattern)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#cx"><span class="nav-number">5.2.18.</span> <span class="nav-text">\cx</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#xn"><span class="nav-number">5.2.19.</span> <span class="nav-text">\xn</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#num"><span class="nav-number">5.2.20.</span> <span class="nav-text">\num</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#n-2"><span class="nav-number">5.2.21.</span> <span class="nav-text">\n</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#nm"><span class="nav-number">5.2.22.</span> <span class="nav-text">\nm</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#nml"><span class="nav-number">5.2.23.</span> <span class="nav-text">\nml</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#un"><span class="nav-number">5.2.24.</span> <span class="nav-text">\un</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#非打印字符"><span class="nav-number">5.3.</span> <span class="nav-text">非打印字符</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

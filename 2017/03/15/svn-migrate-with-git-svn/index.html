@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="SVN 本身提供了如下版本库整理工具： svnadmin dump svndumpfilter include svndumpfilter exclude svnadmin load">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用 git-svn 和 git-filter-branch 整理svn版本库">
+<meta property="og:url" content="http://yoursite.com/2017/03/15/svn-migrate-with-git-svn/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="SVN 本身提供了如下版本库整理工具： svnadmin dump svndumpfilter include svndumpfilter exclude svnadmin load">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2017-03-15T05:39:31.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.666Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="git">
+<meta property="article:tag" content="svn">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2017/03/15/svn-migrate-with-git-svn/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>使用 git-svn 和 git-filter-branch 整理svn版本库 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/03/15/svn-migrate-with-git-svn/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          使用 git-svn 和 git-filter-branch 整理svn版本库
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2017-03-15 13:39:31" itemprop="dateCreated datePublished" datetime="2017-03-15T13:39:31+08:00">2017-03-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Git/" itemprop="url" rel="index">
+                    <span itemprop="name">Git</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>5k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>SVN 本身提供了如下版本库整理工具：</p>
+<pre><code>svnadmin dump
+svndumpfilter include
+svndumpfilter exclude
+svnadmin load</code></pre><a id="more"></a>
+
+
+<ul>
+<li>svnadmin dump 将整个版本库或部分提交导出为一个导出文件</li>
+<li>svndumpfilter 基于配置项的路径（SVN 1.7的 svndumpfilter 还支持通配符路径）对导出文件进行过滤， 过滤结果保存为新的导出文件</li>
+<li>svnadmin load 将导出文件导入到另外的版本库中， 导入过程有两个选择——维持路径不变，或导入到某个路径之下。</li>
+</ul>
+<p>相对于Git提供的用于整理提交的 git filter-branch 命令，SVN的版本库整理工具能做的实在不多。<br>而且SVN的相关工具容错性太差，操作过程经常被中断，可谓步步惊心。</p>
+<p>最近遇到的一个案例，需要将两个 SVN 版本库（bar 和 baz）的全部历史导入到另外一个 SVN 版本库（foo）中。<br>并要求版本库 bar 和 baz 的目录结构统一采用 foo 中规定的目录结构。<br>面对要导入的近 20GB 数据（绝大部分是Word、Excel、PDF文档），决定采用Git提供的工具集进行SVN版本库整理。<br>整理过程和过程中开发的脚本记录如下。</p>
+<h2 id="将-bar-和-baz-版本库转换为本地Git库"><a href="#将-bar-和-baz-版本库转换为本地Git库" class="headerlink" title="将 bar 和 baz 版本库转换为本地Git库"></a>将 bar 和 baz 版本库转换为本地Git库</h2><p>以 bar 为例，将两个版本库（bar 和 baz）转换为本地的 Git 版本库，<br>以便使用强大的 git filter-branch 命令对提交逐一进行修改（如修改版本库中的文件路径）。</p>
+<pre><code>$ git init git/bar
+$ cd git/bar
+$ git svn init --no-metadata file:///path/to/svn/bar
+$ git svn fetch</code></pre><p>说明：</p>
+<pre><code>SVN 版本库 bar 位于本机的路径 /path/to/svn/bar 下。
+导出的 Git 版本库位于 git/bar 目录下。
+因为版本库 bar 并未使用分支（未采用 trunk、branches、tags目录结构），因此执行 git svn 时并未使用 -s 等参数。</code></pre><h2 id="源版本库中文件名过长的问题"><a href="#源版本库中文件名过长的问题" class="headerlink" title="源版本库中文件名过长的问题"></a>源版本库中文件名过长的问题</h2><p>Windows和Linux下文件名长度限制不同，前者255个Unicode字符，后者为255个字节。<br>在此次转换中就遇到 bar 版本库中存在若干文件名超长的文件，导致无法在 Linux 平台上检出。<br>为避免后续操作中出现错误，对其进行重命名。</p>
+<p>首先创建一个脚本 rename.sh，该脚本将提供给 git filter-branch 命令对版本库中超长文件名进行重命名操作。</p>
+<pre><code>#!/bin/sh
+
+git ls-files -s | \
+sed \
+    -e &quot;s#\(\t.*/file-name-is-too-long\).*\.pdf#\1-blahblah.pdf#&quot;  \
+| GIT_INDEX_FILE=$GIT_INDEX_FILE.new git update-index --index-info &amp;&amp; \
+mv &quot;$GIT_INDEX_FILE.new&quot; &quot;$GIT_INDEX_FILE&quot;</code></pre><p>然后执行下面命令对版本库整理：</p>
+<pre><code>$ cd git/bar
+$ git filter-branch --index-filter &#39;sh /path/to/rename.sh&#39;</code></pre><h2 id="删除空白提交"><a href="#删除空白提交" class="headerlink" title="删除空白提交"></a>删除空白提交</h2><p>从SVN转换的Git版本库可能存在空白提交，例如一些仅修改了SVN属性的提交不被 git-svn 支持，转换成了空提交。<br>这些空提交会对后续操作造成干扰，执行如下命令删除空白提交：</p>
+<pre><code>$ cd git/bar
+$ git  filter-branch -f --commit-filter &#39;
+  if [ &quot;$(git rev-parse $GIT_COMMIT^^{tree} 2&gt;/dev/null)&quot; = &quot;$(git rev-parse $GIT_COMMIT^{tree})&quot; ];
+  then
+      skip_commit &quot;$@&quot;;
+  else
+      git commit-tree &quot;$@&quot;;
+  fi&#39; HEAD</code></pre><h2 id="向Git日志中添加MetaData"><a href="#向Git日志中添加MetaData" class="headerlink" title="向Git日志中添加MetaData"></a>向Git日志中添加MetaData</h2><p>执行 git log 操作可以看到转换后的提交保持了原有SVN提交的用户名和提交时间，还记录了对应SVN的提交编号信息。<br>但是后续操作（git svn dcommit）会改变Git提交，破坏其中包含的原有SVN提交的提交者和提交时间，<br>因此需要用其他方法将这些信息记录下来，以便补救。</p>
+<p>使用 git filter-branch 的 –msg-filter 过滤器逐一向提交插入原有SVN的提交者和提交时间的元信息。</p>
+<pre><code>$ cd git/bar
+$ git filter-branch -f --msg-filter &#39;
+  cat &amp;&amp;
+  echo &quot;From: REPO-NAME, author: $GIT_AUTHOR_NAME, date: $GIT_AUTHOR_DATE&quot;&#39; HEAD</code></pre><h2 id="根据需要对版本库目录重新组织"><a href="#根据需要对版本库目录重新组织" class="headerlink" title="根据需要对版本库目录重新组织"></a>根据需要对版本库目录重新组织</h2><p>git filter-branch 至少有两个过滤器可以对提交中的目录和文件进行组织。<br>一个是 –tree-filter ， 一个是 –index-filter 。前者的过滤器脚本写起来简单，但执行起来较后者慢至少一个数量级。</p>
+<p>根据路径转换的需求，编写过滤器脚本，如脚本 transform.sh ：</p>
+<pre><code>#!/bin/sh
+
+if test -z &quot;$GIT_INDEX_FILE&quot;; then
+    GIT_INDEX_FILE=.git/index
+fi
+
+git ls-files -s | \
+sed \
+    -e &quot;s#\(\t\)#\1new-root/#&quot;  \
+    -e &quot;s#\(\tnew-root\)\(/old-path-1/\)#\1/new-path-1/#&quot; \
+    -e &quot;s#\(\tnew-root\)\(/old-path-2/\)#\1/new-path-2/#&quot; \
+    -e &quot;s#\(\tnew-root\)\(/old-path-3/\)#\1/new-path-3/#&quot; \
+| GIT_INDEX_FILE=$GIT_INDEX_FILE.new git update-index --index-info &amp;&amp; \
+mv &quot;$GIT_INDEX_FILE.new&quot; &quot;$GIT_INDEX_FILE&quot;</code></pre><p>然后执行如下命令对提交进行逐一过滤，将老的目录结构转换为新的目录结构：</p>
+<pre><code>$ cd git/bar
+$ git filter-branch --index-filter &#39;sh /path/to/transform.sh&#39;</code></pre><h2 id="用git-svn克隆目标版本库（foo）"><a href="#用git-svn克隆目标版本库（foo）" class="headerlink" title="用git-svn克隆目标版本库（foo）"></a>用git-svn克隆目标版本库（foo）</h2><p>执行如下命令将导入的目标版本库转换为本地的 Git 版本库，如下：</p>
+<pre><code>$ git init git/foo
+$ cd git/foo
+$ git svn init --no-metadata file:///path/to/svn/foo
+$ git svn fetch</code></pre><p>然后将 bar 整理好的分支变基到当前的 master 分支上：</p>
+<pre><code>$ cd git/foo
+$ git fetch ../../git/bar
+$ git branch bar/master FETCH_HEAD
+$ git co bar/master
+$ git rebase -k --onto master --root</code></pre><p>说明：</p>
+<pre><code>使用 -k 参数，执行效率更高，因为会直接调用 cherry-pick 进行变基，而不需要执行 git format-patch 命令将提交预先转换为补丁文件。</code></pre><p>在执行过程中遇到冲突中断的情况，这时需要解决冲突后执行：</p>
+<pre><code>$ git cherry-pick --continue</code></pre><p>然后执行如下命令将不在SVN版本库中的Git提交提交到SVN版本库 foo 中。</p>
+<pre><code>$ git svn dcommit --rmdir </code></pre><p>说明：</p>
+<pre><code>使用 --rmdir 命令是为了避免在 SVN 版本库中残留由于目录移动产生的空目录。
+使用 git svn dcommit 在SVN版本库中创建的新提交，其提交者是当前登录用户，提交时间是当前时间。 即新的SVN提交丢失了原有SVN提交的用户名和时间信息。马上利用之前在提交说明中添加的元信息进行补救。</code></pre><h2 id="修正提交时间和提交者"><a href="#修正提交时间和提交者" class="headerlink" title="修正提交时间和提交者"></a>修正提交时间和提交者</h2><p>编写如下脚本 parse-git-log.rb，读取Git日志对元信息进行处理。</p>
+<pre><code>#!/usr/bin/ruby
+
+require &#39;date&#39;
+
+def to_iso8601(date)
+    if date =~ /^[0-9]{10}/
+      DateTime.strptime(date, &#39;%s&#39;).iso8601.gsub(/\+[0-9]*:[0-9]*$/, &#39;.000000Z&#39;)
+    else
+      raise &quot;Error: wrong date format: #{date}&quot;
+    end
+end
+
+def parse_git_log(io)
+  svndict={}
+  commit, author, date, log, rev = []
+  io.each_line do |line|
+    line.strip!
+    if line =~ /^commit ([0-9a-f]{40})/
+      commit = $1
+      author, date, log, rev = []
+    elsif line =~ /^From: .*, author: (.*), date: @([0-9]+)/
+      author = $1
+      date = $2
+    elsif line =~ /git-svn-id: .+@([0-9]+) .*/
+      rev = $1
+      if author.nil? or author.empty?
+        STDERR.puts &quot;Warning: no author for commit: #{commit}&quot;
+        next
+      elsif date.nil? or date.empty?
+        STDERR.puts &quot;Warning: no author for commit: #{commit}&quot;
+        next
+      end
+      svndict[rev] = {}
+      svndict[rev][:author] = author
+      svndict[rev][:date] = to_iso8601 date
+    end
+  end
+  svndict
+end
+
+url = &#39;file:///path/to/svn/foo&#39;
+svndict = {}
+
+if ARGV.size == 1
+  if File.exist? ARGV[0]
+    File.open(ARGV[0]) do |io|
+      svndict = parse_git_log io
+    end
+  else
+    STDERR.puts &quot;Read git log from STDIN&quot;
+    url = ARGV[0]
+    svndict = parse_git_log STDIN
+  end
+else
+  puts &lt;&lt;-EOF
+  Usage:
+      #{File.basename $0} git-log.txt
+      #{File.basename $0} url-of-svn &lt; git-log.txt
+  EOF
+  exit 0
+end
+
+svndict.keys.map{|x| x.to_i}.sort.reverse.each do |rev|
+  author = svndict[rev.to_s][:author]
+  date = svndict[rev.to_s][:date]
+  puts &quot;svn ps --revprop -r #{rev} svn:date   \&quot;#{date}\&quot; #{url}&quot;
+  puts &quot;svn ps --revprop -r #{rev} svn:author \&quot;#{author}\&quot; #{url}&quot;
+end</code></pre><p>然后执行如下命令，读取Git日志，将Git提交中的元信息转换为修正 SVN 提交历史的命令脚本 fix-svn-log.sh。</p>
+<pre><code>$ cd git/foo
+$ git log | ruby parse-git-log.rb file:///path/to/svn/foo &gt; fix-svn-log.sh</code></pre><p>然后执行如下命令修改 SVN 的属性，还原原有SVN的提交用户和提交实现信息：</p>
+<pre><code>$ sh fix-svn-log.sh</code></pre><p>因为此操作实际上执行 svn ps –revprop 命令，需要SVN版本库 foo 中创建一个可执行的 pre-revprop-change 钩子脚本。</p>
+<p>至此版本库转换完毕。怎么样 git filter-branch 命令够强大吧。</p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://www.worldhello.net/2014/04/24/svn-migrate-with-git-svn.html" target="_blank" rel="noopener">ref</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/git/" rel="tag"># git</a>
+              <a href="/tags/svn/" rel="tag"># svn</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2017/03/10/linux-stacks/" rel="next" title="Linux 中的各种栈：进程栈 线程栈 内核栈 中断栈">
+                  <i class="fa fa-chevron-left"></i> Linux 中的各种栈：进程栈 线程栈 内核栈 中断栈
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2017/03/15/gitk-with-all-branchs/" rel="prev" title="git图示所有分支的历史">
+                  git图示所有分支的历史 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#将-bar-和-baz-版本库转换为本地Git库"><span class="nav-number">1.</span> <span class="nav-text">将 bar 和 baz 版本库转换为本地Git库</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#源版本库中文件名过长的问题"><span class="nav-number">2.</span> <span class="nav-text">源版本库中文件名过长的问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#删除空白提交"><span class="nav-number">3.</span> <span class="nav-text">删除空白提交</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#向Git日志中添加MetaData"><span class="nav-number">4.</span> <span class="nav-text">向Git日志中添加MetaData</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#根据需要对版本库目录重新组织"><span class="nav-number">5.</span> <span class="nav-text">根据需要对版本库目录重新组织</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#用git-svn克隆目标版本库（foo）"><span class="nav-number">6.</span> <span class="nav-text">用git-svn克隆目标版本库（foo）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#修正提交时间和提交者"><span class="nav-number">7.</span> <span class="nav-text">修正提交时间和提交者</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">8.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

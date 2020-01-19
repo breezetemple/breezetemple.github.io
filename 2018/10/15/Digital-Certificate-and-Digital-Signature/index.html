@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="使用 数字证书 (Digital Certificate) 与 数字签名 (Digital Signature) 来保证公钥">
+<meta property="og:type" content="article">
+<meta property="og:title" content="数字证书与数字签名">
+<meta property="og:url" content="http://yoursite.com/2018/10/15/Digital-Certificate-and-Digital-Signature/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="使用 数字证书 (Digital Certificate) 与 数字签名 (Digital Signature) 来保证公钥">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/http/crt.jpeg">
+<meta property="og:image" content="http://yoursite.com/images/http/CA.png">
+<meta property="article:published_time" content="2018-10-15T07:20:36.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.674Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="Digital Certificate">
+<meta property="article:tag" content="Digital Signature">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/http/crt.jpeg">
+
+<link rel="canonical" href="http://yoursite.com/2018/10/15/Digital-Certificate-and-Digital-Signature/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>数字证书与数字签名 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/10/15/Digital-Certificate-and-Digital-Signature/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          数字证书与数字签名
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-10-15 15:20:36" itemprop="dateCreated datePublished" datetime="2018-10-15T15:20:36+08:00">2018-10-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/SSL/" itemprop="url" rel="index">
+                    <span itemprop="name">SSL</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>1.7k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>使用 <code>数字证书 (Digital Certificate)</code> 与 <code>数字签名 (Digital Signature)</code> 来保证公钥</p>
+<a id="more"></a>
+
+<ul>
+<li><a href="/2018/10/05/encrypt-and-hash/" title="加密和哈希">加密和哈希</a></li>
+<li><a href="/2018/10/15/Digital-Certificate-and-Digital-Signature/" title="数字证书与数字签名">数字证书与数字签名</a></li>
+<li><a href="/2018/10/16/SSL-and-TLS/" title="SSL&#x2F;TLS 协议">SSL&#x2F;TLS 协议</a>
+
+</li>
+</ul>
+<h2 id="数字证书"><a href="#数字证书" class="headerlink" title="数字证书"></a>数字证书</h2><p><code>数字证书</code> 就是网络通讯中标志通讯各方身份信息的一系列数据，其作用类似于现实生活中的身份证。<strong>它是由一个权威机构发行的，人们可以在互联网上用它来识别对方的身份。</strong></p>
+<p>数字证书：<br>颁发者：CA 证书授权 (Certificate Authority) 中心<br>拥有者：申请到证书的通信者<br>证明的能力：身份认证，也就是说证明我就是我</p>
+<h2 id="数字证书的组成"><a href="#数字证书的组成" class="headerlink" title="数字证书的组成"></a>数字证书的组成</h2><ol>
+<li><strong>Certificate（证书）</strong>：<ol>
+<li>Common Name（证书所有人姓名，简称 CN，其实就是证书的名字，如第一幅图看到的：ABA.ECOMRoot….)</li>
+<li>Version（版本，现在一般是 V3 了）</li>
+<li>Issuer（发证机关）</li>
+<li>Validity（有效日期）</li>
+<li>Subject（证书信息，你会发现它和 Issuer 里面的内容是一样的）</li>
+<li>Subject’s Public Key Info（证书所有人公钥，刚才所说的公钥就是这个！)</li>
+<li>Extension（扩展信息）</li>
+<li>Certificate Signature Algorithm（公钥加密算法）、</li>
+</ol>
+</li>
+<li><strong>Certificate Signature Algorithm</strong>: 这是描述证书的加密算法</li>
+<li><strong>Certificate Signature Value</strong>: 这记录的是证书被加密后的密文</li>
+</ol>
+<p><img src="/images/http/crt.jpeg" alt="证书"></p>
+<h2 id="CA"><a href="#CA" class="headerlink" title="CA"></a>CA</h2><p>数字证书认证机构（英语：Certificate Authority，缩写为 CA），也称为电子商务认证中心、电子商务认证授权机构，是负责发放和管理数字证书的权威机构，并作为电子商务交易中受信任的第三方，承担公钥体系中公钥的合法性检验的责任。</p>
+<p><strong>CA 中心为每个使用公开密钥的用户发放一个数字证书，数字证书的作用是证明证书中列出的用户合法拥有证书中列出的公开密钥。CA 机构的数字签名使得攻击者不能伪造和篡改证书。</strong></p>
+<p><img src="/images/http/CA.png" alt="CA 认证中心之间的关系"></p>
+<p><code>CA 认证中心</code> 之间是一个树状结构， <code>根 CA 认证中心</code> 可以授权多个 <code>二级的 CA 认证中心</code>， <code>二级 CA 认证中心</code> 也可以授权多个 <code>三级的 CA 认证中心</code> … 如果你是 <code>数字证书申请人</code>，你可以向 <code>根 CA 认证中心</code>，或者 <code>二级，三级的 CA 认证中心</code> 申请数字证书，这是没有限制的，当你成功申请后，你就称为了 <code>数字证书所有人</code>。</p>
+<p>值得注意的是，根 CA 认证中心是有多个的，也就是说会有多棵这样的结构树。</p>
+<h2 id="权威性"><a href="#权威性" class="headerlink" title="权威性"></a>权威性</h2><p>上图中的 <code>CA 认证中心所有人</code>，他们都有一个数字证书，和属于自己的公钥和私钥，这些是他们的 <code>父 CA 认证中心</code> 颁发给他们的。 <code>根 CA 认证中心</code> 的证书称为 <code>根证书</code>，<strong>根证书自己认证自己的有效性，根证书是整个证书体系安全的根本</strong>，如果根证书出了问题，他下面所有子证书都不可被信任，因为子证书都是依赖根证书证明自己的有效性的，从而形成 <code>证书信任链</code>。</p>
+<p><strong>对于私钥：CA 认证中心 / 数字证书所有人自己保存，不公开</strong><br><strong>对于公钥：CA 认证中心 / 数字证书所有人会把公钥存在他的 CA 认证中心的数字证书内</strong></p>
+<h2 id="数字签名过程"><a href="#数字签名过程" class="headerlink" title="数字签名过程"></a>数字签名过程</h2><p><code>数字证书</code> 使用 <code>数字签名</code> 作验证</p>
+<ol>
+<li>证书内容计算 <code>hash 值</code></li>
+<li>然后 <code>hash 值</code> *<em>会被发布这个数字签名的 CA 认证机构的 <code>私钥</code> 进行 <code>RSA 加密</code> *</em>，例如现在被加密的数字证书是属于 <code>二级 CA 认证机构</code> 的，那么用来加密这个证书的私钥是 <code>根 CA 认证机构的私钥</code></li>
+</ol>
+<h2 id="数字证书验证合法性"><a href="#数字证书验证合法性" class="headerlink" title="数字证书验证合法性"></a>数字证书验证合法性</h2><p>当你要验证这个数字证书可信 / 合法性时，</p>
+<ol>
+<li>找到** <code>上一层 CA 认证中心</code> 的数字证书，并且从中获取公钥**</li>
+<li>对数字证书中的 <code>密文 F&#39;</code> 进行 <code>RSA 解密</code>，得到 hash 值 h1</li>
+<li>计算数字证书 hash 值得到 h2</li>
+<li>比较 h1 和和 h2</li>
+<li>如果相等，则认为证书是可信的，合法的！</li>
+</ol>
+<p><strong>验证一个证书是否合法，需要验证到他的最顶层的根证书是否合法！所以上面说到根证书是整个证书体系安全的根本。</strong></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>数字证书的制作使用了数字签名，每一个数字证书里面都包含了申请者的公钥。<br><code>Alice</code> 与 <code>Bob</code> 通信之前， <code>Alice</code> 不直接要 <code>Bob</code> 的公钥，而是去要一个 <code>Bob 去 CA 申请的数字证书</code>，数字证书中有 <code>Bob</code> 的公钥，而且数字证书证明了他就是 <code>Bob</code>， <code>Alice</code> 只要验证数字证书没有问题就可以开始通信了。</p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://www.ruanyifeng.com/blog/2011/08/what_is_a_digital_signature.html" target="_blank" rel="noopener">数字签名是什么？</a></li>
+<li><a href="https://www.jianshu.com/p/e767a4e9252e" target="_blank" rel="noopener">HTTPS 从原理到应用（二）：数字证书 (Digital Certificate) 与数字签名 (Digital Signature)</a></li>
+<li><a href="https://www.jianshu.com/p/42bf7c4d6ab8" target="_blank" rel="noopener">什么是数字证书</a></li>
+<li><a href="http://www.cnblogs.com/hyddd/archive/2009/01/07/1371292.html" target="_blank" rel="noopener">浅析数字证书</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Digital-Certificate/" rel="tag"># Digital Certificate</a>
+              <a href="/tags/Digital-Signature/" rel="tag"># Digital Signature</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/10/12/apt-file/" rel="next" title="ubuntu apt-file 解决依赖的利器">
+                  <i class="fa fa-chevron-left"></i> ubuntu apt-file 解决依赖的利器
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/10/16/SSL-and-TLS/" rel="prev" title="SSL/TLS 协议">
+                  SSL/TLS 协议 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#数字证书"><span class="nav-number">1.</span> <span class="nav-text">数字证书</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#数字证书的组成"><span class="nav-number">2.</span> <span class="nav-text">数字证书的组成</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CA"><span class="nav-number">3.</span> <span class="nav-text">CA</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#权威性"><span class="nav-number">4.</span> <span class="nav-text">权威性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#数字签名过程"><span class="nav-number">5.</span> <span class="nav-text">数字签名过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#数字证书验证合法性"><span class="nav-number">6.</span> <span class="nav-text">数字证书验证合法性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">7.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">8.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

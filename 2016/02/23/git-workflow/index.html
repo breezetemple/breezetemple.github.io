@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="$(document).ready(function(){         $(&quot;h2,h3,h4,h5,h6&quot;).each(function(i,item){             var tag &#x3D; $(item).get(0).localName;             $(item).attr(&quot;id&quot;,&quot;wow&quot;+i);             $(&quot;#category&quot;).app">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Git 工作流程[转载]">
+<meta property="og:url" content="http://yoursite.com/2016/02/23/git-workflow/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="$(document).ready(function(){         $(&quot;h2,h3,h4,h5,h6&quot;).each(function(i,item){             var tag &#x3D; $(item).get(0).localName;             $(item).attr(&quot;id&quot;,&quot;wow&quot;+i);             $(&quot;#category&quot;).app">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/git/git_workflow.png">
+<meta property="og:image" content="http://yoursite.com/images/git/gitflow.png">
+<meta property="og:image" content="http://yoursite.com/images/git/github_flow.png">
+<meta property="og:image" content="http://yoursite.com/images/git/gitlab_flow1.png">
+<meta property="og:image" content="http://yoursite.com/images/git/gitlab_release.png">
+<meta property="og:image" content="http://yoursite.com/images/git/merge.png">
+<meta property="og:image" content="http://yoursite.com/images/git/request.png">
+<meta property="article:published_time" content="2016-02-23T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.662Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="git">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/git/git_workflow.png">
+
+<link rel="canonical" href="http://yoursite.com/2016/02/23/git-workflow/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Git 工作流程[转载] | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/02/23/git-workflow/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Git 工作流程[转载]
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-02-24 00:00:00" itemprop="dateCreated datePublished" datetime="2016-02-24T00:00:00+08:00">2016-02-24</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Git/" itemprop="url" rel="index">
+                    <span itemprop="name">Git</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<p>作者： 阮一峰<br>日期： 2015年12月24日<br><a href="http://www.ruanyifeng.com/blog/2015/12/git-workflow.html" target="_blank" rel="noopener">原文</a></p>
+<p>Git 作为一个源码管理系统，不可避免涉及到多人协作。<br>协作必须有一个规范的工作流程，让大家有效地合作，使得项目井井有条地发展下去。<br>“工作流程”在英语里，叫做”workflow”或者”flow”，原意是水流，比喻项目像水流那样，顺畅、自然地向前流动，不会发生冲击、对撞、甚至漩涡。</p>
+<p><img src="/images/git/git_workflow.png" alt="Git Workflow" title="git workflow"></p>
+<p>本文介绍三种广泛使用的工作流程：</p>
+<ul>
+<li><strong>Git flow</strong></li>
+<li><strong>Github flow</strong></li>
+<li><strong>Gitlab flow</strong></li>
+</ul>
+<p>如果你对Git还不是很熟悉，可以先阅读下面的文章。</p>
+<ul>
+<li><a href="http://www.ruanyifeng.com/blog/2015/08/git-use-process.html" target="_blank" rel="noopener">《Git 使用规范流程》</a></li>
+<li><a href="http://www.ruanyifeng.com/blog/2015/12/git-cheat-sheet.html" target="_blank" rel="noopener">《常用 Git 命令清单》</a></li>
+<li><a href="http://www.ruanyifeng.com/blog/2014/06/git_remote.html" target="_blank" rel="noopener">《Git 远程操作详解》</a></li>
+</ul>
+<h2 id="功能驱动"><a href="#功能驱动" class="headerlink" title="功能驱动"></a>功能驱动</h2><p>本文的三种工作流程，有一个共同点：都采用<a href="https://en.wikipedia.org/wiki/Feature-driven_development" target="_blank" rel="noopener">“功能驱动式开发”</a>（Feature-driven development，简称FDD）。</p>
+<p>它指的是，需求是开发的起点，先有需求再有功能分支（feature branch）或者补丁分支（hotfix branch）。<br>完成开发后，该分支就合并到主分支，然后被删除。</p>
+<h2 id="Git-flow"><a href="#Git-flow" class="headerlink" title="Git flow"></a>Git flow</h2><p>最早诞生、并得到广泛采用的一种工作流程，就是Git flow 。</p>
+<h3 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h3><p>它最主要的特点有两个。</p>
+<p><img src="/images/git/gitflow.png" alt="gitflow" title="gitflow"></p>
+<p>首先，项目存在两个长期分支。</p>
+<ul>
+<li><strong>主分支master</strong></li>
+<li><strong>开发分支develop</strong></li>
+</ul>
+<p>前者用于存放对外发布的版本，任何时候在这个分支拿到的，都是稳定的分布版；后者用于日常开发，存放最新的开发版。</p>
+<p>其次，项目存在三种短期分支。</p>
+<ul>
+<li><strong>功能分支（feature branch）</strong></li>
+<li><strong>补丁分支（hotfix branch）</strong></li>
+<li><strong>预发分支（release branch）</strong></li>
+</ul>
+<p>一旦完成开发，它们就会被合并进develop或master，然后被删除。<br>Git flow 的详细介绍，请阅读我翻译的中文版<a href="http://www.ruanyifeng.com/blog/2012/07/git.html" target="_blank" rel="noopener">《Git 分支管理策略》</a>。</p>
+<h3 id="评价"><a href="#评价" class="headerlink" title="评价"></a>评价</h3><p>Git flow的优点是清晰可控，缺点是相对复杂，需要同时维护两个长期分支。<br>大多数工具都将master当作默认分支，可是开发是在develop分支进行的，这导致经常要切换分支，非常烦人。<br>更大问题在于，这个模式是基于”版本发布”的，目标是一段时间以后产出一个新版本。<br>但是，很多网站项目是”持续发布”，代码一有变动，就部署一次。<br>这时，master分支和develop分支的差别不大，没必要维护两个长期分支。</p>
+<h2 id="Github-flow"><a href="#Github-flow" class="headerlink" title="Github flow"></a>Github flow</h2><p>Github flow 是Git flow的简化版，专门配合”持续发布”。它是 Github.com 使用的工作流程。</p>
+<h3 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h3><p>它只有一个长期分支，就是master，因此用起来非常简单。<br>官方推荐的<a href="https://guides.github.com/introduction/flow/index.html" target="_blank" rel="noopener">流程</a>如下。</p>
+<p><img src="/images/git/github_flow.png" alt="github flow" title="github flow"></p>
+<ol>
+<li>根据需求，从master拉出新分支，不区分功能分支或补丁分支。</li>
+<li>新分支开发完成后，或者需要讨论的时候，就向master发起一个<a href="https://help.github.com/articles/using-pull-requests/" target="_blank" rel="noopener">pull request</a>（简称PR）。</li>
+<li>Pull Request既是一个通知，让别人注意到你的请求，又是一种对话机制，大家一起评审和讨论你的代码。对话过程中，你还可以不断提交代码。</li>
+<li>你的Pull Request被接受，合并进master，重新部署后，原来你拉出来的那个分支就被删除。（先部署再合并也可。）</li>
+</ol>
+<h3 id="评价-1"><a href="#评价-1" class="headerlink" title="评价"></a>评价</h3><p>Github flow 的最大优点就是简单，对于”持续发布”的产品，可以说是最合适的流程。<br>问题在于它的假设：master分支的更新与产品的发布是一致的。也就是说，master分支的最新代码，默认就是当前的线上代码。<br>可是，有些时候并非如此，代码合并进入master分支，并不代表它就能立刻发布。<br>比如，苹果商店的APP提交审核以后，等一段时间才能上架。<br>这时，如果还有新的代码提交，master分支就会与刚发布的版本不一致。<br>另一个例子是，有些公司有发布窗口，只有指定时间才能发布，这也会导致线上版本落后于master分支。<br>上面这种情况，只有master一个主分支就不够用了。<br>通常，你不得不在master分支以外，另外新建一个production分支跟踪线上版本。</p>
+<h2 id="Gitlab-flow"><a href="#Gitlab-flow" class="headerlink" title="Gitlab flow"></a>Gitlab flow</h2><p>Gitlab flow 是 Git flow 与 Github flow 的综合。<br>它吸取了两者的优点，既有适应不同开发环境的弹性，又有单一主分支的简单和便利。<br>它是 Gitlab.com 推荐的做法。</p>
+<h3 id="上游优先"><a href="#上游优先" class="headerlink" title="上游优先"></a>上游优先</h3><p>Gitlab flow 的最大原则叫做”上游优先”（upsteam first），即只存在一个主分支master，它是所有其他分支的”上游”。<br>只有上游分支采纳的代码变化，才能应用到其他分支。</p>
+<p><a href="https://www.chromium.org/chromium-os/chromiumos-design-docs/upstream-first" target="_blank" rel="noopener">Chromium项目</a>就是一个例子，<br>它明确规定，上游分支依次为：</p>
+<ul>
+<li><strong>Linus Torvalds的分支</strong></li>
+<li><strong>子系统（比如netdev）的分支</strong></li>
+<li><strong>设备厂商（比如三星）的分支</strong></li>
+</ul>
+<h3 id="持续发布"><a href="#持续发布" class="headerlink" title="持续发布"></a>持续发布</h3><p>Gitlab flow 分成两种情况，适应不同的开发流程。</p>
+<p><img src="/images/git/gitlab_flow1.png" alt="gitlab flow" title="gitlab flow"></p>
+<p>对于”持续发布”的项目，它建议在master分支以外，再建立不同的环境分支。<br>比如，”开发环境”的分支是master，”预发环境”的分支是pre-production，”生产环境”的分支是production。</p>
+<p>开发分支是预发分支的”上游”，预发分支又是生产分支的”上游”。<br>代码的变化，必须由”上游”向”下游”发展。<br>比如，生产环境出现了bug，这时就要新建一个功能分支，先把它合并到master，确认没有问题，<br>再cherry-pick到pre-production，这一步也没有问题，才进入production。<br>只有紧急情况，才允许跳过上游，直接合并到下游分支。</p>
+<h3 id="版本发布"><a href="#版本发布" class="headerlink" title="版本发布"></a>版本发布</h3><p><img src="/images/git/gitlab_release.png" alt="gitlab release" title="gitlab release"></p>
+<p>对于”版本发布”的项目，建议的做法是每一个稳定版本，都要从master分支拉出一个分支，比如2-3-stable、2-4-stable等等。<br>以后，只有修补bug，才允许将代码合并到这些分支，并且此时要更新小版本号。</p>
+<h2 id="一些小技巧"><a href="#一些小技巧" class="headerlink" title="一些小技巧"></a>一些小技巧</h2><h3 id="Pull-Request"><a href="#Pull-Request" class="headerlink" title="Pull Request"></a>Pull Request</h3><p><img src="/images/git/merge.png" alt="merge" title="merge"></p>
+<p>功能分支合并进master分支，必须通过Pull Request（Gitlab里面叫做 Merge Request）。</p>
+<p><img src="/images/git/request.png" alt="request" title="request"></p>
+<p>前面说过，Pull Request本质是一种对话机制，你可以在提交的时候，<br>@相关<a href="https://github.com/blog/1004-mention-autocompletion" target="_blank" rel="noopener">人员</a>或<a href="https://github.com/blog/1121-introducing-team-mentions" target="_blank" rel="noopener">团队</a>，引起他们的注意。</p>
+<h3 id="Protected-branch"><a href="#Protected-branch" class="headerlink" title="Protected branch"></a>Protected branch</h3><p>master分支应该受到保护，不是每个人都可以修改这个分支，以及拥有审批 Pull Request 的权力。</p>
+<p><a href="https://help.github.com/articles/about-protected-branches/" target="_blank" rel="noopener">Github</a><br>和 <a href="http://doc.gitlab.com/ce/permissions/permissions.html" target="_blank" rel="noopener">Gitlab</a> 都提供”保护分支”（Protected branch）这个功能。</p>
+<h3 id="Issue"><a href="#Issue" class="headerlink" title="Issue"></a>Issue</h3><p>Issue 用于 Bug追踪和需求管理。建议先新建 Issue，再新建对应的功能分支。功能分支总是为了解决一个或多个 Issue。<br>功能分支的名称，可以与issue的名字保持一致，并且以issue的编号起首，比如”15-require-a-password-to-change-it”。</p>
+<p>开发完成后，在提交说明里面，可以写上”fixes #14”或者”closes #67”。<br>Github规定，只要commit message里面有下面这些<a href="https://help.github.com/articles/closing-issues-via-commit-messages/" target="_blank" rel="noopener">动词</a> + 编号，<br>就会关闭对应的issue。</p>
+<ul>
+<li>close</li>
+<li>closes</li>
+<li>closed</li>
+<li>fix</li>
+<li>fixes</li>
+<li>fixed</li>
+<li>resolve</li>
+<li>resolves</li>
+<li>resolved</li>
+</ul>
+<p>这种方式还可以一次关闭多个issue，或者关闭其他代码库的issue，格式是username/repository#issue_number。<br>Pull Request被接受以后，issue关闭，原始分支就应该删除。如果以后该issue重新打开，新分支可以复用原来的名字。</p>
+<h3 id="Merge节点"><a href="#Merge节点" class="headerlink" title="Merge节点"></a>Merge节点</h3><p>Git有两种合并：一种是”直进式合并”（fast forward），不生成单独的合并节点；<br>另一种是”非直进式合并”（none fast-forword），会生成单独节点。</p>
+<p>前者不利于保持commit信息的清晰，也不利于以后的回滚，建议总是采用后者（即使用–no-ff参数）。<br>只要发生合并，就要有一个单独的合并节点。</p>
+<h3 id="Squash-多个commit"><a href="#Squash-多个commit" class="headerlink" title="Squash 多个commit"></a>Squash 多个commit</h3><p>为了便于他人阅读你的提交，也便于cherry-pick或撤销代码变化，在发起Pull Request之前，应该把多个commit合并成一个。<br>（前提是，该分支只有你一个人开发，且没有跟master合并过。）</p>
+<p>这可以采用rebase命令附带的squash操作，具体方法请参考我写的<a href="http://www.ruanyifeng.com/blog/2015/08/git-use-process.html" target="_blank" rel="noopener">《Git 使用规范流程》</a>。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/git/" rel="tag"># git</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2016/02/23/git-remote/" rel="next" title="Git 远程操作详解[转载]">
+                  <i class="fa fa-chevron-left"></i> Git 远程操作详解[转载]
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2016/02/23/git-cheat-sheet/" rel="prev" title="常用 Git 命令清单[转载]">
+                  常用 Git 命令清单[转载] <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#功能驱动"><span class="nav-number">1.</span> <span class="nav-text">功能驱动</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Git-flow"><span class="nav-number">2.</span> <span class="nav-text">Git flow</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#特点"><span class="nav-number">2.1.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#评价"><span class="nav-number">2.2.</span> <span class="nav-text">评价</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Github-flow"><span class="nav-number">3.</span> <span class="nav-text">Github flow</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#流程"><span class="nav-number">3.1.</span> <span class="nav-text">流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#评价-1"><span class="nav-number">3.2.</span> <span class="nav-text">评价</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Gitlab-flow"><span class="nav-number">4.</span> <span class="nav-text">Gitlab flow</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#上游优先"><span class="nav-number">4.1.</span> <span class="nav-text">上游优先</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#持续发布"><span class="nav-number">4.2.</span> <span class="nav-text">持续发布</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#版本发布"><span class="nav-number">4.3.</span> <span class="nav-text">版本发布</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#一些小技巧"><span class="nav-number">5.</span> <span class="nav-text">一些小技巧</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Pull-Request"><span class="nav-number">5.1.</span> <span class="nav-text">Pull Request</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Protected-branch"><span class="nav-number">5.2.</span> <span class="nav-text">Protected branch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Issue"><span class="nav-number">5.3.</span> <span class="nav-text">Issue</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Merge节点"><span class="nav-number">5.4.</span> <span class="nav-text">Merge节点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Squash-多个commit"><span class="nav-number">5.5.</span> <span class="nav-text">Squash 多个commit</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

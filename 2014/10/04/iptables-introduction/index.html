@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="iptables是Linux系统中最重要的网络管控工具。它与Kernel中的netfilter模块配合工作，其主要功能是为netfilter设置一些过滤（filter）或网络地址转换（NAT）的规则。当Kernel收到网络数据包后，将会依据iptables设置的规则进行相应的操作。 iptables原理iptables的语法比较复杂，但工作原理较易理解。清楚iptables的前提是理解它的表（Ta">
+<meta property="og:type" content="article">
+<meta property="og:title" content="iptables简介">
+<meta property="og:url" content="http://yoursite.com/2014/10/04/iptables-introduction/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="iptables是Linux系统中最重要的网络管控工具。它与Kernel中的netfilter模块配合工作，其主要功能是为netfilter设置一些过滤（filter）或网络地址转换（NAT）的规则。当Kernel收到网络数据包后，将会依据iptables设置的规则进行相应的操作。 iptables原理iptables的语法比较复杂，但工作原理较易理解。清楚iptables的前提是理解它的表（Ta">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://static.thegeekstuff.com/wp-content/uploads/2011/01/iptables-table-chain-rule-structure.png">
+<meta property="og:image" content="http://img1.51cto.com/attachment/201304/204152898.png">
+<meta property="article:published_time" content="2014-10-04T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.658Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="iptables">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://static.thegeekstuff.com/wp-content/uploads/2011/01/iptables-table-chain-rule-structure.png">
+
+<link rel="canonical" href="http://yoursite.com/2014/10/04/iptables-introduction/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>iptables简介 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/10/04/iptables-introduction/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          iptables简介
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-10-05 00:00:00" itemprop="dateCreated datePublished" datetime="2014-10-05T00:00:00+08:00">2014-10-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.4k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>iptables是Linux系统中最重要的<strong>网络管控工具</strong>。它与Kernel中的netfilter模块配合工作，<br>其主要功能是为netfilter设置一些过滤（filter）或网络地址转换（NAT）的规则。当Kernel收到网络数据包后，<br>将会依据iptables设置的规则进行相应的操作。</p>
+<h2 id="iptables原理"><a href="#iptables原理" class="headerlink" title="iptables原理"></a>iptables原理</h2><p>iptables的语法比较复杂，但工作原理较易理解。清楚iptables的前提是理解它的<strong>表（Table）、链（Chain）和规则（Rule）</strong>。<br>三者关系如下图所示：</p>
+<p><img src="http://static.thegeekstuff.com/wp-content/uploads/2011/01/iptables-table-chain-rule-structure.png" alt="tables"></p>
+<a id="more"></a>
+
+<ul>
+<li><p>iptables内部（其实是Kernel的netfilter模块）维护着四个Table，分别是filter、nat、mangle和raw，它们对应着不同的功能：</p>
+<ul>
+<li>filter，iptables默认使用的表，用于数据包的过滤</li>
+<li>nat，控制网络地址转换的表</li>
+<li>mangle，修改包的信息，例如修改包的TTL值</li>
+<li>raw，根据链接状态进行相关处理，属于iptables的高级用法</li>
+</ul>
+</li>
+<li><p>Table中定义了Chain。一个Table可以支持多个Chain，Chain实际上是Rule的集合，每个Table都有默认的Chain。例如<br>filter表默认的Chain有INPUT、OUTPUT、FORWARD。用户可以自定义Chain，也可以修改Chain中的Rule。</p>
+</li>
+<li><p>Rule就是iptables工作的规则。首先，系统将检查要处理的数据包是否满足Rule设置的条件，如果满足则执行Rule中设置的<br>目标（Target），否则继续执行Chain中的下一条Rule。</p>
+</li>
+</ul>
+<h2 id="iptables-Target和常用参数"><a href="#iptables-Target和常用参数" class="headerlink" title="iptables Target和常用参数"></a>iptables Target和常用参数</h2><p>iptables中的Rule有四个默认定义的Target，如下：</p>
+<ul>
+<li><p>ACCEPT：接收数据包</p>
+</li>
+<li><p>DROP：直接丢弃数据包。没有任何信息反馈给数据源端</p>
+</li>
+<li><p>RETURN：返回到调用Chain，略过后续的Rule处理</p>
+</li>
+<li><p>QUEUE：数据返回到用户空间处理</p>
+<p>  <em>iptables的扩展Target还支持REJECT。相对于DROP而言，REJECT会反馈信息给数据源端。目前只有INPUT、OUTPUT、FORWARD<br>  以及被这三个链调用的自定义链支持REJECT。</em></p>
+</li>
+</ul>
+<p><strong>常用参数如下</strong>：</p>
+<ul>
+<li>-t：指定table。默认为filter表</li>
+<li>-N：创建一条新的Chain</li>
+<li>-L,–list：显示指定Table的Chain和Rule信息</li>
+<li>-A,–append chain rule-specification：在指定Chain的末尾添加一条Rule</li>
+<li>-D,–delete chain rule-specification：删除指定Chain中满足rule-specification的那条Rule</li>
+<li>-I,–insert chain [rule num] rule-specification：为指定Chain插入一条Rule</li>
+</ul>
+<p>Rule-specification描述该Rule的匹配条件以及目标动作，参数如下：</p>
+<ul>
+<li>-i：指定接收数据包的网卡名</li>
+<li>-o：指定发出数据包的网卡名</li>
+<li>-p：指定协议</li>
+<li>-s,–source address[/mask]：指定数据包的源IP地址</li>
+<li>-j,–jump target：跳转到指定目标，如ACCEPT、DROP等</li>
+</ul>
+<h2 id="经过iptables的数据包的流程介绍"><a href="#经过iptables的数据包的流程介绍" class="headerlink" title="经过iptables的数据包的流程介绍"></a>经过iptables的数据包的流程介绍</h2><p>一个数据包到达时,是怎么依次穿过各个链和表的,见下图：</p>
+<p><img src="http://img1.51cto.com/attachment/201304/204152898.png" alt=""></p>
+<p><strong>基本步骤如下：</strong></p>
+<ul>
+<li>数据包到达网络接口，比如 eth0。 </li>
+<li>进入 raw 表的 PREROUTING 链，这个链的作用是赶在连接跟踪之前处理数据包。 </li>
+<li>如果进行了连接跟踪，在此处理。 </li>
+<li>进入 mangle 表的 PREROUTING 链，在此可以修改数据包，比如 TOS 等。 </li>
+<li>进入 nat 表的 PREROUTING 链，可以在此做DNAT，但不要做过滤。 </li>
+<li>决定路由，看是交给本地主机还是转发给其它主机。 </li>
+</ul>
+<p>*<em>到了这里我们就得分两种不同的情况进行讨论了，一种情况就是数据包要转发给其它主机，这时候它会依次经过： *</em></p>
+<ul>
+<li>进入 mangle 表的 FORWARD 链，这里也比较特殊，这是在第一次路由决定之后，在进行最后的路由决定之前，我们仍然可以对数据包进行某些修改。 </li>
+<li>进入 filter 表的 FORWARD 链，在这里我们可以对所有转发的数据包进行过滤。需要注意的是：经过这里的数据包是转发的，方向是双向的。 </li>
+<li>进入 mangle 表的 POSTROUTING 链，到这里已经做完了所有的路由决定，但数据包仍然在本地主机，我们还可以进行某些修改。 </li>
+<li>进入 nat 表的 POSTROUTING 链，在这里一般都是用来做 SNAT ，不要在这里进行过滤。 </li>
+<li>进入出去的网络接口。完毕。 </li>
+</ul>
+<p>*<em>另一种情况是，数据包就是发给本地主机的，那么它会依次穿过： *</em></p>
+<ul>
+<li>进入 mangle 表的 INPUT 链，这里是在路由之后，交由本地主机之前，我们也可以进行一些相应的修改。 </li>
+<li>进入 filter 表的 INPUT 链，在这里我们可以对流入的所有数据包进行过滤，无论它来自哪个网络接口。 </li>
+<li>交给本地主机的应用程序进行处理。 </li>
+<li>处理完毕后进行路由决定，看该往那里发出。 </li>
+<li>进入 raw 表的 OUTPUT 链，这里是在连接跟踪处理本地的数据包之前。 </li>
+<li>连接跟踪对本地的数据包进行处理。 </li>
+<li>进入 mangle 表的 OUTPUT 链，在这里我们可以修改数据包，但不要做过滤。 </li>
+<li>进入 nat 表的 OUTPUT 链，可以对防火墙自己发出的数据做 NAT 。 </li>
+<li>再次进行路由决定。 </li>
+<li>进入 filter 表的 OUTPUT 链，可以对本地出去的数据包进行过滤。 </li>
+<li>进入 mangle 表的 POSTROUTING 链，同上一种情况的第9步。注意，这里不光对经过防火墙的数据包进行处理，还对防火墙自己产生的数据包进行处理。 </li>
+<li>进入 nat 表的 POSTROUTING 链，同上一种情况的第10步。 </li>
+<li>进入出去的网络接口。完毕。</li>
+</ul>
+<h2 id="References"><a href="#References" class="headerlink" title="References"></a>References</h2><ul>
+<li><a href="http://www.thegeekstuff.com/2011/01/iptables-fundamentals" target="_blank" rel="noopener">“Linux Firewall Tutorial: IPTables Tables, Chains, Rules Fundamentals”</a></li>
+<li><a href="http://selboo.com/post/721/" target="_blank" rel="noopener">“iptables的相关概念和数据包的流程”</a>，介绍了iptables中各个Table及Chain的处理顺序</li>
+<li><a href="https://www.frozentux.net/iptables-tutorial/cn/iptables-tutorial-cn-1.1.19.html" target="_blank" rel="noopener">“Iptables 指南 1.1.19”</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/iptables/" rel="tag"># iptables</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2014/10/04/wifi-introduction/" rel="prev" title="Linux Wi-Fi编程API">
+                  Linux Wi-Fi编程API <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#iptables原理"><span class="nav-number">1.</span> <span class="nav-text">iptables原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#iptables-Target和常用参数"><span class="nav-number">2.</span> <span class="nav-text">iptables Target和常用参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#经过iptables的数据包的流程介绍"><span class="nav-number">3.</span> <span class="nav-text">经过iptables的数据包的流程介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">4.</span> <span class="nav-text">References</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

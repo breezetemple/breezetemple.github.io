@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="使用 openssl 生成解析 rsa 公私钥">
+<meta property="og:type" content="article">
+<meta property="og:title" content="openssl 密钥生成与解析">
+<meta property="og:url" content="http://yoursite.com/2019/11/05/openssl-rsa-key/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="使用 openssl 生成解析 rsa 公私钥">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-11-05T07:27:18.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.682Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="openssl">
+<meta property="article:tag" content="rsa">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2019/11/05/openssl-rsa-key/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>openssl 密钥生成与解析 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/11/05/openssl-rsa-key/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          openssl 密钥生成与解析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-11-05 15:27:18" itemprop="dateCreated datePublished" datetime="2019-11-05T15:27:18+08:00">2019-11-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Security/" itemprop="url" rel="index">
+                    <span itemprop="name">Security</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>5.3k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>使用 openssl 生成解析 rsa 公私钥</p>
+<a id="more"></a>
+
+<h2 id="RSA-算法"><a href="#RSA-算法" class="headerlink" title="RSA 算法"></a>RSA 算法</h2><p><a href="http://www.ruanyifeng.com/blog/2013/06/rsa_algorithm_part_one.html" target="_blank" rel="noopener">RSA 算法原理（一）</a><br><a href="http://www.ruanyifeng.com/blog/2013/07/rsa_algorithm_part_two.html" target="_blank" rel="noopener">RSA 算法原理（二）</a></p>
+<p>从中可以得出如下信息：</p>
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default"></script>
+
+<table>
+<thead>
+<tr>
+<th align="center">-</th>
+<th align="center">公式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">公钥 KU</td>
+<td align="center">n：质数 p 和质数 q 的乘积（p 和 q 必须保密）<br>e：与 (p-1)×(q-1) 互质</td>
+</tr>
+<tr>
+<td align="center">私钥 KR</td>
+<td align="center">n：同公钥 n<br> d: \(e^{-1}(mod(p-1)(q-1))\)</td>
+</tr>
+<tr>
+<td align="center">加密</td>
+<td align="center">\(c=m^emodn\)</td>
+</tr>
+<tr>
+<td align="center">解密</td>
+<td align="center">\(m=c^dmodn\)</td>
+</tr>
+</tbody></table>
+<p><strong>n 和 e 封装成公钥，n 和 d 封装成私钥。公钥和私钥的数据都采用 <code>ASN.1</code> 格式表达</strong></p>
+<blockquote>
+<p>实际应用中，e 常常选择 65537</p>
+</blockquote>
+<h2 id="生成"><a href="#生成" class="headerlink" title="生成"></a>生成</h2><p>使用 openssl 来生成公钥、私钥</p>
+<h3 id="私钥"><a href="#私钥" class="headerlink" title="私钥"></a>私钥</h3><pre><code class="shell">$ openssl genrsa -out privkey.pem 2048</code></pre>
+<h3 id="公钥"><a href="#公钥" class="headerlink" title="公钥"></a>公钥</h3><pre><code class="shell">$ openssl rsa -in privkey.pem -pubout -out pubkey.pem</code></pre>
+<h3 id="证书"><a href="#证书" class="headerlink" title="证书"></a>证书</h3><pre><code class="shell">$ openssl req -new -key privkey.pem -out ca.csr</code></pre>
+<h2 id="解析"><a href="#解析" class="headerlink" title="解析"></a>解析</h2><p><a href="https://www.jianshu.com/p/78886e480bef" target="_blank" rel="noopener">openssl 密钥生成和解析</a></p>
+<h3 id="openssl"><a href="#openssl" class="headerlink" title="openssl"></a>openssl</h3><p>openssl 的数据编码规则是基于 ans.1<br>openssl 有多种形式的密钥，openssl 提供 PEM 和 DER 两种编码方式对这些密钥进行编码，并提供相关指令可以使用户在这两种格式之间进行转换。</p>
+<h4 id="DER"><a href="#DER" class="headerlink" title="DER"></a>DER</h4><p>DER 就是密钥的二进制表述格式。</p>
+<h4 id="PEM"><a href="#PEM" class="headerlink" title="PEM"></a>PEM</h4><p>PEM 格式就是对 DER 编码转码为 base64 字符格式。通过 base64 解码可以还原 DER 格式。</p>
+<h3 id="PEM-格式"><a href="#PEM-格式" class="headerlink" title="PEM 格式"></a>PEM 格式</h3><h4 id="公钥-1"><a href="#公钥-1" class="headerlink" title="公钥"></a>公钥</h4><pre><code>RSAPublicKey ::= SEQUENCE {
+    modulus           INTEGER,  -- n
+    publicExponent    INTEGER   -- e
+}</code></pre><ul>
+<li>modulus 是 RSA 的合数模 n</li>
+<li>publicExponent 是 RSA 公开幂 e</li>
+</ul>
+<p>命令分析公钥如下</p>
+<pre><code class="shell">$ cat pubkey.pem
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA04VqFIaa59Aba74p+fuL
+La4I1KoZJ+40yeg3QFFagCNpqI+Krf+5qZBNuhWrBRtp0LN9IOftfDr/nC+I+04G
+CXMX+4ZrPfkWRWkDZr2RC7WqC+/E2Fgx7DBSWqXx1dPog3q3j1eeO8PL/FGA2q6C
+9Yy9PW5a/E/YG4ngMOGCvIc1dR2eJkqz6hBOWZB3+GnrV7VoVZZE2hNP3SXsqGZY
+FXRntKhuBc1FWMIwSN9tTWC6EhR550HqZx9jogTVDvwVn5yXSNhJ/K1fg7vkQVRa
+NMNuz1EX2VT00XJ1U4qd+q7p4PR1N+vDIAHUMABW8HkM0HKlYS+hl/LnZTvRCUcR
+XwIDAQAB
+-----END PUBLIC KEY-----
+$ openssl rsa -pubin -in pubkey.pem -text -noout
+RSA Public-Key: (2048 bit)
+Modulus:
+    00:d3:85:6a:14:86:9a:e7:d0:1b:6b:be:29:f9:fb:
+    ...
+Exponent: 65537 (0x10001)
+$ openssl asn1parse -i -in pubkey.pem
+    0:d=0  hl=4 l= 290 cons: SEQUENCE
+    4:d=1  hl=2 l=  13 cons:  SEQUENCE
+    6:d=2  hl=2 l=   9 prim:   OBJECT            :rsaEncryption
+   17:d=2  hl=2 l=   0 prim:   NULL
+   19:d=1  hl=4 l= 271 prim:  BIT STRING</code></pre>
+<h4 id="私钥-1"><a href="#私钥-1" class="headerlink" title="私钥"></a>私钥</h4><pre><code>RSAPrivateKey ::= SEQUENCE {
+  version           Version,
+  modulus           INTEGER,  -- n
+  publicExponent    INTEGER,  -- e
+  privateExponent   INTEGER,  -- d
+  prime1            INTEGER,  -- p
+  prime2            INTEGER,  -- q
+  exponent1         INTEGER,  -- d mod (p-1)
+  exponent2         INTEGER,  -- d mod (q-1)
+  coefficient       INTEGER,  -- (inverse of q) mod p
+  otherPrimeInfos   OtherPrimeInfos OPTIONAL
+}</code></pre><ul>
+<li>modulus 是 RSA 合数模 n</li>
+<li>publicExponent 是 RSA 的公开幂 e</li>
+<li>privateExponent 是 RSA 的私有幂 d</li>
+<li>prime1 是 n 的素数因子 p</li>
+<li>prime2 是 n 的素数因子 q</li>
+<li>exponent1 等于 \(d mod (p−1)\)</li>
+<li>exponent2 等于 \(d mod (q−1)\)</li>
+<li>coefficient 是 CRT 系数 \((q–1) mod p\)</li>
+</ul>
+<p>分析私钥如下</p>
+<pre><code class="shell">$ cat privkey.pem
+-----BEGIN RSA PRIVATE KEY-----
+MIIEowIBAAKCAQEA04VqFIaa59Aba74p+fuLLa4I1KoZJ+40yeg3QFFagCNpqI+K
+...
+-----END RSA PRIVATE KEY-----
+$ openssl rsa -in privkey.pem -text -noout
+RSA Private-Key: (2048 bit, 2 primes)
+modulus:
+    00:d3:85:6a:14:86:9a:e7:d0:1b:6b:be:29:f9:fb:
+    ...
+publicExponent: 65537 (0x10001)
+privateExponent:
+    3f:84:70:b6:79:35:4b:27:53:14:a7:a6:33:4b:36:
+    ...
+prime1:
+    00:f9:d6:97:89:e0:a6:78:e4:c9:f8:70:ed:aa:6c:
+    ...
+prime2:
+    00:d8:bc:e6:2b:25:83:48:98:d6:84:fb:90:ef:f4:
+    ...
+exponent1:
+    00:f7:f8:64:aa:05:9e:55:49:87:a9:1d:b4:d6:bc:
+    ...
+exponent2:
+    46:e7:85:65:18:20:9a:df:65:4e:9b:fe:0e:82:26:
+    ...
+coefficient:
+    2c:be:89:1e:ad:1b:c7:1f:f1:72:1e:ae:6e:a8:c6:
+    ...
+$ openssl asn1parse -i -in privkey.pem
+    0:d=0  hl=4 l=1187 cons: SEQUENCE
+    4:d=1  hl=2 l=   1 prim:  INTEGER           :00
+    7:d=1  hl=4 l= 257 prim:  INTEGER           :D3856A14869AE7D01B6BBE29F9FB8B2DAE08D4AA1927EE34C9E83740515A802369A88F8AADFFB9A9904DBA15AB051B69D0B37D20E7ED7C3AFF9C2F88FB4E06097317FB866B3DF91645690366BD910BB5AA0BEFC4D85831EC30525AA5F1D5D3E8837AB78F579E3BC3CBFC5180DAAE82F58CBD3D6E5AFC4FD81B89E030E182BC8735751D9E264AB3EA104E599077F869EB57B568559644DA134FDD25ECA86658157467B4A86E05CD4558C23048DF6D4D60BA121479E741EA671F63A204D50EFC159F9C9748D849FCAD5F83BBE441545A34C36ECF5117D954F4D17275538A9DFAAEE9E0F47537EBC32001D4300056F0790CD072A5612FA197F2E7653BD10947115F
+  268:d=1  hl=2 l=   3 prim:  INTEGER           :010001
+  273:d=1  hl=4 l= 256 prim:  INTEGER           :3F8470B679354B275314A7A6334B36202182C559CEF40EB40B6D9029E0442CF6756408B6BC496E975C9DFAA34717E1838508612AE07A9033A74E5F77E2FF2B10EB5EE849152B270169167FCEFA5DF406396A1C3620415BBC714649B24B4CCAB5A7C5D21959564ADC210543F44DB6D9DCA2C6B10BD286B1F35351B3E0F9D72885658C1B59062CDE9F71746BBC51AEAB3BF4A72093D61E186A2D241DFB6EF25F21A0F243A557E03F84BFDB67626B2C9E27E44E7865E50AF5937AA4F316D54D7D53B2666628AAF808E70775998B863D5764312E52FAD7796206312803BF685463F91662669C2D4F2B0D75F8AF5591D010C6B29B314EB3C0E0BC47410C3EBC7CF101
+  533:d=1  hl=3 l= 129 prim:  INTEGER           :F9D69789E0A678E4C9F870EDAA6C1C1AA9BEE312C19E6B53129FF4F23D9CBCCCEED5DDCF6311E23A1D58741F47C6F065CF2F7A84D0FB989AD87C37B241C69AC5AA3E3E382DF603B774C6AD5CD4F0AAA40F90CCDDD69A758845213AAA0A67745E22C4FF2C703B9E0A4C6F8A73E0A3A848A20C667C8F226BAFEC8004B92CB6851B
+  665:d=1  hl=3 l= 129 prim:  INTEGER           :D8BCE62B25834898D684FB90EFF468BBDE358413EA0FF9420A44F4A05636113DB2AEEAEFFECEFBA11807674612AAD21945C157EC60FB7672FC7DEC402695255AFE2FD2D55566DCAAC6FBE6231B8504765DE073F852772706BB2B7E6A7D0AA84607459F8D9EBF3AC63086B6037F626D667A8CE82EA7C96ABCD721BC4C9CEEDD0D
+  797:d=1  hl=3 l= 129 prim:  INTEGER           :F7F864AA059E554987A91DB4D6BCBCDC3DF4677E9B4BF86C188548E21202FA6550FC564E5B9F4971B2E4B344C4C210A28C142CBF9C88CB7B8D392532B9143D53C95843FB10AB281F33396AA243FBA6F2753C9C09E6D1A1AC22290C07EF91A52F35C55F1BA53D96EBD3D7B58CB3BEDBED5361896B41C9C126784ECBE15B1EC157
+  929:d=1  hl=3 l= 128 prim:  INTEGER           :46E7856518209ADF654E9BFE0E8226C14F30B2C4D10DE8BD721E9CE8D74B58D8965C22FFE09C56359D66CEA25DF90442C04F40345485EF7A2EA00369F93551C332E4F254585C0E54D0441845E3FAE03AD8FB54F5280552FF20BC59DEFC894003A8DD5E153699D8E07D7F948C106062E9E3ADB5478E1C968EB0D2988777CFAD01
+ 1060:d=1  hl=3 l= 128 prim:  INTEGER           :2CBE891EAD1BC71FF1721EAE6EA8C6091AD8C117029A9142FC4F82F04BED3855EAC22D77ACC401095AE46D6964A5CAC596513BD71554DAE296614AF352CB198C25F0213C062C93A980DAA351583C5BF354E9A39B9FE0B4EC38FFA3C8324D33062AF21FA73AAFF1CDFE6056150C724F46C689F33D132C2AB4CE6F6B79A5A9AFD8</code></pre>
+<ul>
+<li><code>0</code> 表示节点在整个文件中的偏移长度</li>
+<li><code>d=0</code> 表示节点深度</li>
+<li><code>hl=3</code> 表示节点头字节长度</li>
+<li><code>l=135</code> 表示节点数据字节长度</li>
+<li><code>cons</code> 表示该节点为结构节点，表示包含子节点或者子结构数据</li>
+<li><code>prim</code> 表示该节点为原始节点，包含数据</li>
+<li><code>SEQUENCE</code>、 <code>OCTET STRING</code> 等都是 ASN.1 中定义的数据类型</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/openssl/" rel="tag"># openssl</a>
+              <a href="/tags/rsa/" rel="tag"># rsa</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/10/31/docker-unionfs-aufs-vs-overlay2/" rel="next" title="Docker 镜像存储原理 UnionFS">
+                  <i class="fa fa-chevron-left"></i> Docker 镜像存储原理 UnionFS
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/11/05/markdown-with-mathjax/" rel="prev" title="markdown-with-mathjax">
+                  markdown-with-mathjax <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#RSA-算法"><span class="nav-number">1.</span> <span class="nav-text">RSA 算法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#生成"><span class="nav-number">2.</span> <span class="nav-text">生成</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#私钥"><span class="nav-number">2.1.</span> <span class="nav-text">私钥</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#公钥"><span class="nav-number">2.2.</span> <span class="nav-text">公钥</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#证书"><span class="nav-number">2.3.</span> <span class="nav-text">证书</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#解析"><span class="nav-number">3.</span> <span class="nav-text">解析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#openssl"><span class="nav-number">3.1.</span> <span class="nav-text">openssl</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#DER"><span class="nav-number">3.1.1.</span> <span class="nav-text">DER</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#PEM"><span class="nav-number">3.1.2.</span> <span class="nav-text">PEM</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#PEM-格式"><span class="nav-number">3.2.</span> <span class="nav-text">PEM 格式</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#公钥-1"><span class="nav-number">3.2.1.</span> <span class="nav-text">公钥</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#私钥-1"><span class="nav-number">3.2.2.</span> <span class="nav-text">私钥</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

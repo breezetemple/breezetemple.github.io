@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="toc{:toc}   Lists$ &gt; git stash -h usage: git stash list [&lt;options&gt;]    or: git stash show [&lt;stash&gt;]    or: git stash drop [-q|--quiet] [&lt;stash&gt;]    or: git stash ( pop | apply )">
+<meta property="og:type" content="article">
+<meta property="og:title" content="git stash 系列命令的使用">
+<meta property="og:url" content="http://yoursite.com/2016/08/28/git-stash/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="toc{:toc}   Lists$ &gt; git stash -h usage: git stash list [&lt;options&gt;]    or: git stash show [&lt;stash&gt;]    or: git stash drop [-q|--quiet] [&lt;stash&gt;]    or: git stash ( pop | apply )">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2016-08-28T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.666Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="git">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2016/08/28/git-stash/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>git stash 系列命令的使用 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/08/28/git-stash/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          git stash 系列命令的使用
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-08-29 00:00:00" itemprop="dateCreated datePublished" datetime="2016-08-29T00:00:00+08:00">2016-08-29</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Git/" itemprop="url" rel="index">
+                    <span itemprop="name">Git</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <ul>
+<li>toc<br>{:toc}</li>
+</ul>
+<hr>
+<h2 id="Lists"><a href="#Lists" class="headerlink" title="Lists"></a>Lists</h2><pre><code class="bash">$ &gt; git stash -h
+usage: git stash list [&lt;options&gt;]
+   or: git stash show [&lt;stash&gt;]
+   or: git stash drop [-q|--quiet] [&lt;stash&gt;]
+   or: git stash ( pop | apply ) [--index] [-q|--quiet] [&lt;stash&gt;]
+   or: git stash branch &lt;branchname&gt; [&lt;stash&gt;]
+   or: git stash [save [--patch] [-k|--[no-]keep-index] [-q|--quiet]
+                       [-u|--include-untracked] [-a|--all] [&lt;message&gt;]]
+   or: git stash clear
+
+$ &gt; man git stash
+
+$ &gt; man git log</code></pre>
+<a id="more"></a>
+
+<h3 id="git-stash-list"><a href="#git-stash-list" class="headerlink" title="git stash list"></a>git stash list</h3><p>列出所有暂存文件，<br>The command takes options applicable to the git log command to control what is shown and how. See git-log(1).</p>
+<h3 id="git-stash-show"><a href="#git-stash-show" class="headerlink" title="git stash show"></a>git stash show</h3><pre><code class="bash">$ git stash show 默认第一个 `stash@{0}`
+$ git stash show stash@{0} 显示那些文件有改动
+$ git stash show -p stash@{0} 显示具体各个文件改动</code></pre>
+<h3 id="git-stash-drop"><a href="#git-stash-drop" class="headerlink" title="git stash drop"></a>git stash drop</h3><pre><code class="bash">$ git stash drop 丢弃暂存，默认第一个
+$ git stash drop stash@{1} 丢弃第二个暂存</code></pre>
+<h3 id="git-stash-clear"><a href="#git-stash-clear" class="headerlink" title="git stash clear"></a>git stash clear</h3><pre><code class="bash">$ git stash clear 清除所有暂存</code></pre>
+<h3 id="git-stash-pop"><a href="#git-stash-pop" class="headerlink" title="git stash pop"></a>git stash pop</h3><pre><code class="bash">$ git stash pop 恢复最新的暂存，并从list中删除
+$ git stash pop stash@{id} 恢复指定暂存，并从list中删除</code></pre>
+<h3 id="git-stash-apply"><a href="#git-stash-apply" class="headerlink" title="git stash apply"></a>git stash apply</h3><pre><code class="bash">$ git stash apply 恢复最新的暂存，不从list中删除
+$ git stash apply stash@{id} 恢复指定暂存，不从list中删除</code></pre>
+<h3 id="git-stash"><a href="#git-stash" class="headerlink" title="git stash"></a>git stash</h3><pre><code class="bash">$ git stash 可用来暂存当前正在进行的工作
+$ git stash save &quot;message&quot; 添加信息
+$ git stash save -a &quot;message&quot; --all
+$ git stash save -u &quot;message&quot; --include-untracked
+$ git stash save --keep-index    # save all other changes to the stash</code></pre>
+<h3 id="git-stash-branch"><a href="#git-stash-branch" class="headerlink" title="git stash branch"></a>git stash branch</h3><h3 id="git-stash-create"><a href="#git-stash-create" class="headerlink" title="git stash create"></a>git stash create</h3><h3 id="git-stash-store"><a href="#git-stash-store" class="headerlink" title="git stash store"></a>git stash store</h3><h2 id="git-stash-conflict"><a href="#git-stash-conflict" class="headerlink" title="git stash conflict"></a>git stash conflict</h2><h3 id="CONFLICT"><a href="#CONFLICT" class="headerlink" title="CONFLICT"></a>CONFLICT</h3><pre><code class="bash"># On branch master
+# Unmerged paths:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#   (use &quot;git add/rm &lt;file&gt;...&quot; as appropriate to mark resolution)
+#
+#   both modified:      src/js/globals.tpl.js
+no changes added to commit (use &quot;git add&quot; and/or &quot;git commit -a&quot;)</code></pre>
+<p>Afterwards just run <code>git reset</code> to unstage the changes and keep on hacking – or <code>git add ...</code> and commit.</p>
+<h3 id="git-reset-or-git-add"><a href="#git-reset-or-git-add" class="headerlink" title="git reset or git add"></a>git reset or git add</h3><p>暂存文件与更新文件存在冲突解决如下：</p>
+<pre><code class="bash">$ git stash pop -&gt; CONFLICT
+# ...manually resolve conflict(s)
+$ git add file</code></pre>
+<p>丢弃修改暂存</p>
+<p><code>git st</code>中列出来的文件：</p>
+<ul>
+<li>[G]绿色：加入暂存区文件，不可以用 <code>git diff</code></li>
+<li>[R]红色：未加入暂存区文件，可以用 <code>git diff</code></li>
+</ul>
+<pre><code class="bash">$ git stash pop -&gt; CONFLICT
+$ git st
+位于分支 test
+要提交的变更：
+  （使用 &quot;git reset HEAD &lt;文件&gt;...&quot; 以取消暂存）
+
+  修改：     bsp/lib/libpanel.a [G]
+  修改：     scripts/inc.Makefile.conf.mak [G]
+
+  未合并的路径：
+  （使用 &quot;git reset HEAD &lt;文件&gt;...&quot; 以取消暂存）
+  （使用 &quot;git add &lt;文件&gt;...&quot; 标记解决方案）
+
+  双方修改：   app/full_screen.c [R]
+
+$ git reset HEAD 恢复提交
+重置后取消暂存的变更：
+M   solution/app/full_screen.c
+M   solution/bsp/lib/libpanel.a
+M   solution/scripts/inc.Makefile.conf.mak
+
+$ git st 
+位于分支 test
+尚未暂存以备提交的变更：
+  （使用 &quot;git add &lt;文件&gt;...&quot; 更新要提交的内容）
+    （使用 &quot;git checkout -- &lt;文件&gt;...&quot; 丢弃工作区的改动）
+
+    修改：     app/full_screen.c [R]
+    修改：     bsp/lib/libpanel.a [R]
+    修改：     scripts/inc.Makefile.conf.mak [R]
+
+$ git reset HEAD app/full_screen.c
+重置后取消暂存的变更：
+M   solution/app/full_screen.c
+$ git st
+位于分支 test
+要提交的变更：
+（使用 &quot;git reset HEAD &lt;文件&gt;...&quot; 以取消暂存）
+
+    修改：     bsp/lib/libpanel.a [G]
+    修改：     scripts/inc.Makefile.conf.mak [G]
+
+尚未暂存以备提交的变更：
+（使用 &quot;git add &lt;文件&gt;...&quot; 更新要提交的内容）
+（使用 &quot;git checkout -- &lt;文件&gt;...&quot; 丢弃工作区的改动）
+
+    修改：     app/full_screen.c [R]
+
+$ git reset --hard 回到上次提交时的状态，干净分支
+位于分支 test</code></pre>
+<h2 id="EXAMPLES"><a href="#EXAMPLES" class="headerlink" title="EXAMPLES"></a>EXAMPLES</h2><h3 id="Pulling-into-a-dirty-tree"><a href="#Pulling-into-a-dirty-tree" class="headerlink" title="Pulling into a dirty tree"></a>Pulling into a dirty tree</h3><pre><code class="bash">$ git pull
+...
+file foobar not up to date, cannot merge.
+$ git stash
+$ git pull
+$ git stash pop</code></pre>
+<h3 id="Interrupted-workflow"><a href="#Interrupted-workflow" class="headerlink" title="Interrupted workflow"></a>Interrupted workflow</h3><pre><code class="bash"># ... hack hack hack ...
+$ git checkout -b my_wip
+$ git commit -a -m &quot;WIP&quot;
+$ git checkout master
+$ edit emergency fix
+$ git commit -a -m &quot;Fix in a hurry&quot;
+$ git checkout my_wip
+$ git reset --soft HEAD^
+# ... continue hacking ...</code></pre>
+<p>You can use git stash to simplify the above, like this:</p>
+<pre><code class="bash"># ... hack hack hack ...
+$ git stash
+$ edit emergency fix
+$ git commit -a -m &quot;Fix in a hurry&quot;
+$ git stash pop
+# ... continue hacking ...</code></pre>
+<h3 id="Testing-partial-commits"><a href="#Testing-partial-commits" class="headerlink" title="Testing partial commits"></a>Testing partial commits</h3><p>You can use git stash save –keep-index when you want to make two or more commits out of the changes in the work tree,<br>and you want to test each change before committing:</p>
+<pre><code class="bash"># ... hack hack hack ...
+$ git add --patch foo            # add just first part to the index
+$ git stash save --keep-index    # save all other changes to the stash
+$ edit/build/test first part
+$ git commit -m &#39;First part&#39;     # commit fully tested change
+$ git stash pop                  # prepare to work on all other changes
+# ... repeat above five steps until one commit remains ...
+$ edit/build/test remaining parts
+$ git commit foo -m &#39;Remaining parts&#39;</code></pre>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/git/" rel="tag"># git</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2016/08/14/ttf-to-dot/" rel="next" title="通过矢量字库制作点阵字库">
+                  <i class="fa fa-chevron-left"></i> 通过矢量字库制作点阵字库
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2016/09/08/tumblr-crawler/" rel="prev" title="tumblr crawler">
+                  tumblr crawler <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Lists"><span class="nav-number">1.</span> <span class="nav-text">Lists</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#git-stash-list"><span class="nav-number">1.1.</span> <span class="nav-text">git stash list</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#git-stash-show"><span class="nav-number">1.2.</span> <span class="nav-text">git stash show</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#git-stash-drop"><span class="nav-number">1.3.</span> <span class="nav-text">git stash drop</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#git-stash-clear"><span class="nav-number">1.4.</span> <span class="nav-text">git stash clear</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#git-stash-pop"><span class="nav-number">1.5.</span> <span class="nav-text">git stash pop</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#git-stash-apply"><span class="nav-number">1.6.</span> <span class="nav-text">git stash apply</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#git-stash"><span class="nav-number">1.7.</span> <span class="nav-text">git stash</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#git-stash-branch"><span class="nav-number">1.8.</span> <span class="nav-text">git stash branch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#git-stash-create"><span class="nav-number">1.9.</span> <span class="nav-text">git stash create</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#git-stash-store"><span class="nav-number">1.10.</span> <span class="nav-text">git stash store</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#git-stash-conflict"><span class="nav-number">2.</span> <span class="nav-text">git stash conflict</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#CONFLICT"><span class="nav-number">2.1.</span> <span class="nav-text">CONFLICT</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#git-reset-or-git-add"><span class="nav-number">2.2.</span> <span class="nav-text">git reset or git add</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#EXAMPLES"><span class="nav-number">3.</span> <span class="nav-text">EXAMPLES</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Pulling-into-a-dirty-tree"><span class="nav-number">3.1.</span> <span class="nav-text">Pulling into a dirty tree</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Interrupted-workflow"><span class="nav-number">3.2.</span> <span class="nav-text">Interrupted workflow</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Testing-partial-commits"><span class="nav-number">3.3.</span> <span class="nav-text">Testing partial commits</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="处理包含子进程的脚本，假设您希望终止任意子进程，那么还需要停止这些脚本。 trap 命令完成此操作。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="shell 向子进程发送信号">
+<meta property="og:url" content="http://yoursite.com/2018/07/19/shell-trap/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="处理包含子进程的脚本，假设您希望终止任意子进程，那么还需要停止这些脚本。 trap 命令完成此操作。">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2018-07-19T08:01:45.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.674Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="shell">
+<meta property="article:tag" content="trap">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2018/07/19/shell-trap/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>shell 向子进程发送信号 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/07/19/shell-trap/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          shell 向子进程发送信号
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-07-19 16:01:45" itemprop="dateCreated datePublished" datetime="2018-07-19T16:01:45+08:00">2018-07-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Shell/" itemprop="url" rel="index">
+                    <span itemprop="name">Shell</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.8k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>处理包含子进程的脚本，假设您希望终止任意子进程，那么还需要停止这些脚本。 <code>trap</code> 命令完成此操作。</p>
+<a id="more"></a>
+
+<h2 id="子进程"><a href="#子进程" class="headerlink" title="子进程"></a>子进程</h2><p>以 <code>&amp;</code> 运行的子进程，最为后台程序运行，父进程与子进程之间为异步</p>
+<p>以直接方式运行子进程，此时子进程在前台运行，父进程与子进程之间为同步</p>
+<pre><code>sleep 10   #等待 10 秒，再继续下一操作
+sleep 10 &amp; #当前 shell 不等待，后台子 shell 等待</code></pre><h2 id="trap"><a href="#trap" class="headerlink" title="trap"></a>trap</h2><blockquote>
+<p>Unix system by design doesn’t allow any script/program to trap SIGKILL due to security reasons.</p>
+</blockquote>
+<blockquote>
+<p>Setting a trap for SIGKILL or SIGSTOP produces undefined results.</p>
+</blockquote>
+<p><code>trap</code> 捕捉到信号之后三种处理方式</p>
+<ol>
+<li>执行一段代码来处理信号 <code>trap &quot;commands&quot; signal-list</code> or <code>trap &#39;commands&#39; signal-list</code></li>
+<li>接受信号的默认操作，即恢复信号默认操作 <code>trap signal-list</code></li>
+<li>忽视信号 <code>trap &quot;&quot; signal-list</code></li>
+</ol>
+<p>注意事项：</p>
+<ol>
+<li><code>SIGKILL</code> <code>SIGSTOP</code> <code>SIGSEGV</code> <code>SIGCONT</code> 不设置捕捉</li>
+<li>在捕捉到 signal-list 中指定的信号并执行完相应的命令之后， 如果这些命令没有将 shell 程序终止的话，shell 程序将继续执行收到信号时所执行的命令后面的命令，这样将很容易导致 shell 程序无法终止。</li>
+<li>在 trap 语句中，单引号和双引号是不同的，当 shell 程序第一次碰到 trap 语句时，将把 commands 中的命令扫描一遍。此时若 commands 是用单引号括起来的话，那么 shell 不会对 commands 中的变量和命令进行替换</li>
+</ol>
+<h2 id="Example"><a href="#Example" class="headerlink" title="Example"></a>Example</h2><h3 id="全部使用同步方式"><a href="#全部使用同步方式" class="headerlink" title="全部使用同步方式"></a>全部使用同步方式</h3><pre><code class="trap.sh">#!/bin/bash
+# trapchild
+
+trap &#39;echo &quot;[TRAP]I am going down, so killing off my processes..&quot;; ps -a | grep sleep | xargs kill -9; wait; exit&#39; SIGHUP SIGINT SIGQUIT SIGTERM SIGKILL
+
+./a.sh
+err=$?
+if [ $err != 0 ]; then
+    echo 3 $err
+    exit 1
+fi
+
+echo &quot;[TRAP]my process pid is: $$&quot;
+echo &quot;[TRAP]my child pid list is: $pid&quot;
+
+wait</code></pre>
+<pre><code class="a.sh">#!/bin/bash
+# trapchild
+
+trap &#39;echo &quot;[a]ash I am going down, so killing off my processes..&quot;; ps -a | grep sleep | xargs kill -9; wait; exit&#39; SIGHUP SIGINT SIGQUIT SIGTERM SIGKILL
+
+sleep 120
+echo 1 $?
+if [ $? != 0 ]; then
+    echo 2 $?
+    exit 1
+fi
+
+pid=&quot;$!&quot;
+
+echo &quot;[a]my process pid is: $$&quot;
+echo &quot;[a]my child pid list is: $pid&quot;
+
+wait</code></pre>
+<p>执行 <code>trap.sh</code> 之后会有三个进程</p>
+<pre><code>$ ps -a
+  PID TTY          TIME CMD
+  750 pts/5    00:00:00 trap.sh
+  751 pts/5    00:00:00 a.sh
+  752 pts/5    00:00:00 sleep</code></pre><p>此时执行 <code>kill -15 750</code> 或 <code>kill-15 751</code> 不会起作用，只有执行 <code>kill -15 752</code> 才会起作用，但是 <code>trap</code> 不会触发</p>
+<h3 id="使用异步方式"><a href="#使用异步方式" class="headerlink" title="使用异步方式"></a>使用异步方式</h3><pre><code class="trap.sh">#!/bin/bash
+# trapchild
+
+trap &#39;echo &quot;[TRAP]I am going down, so killing off my processes..&quot;; ps -a | grep sleep | xargs kill -9; wait; exit&#39; SIGHUP SIGINT SIGQUIT SIGTERM SIGKILL
+
+./a.sh &amp;
+err=$?
+if [ $err != 0 ]; then
+    echo 3 $err
+    exit 1
+fi
+
+echo &quot;[TRAP]my process pid is: $$&quot;
+echo &quot;[TRAP]my child pid list is: $pid&quot;
+
+wait</code></pre>
+<pre><code class="a.sh">#!/bin/bash
+# trapchild
+
+trap &#39;echo &quot;[a]ash I am going down, so killing off my processes..&quot;; ps -a | grep sleep | xargs kill -9; wait; exit&#39; SIGHUP SIGINT SIGQUIT SIGTERM SIGKILL
+
+sleep 120 &amp;
+echo 1 $?
+if [ $? != 0 ]; then
+    echo 2 $?
+    exit 1
+fi
+
+pid=&quot;$!&quot;
+
+echo &quot;[a]my process pid is: $$&quot;
+echo &quot;[a]my child pid list is: $pid&quot;
+
+wait</code></pre>
+<p>执行 <code>trap.sh</code> 之后会有三个进程</p>
+<pre><code>$ ps -a
+  PID TTY          TIME CMD
+  750 pts/5    00:00:00 trap.sh
+  751 pts/5    00:00:00 a.sh
+  752 pts/5    00:00:00 sleep</code></pre><p>如果执行 <code>kill -15 752</code>，不会触发 <code>trap</code> 直接退出</p>
+<pre><code>$ ./trap.sh
+[TRAP]my process pid is: 2163
+[TRAP]my child pid list is:
+1 0
+[a]my process pid is: 2164
+[a]my child pid list is: 2165</code></pre><p>如果执行 <code>kill -15 751</code>，触发 <code>a.sh trap</code></p>
+<pre><code>$ ./trap.sh
+[TRAP]my process pid is: 2324
+[TRAP]my child pid list is:
+1 0
+[a]my process pid is: 2325
+[a]my child pid list is: 2326
+[a]ash I am going down, so killing off my processes..
+kill: failed to parse argument: &#39;pts/5&#39;</code></pre><p>如果执行 <code>kill -15 750</code>，触发 <code>trap.sh trap</code></p>
+<pre><code>$ ./trap.sh
+[TRAP]my process pid is: 2487
+[TRAP]my child pid list is:
+1 0
+[a]my process pid is: 2488
+[a]my child pid list is: 2489
+[TRAP]I am going down, so killing off my processes..</code></pre><h3 id="other"><a href="#other" class="headerlink" title="other"></a>other</h3><p>当脚本直接同步、异步混合使用时需要考虑周全，详细测试</p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://www.jianshu.com/p/6cffb6f3d928" target="_blank" rel="noopener">Shell 编程之 trap 命令</a></li>
+<li><a href="https://www.ibm.com/developerworks/cn/aix/library/au-usingtraps/index.html" target="_blank" rel="noopener">在脚本中使用 trap</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/shell/" rel="tag"># shell</a>
+              <a href="/tags/trap/" rel="tag"># trap</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/07/19/shell-flock/" rel="next" title="使用 flock 保证 shell 单例执行">
+                  <i class="fa fa-chevron-left"></i> 使用 flock 保证 shell 单例执行
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/07/27/Linux-ioctl/" rel="prev" title="dvb api `_IOW` 工作不正常">
+                  dvb api `_IOW` 工作不正常 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#子进程"><span class="nav-number">1.</span> <span class="nav-text">子进程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#trap"><span class="nav-number">2.</span> <span class="nav-text">trap</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Example"><span class="nav-number">3.</span> <span class="nav-text">Example</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#全部使用同步方式"><span class="nav-number">3.1.</span> <span class="nav-text">全部使用同步方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用异步方式"><span class="nav-number">3.2.</span> <span class="nav-text">使用异步方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#other"><span class="nav-number">3.3.</span> <span class="nav-text">other</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">4.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="某些无线网卡具有监听能力 monitor，使用工具 iw、iwconfig 等将模式切换到 monitor 之后，可以使用 tcpdump、wireshark 等抓包工具抓包进行分析，本文记录各个过程中可能使用到的工具">
+<meta property="og:type" content="article">
+<meta property="og:title" content="无线网络分析 - 监听">
+<meta property="og:url" content="http://yoursite.com/2019/01/03/wireless-analysis-one-monitoring/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="某些无线网卡具有监听能力 monitor，使用工具 iw、iwconfig 等将模式切换到 monitor 之后，可以使用 tcpdump、wireshark 等抓包工具抓包进行分析，本文记录各个过程中可能使用到的工具">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-01-03T06:20:09.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.678Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="tcpdump">
+<meta property="article:tag" content="wireshark">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="wireless">
+<meta property="article:tag" content="iw">
+<meta property="article:tag" content="omnipeek">
+<meta property="article:tag" content="monitor">
+<meta property="article:tag" content="sniffer">
+<meta property="article:tag" content="802.11">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2019/01/03/wireless-analysis-one-monitoring/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>无线网络分析 - 监听 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/03/wireless-analysis-one-monitoring/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          无线网络分析 - 监听
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-01-03 14:20:09" itemprop="dateCreated datePublished" datetime="2019-01-03T14:20:09+08:00">2019-01-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.4k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>某些无线网卡具有监听能力 <code>monitor</code>，使用工具 <code>iw</code>、<code>iwconfig</code> 等将模式切换到 <code>monitor</code> 之后，可以使用 <code>tcpdump</code>、<code>wireshark</code> 等抓包工具抓包进行分析，本文记录各个过程中可能使用到的工具</p>
+<a id="more"></a>
+
+<h2 id="无线网卡的工作模式"><a href="#无线网卡的工作模式" class="headerlink" title="无线网卡的工作模式"></a>无线网卡的工作模式</h2><p>可以使用工具 <code>iw</code> 来确认选定网卡支持那些工作模式</p>
+<pre><code class="shell">$ iw list
+...
+    Supported interface modes:
+         * IBSS
+         * managed
+         * AP
+         * AP/VLAN
+         * monitor
+         * P2P-client
+         * P2P-GO
+         * P2P-device
+...</code></pre>
+<p>其中 <code>Managed</code> 为托管模式，无线网卡只接受从 <code>WAP</code> 发给自己的数据报文； <code>monitor</code> 为监听模式，可以接收所有的无线通信数据包。</p>
+<h2 id="设置网卡为监听模式"><a href="#设置网卡为监听模式" class="headerlink" title="设置网卡为监听模式"></a>设置网卡为监听模式</h2><h3 id="iwconfig"><a href="#iwconfig" class="headerlink" title="iwconfig"></a>iwconfig</h3><p><code>iwconfig</code> 可以用来查看无线网卡的状态，或修改无线网卡的模式</p>
+<pre><code class="shell">$ iwconfig
+lo        no wireless extensions.
+
+wlan0     IEEE 802.11bgn  ESSID:&quot;defenceOTA&quot;
+          Mode:Managed  Frequency:2.412 GHz  Access Point: 6C:72:20:5D:7F:57
+          Bit Rate=130 Mb/s   Tx-Power=16 dBm
+          Retry short limit:7   RTS thr:off   Fragment thr:off
+          Power Management:off
+          Link Quality=50/70  Signal level=-60 dBm
+          Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
+          Tx excessive retries:3  Invalid misc:4   Missed beacon:0
+
+$ sudo ifconfig wlan0 down
+$ sudo iwconfig wlan0 mode monitor
+$ sudo ifconfig wlan0 up</code></pre>
+<h3 id="aircrack-ng"><a href="#aircrack-ng" class="headerlink" title="aircrack-ng"></a>aircrack-ng</h3><p><code>aircrack-ng</code> 提供了一整套无线工具，每一个都小巧精练，各有春秋，如瑞士军刀一般， <code>airmon-ng</code> 就是其中之一。可以同时上网和监听数据</p>
+<pre><code class="shell">$ sudo airmon-ng
+
+Interface   Chipset     Driver
+
+wlan0       Atheros AR9280  ath9k - [phy0]
+enx0        Unknown     rtl8812au
+
+$ sudo airmon-ng start wlan0
+
+Found 3 processes that could cause trouble.
+If airodump-ng, aireplay-ng or airtun-ng stops working after
+a short period of time, you may want to kill (some of) them!
+
+PID Name
+12341   NetworkManager
+12354   wpa_supplicant
+12363   dhclient
+Process with PID 12363 (dhclient) is running on interface wlan0
+
+Interface   Chipset     Driver
+
+wlan0       Atheros AR9280  ath9k - [phy0]
+                (monitor mode enabled on mon0)</code></pre>
+<p><code>airmon-ng</code> 新建了一个虚拟网卡 <code>mon0</code>，并在 <code>mon0</code> 上启用了监听模式，真实的无线网卡 <code>wlan0</code> 保持不变</p>
+<p>另外可以使用 <code>airmon-ng check</code> 来检测系统中当前正在运行的进程，分析出哪些进程可能会对无线抓包有影响，并显示出来。可以使用 <code>airmon-ng check kill</code> 直接 <code>kill</code> 掉那些可能有影响的进程。</p>
+<h3 id="iw"><a href="#iw" class="headerlink" title="iw"></a>iw</h3><p><code>iw</code> 是 <code>Linux</code> 系统上的另一款无线配置工具，它的出现是为了解决 <code>iwconfig</code> 的很多不足，或者说它完全是为了取代 <code>iwconfig</code> 而开发的。 <code>iw</code> 基于 <code>cfg80211</code> 框架设计，不再像 <code>Wireless-Extensions(Wext)</code> 使用 <code>ioctl</code>，而是使用 <code>Netlink</code></p>
+<pre><code class="shell">$ iw list
+$ iw dev
+$ iw dev wlan0 info
+$ iw dev wlan0 link
+$ iw dev wlan0 interface add mon0 type monitor</code></pre>
+<p><code>iw dev wlan0 interface add mon0 type monitor</code> 新增了一个虚拟网卡接口 <code>mon0</code>，并将 <code>mon0</code> 设置为监听模式。然后需要</p>
+<pre><code class="shell">$ ifconfig mon0 up
+$ iw dev mon0 set freq 2437</code></pre>
+<h2 id="扫描无线网络"><a href="#扫描无线网络" class="headerlink" title="扫描无线网络"></a>扫描无线网络</h2><h3 id="iw-1"><a href="#iw-1" class="headerlink" title="iw"></a>iw</h3><pre><code class="shell">$ sudo iw dev wlan0 scan
+$ sudo iw dev wlan0 scan | egrep &quot;^BSS|SSID&quot;</code></pre>
+<h3 id="iwlist"><a href="#iwlist" class="headerlink" title="iwlist"></a>iwlist</h3><pre><code class="shell">$ sudo iwlist wlan0 scan
+$ sudo iwlist wlan0 scan | egrep &quot;Cell|ESSID|Channel&quot;</code></pre>
+<h3 id="kismet"><a href="#kismet" class="headerlink" title="kismet"></a>kismet</h3><p><code>kismet</code> 是一款 <code>Linux</code> 下的无线扫描程序，它的功能非常强大，不仅可以用来扫描周边的无线网络，也支持无线数据包的嗅探和破解，它还可以扫描出周围隐藏的无线热点，更厉害的是，它还内置了 <code>IDS（Intrusion Detection System，入侵检测系统）功能</code>，可以检测出周围是否有无线嗅探器。</p>
+<p>需要使用 <code>root</code> 权限运行，其中一步需要添加 <code>interface</code>，如果输入的 <code>interface</code> 不是监听模式，会自动创建一个 <code>wlan0mon</code> 的监听网卡，然后启动监听模式</p>
+<h3 id="airodump-ng"><a href="#airodump-ng" class="headerlink" title="airodump-ng"></a>airodump-ng</h3><pre><code class="shell">$ sudo airmon-ng start wlan0
+$ sudo ifconfig mon0 up
+$ sudo airodump-ng mon0</code></pre>
+<h2 id="抓包"><a href="#抓包" class="headerlink" title="抓包"></a>抓包</h2><h3 id="kismet-抓包"><a href="#kismet-抓包" class="headerlink" title="kismet 抓包"></a>kismet 抓包</h3><p>譬如在启动 <code>kismet</code> 的时候， <code>kismet</code> 就会在启动目录生成好几个文件，如下</p>
+<pre><code class="shell">$ ls -l Kis*
+-rw-r--r-- 1 root root       0 8 月  15 22:32 Kismet-20160815-22-32-05-1.alert
+-rw-r--r-- 1 root root     264 8 月  15 22:32 Kismet-20160815-22-32-05-1.gpsxml
+-rw-r--r-- 1 root root   25111 8 月  15 22:32 Kismet-20160815-22-32-05-1.nettxt
+-rw-r--r-- 1 root root   57768 8 月  15 22:32 Kismet-20160815-22-32-05-1.netxml
+-rw-r--r-- 1 root root 1822733 8 月  15 22:32 Kismet-20160815-22-32-05-1.pcapdump</code></pre>
+<p>其中， <code>Kismet-***.pcapdump</code> 就是捕获的数据包，可以使用 <code>Wireshark</code> 等数据包分析工具打开。默认情况下， <code>kismet</code> 会捕获所有的无线通信，数据包会变得非常大，可以通过指定 <code>filter_tracker</code> 参数来限制 <code>kismet</code> 只捕获特定 <code>BSSID</code> 的数据包，譬如下面这样：</p>
+<pre><code class="shell">sudo kismet --filter-tracker BSSID\(6C:72:20:5D:7F:57\)</code></pre>
+<h3 id="airodump-ng-抓包"><a href="#airodump-ng-抓包" class="headerlink" title="airodump-ng 抓包"></a>airodump-ng 抓包</h3><p><code>airodump-ng</code> 默认数据包是不存文件的，可以通过 <code>--write</code> 或 <code>-w</code> 参数将数据包保存到指定文件中：</p>
+<pre><code class="shell">$ sudo airodump-ng -w pack mon0
+$ ls -l pack*
+-rw-r--r-- 1 root root  5645 8 月  15 23:48 pack-01.cap
+-rw-r--r-- 1 root root  1651 8 月  15 23:48 pack-01.csv
+-rw-r--r-- 1 root root  2457 8 月  15 23:48 pack-01.kismet.csv
+-rw-r--r-- 1 root root 13460 8 月  15 23:48 pack-01.kismet.netxml</code></pre>
+<p><code>xxx-01.cap</code> 就是捕获的数据包文件，可以使用 <code>Wireshark</code> 打开分析。同样的，这个文件也有可能会很大，因为保存了所有的无线数据报文，如果只需要监听某一个接入点，可以通过 <code>--bssid</code> 或 <code>--essid</code> 等参数指定：</p>
+<pre><code class="shell">$ sudo airodump-ng mon0 --bssid 6C:72:20:5D:7F:57</code></pre>
+<h3 id="tcpdump"><a href="#tcpdump" class="headerlink" title="tcpdump"></a>tcpdump</h3><pre><code class="shell">$ sudo tcpdump -i mon0 -n -w wireless.cap</code></pre>
+<h3 id="wireshark"><a href="#wireshark" class="headerlink" title="wireshark"></a>wireshark</h3><p>使用 <code>filter</code>： <code>wlan.ta == 6c:72:20:5d:7f:57</code></p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://www.aneasystone.com/archives/2016/08/wireless-analysis-one-monitoring.html" target="_blank" rel="noopener">实战无线网络分析无线监听</a></li>
+<li><a href="https://blog.csdn.net/u011781521/article/details/68948979" target="_blank" rel="noopener">Kali-WIFI 攻防（一）—- 无线网络嗅探工具 Kismet</a></li>
+<li><a href="https://askubuntu.com/questions/454734/running-wireshark-lua-error-during-loading" target="_blank" rel="noopener">running wireshark “Lua: Error during loading”</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/tcpdump/" rel="tag"># tcpdump</a>
+              <a href="/tags/wireshark/" rel="tag"># wireshark</a>
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/wireless/" rel="tag"># wireless</a>
+              <a href="/tags/iw/" rel="tag"># iw</a>
+              <a href="/tags/omnipeek/" rel="tag"># omnipeek</a>
+              <a href="/tags/monitor/" rel="tag"># monitor</a>
+              <a href="/tags/sniffer/" rel="tag"># sniffer</a>
+              <a href="/tags/802-11/" rel="tag"># 802.11</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/12/27/detect-3g-device-by-mdev/" rel="next" title="使用 mdev 检测 3g 设备并自动连接">
+                  <i class="fa fa-chevron-left"></i> 使用 mdev 检测 3g 设备并自动连接
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/01/04/airkiss/" rel="prev" title="无线嗅探及 airkiss 协议分析">
+                  无线嗅探及 airkiss 协议分析 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#无线网卡的工作模式"><span class="nav-number">1.</span> <span class="nav-text">无线网卡的工作模式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#设置网卡为监听模式"><span class="nav-number">2.</span> <span class="nav-text">设置网卡为监听模式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#iwconfig"><span class="nav-number">2.1.</span> <span class="nav-text">iwconfig</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#aircrack-ng"><span class="nav-number">2.2.</span> <span class="nav-text">aircrack-ng</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#iw"><span class="nav-number">2.3.</span> <span class="nav-text">iw</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#扫描无线网络"><span class="nav-number">3.</span> <span class="nav-text">扫描无线网络</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#iw-1"><span class="nav-number">3.1.</span> <span class="nav-text">iw</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#iwlist"><span class="nav-number">3.2.</span> <span class="nav-text">iwlist</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kismet"><span class="nav-number">3.3.</span> <span class="nav-text">kismet</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#airodump-ng"><span class="nav-number">3.4.</span> <span class="nav-text">airodump-ng</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#抓包"><span class="nav-number">4.</span> <span class="nav-text">抓包</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#kismet-抓包"><span class="nav-number">4.1.</span> <span class="nav-text">kismet 抓包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#airodump-ng-抓包"><span class="nav-number">4.2.</span> <span class="nav-text">airodump-ng 抓包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tcpdump"><span class="nav-number">4.3.</span> <span class="nav-text">tcpdump</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#wireshark"><span class="nav-number">4.4.</span> <span class="nav-text">wireshark</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">5.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

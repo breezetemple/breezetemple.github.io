@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="ifplugd A link detection daemon for ethernet devices api mode:  ethtool mii wlan iff priv   Force a specific link beat detection ioctl() API. Possible values are auto, iff, wlan, ethtool, mii, and pri">
+<meta property="og:type" content="article">
+<meta property="og:title" content="how-to-check-network-status">
+<meta property="og:url" content="http://yoursite.com/2017/11/09/how-to-check-network-status/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="ifplugd A link detection daemon for ethernet devices api mode:  ethtool mii wlan iff priv   Force a specific link beat detection ioctl() API. Possible values are auto, iff, wlan, ethtool, mii, and pri">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2017-11-09T09:21:48.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.670Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="ethtool">
+<meta property="article:tag" content="mii">
+<meta property="article:tag" content="wlan">
+<meta property="article:tag" content="iff">
+<meta property="article:tag" content="priv">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2017/11/09/how-to-check-network-status/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>how-to-check-network-status | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/11/09/how-to-check-network-status/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          how-to-check-network-status
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2017-11-09 17:21:48" itemprop="dateCreated datePublished" datetime="2017-11-09T17:21:48+08:00">2017-11-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>10k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>9 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><a href="https://github.com/antiX-Linux/ifplugd.git" target="_blank" rel="noopener">ifplugd</a> A link detection daemon for ethernet devices</p>
+<p>api mode:</p>
+<ul>
+<li>ethtool</li>
+<li>mii</li>
+<li>wlan</li>
+<li>iff</li>
+<li>priv</li>
+</ul>
+<blockquote>
+<p>Force a specific link beat detection ioctl() API. Possible values are auto, iff, wlan, ethtool, mii, and priv for automatic detection, interface flag (IFF_RUNNING), wireless extension, SIOCETHTOOL, SIOCGMIIREG resp. SIOCPRIV. Only the first character of the argument is relevant, case insensitive. (default: auto)</p>
+</blockquote>
+<a id="more"></a>
+
+<h2 id="base"><a href="#base" class="headerlink" title="base"></a>base</h2><pre><code>    if ((fd = socket(PF_INET, SOCK_DGRAM, 0)) &lt; 0)
+        return -1;</code></pre><p>创建<code>socket</code>用于<code>ioctl</code></p>
+<h2 id="ethtool-SIOCETHTOOL"><a href="#ethtool-SIOCETHTOOL" class="headerlink" title="ethtool SIOCETHTOOL"></a>ethtool SIOCETHTOOL</h2><p>Ethtool是Linux下用于查询及设置网卡参数的命令</p>
+<pre><code>#include &lt;sys/ioctl.h&gt;
+#include &lt;net/if.h&gt;
+
+interface_status_t interface_detect_beat_ethtool(int fd, char *iface) {
+
+    struct ifreq ifr;
+    struct ethtool_value edata;
+
+    if (interface_auto_up)
+        interface_up(fd, iface);
+
+    memset(&amp;ifr, 0, sizeof(ifr));
+    strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name)-1);
+
+    edata.cmd = ETHTOOL_GLINK;
+    ifr.ifr_data = (caddr_t) &amp;edata;
+
+    if (ioctl(fd, SIOCETHTOOL, &amp;ifr) == -1) {
+        if (interface_do_message)
+            daemon_log(LOG_ERR, &quot;ETHTOOL_GLINK failed: %s&quot;, strerror(errno));
+
+        return IFSTATUS_ERR;
+    }
+
+    return edata.data ? IFSTATUS_UP : IFSTATUS_DOWN;
+}</code></pre><p>对应内核代码<code>linux/net/core/dev.c</code>中<code>dev_ioctl()</code>函数，对应的<code>SIOCETHTOOL</code>，又调用了<code>linux/net/core/ethtool.c</code>中的实现，而<code>dev_ethtool()</code>函数，而这个函数最终又会调用相应<code>if</code>驱动的<code>ethtool_ops</code>结构体中注册的函数来实现寄存器的操作。当然，不同的<code>PHY</code>驱动对此有不同的操作，甚至有些<code>PHY</code>驱动根本没有注册这个结构体，这时，我们就要尝试其他方式。</p>
+<pre><code>static struct ethtool_ops synopGMAC_ethtool_ops = {
+    .get_link       = synopGMAC_get_link
+};
+
+.
+
+netdev-&gt;ethtool_ops = &amp;synopGMAC_ethtool_ops;</code></pre><p><code>include/linux/ethtool.h</code> 中存在 <code>ioctl</code> 列表 <code>ETHTOOL_*</code></p>
+<h2 id="mii"><a href="#mii" class="headerlink" title="mii"></a>mii</h2><p>mii-tool（这是Linux下专门设置网卡工作模式的命令）　</p>
+<p><code>MII</code>的全称是<code>Media Independent Interface</code>，字面意思上就是媒体无关的接口，因此它是独立于具体设备的，仔细想想标准化的东西都是独立于具体设备的。虽然如此，很多以太网卡设备并不支持这些参数的配置，因此当你执行mii-tool的时候，会得到Operation not supported的提示，要不就是没有使用超级用户身份，还有就是若接口编号设置超过eth7时，直接使用mii-tool 不加参数，会出现NO MII xxxxxxxxxx interface 之类的提示，是因为超过了默认值，使用帮助信息可以了解。</p>
+<pre><code>interface_status_t interface_detect_beat_mii(int fd, char *iface) {
+    struct ifreq ifr;
+
+    if (interface_auto_up)
+        interface_up(fd, iface);
+
+    memset(&amp;ifr, 0, sizeof(ifr));
+    strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name)-1);
+
+    if (ioctl(fd, SIOCGMIIPHY, &amp;ifr) == -1) {
+        if (interface_do_message)
+            daemon_log(LOG_ERR, &quot;SIOCGMIIPHY failed: %s&quot;, strerror(errno));
+
+        return IFSTATUS_ERR;
+    }
+
+    ((unsigned short*) &amp;ifr.ifr_data)[1] = 1;
+
+    if (ioctl(fd, SIOCGMIIREG, &amp;ifr) == -1) {
+        if (interface_do_message)
+            daemon_log(LOG_ERR, &quot;SIOCGMIIREG failed: %s&quot;, strerror(errno));
+
+        return IFSTATUS_ERR;
+    }
+
+    return (((unsigned short*) &amp;ifr.ifr_data)[3] &amp; 0x0004) ? IFSTATUS_UP : IFSTATUS_DOWN;
+}</code></pre><p>对应内核代码<code>linux/net/core/dev.c</code>中<code>dev_ioctl()</code>函数，对应的<code>SIOCxMIIxxx</code>，又调用了<code>dev_ifsioc()</code>函数，这个函数最终调用<code>PHY</code>驱动中注册的<code>do_ioctl()</code>函数来实现PHY寄存器的读写。</p>
+<p>例如内核中<code>winbond-840</code>初始化如下：</p>
+<pre><code>static int __devinit w840_probe1 (struct pci_dev *pdev, const struct pci_device_id *ent)
+{
+    struct net_device *dev;
+    struct netdev_private *np;
+    static int find_cnt;
+    int chip_idx = ent-&gt;driver_data;
+    int irq;
+    int i, option = find_cnt &lt; MAX_UNITS ? options[find_cnt] : 0;
+    void __iomem *ioaddr;
+
+    ...
+
+    dev = alloc_etherdev(sizeof(*np));
+    if (!dev)
+        return -ENOMEM;
+    SET_NETDEV_DEV(dev, &amp;pdev-&gt;dev);
+
+    ...
+
+    dev-&gt;open = &amp;netdev_open;
+    dev-&gt;hard_start_xmit = &amp;start_tx;
+    dev-&gt;stop = &amp;netdev_close;
+    dev-&gt;get_stats = &amp;get_stats;
+    dev-&gt;set_multicast_list = &amp;set_rx_mode;
+    dev-&gt;do_ioctl = &amp;netdev_ioctl; //mii
+    dev-&gt;ethtool_ops = &amp;netdev_ethtool_ops; //ethtool
+    dev-&gt;tx_timeout = &amp;tx_timeout;
+    dev-&gt;watchdog_timeo = TX_TIMEOUT;
+
+    i = register_netdev(dev);
+}</code></pre><p><code>include/linux/sockios.h</code> 中</p>
+<pre><code>#define SIOCGMIIPHY 0x8947      /* Get address of MII PHY in use. */
+#define SIOCGMIIREG 0x8948      /* Read MII PHY register.   */
+#define SIOCSMIIREG 0x8949      /* Write MII PHY register.  */</code></pre><h2 id="wlan"><a href="#wlan" class="headerlink" title="wlan"></a>wlan</h2><pre><code>    interface_status_t interface_detect_beat_wlan(int fd, char *iface)
+    {
+        uint8_t mac[6];
+        int q;
+        struct iwreq req;
+
+        if (interface_auto_up)
+            interface_up(fd, iface);
+
+        memset(&amp;req, 0, sizeof(req));
+        strncpy(req.ifr_ifrn.ifrn_name, iface, IFNAMSIZ);
+
+        if (ioctl(fd, SIOCGIWAP, &amp;req) &lt; 0) {
+            if (interface_do_message)
+                daemon_log(LOG_WARNING, &quot;Failed to get AP address: %s&quot;,strerror(errno));
+            return IFSTATUS_ERR;
+        }
+
+        memcpy(mac, &amp;(req.u.ap_addr.sa_data), ETH_ALEN);
+
+        if (!is_assoc_ap(mac))
+            return IFSTATUS_DOWN;
+
+        if ((q = get_wlan_qual_new(fd, iface)) &lt; 0)
+            if ((q = get_wlan_qual_old(iface)) &lt; 0) {
+                if (interface_do_message)
+                    daemon_log(LOG_WARNING, &quot;Failed to get wireless link quality.&quot;);
+
+                return IFSTATUS_ERR;
+            }
+
+        return q &gt; 0 ? IFSTATUS_UP : IFSTATUS_DOWN;
+    }</code></pre><p>从应用到内核再到wifi驱动的流程如下：</p>
+<p>应用上</p>
+<pre><code>    if (ioctl(fd, SIOCGIWAP, &amp;req) &lt; 0) {
+        if (interface_do_message)
+            daemon_log(LOG_WARNING, &quot;Failed to get AP address: %s&quot;,strerror(errno));
+        return IFSTATUS_ERR;
+    }</code></pre><p>其中 <code>include/linux/wireless.h</code></p>
+<pre><code>    #define SIOCGIWAP   0x8B15</code></pre><p>调用流程如下：</p>
+<p><code>sock_ioctl[net/socket.c]</code> -&gt; <code>dev_ioctl[net/core/dev.c]</code> -&gt; <code>wext_handle_ioctl[net/wireless/wext.c]</code> -&gt; <code>wireless_process_ioctl[net/wireless/wext.c]</code></p>
+<p>对wireless_process_ioctl，又跑到了default中，如果有handler，最后到ioctl_standard_call中；没有handler时，使用老的接口（dev-&gt;do_ioctl）</p>
+<pre><code>    /* New driver API : try to find the handler */
+    handler = get_handler(dev, cmd);
+    if (handler) {
+        /* Standard and private are not the same */
+        if (cmd &lt; SIOCIWFIRSTPRIV)
+            return standard(dev, iwr, cmd, info, handler);
+        else
+            return private(dev, iwr, cmd, info, handler);
+    }
+    /* Old driver API : call driver ioctl handler */
+    if (dev-&gt;do_ioctl)
+        return dev-&gt;do_ioctl(dev, ifr, cmd);</code></pre><p>在WIFI驱动中如下：</p>
+<pre><code>    static const iw_handler rt_handler[] =
+    {
+        (iw_handler) NULL,                      /* SIOCSIWCOMMIT */
+        (iw_handler) rt_ioctl_giwname,          /* SIOCGIWNAME   */
+        (iw_handler) NULL,                      /* SIOCSIWNWID   */
+        (iw_handler) NULL,                      /* SIOCGIWNWID   */
+        (iw_handler) rt_ioctl_siwfreq,          /* SIOCSIWFREQ   */
+        (iw_handler) rt_ioctl_giwfreq,          /* SIOCGIWFREQ   */
+        (iw_handler) rt_ioctl_siwmode,          /* SIOCSIWMODE   */
+        (iw_handler) rt_ioctl_giwmode,          /* SIOCGIWMODE   */
+        (iw_handler) NULL,                      /* SIOCSIWSENS   */
+        (iw_handler) NULL,                      /* SIOCGIWSENS   */
+        (iw_handler) NULL /* not used */,       /* SIOCSIWRANGE  */
+        (iw_handler) rt_ioctl_giwrange,         /* SIOCGIWRANGE  */
+        (iw_handler) rt_ioctl_giwpriv,      /* SIOCSIWPRIV  for Android */
+        (iw_handler) NULL /* kernel code */,    /* SIOCGIWPRIV   */
+        (iw_handler) NULL /* not used */,       /* SIOCSIWSTATS  */
+        (iw_handler) rt28xx_get_wireless_stats /* kernel code */,    /* SIOCGIWSTATS  */
+        (iw_handler) NULL,                      /* SIOCSIWSPY    */
+        (iw_handler) NULL,                      /* SIOCGIWSPY    */
+        (iw_handler) NULL,                      /* SIOCSIWTHRSPY */
+        (iw_handler) NULL,                      /* SIOCGIWTHRSPY */
+        (iw_handler) rt_ioctl_siwap,            /* SIOCSIWAP     */
+        (iw_handler) rt_ioctl_giwap,            /* SIOCGIWAP     */
+    };
+
+    const struct iw_handler_def rt28xx_iw_handler_def =
+    {
+    #define N(a)    (sizeof (a) / sizeof (a[0]))
+        .standard   = (iw_handler *) rt_handler,
+        .num_standard   = sizeof(rt_handler) / sizeof(iw_handler),
+        .private    = (iw_handler *) rt_priv_handlers,
+        .num_private        = N(rt_priv_handlers),
+        .private_args   = (struct iw_priv_args *) privtab,
+        .num_private_args   = N(privtab),
+    #if IW_HANDLER_VERSION &gt;= 7
+        .get_wireless_stats = rt28xx_get_wireless_stats,
+    #endif
+    };
+
+    int rt28xx_open(VOID *dev)
+    {
+        if (OpMode == OPMODE_STA)
+            net_dev-&gt;wireless_handlers = (struct iw_handler_def *) &amp;rt28xx_iw_handler_def;
+    }</code></pre><p>老的接口实现如下：</p>
+<pre><code>    RtmpPhyNetDevInit()
+    {
+        pNetDevHook-&gt;ioctl = rt28xx_ioctl;
+        pNetDevHook-&gt;priv_flags = InfId; /*INT_MAIN; */
+        pNetDevHook-&gt;get_stats = RT28xx_get_ether_stats;
+    }
+
+    RtmpOSNetDevAttach()
+    {
+    #if LINUX_VERSION_CODE &gt;= KERNEL_VERSION(2,6,31)
+        pNetDevOps-&gt;ndo_open = pDevOpHook-&gt;open;
+        pNetDevOps-&gt;ndo_stop = pDevOpHook-&gt;stop;
+        pNetDevOps-&gt;ndo_start_xmit =
+            (HARD_START_XMIT_FUNC) (pDevOpHook-&gt;xmit);
+        pNetDevOps-&gt;ndo_do_ioctl = pDevOpHook-&gt;ioctl;
+    #else
+        pNetDev-&gt;open = pDevOpHook-&gt;open;
+        pNetDev-&gt;stop = pDevOpHook-&gt;stop;
+        pNetDev-&gt;hard_start_xmit =
+            (HARD_START_XMIT_FUNC) (pDevOpHook-&gt;xmit);
+        pNetDev-&gt;do_ioctl = pDevOpHook-&gt;ioctl;
+    #endif
+
+    #if LINUX_VERSION_CODE &gt;= KERNEL_VERSION(2,6,18)
+        pNetDev-&gt;ethtool_ops = &amp;RALINK_Ethtool_Ops;
+    #endif
+
+        /* if you don&#39;t implement get_stats, just leave the callback function as NULL, a dummy
+        function will make kernel panic.
+        */
+        if (pDevOpHook-&gt;get_stats)
+    #if LINUX_VERSION_CODE &gt;= KERNEL_VERSION(2,6,31)
+            pNetDevOps-&gt;ndo_get_stats = pDevOpHook-&gt;get_stats;
+    #else
+        pNetDev-&gt;get_stats = pDevOpHook-&gt;get_stats;
+    #endif
+
+        /* OS specific flags, here we used to indicate if we are virtual interface */
+        /*      pNetDev-&gt;priv_flags = pDevOpHook-&gt;priv_flags; */
+        RT_DEV_PRIV_FLAGS_SET(pNetDev, pDevOpHook-&gt;priv_flags);
+    #if (WIRELESS_EXT &lt; 21) &amp;&amp; (WIRELESS_EXT &gt;= 12)
+        /*      pNetDev-&gt;get_wireless_stats = rt28xx_get_wireless_stats; */
+        pNetDev-&gt;get_wireless_stats = pDevOpHook-&gt;get_wstats;
+    #endif
+
+    #ifdef CONFIG_STA_SUPPORT
+    #if WIRELESS_EXT &gt;= 12
+        if (OpMode == OPMODE_STA) {
+            /*          pNetDev-&gt;wireless_handlers = &amp;rt28xx_iw_handler_def; */
+            pNetDev-&gt;wireless_handlers = pDevOpHook-&gt;iw_handler;
+        }
+    #endif /*WIRELESS_EXT &gt;= 12 */
+    #endif /* CONFIG_STA_SUPPORT */
+
+    #ifdef CONFIG_APSTA_MIXED_SUPPORT
+    #if WIRELESS_EXT &gt;= 12
+        if (OpMode == OPMODE_AP) {
+            /*          pNetDev-&gt;wireless_handlers = &amp;rt28xx_ap_iw_handler_def; */
+            pNetDev-&gt;wireless_handlers = pDevOpHook-&gt;iw_handler;
+        }
+    #endif /*WIRELESS_EXT &gt;= 12 */
+    #endif /* CONFIG_APSTA_MIXED_SUPPORT */
+
+        /* copy the net device mac address to the net_device structure. */
+        NdisMoveMemory(pNetDev-&gt;dev_addr, &amp;pDevOpHook-&gt;devAddr[0],
+                MAC_ADDR_LEN);
+
+        rtnl_locked = pDevOpHook-&gt;needProtcted;
+    }
+
+    rt2870_probe()
+    {
+
+        net_dev = RtmpPhyNetDevInit(pAd, &amp;netDevHook);
+
+        status = RtmpOSNetDevAttach(OpMode, net_dev, &amp;netDevHook);
+    }</code></pre><h2 id="iff"><a href="#iff" class="headerlink" title="iff"></a>iff</h2><pre><code>    interface_status_t interface_detect_beat_iff(int fd, char *iface) {
+
+        struct ifreq ifr;
+
+        if (interface_auto_up)
+            interface_up(fd, iface);
+
+        memset(&amp;ifr, 0, sizeof(ifr));
+        strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name)-1);
+
+        if (ioctl(fd, SIOCGIFFLAGS, &amp;ifr) == -1) {
+            if (interface_do_message)
+                daemon_log(LOG_ERR, &quot;SIOCGIFFLAGS failed: %s&quot;, strerror(errno));
+
+            return IFSTATUS_ERR;
+        }
+
+        return ifr.ifr_flags &amp; IFF_RUNNING ? IFSTATUS_UP : IFSTATUS_DOWN;
+    }</code></pre><p>调ioctl的<code>SIOCGIFFLAGS</code>实现，<code>dev_ifsioc_locked</code>函数（net/core/dev.c）中处理：</p>
+<pre><code>    case SIOCGIFFLAGS:  /* Get interface flags */                         
+        ifr-&gt;ifr_flags = dev_get_flags(dev);                              
+        return 0;  </code></pre><pre><code>    unsigned dev_get_flags(const struct net_device *dev)                                                                     
+    {                                                                             
+        unsigned flags;                                                           
+
+        flags = (dev-&gt;flags &amp; ~(IFF_PROMISC |                                     
+                    IFF_ALLMULTI |                                                
+                    IFF_RUNNING |                                                 
+                    IFF_LOWER_UP |                                                
+                    IFF_DORMANT)) |                                               
+            (dev-&gt;gflags &amp; (IFF_PROMISC |                                         
+                    IFF_ALLMULTI));                                               
+
+        if (netif_running(dev)) {                                                 
+            if (netif_oper_up(dev))                                               
+                flags |= IFF_RUNNING;                                             
+            if (netif_carrier_ok(dev))                                            
+                flags |= IFF_LOWER_UP;                                            
+            if (netif_dormant(dev))                                               
+                flags |= IFF_DORMANT;                                             
+        }                                                                         
+
+        return flags;                                                             
+    }</code></pre><p><strong>没有由网卡驱动去查硬件，而是查现有的状态标志位来实现。</strong></p>
+<h2 id="priv"><a href="#priv" class="headerlink" title="priv"></a>priv</h2><p><code>interface_detect_beat_priv</code> 基本上和 <code>mii</code> 一样，调<code>ioctl</code>的<code>SIOCDEVPRIVATE</code>和<code>SIOCDEVPRIVATE+1</code>实现，<code>dev_ifsioc</code>函数（net/core/dev.c）中处理同方法<code>mii</code>，有一点不同就是<code>SIOCDEVPRIVATE</code>到<code>SIOCDEVPRIVATE + 15</code>是各个网卡自己定义的命令，有的网卡有实现，有的没有。例如e100就没有实现这个ioctl。而rtl8150的usb版本网卡驱动就有实现。</p>
+<pre><code>    interface_status_t interface_detect_beat_priv(int fd, char *iface) {
+        struct ifreq ifr;
+
+        if (interface_auto_up)
+            interface_up(fd, iface);
+
+        memset(&amp;ifr, 0, sizeof(ifr));
+        strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name)-1);
+
+        if (ioctl(fd, SIOCDEVPRIVATE, &amp;ifr) == -1) {
+            if (interface_do_message)
+                daemon_log(LOG_ERR, &quot;SIOCDEVPRIVATE failed: %s&quot;, strerror(errno));
+
+            return IFSTATUS_ERR;
+        }
+
+        ((unsigned short*) &amp;ifr.ifr_data)[1] = 1;
+
+        if (ioctl(fd, SIOCDEVPRIVATE+1, &amp;ifr) == -1) {
+            if (interface_do_message)
+                daemon_log(LOG_ERR, &quot;SIOCDEVPRIVATE+1 failed: %s&quot;, strerror(errno));
+
+            return IFSTATUS_ERR;
+        }
+
+        return (((unsigned short*) &amp;ifr.ifr_data)[3] &amp; 0x0004) ? IFSTATUS_UP : IFSTATUS_DOWN;
+    }</code></pre><h2 id="summarize"><a href="#summarize" class="headerlink" title="summarize"></a>summarize</h2><p><code>ethtool</code>，<code>mii</code> 和 <code>wlan</code> 都是通过查询硬件寄存器，<code>priv</code> 可能不支持，<code>iff</code> 查询状态标志位</p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://www.chongchonggou.com/g_69808964.html" target="_blank" rel="noopener">对netlink无法检测到dellink事件和探测网卡是否插网线方法的简单分析</a></li>
+<li><a href="http://ju.outofmemory.cn/entry/251118" target="_blank" rel="noopener">Linux无线模块WEXT简单分析</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/ethtool/" rel="tag"># ethtool</a>
+              <a href="/tags/mii/" rel="tag"># mii</a>
+              <a href="/tags/wlan/" rel="tag"># wlan</a>
+              <a href="/tags/iff/" rel="tag"># iff</a>
+              <a href="/tags/priv/" rel="tag"># priv</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2017/11/01/how-to-use-wpa-supplicant/" rel="next" title="how_to_use_wpa_supplicant">
+                  <i class="fa fa-chevron-left"></i> how_to_use_wpa_supplicant
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2017/11/24/linux-wpa-supplicant-error/" rel="prev" title="linux-wpa-supplicant-error">
+                  linux-wpa-supplicant-error <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#base"><span class="nav-number">1.</span> <span class="nav-text">base</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ethtool-SIOCETHTOOL"><span class="nav-number">2.</span> <span class="nav-text">ethtool SIOCETHTOOL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mii"><span class="nav-number">3.</span> <span class="nav-text">mii</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#wlan"><span class="nav-number">4.</span> <span class="nav-text">wlan</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#iff"><span class="nav-number">5.</span> <span class="nav-text">iff</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#priv"><span class="nav-number">6.</span> <span class="nav-text">priv</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#summarize"><span class="nav-number">7.</span> <span class="nav-text">summarize</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">8.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

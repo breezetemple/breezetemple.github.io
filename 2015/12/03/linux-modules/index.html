@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="$(document).ready(function(){         $(&quot;h2,h3,h4,h5,h6&quot;).each(function(i,item){             var tag &#x3D; $(item).get(0).localName;             $(item).attr(&quot;id&quot;,&quot;wow&quot;+i);             $(&quot;#category&quot;).app">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux Modules分析">
+<meta property="og:url" content="http://yoursite.com/2015/12/03/linux-modules/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="$(document).ready(function(){         $(&quot;h2,h3,h4,h5,h6&quot;).each(function(i,item){             var tag &#x3D; $(item).get(0).localName;             $(item).attr(&quot;id&quot;,&quot;wow&quot;+i);             $(&quot;#category&quot;).app">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2015-12-03T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.662Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2015/12/03/linux-modules/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linux Modules分析 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/12/03/linux-modules/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux Modules分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-12-04 00:00:00" itemprop="dateCreated datePublished" datetime="2015-12-04T00:00:00+08:00">2015-12-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>5.9k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a><strong>示例</strong></h3><p>源码：</p>
+<pre><code>#include &lt;linux/init.h&gt;
+#include &lt;linux/module.h&gt;
+
+static int __init hello_init(void)
+{
+    printk(&quot;Hello, world!\n&quot;);
+    return 0;
+}
+
+static void __exit hello_exit(void)
+{
+    printk(&quot;Goodbye, world!\n&quot;);
+}
+
+module_init(hello_init);
+module_exit(hello_exit);
+
+MODULE_LICENSE(&quot;GPL&quot;);
+MODULE_AUTHOR(&quot;printk&quot;);
+MODULE_DESCRIPTION(&quot;\&quot;Hello, world!\&quot;&quot;);
+MODULE_VERSION(&quot;printk&quot;);     </code></pre><p>使用的交叉编译，Makefile：</p>
+<pre><code>ARCH=xxx
+CROSS_COMPILE=$(ARCH)-linux-
+obj-m := printk.o
+
+KDIR := /home/workspace/kernel/2.6.27.55
+PWD   := $(shell pwd)
+
+default:
+    $(MAKE) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KDIR) M=$(PWD) modules
+
+clean:
+    $(MAKE) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KDIR) M=$(PWD) clean    </code></pre><p><strong>obj-m := printk.o 是kbuild Makefile中的目标定义部分</strong>，同时目标定义部分也是kbuild Makefile的重要组成部分。<br>该例子告诉Kbuild在这目录里，有一个名为printk.o的目标文件。<br>将会编译成一个可加载的模块而不是直接编译进内核</p>
+<h3 id="makefiles-txt"><a href="#makefiles-txt" class="headerlink" title="makefiles.txt"></a><strong>makefiles.txt</strong></h3><p>根据Linux内核文档<strong>makefiles.txt</strong>的说明：</p>
+<ol>
+<li><strong>obj-y Built-in object goals 对应内核配置[Y]</strong></li>
+<li><strong>obj-m Loadable module goals 对应内核配置[M]</strong></li>
+</ol>
+<p>obj-m由单个文件构成，其中$(CONFIG_ISDN_PPP_BSDCOMP)为配置系统配置为‘m’，示例：</p>
+<pre><code>obj-$(CONFIG_ISDN_PPP_BSDCOMP) += isdn_bsdcomp.o</code></pre><p>obj-m由多个文件构成，其中$(CONFIG_ISDN)为配置系统配置为‘m’，示例：</p>
+<pre><code>obj-$(CONFIG_ISDN) += isdn.o
+isdn-objs := isdn_net_lib.o isdn_v110.o isdn_common.o</code></pre><p>如果.config中存在以下配置<code>CONFIG_SCSI=y</code>，那么drivers/Makefile中存在以下配置<code>obj-$(CONFIG_SCSI) += scsi/</code>，示例：</p>
+<pre><code>obj-y               += base/ block/ misc/ mfd/ net/ media/
+obj-$(CONFIG_NUBUS)     += nubus/
+obj-$(CONFIG_ATM)       += atm/
+obj-y               += macintosh/
+obj-$(CONFIG_IDE)       += ide/
+obj-$(CONFIG_SCSI)      += scsi/                                                                                                    
+obj-$(CONFIG_ATA)       += ata/
+obj-$(CONFIG_FUSION)        += message/</code></pre><p><strong>当将模块配置为build-in时，即表示要将这些代码的相关目录放入编译目录中！</strong></p>
+<h3 id="Linux-Makefile"><a href="#Linux-Makefile" class="headerlink" title="Linux Makefile"></a><strong>Linux Makefile</strong></h3><p>Kernel/Documentation/kbuild/makefiles.txt 中描述Linux Makefile包含五部分：</p>
+<ol>
+<li>Makefile        the top Makefile.</li>
+<li>.config         the kernel configuration file.                                                                                 </li>
+<li>arch/$(ARCH)/Makefile   the arch Makefile.</li>
+<li>scripts/Makefile.*  common rules etc. for all kbuild Makefiles.</li>
+<li>kbuild Makefiles    there are about 500 of these.</li>
+</ol>
+<p>各个部分的作用：</p>
+<ol>
+<li>顶层Makefile读取.config内核配置文件，顶层Makefile负责编译两个主要的镜像文件：vmlinux（驻留内核镜像）和 内核模块，<br>它通过递归便利内核源码树的子目录来编译这些目标文件，访问的子目录列表取决于内核的配置。</li>
+<li>.config内核配置文件</li>
+<li>顶层Makefile还会包含arch/$(ARCH)/Makefile，这些平台Makefile向顶层Makefile提供架构特性信息</li>
+<li>每一个子目录下有一个kbulid Makefile会展开从上面传下来的命令，<br>kbulid Makefile利用来自.config的配置信息通过kbulid构建各种不同的文件编译内置或是模块可加载的目标</li>
+<li>scripts/Makefile.* 包含了所有的定义、规则等等，他们在kbulid makefiles的基础上构建内核</li>
+</ol>
+<h3 id="Makefile-modpost"><a href="#Makefile-modpost" class="headerlink" title="Makefile.modpost"></a><strong>Makefile.modpost</strong></h3><p>在script目录下有许多Makefile文件，由于各种情况；其中，Makefile.modpost由于module的生成。</p>
+<p>第一步：</p>
+<ol>
+<li>编译驱动的每个.o文件。</li>
+<li>将每个.o文件链接到.o。</li>
+<li>在$(MODVERDIR)/生成一个.mod文件，列出.ko及每个.o文件。</li>
+</ol>
+<p>第二步：</p>
+<ol>
+<li>找出所有在$(MODVERDIR)/的modules。</li>
+<li>接着使用modpost</li>
+<li>为每个module创建.mod.c</li>
+<li>创建一个Module.symvers文件，保存了所有引出符号及其CRC校验。</li>
+<li>编译全部 .mod.c文件。</li>
+<li>链接所有的module成为一个文件。</li>
+</ol>
+<p>第三步：替换module里一些ELF段，包括：</p>
+<p>Version magic (see include/vermagic.h for full details)</p>
+<ul>
+<li>Kernel release</li>
+<li>SMP is CONFIG_SMP</li>
+<li>PREEMPT is CONFIG_PREEMPT</li>
+<li>GCC Version</li>
+</ul>
+<p>Module info</p>
+<ul>
+<li>Module version (MODULE_VERSION)</li>
+<li>Module alias’es (MODULE_ALIAS)</li>
+<li>Module license (MODULE_LICENSE)</li>
+<li>See include/linux/module.h for more details</li>
+</ul>
+<p>第四步：</p>
+<p>Step 4 is solely used to allow module versioning in external modules,<br>where the CRC of each module is retrieved from the Module.symers file.<br>KBUILD_MODPOST_WARN can be set to avoid error out in case of undefined<br>symbols in the final module linking stage<br>KBUILD_MODPOST_NOFINAL can be set to skip the final link of modules.<br>This is solely usefull to speed up test compiles</p>
+<h3 id="编译及结果"><a href="#编译及结果" class="headerlink" title="编译及结果"></a><strong>编译及结果</strong></h3><p>源码结构：</p>
+<pre><code>.
+├── hello_printk.c
+└── Makefile</code></pre><p>编译过程：</p>
+<pre><code>make ARCH=xxx CROSS_COMPILE=xxx-linux- -C /home/workspace/kernel/2.6.27.55 M=/data/linux_drivers/hello_printk modules
+make[1]: Entering directory &#39;/home/workspace/kernel/2.6.27.55&#39;
+CC [M]  /data/linux_drivers/hello_printk/hello_printk.o
+Building modules, stage 2.
+MODPOST 1 modules
+CC      /data/linux_drivers/hello_printk/hello_printk.mod.o
+LD [M]  /data/linux_drivers/hello_printk/hello_printk.ko
+make[1]: Leaving directory &#39;/home/workspace/kernel/2.6.27.55&#39;</code></pre><p>结构：</p>
+<pre><code>.
+├── hello_printk.c
+├── hello_printk.ko
+├── .hello_printk.ko.cmd
+├── hello_printk.mod.c
+├── hello_printk.mod.o
+├── .hello_printk.mod.o.cmd
+├── hello_printk.o
+├── .hello_printk.o.cmd
+├── Makefile
+├── modules.order
+├── Module.symvers
+└── .tmp_versions
+    └── hello_printk.mod</code></pre><p>其中生成<code>&lt;module&gt;.mod.c</code>文件， 内容如下：</p>
+<pre><code>#include &lt;linux/module.h&gt;
+#include &lt;linux/vermagic.h&gt;
+#include &lt;linux/compiler.h&gt;
+
+MODULE_INFO(vermagic, VERMAGIC_STRING);
+
+struct module __this_module
+__attribute__((section(&quot;.gnu.linkonce.this_module&quot;))) = {
+    .name = KBUILD_MODNAME,
+    .init = init_module,
+#ifdef CONFIG_MODULE_UNLOAD
+    .exit = cleanup_module,
+#endif                                                                                                                              
+    .arch = MODULE_ARCH_INIT,
+};
+
+
+
+static const char __module_depends[]
+__used
+__attribute__((section(&quot;.modinfo&quot;))) =
+&quot;depends=&quot;;
+
+
+MODULE_INFO(srcversion, &quot;D9CAF6BFCBD9B121FB4765D&quot;);</code></pre><p><strong>其实就是在生成的文件里加入<code>.gnu.linkonce.this_module</code>这样一个段，<br>驱动加裁时会找到这个段并调用<code>.init</code>函数，卸载时调用<code>.exit</code>函数。</strong></p>
+<p>定义一个module结构类型的变量<code>struct module __this_module</code>，<br>这个变量是放在ELF文件的段名为<code>.gnu.linkonce.this_module</code>的段中，通过readelf工具也可以看到相关的段：</p>
+<pre><code>$ readelf -S hello_printk.mod.o
+共有 11 个节头，从偏移量 0x218 开始：
+
+节头：
+    [Nr] Name              Type            Addr     Off    Size   ES Flg Lk Inf Al
+    [ 0]                   NULL            00000000 000000 000000 00      0   0  0
+    [ 1] .text             PROGBITS        00000000 000034 000000 00  AX  0   0  1
+    [ 2] .data             PROGBITS        00000000 000034 000000 00  WA  0   0  1
+    [ 3] .bss              NOBITS          00000000 000034 000000 00  WA  0   0  1
+    [ 4] .gnu.linkonce.thi PROGBITS        00000000 000034 0000f4 00  WA  0   0  4
+    [ 5] .rela.gnu.linkonc RELA            00000000 000524 000018 0c      9   4  4
+    [ 6] .modinfo          PROGBITS        00000000 000128 00004f 00   A  0   0  4
+    [ 7] .comment          PROGBITS        00000000 000177 000043 01  MS  0   0  1
+    [ 8] .shstrtab         STRTAB          00000000 0001ba 00005d 00      0   0  1
+    [ 9] .symtab           SYMTAB          00000000 0003d0 0000e0 10     10  11  4
+    [10] .strtab           STRTAB          00000000 0004b0 000071 00      0   0  1
+Key to Flags:
+    W (write), A (alloc), X (execute), M (merge), S (strings)
+    I (info), L (link order), G (group), T (TLS), E (exclude), x (unknown)
+    O (extra OS processing required) o (OS specific), p (processor specific)</code></pre><p>最后将<strong><code>hello_printk.mod.o</code></strong>和<strong><code>hello_printk.o</code></strong>链接为ko，ko符号表如下：</p>
+<pre><code>nm hello_printk.ko
+00000000 T cleanup_module
+00000000 t hello_exit
+00000000 t hello_init
+00000000 T init_module
+0000003c r __mod_author59
+00000010 r __mod_description60
+00000060 r __mod_license58
+0000006c r __mod_srcversion23
+00000090 r __module_depends
+0000009c r __mod_vermagic5
+00000000 r __mod_version61
+U printk
+00000000 D __this_module</code></pre><p>module中可以使用的符号表为<strong><code>cleanup_module</code></strong>和<strong><code>init_module</code></strong>，其他为局部符号，对外不可见。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2015/12/02/linux-device_drivers/" rel="next" title="Linux设备驱动程序基础">
+                  <i class="fa fa-chevron-left"></i> Linux设备驱动程序基础
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2016/02/23/how-to-use-git/" rel="prev" title="Git 使用规范流程[转载]">
+                  Git 使用规范流程[转载] <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#示例"><span class="nav-number">1.</span> <span class="nav-text">示例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#makefiles-txt"><span class="nav-number">2.</span> <span class="nav-text">makefiles.txt</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Linux-Makefile"><span class="nav-number">3.</span> <span class="nav-text">Linux Makefile</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Makefile-modpost"><span class="nav-number">4.</span> <span class="nav-text">Makefile.modpost</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#编译及结果"><span class="nav-number">5.</span> <span class="nav-text">编译及结果</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

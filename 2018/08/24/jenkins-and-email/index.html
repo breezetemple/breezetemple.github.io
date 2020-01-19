@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="配置 Jenkins 邮件用于通知构建结果  Jenkins 内置邮件 插件 Email Extension Plugin">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Jenkins 配置邮件通知">
+<meta property="og:url" content="http://yoursite.com/2018/08/24/jenkins-and-email/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="配置 Jenkins 邮件用于通知构建结果  Jenkins 内置邮件 插件 Email Extension Plugin">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2018-08-24T01:51:23.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.674Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="jenkins">
+<meta property="article:tag" content="ci">
+<meta property="article:tag" content="email">
+<meta property="article:tag" content="STMP">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2018/08/24/jenkins-and-email/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Jenkins 配置邮件通知 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/08/24/jenkins-and-email/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Jenkins 配置邮件通知
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-08-24 09:51:23" itemprop="dateCreated datePublished" datetime="2018-08-24T09:51:23+08:00">2018-08-24</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>5.6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>配置 <code>Jenkins</code> 邮件用于通知构建结果</p>
+<ul>
+<li>Jenkins 内置邮件</li>
+<li>插件 <code>Email Extension Plugin</code></li>
+</ul>
+<a id="more"></a>
+
+<h2 id="Jenkins-设置"><a href="#Jenkins-设置" class="headerlink" title="Jenkins 设置"></a>Jenkins 设置</h2><p><code>Configure System</code> -&gt; <code>Jenkins Location</code> -&gt; <code>System Admin e-mail address</code> 必须要填</p>
+<p>然后 <code>E-mail Notification</code> 需要正确填写</p>
+<ul>
+<li><code>SMTP server</code></li>
+<li>勾选 <code>Use SMTP Authentication</code></li>
+<li><code>User Name</code></li>
+<li><code>Password</code></li>
+</ul>
+<p>然后填写一个测试邮箱进行测试，以下信息说明邮箱信息出错</p>
+<pre><code>com.sun.mail.smtp.SMTPAddressFailedException: 550 5.1.1 &lt;ok&gt;: Recipient address rejected: User unknown in local recipient table</code></pre><h2 id="Email-Extension-Plugin"><a href="#Email-Extension-Plugin" class="headerlink" title="Email Extension Plugin"></a>Email Extension Plugin</h2><h3 id="全局配置"><a href="#全局配置" class="headerlink" title="全局配置"></a>全局配置</h3><p><code>Configure System</code> -&gt; <code>Extended E-mail Notification</code></p>
+<ul>
+<li><code>SMTP server</code></li>
+<li>勾选 <code>Use SMTP Authentication</code></li>
+<li><code>User Name</code></li>
+<li><code>Password</code></li>
+<li><code>Default Content Type</code> 选择为 <code>HTML</code></li>
+<li><code>Default Recipients</code> 增加默认接收邮箱</li>
+<li><code>Default Subject</code> 设置为 <code>构建通知：$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!  Default Content!</code></li>
+<li><code>Default Content</code></li>
+</ul>
+<pre><code>（本邮件是程序自动下发的，请勿回复！)&lt;br/&gt;&lt;hr/&gt;
+项目名称：$PROJECT_NAME&lt;br/&gt;&lt;hr/&gt;
+构建编号：$BUILD_NUMBER&lt;br/&gt;&lt;hr/&gt;
+svn 版本号：${SVN_REVISION}&lt;br/&gt;&lt;hr/&gt;
+构建状态：$BUILD_STATUS&lt;br/&gt;&lt;hr/&gt;
+触发原因：${CAUSE}&lt;br/&gt;&lt;hr/&gt;
+构建日志地址：&lt;a href=&quot;${BUILD_URL}console&quot;&gt;${BUILD_URL}console&lt;/a&gt;&lt;br/&gt;&lt;hr/&gt;
+构建地址：&lt;a href=&quot;$BUILD_URL&quot;&gt;$BUILD_URL&lt;/a&gt;&lt;br/&gt;&lt;hr/&gt;
+变更集：${JELLY_SCRIPT,template=&quot;html&quot;}&lt;br/&gt;&lt;hr/&gt;</code></pre><p>调整为</p>
+<pre><code>&lt;hr/&gt;
+(&lt;B&gt;本邮件是程序自动下发的，请勿回复！&lt;B/&gt;)&lt;br/&gt;&lt;hr/&gt;
+&lt;font color=&quot;red&quot;&gt;构建状态 - $BUILD_STATUS&lt;/font&gt;&lt;hr/&gt;
+&lt;font color=&quot;green&quot;&gt;构建信息&lt;/font&gt;&lt;hr/&gt;
+项目名称：$PROJECT_NAME&lt;li/&gt;
+源码地址：http://192.168.110.254/git/goxceed/satellite.git&lt;li/&gt;
+构建编号：$BUILD_NUMBER&lt;li/&gt;
+触发原因：${CAUSE}&lt;li/&gt;
+构建日志地址：&lt;a href=&quot;${BUILD_URL}console&quot;&gt;${BUILD_URL}console&lt;/a&gt;&lt;li/&gt;
+构建地址：&lt;a href=&quot;$BUILD_URL&quot;&gt;$BUILD_URL&lt;/a&gt;&lt;li/&gt;
+变更集：${JELLY_SCRIPT,template=&quot;html&quot;}</code></pre><h3 id="全局邮件变量"><a href="#全局邮件变量" class="headerlink" title="全局邮件变量"></a>全局邮件变量</h3><p>如果你要查看所有可用的变量，你可以点击配置页的 <code>Content Token Reference</code> 的问号获取详细的信息</p>
+<ul>
+<li>${BUILD_NUMBER} 显示当前构建的编号。</li>
+<li>${JOB_DESCRIPTION} 显示项目描述。</li>
+<li>${SVN_REVISION} 显示 svn 版本号。还支持 Subversion 插件出口的 SVN_REVISION_n 版本。</li>
+<li>${CAUSE} 显示谁、通过什么渠道触发这次构建。</li>
+<li>${CHANGES } - 显示上一次构建之后的变化。<ul>
+<li>showPaths 如果为 true, 显示提交修改后的地址。默认 false。</li>
+<li>showDependencies 如果为 true，显示项目构建依赖。默认为 false</li>
+<li>format 遍历提交信息，一个包含 %X 的字符串，其中 %a 表示作者，%d 表示日期，%m 表示消息，%p 表示路径，%r 表示版本。注意，并不是所有的版本系统都支持 %d 和 %r。如果指定 showPaths 将被忽略。默认“[%a] %m\n”。</li>
+<li>pathFormat 一个包含“%p”的字符串，用来标示怎么打印路径。</li>
+</ul>
+</li>
+<li>${BUILD_ID}显示当前构建生成的 ID。</li>
+<li>${PROJECT_NAME} 显示项目的全名。（见 AbstractProject.getFullDisplayName）</li>
+<li>${PROJECT_DISPLAY_NAME} 显示项目的显示名称。（见 AbstractProject.getDisplayName）</li>
+<li>${SCRIPT} 从一个脚本生成自定义消息内容。自定义脚本应该放在”$JENKINS_HOME/email-templates”。当使用自定义脚本时会默认搜索 $JENKINS_HOME/email-templatesdirectory 目录。其他的目录将不会被搜索。<ul>
+<li>script 当其使用的时候，仅仅只有最后一个值会被脚本使用（不能同时使用 script 和 template）。</li>
+<li>template 常规的 simpletemplateengine 格式模板。</li>
+</ul>
+</li>
+<li>${JENKINS_URL} 显示 Jenkins 服务器的 url 地址（你可以再系统配置页更改）。</li>
+<li>${BUILD_LOG_MULTILINE_REGEX}按正则表达式匹配并显示构建日志。<ul>
+<li>regex java.util.regex.Pattern 生成正则表达式匹配的构建日志。无默认值，可为空。</li>
+<li>maxMatches 匹配的最大数量。如果为 0，将匹配所有。默认为 0。</li>
+<li>showTruncatedLines 如果为 true，包含 […truncated ### lines…] 行。默认为 true。</li>
+<li>substText 如果非空，就把这部分文字（而不是整行）插入该邮件。默认为空。</li>
+<li>escapeHtml 如果为 true，格式化 HTML。默认为 false。</li>
+<li>matchedSegmentHtmlStyle 如果非空，输出 HTML。匹配的行数将变为<b style=”your-style-value”> html escaped matched line </b>格式。默认为空。</li>
+</ul>
+</li>
+<li>${BUILD_LOG} 显示最终构建日志。<ul>
+<li>maxLines 日志最多显示的行数，默认 250 行。</li>
+<li>escapeHtml 如果为 true，格式化 HTML。默认 false。</li>
+</ul>
+</li>
+<li>${PROJECT_URL} 显示项目的 URL 地址。</li>
+<li>${BUILD_STATUS} - 显示当前构建的状态（失败、成功等等）</li>
+<li>${BUILD_URL} - 显示当前构建的 URL 地址。</li>
+<li>${CHANGES_SINCE_LAST_SUCCESS} - 显示上一次成功构建之后的变化。<ul>
+<li>reverse 在顶部标示新近的构建。默认 false。</li>
+<li>format 遍历构建信息，一个包含 %X 的字符串，其中 %c 为所有的改变，%n 为构建编号。默认”Changes for Build #%n\n%c\n”。</li>
+<li>showPaths,changesFormat,pathFormat 分别定义如 ${CHANGES}的 showPaths、format 和 pathFormat 参数。</li>
+</ul>
+</li>
+<li>${CHANGES_SINCE_LAST_UNSTABLE} - 显示显示上一次不稳固或者成功的构建之后的变化。<ul>
+<li>reverse 在顶部标示新近的构建。默认 false。</li>
+<li>format 遍历构建信息，一个包含 %X 的字符串，其中 %c 为所有的改变，%n 为构建编号。默认”Changes for Build #%n\n%c\n”。</li>
+<li>showPaths,changesFormat,pathFormat 分别定义如 ${CHANGES}的 showPaths、format 和 pathFormat 参数。</li>
+</ul>
+</li>
+<li>${ENV} –显示一个环境变量。<ul>
+<li>var– 显示该环境变量的名称。如果为空，显示所有，默认为空。</li>
+</ul>
+</li>
+<li>${FAILED_TESTS} - 如果有失败的测试，显示这些失败的单元测试信息。</li>
+<li>${JENKINS_URL} - 显示 Jenkins 服务器的地址。（你能在“系统配置”页改变它）。</li>
+<li>${HUDSON_URL} - 不推荐，请使用 $JENKINS_URL</li>
+<li>${PROJECT_URL} - 显示项目的 URL。</li>
+<li>${SVN_REVISION} - 显示 SVN 的版本号。</li>
+<li>${JELLY_SCRIPT} - 从一个 Jelly 脚本模板中自定义消息内容。有两种模板可供配置：HTML 和 TEXT。你可以在 $JENKINS_HOME/email-templates 下自定义替换它。当使用自动义模板时，”template”参数的名称不包含“.jelly”。<ul>
+<li>template 模板名称，默认”html”。</li>
+</ul>
+</li>
+<li>${TEST_COUNTS} - 显示测试的数量。<ul>
+<li>var– 默认“total”。</li>
+<li>total - 所有测试的数量。</li>
+<li>fail - 失败测试的数量。</li>
+<li>skip - 跳过测试的数量。</li>
+</ul>
+</li>
+</ul>
+<h3 id="Jelly-脚本"><a href="#Jelly-脚本" class="headerlink" title="Jelly 脚本"></a>Jelly 脚本</h3><p>插件中默认的两个 Jelly 脚本：一个用来设计 HTML 格式邮件，另一个则是定义 TEXT 格式邮件。你能通过使用模板参数指定插件调用哪一个脚本。它们的使用方法如下：</p>
+<ul>
+<li>文本格式：${JELLY_SCRIPT,template=”text”}</li>
+<li>HTML 格式：${JELLY_SCRIPT,template=”html”}</li>
+</ul>
+<p>值得注意的是，拥有 Hudson 管理员权限是使用自定义 Jelly 脚本（该脚本没有跟 email-ext 打包）的前提。脚本的生成步骤本身其实相对简单：</p>
+<ol>
+<li>创建 Jelly 脚本。脚本的名称应该是《名称》.jelly。名称以.jelly 结尾是很重要的。</li>
+<li>把脚本存放在 JENKINS_HOME\email-templates 文件夹里。</li>
+<li>使用 Jelly 变量，让 template 匹配你的脚本名称（不要包含后缀）。比如，脚本的名称为 foobar.jelly，则邮件内容中应该是 ${JELLY_SCRIPT,template=”foobar”}。</li>
+</ol>
+<h2 id="Email-Template-Testing"><a href="#Email-Template-Testing" class="headerlink" title="Email Template Testing"></a>Email Template Testing</h2><p>在 Job 下存在一个选项 <code>Jelly/Groovy Template File Name</code>，用于测试 <code>Jelly/Groovy</code> 模板</p>
+<p>首先下载 <code>Jelly/Groovy</code> 模板，<a href="https://github.com/jenkinsci/email-ext-plugin/tree/master/src/main/resources/hudson/plugins/emailext/te" target="_blank" rel="noopener">地址</a></p>
+<p><a href="https://wiki.jenkins.io/display/JENKINS/Email-ext+plugin#Email-extplugin-Jellycontent" target="_blank" rel="noopener">Eamil-ext 文档</a></p>
+<p>根据提示需要在 <code>$JENKINS_HOME</code> 目录下建立文件夹 <code>email-templates</code>，然后将下载的模板拷贝进去就可以测试了</p>
+<pre><code class="shell">$ ll ~/.jenkins/email-templates
+-rw-rw-r--  1 jenkins jenkins  4633 8 月  24 18:18 groovy-html-larry.html
+-rw-rw-r--  1 jenkins jenkins  4560 8 月  24 18:18 groovy-html-larry.template
+-rw-rw-r--  1 jenkins jenkins  6316 8 月  24 18:18 groovy-html.template
+-rw-rw-r--  1 jenkins jenkins   912 8 月  24 18:18 groovy-text.template
+-rw-rw-r--  1 jenkins jenkins 13210 8 月  24 18:18 html_gmail.jelly
+-rw-rw-r--  1 jenkins jenkins  9477 8 月  24 18:18 html.jelly
+-rw-rw-r--  1 jenkins jenkins 14877 8 月  24 18:18 html-with-health-and-console.jelly
+-rw-rw-r--  1 jenkins jenkins  1784 8 月  24 18:18 jelly_pynliner.py
+-rw-rw-r--  1 jenkins jenkins 10000 8 月  24 18:18 jive-formatter.groovy
+-rw-rw-r--  1 jenkins jenkins   980 8 月  24 18:18 Jive-Formatter-README.md
+-rw-rw-r--  1 jenkins jenkins   442 8 月  24 18:18 README.TXT
+-rw-rw-r--  1 jenkins jenkins 14862 8 月  24 18:18 static-analysis.jelly
+-rw-rw-r--  1 jenkins jenkins  3408 8 月  24 18:18 text.jelly</code></pre>
+<p>后缀为 <code>.jelly</code> 用法 <code>${JELLY_SCRIPT,template=&quot;html_gmail&quot;}</code></p>
+<p>后缀为 <code>.template</code> 用法 <code>${SCRIPT,template=&quot;groovy-html.template&quot;}</code></p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://islocal.cc/arlo/c26ec4ea/" target="_blank" rel="noopener">Jenkins 邮件通知配置</a></li>
+<li><a href="https://www.cnblogs.com/huangenai/p/7136093.html" target="_blank" rel="noopener">Jenkins 配置邮件通知</a></li>
+<li><a href="https://blog.csdn.net/wangmuming/article/details/22925357" target="_blank" rel="noopener">Jenkins 进阶系列之——01 使用 email-ext 替换 Jenkins 的默认邮件通知</a></li>
+<li><a href="https://blog.csdn.net/russ44/article/details/52263454" target="_blank" rel="noopener">jenkins 邮件插件中的内容参数设置详解</a></li>
+<li><a href="https://blog.csdn.net/u011655220/article/details/79912553" target="_blank" rel="noopener">jenkins 的可编辑邮件通知 —Jelly 脚本</a></li>
+<li><a href="http://www.voidcn.com/article/p-xozkyuwc-brb.html" target="_blank" rel="noopener">jenkins 配置邮件及增强版邮件通知</a></li>
+<li><a href="https://github.com/jenkinsci/email-ext-plugin/tree/master/src/main/resources/hudson/plugins/emailext/templates" target="_blank" rel="noopener">email-ext-plugin</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/jenkins/" rel="tag"># jenkins</a>
+              <a href="/tags/ci/" rel="tag"># ci</a>
+              <a href="/tags/email/" rel="tag"># email</a>
+              <a href="/tags/STMP/" rel="tag"># STMP</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/08/23/jenkins-build-trigger-by-URL/" rel="next" title="通过 URL 触发 Jenkins 构建">
+                  <i class="fa fa-chevron-left"></i> 通过 URL 触发 Jenkins 构建
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/09/03/jenkins-job-configuration-history/" rel="prev" title="Jenkins 配置信息变更历史">
+                  Jenkins 配置信息变更历史 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Jenkins-设置"><span class="nav-number">1.</span> <span class="nav-text">Jenkins 设置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Email-Extension-Plugin"><span class="nav-number">2.</span> <span class="nav-text">Email Extension Plugin</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#全局配置"><span class="nav-number">2.1.</span> <span class="nav-text">全局配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#全局邮件变量"><span class="nav-number">2.2.</span> <span class="nav-text">全局邮件变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Jelly-脚本"><span class="nav-number">2.3.</span> <span class="nav-text">Jelly 脚本</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Email-Template-Testing"><span class="nav-number">3.</span> <span class="nav-text">Email Template Testing</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">4.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

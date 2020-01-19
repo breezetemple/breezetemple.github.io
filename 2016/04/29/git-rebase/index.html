@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="git rebasegit rebase是对commit history的改写。当你要改写的commit history还没有被提交到远程repo的时候，也就是说，还没有与他人共享之前，commit history是你私人所有的，那么想怎么改写都可以。 而一旦被提交到远程后，这时如果再改写history，那么势必和他人的history长的就不一样了。git push的时候，git会比较commit">
+<meta property="og:type" content="article">
+<meta property="og:title" content="git中的撤销操作">
+<meta property="og:url" content="http://yoursite.com/2016/04/29/git-rebase/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="git rebasegit rebase是对commit history的改写。当你要改写的commit history还没有被提交到远程repo的时候，也就是说，还没有与他人共享之前，commit history是你私人所有的，那么想怎么改写都可以。 而一旦被提交到远程后，这时如果再改写history，那么势必和他人的history长的就不一样了。git push的时候，git会比较commit">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://segmentfault.com/img/bVb0wO">
+<meta property="og:image" content="http://segmentfault.com/img/bVb0wQ">
+<meta property="og:image" content="http://segmentfault.com/img/bVb0wR">
+<meta property="og:image" content="http://segmentfault.com/img/bVb0wT">
+<meta property="og:image" content="http://segmentfault.com/img/bVb0wS">
+<meta property="og:image" content="http://segmentfault.com/img/bVb0wU">
+<meta property="og:image" content="http://segmentfault.com/img/bVb0wV">
+<meta property="og:image" content="http://segmentfault.com/img/bVb0wW">
+<meta property="og:image" content="http://segmentfault.com/img/bVb0wX">
+<meta property="article:published_time" content="2016-04-29T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.662Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="git">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://segmentfault.com/img/bVb0wO">
+
+<link rel="canonical" href="http://yoursite.com/2016/04/29/git-rebase/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>git中的撤销操作 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/29/git-rebase/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          git中的撤销操作
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-04-30 00:00:00" itemprop="dateCreated datePublished" datetime="2016-04-30T00:00:00+08:00">2016-04-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Git/" itemprop="url" rel="index">
+                    <span itemprop="name">Git</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="git-rebase"><a href="#git-rebase" class="headerlink" title="git rebase"></a><strong>git rebase</strong></h2><p><strong>git rebase是对commit history的改写</strong>。<br>当你要改写的commit history还没有被提交到远程repo的时候，<br>也就是说，<strong>还没有与他人共享之前，commit history是你私人所有的，那么想怎么改写都可以</strong>。</p>
+<p>而<strong>一旦被提交到远程后，这时如果再改写history，那么势必和他人的history长的就不一样了</strong>。<br>git push的时候，git会比较commit history，如果不一致，<br>commit动作会被拒绝，唯一的办法就是带上-f参数，<br>强制要求commit，这时git会以committer的history覆写远程repo，<br>从而完成代码的提交。虽然代码提交上去了，<br>但是<strong>这样可能会造成别人工作成果的丢失，所以使用-f参数要慎重</strong>。</p>
+<h2 id="注意点"><a href="#注意点" class="headerlink" title="注意点"></a><strong>注意点</strong></h2><ol>
+<li>除非只有自己一个人用，不然用 push –force 的都该去死</li>
+<li>慎用 push -f！</li>
+<li>每个人提交前，都应该把自己的修改rebase到服务器的最新代码之上，遵守这个规则就不会有任何问题。<br>如果你需要force push，说明你做反了，把服务器代码rebase到你本地分支之上才会需要force push，这是错误的用法。</li>
+<li>一旦分支中的提交对象发布到公共仓库，就千万不要对该分支进行衍合操作</li>
+<li>如果 rebase 完后，需要使用 push -f 的话，一定代表该 rebase 操作是不合适。除非你是有意在修改提交历史</li>
+<li>除非某个分支只有你自己搞，你怎么rebase都是没有问题的，但是如果你在master或者develop这种分支上来rebase，<br>估计团队里每个人都想拍死你</li>
+<li>当你在某个分支进行团队合作的时候， 常用rebase真的是不合理。而且容易出问题。慎用 push –force</li>
+<li>git rebase 一般自己一个人开发时使用，用来保持提交记录的整洁。一旦上传到github后，不应该使用git rebase</li>
+<li><strong>一旦分支中的提交对象发布到公共仓库，就千万不要对该分支进行衍合操作。<br>如果你遵循这条金科玉律，就不会出差错。否则，人民群众会仇恨你，你的朋友和家人也会嘲笑你，唾弃你</strong></li>
+<li>不需要push -f啊，如果分支落后就用pull –rebase</li>
+</ol>
+<h2 id="例子"><a href="#例子" class="headerlink" title="例子"></a><strong>例子</strong></h2><p>假设楼主的team中有两个developer：tom和jerry，他们共同使用一个远程repo，<br>并各自clone到自己的机器上，为了简化描述，这里假设只有一个branch：master。</p>
+<p>这时tom机器的repo有两个branch: <strong>master, origin/master</strong></p>
+<p>而jerry的机器上也是有两个branch: <strong>master, origin/master</strong></p>
+<p>均如下图所示</p>
+<p><img src="http://segmentfault.com/img/bVb0wO" alt="1"></p>
+<p>tom和jerry分别各自开发自己的新feature，<br>不断有新的commit提交到他们各自私有的commit history中，<br>所以他们的master指针不断的向前推移，分别指向不同的commit。<br><strong>而又由于他们都没有git fetch和git push，所以他们的origin/master都维持不变</strong>。</p>
+<p>jerry的repo如下</p>
+<p><img src="http://segmentfault.com/img/bVb0wQ" alt="2"></p>
+<p>tom的repo如下，注意T1和上图的J1，分别是两个不同的commit</p>
+<p><img src="http://segmentfault.com/img/bVb0wR" alt="3"></p>
+<p>这时Tom首先把他的commit提交的远程repo中，那么他本机origin/master指针则会前进，和master指针保持一致，如下</p>
+<p><img src="http://segmentfault.com/img/bVb0wT" alt="4"></p>
+<p>远程repo如下</p>
+<p><img src="http://segmentfault.com/img/bVb0wS" alt="5"></p>
+<p>现在jerry也想把他的commit提交到远程repo上去，<br><strong>运行git push，毫无意外的失败了，所以他git fetch了一下，把远程repo，也就是之前tom提交的T1给拉到了他本机repo中</strong>，如下</p>
+<p><img src="http://segmentfault.com/img/bVb0wU" alt="6"></p>
+<p>commit history出现了分叉，要想把tom之前提交的内容包含到自己的工作中来，<br>有一个方法就是<strong>git merge，它会自动生成一个commit，既包含tom的提交，也包含jerry的提交</strong>，<br>这样就把两个分叉的commit重新又合并在一起。但是<strong>这个自动生成的commit会有两个parent</strong>，<br>review代码的时候必须要比较两次，很不方便。</p>
+<p>jerry<strong>为了保证commit history的线性</strong>，决定采用另外一种方法，就是<strong>git rebase</strong>。<br>jerry的<strong>提交J1这时还没有被提交到远程repo上去，也就是他完全私有的一个commit，<br>所以使用git rebase改写J1的history完全没有问题</strong>，改写之后，如下</p>
+<p><img src="http://segmentfault.com/img/bVb0wV" alt="7"></p>
+<p>注意J1被改写到T1后面了，变成了J1`</p>
+<p>git push后，本机repo</p>
+<p><img src="http://segmentfault.com/img/bVb0wW" alt="8"></p>
+<p>而远程repo</p>
+<p><img src="http://segmentfault.com/img/bVb0wX" alt="9"></p>
+<p>异常的轻松，一条直线，没有-f</p>
+<p>所以，<strong>在不用-f的前提下，想维持树的整洁，方法就是：在git push之前，先git fetch，再git rebase</strong>。</p>
+<pre><code>git fetch origin master
+git rebase origin/master
+git push</code></pre><ol>
+<li><a href="http://www.oschina.net/translate/10-tips-git-next-level" target="_blank" rel="noopener">10 个迅速提升你 Git 水平的提示</a></li>
+<li><a href="https://segmentfault.com/q/1010000000430041" target="_blank" rel="noopener">团队开发里频繁使用 git rebase 来保持树的整洁好吗?</a></li>
+<li><a href="http://nvie.com/posts/a-successful-git-branching-model/" target="_blank" rel="noopener">a-successful-git-branching-model</a></li>
+<li><a href="https://git-scm.com/book/zh/v1/Git-%E5%88%86%E6%94%AF-%E5%88%86%E6%94%AF%E7%9A%84%E8%A1%8D%E5%90%88" target="_blank" rel="noopener">Git-分支-分支的衍合</a></li>
+<li><a href="http://codecampo.com/topics/379?comment_id=1354#comment-1354" target="_blank" rel="noopener">构造干净的 Git 历史线索</a></li>
+<li><a href="http://guides.github.com/overviews/flow/" target="_blank" rel="noopener">Github workflow</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/git/" rel="tag"># git</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2016/04/27/programmer-sorting-algorithms/" rel="next" title="常见排序算法可视化实现">
+                  <i class="fa fa-chevron-left"></i> 常见排序算法可视化实现
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2016/05/08/code-review-list/" rel="prev" title="程序员必备的代码审查（Code Review）清单">
+                  程序员必备的代码审查（Code Review）清单 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#git-rebase"><span class="nav-number">1.</span> <span class="nav-text">git rebase</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#注意点"><span class="nav-number">2.</span> <span class="nav-text">注意点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#例子"><span class="nav-number">3.</span> <span class="nav-text">例子</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

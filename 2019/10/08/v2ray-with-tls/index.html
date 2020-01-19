@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="配置 v2ray TLS 工作模式">
+<meta property="og:type" content="article">
+<meta property="og:title" content="v2ray 配置 TLS">
+<meta property="og:url" content="http://yoursite.com/2019/10/08/v2ray-with-tls/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="配置 v2ray TLS 工作模式">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-10-08T06:33:13.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.682Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="web">
+<meta property="article:tag" content="ssl">
+<meta property="article:tag" content="tls">
+<meta property="article:tag" content="vps">
+<meta property="article:tag" content="Let&#39;s Encrypt">
+<meta property="article:tag" content="acme.sh">
+<meta property="article:tag" content="nginx">
+<meta property="article:tag" content="caddy">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2019/10/08/v2ray-with-tls/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>v2ray 配置 TLS | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/08/v2ray-with-tls/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          v2ray 配置 TLS
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-10-08 14:33:13" itemprop="dateCreated datePublished" datetime="2019-10-08T14:33:13+08:00">2019-10-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/VPS/" itemprop="url" rel="index">
+                    <span itemprop="name">VPS</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.5k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>配置 <code>v2ray TLS</code> 工作模式</p>
+<a id="more"></a>
+
+<p>证书申请见 <a href="/2019/10/08/acme/" title="Let&#39;s Encrypt 申请 SSL 证书">Let&#39;s Encrypt 申请 SSL 证书</a></p>
+<h2 id="安装证书和密钥"><a href="#安装证书和密钥" class="headerlink" title="安装证书和密钥"></a>安装证书和密钥</h2><pre><code class="shell">$ ~/.acme.sh/acme.sh --installcert -d mydomain.me --fullchainpath /etc/v2ray/v2ray.crt --keypath /etc/v2ray/v2ray.key --ecc
+$ ~/.acme.sh/acme.sh --installcert -d mydomain.me --fullchainpath /etc/v2ray/v2ray.crt --keypath /etc/v2ray/v2ray.key</code></pre>
+<h2 id="TLS"><a href="#TLS" class="headerlink" title="TLS"></a>TLS</h2><p><a href="https://toutyrater.github.io/advanced/tls.html" target="_blank" rel="noopener">TLS</a></p>
+<p>修改服务器</p>
+<pre><code class="json">  &quot;inbounds&quot;: [
+    {
+      &quot;port&quot;: 443, // 建议使用 443 端口
+      &quot;protocol&quot;: &quot;vmess&quot;,
+      &quot;settings&quot;: {
+        &quot;clients&quot;: [
+          {
+            &quot;id&quot;: &quot;23ad6b10-8d1a-40f7-8ad0-e3e35cd38297&quot;,
+            &quot;alterId&quot;: 64
+          }
+        ]
+      },
+      &quot;streamSettings&quot;: {
+        &quot;network&quot;: &quot;tcp&quot;,
+        &quot;security&quot;: &quot;tls&quot;, // security 要设置为 tls 才会启用 TLS
+        &quot;tlsSettings&quot;: {
+          &quot;certificates&quot;: [
+            {
+              &quot;certificateFile&quot;: &quot;/etc/v2ray/v2ray.crt&quot;, // 证书文件
+              &quot;keyFile&quot;: &quot;/etc/v2ray/v2ray.key&quot; // 密钥文件
+            }
+          ]
+        }
+      }
+    }
+  ]</code></pre>
+<ul>
+<li><code>certificateFile</code> 证书文件绝对路径</li>
+<li><code>keyFile</code> 密钥文件绝对路径</li>
+</ul>
+<p>客户端输入</p>
+<ul>
+<li>域名</li>
+<li>端口</li>
+<li>传输协议：TCP</li>
+<li>底层传输安全：TLS</li>
+</ul>
+<p><a href="https://www.ssllabs.com/ssltest/index.html" target="_blank" rel="noopener">Qualys SSL Labs’s SSL Server Test</a></p>
+<blockquote>
+<p>使用 Qualys SSL Labs’s SSL Server Test 要求使用 443 端口，意味着你服务器配置的 <code>inbound.port</code> 应当是 443</p>
+</blockquote>
+<h2 id="WebSocket-TLS"><a href="#WebSocket-TLS" class="headerlink" title="WebSocket + TLS"></a>WebSocket + TLS</h2><p><a href="https://toutyrater.github.io/advanced/websocket.html" target="_blank" rel="noopener">WebSocket 单独配置教程</a></p>
+<p>修改服务端</p>
+<pre><code class="json">{
+  &quot;port&quot;: 443,
+  &quot;protocol&quot;: &quot;vmess&quot;,
+  &quot;settings&quot;: {
+    &quot;clients&quot;: [{
+      &quot;id&quot;: &quot;自行生成 UUID&quot;,
+      &quot;alterId&quot;: 64
+     }]
+  },
+  &quot;streamSettings&quot;: {
+    &quot;network&quot;:&quot;ws&quot;,
+    &quot;security&quot;: &quot;tls&quot;,
+    &quot;wsSettings&quot;:{
+      &quot;path&quot;:&quot;/&quot;,
+      &quot;headers&quot;:{}
+    },
+    &quot;tlsSettings&quot;: {
+      &quot;certificates&quot;: [{
+        &quot;certificateFile&quot;: &quot;公钥文件绝对路径，如：/path/to/xxx.com.crt&quot;,
+        &quot;keyFile&quot;: &quot;私钥文件绝对路径，如：/path/to/xxx.com.key&quot;
+      }]
+    }
+  }
+}</code></pre>
+<p>增加 <code>wsSettings</code>，修改 <code>network</code> 为 <code>ws</code></p>
+<p>客户端输入</p>
+<ul>
+<li>域名</li>
+<li>端口</li>
+<li>传输协议：ws</li>
+<li>path：/</li>
+<li>底层传输安全：TLS</li>
+</ul>
+<h2 id="HTTP-2-TLS"><a href="#HTTP-2-TLS" class="headerlink" title="HTTP/2 + TLS"></a>HTTP/2 + TLS</h2><p><a href="https://toutyrater.github.io/advanced/h2.html" target="_blank" rel="noopener">HTTP/2 单独配置</a></p>
+<p>服务端</p>
+<pre><code class="json">{
+  &quot;port&quot;: 443,
+  &quot;protocol&quot;: &quot;vmess&quot;,
+  &quot;settings&quot;: {
+    &quot;clients&quot;: [{
+      &quot;id&quot;: &quot;自行生成 UUID&quot;,
+      &quot;alterId&quot;: 64
+     }]
+  },
+  &quot;streamSettings&quot;: {
+    &quot;network&quot;:&quot;http&quot;,
+    &quot;security&quot;: &quot;tls&quot;,
+    &quot;httpSettings&quot;:{
+      &quot;path&quot;: &quot;在这里填写网页路径，以 / 开头，例如 /abcde/xyz&quot;
+    },
+    &quot;tlsSettings&quot;: {
+      &quot;certificates&quot;: [{
+        &quot;certificateFile&quot;: &quot;公钥文件绝对路径，如：/path/to/xxx.com.crt&quot;,
+        &quot;keyFile&quot;: &quot;私钥文件绝对路径，如：/path/to/xxx.com.key&quot;
+      }]
+    }
+  }
+}</code></pre>
+<p>增加 <code>httpSettings</code>，修改 <code>network</code> 为 <code>http</code></p>
+<p>客户端输入</p>
+<ul>
+<li>域名</li>
+<li>端口</li>
+<li>传输协议：<code>h2</code></li>
+<li>path：<code>/</code></li>
+<li>底层传输安全：TLS</li>
+</ul>
+<h2 id="WebSocket-TLS-Web"><a href="#WebSocket-TLS-Web" class="headerlink" title="WebSocket + TLS + Web"></a>WebSocket + TLS + Web</h2><p><a href="https://toutyrater.github.io/advanced/wss_and_web.html" target="_blank" rel="noopener">WebSocket+TLS+Web</a></p>
+<ul>
+<li>使用 <code>Nginx / Caddy / Apache</code> 是因为 <code>VPS</code> 已经有 <code>Nginx / Caddy / Apache</code> 可以将 <code>V2Ray</code> 稍作隐藏</li>
+<li>使用 <code>WebSocket</code> 是因为搭配 <code>Nginx / Caddy / Apache</code> 只能用 <code>WebSocket</code></li>
+<li>使用 <code>TLS</code> 是因为可以流量加密，看起来更像 <code>HTTPS</code></li>
+</ul>
+<p>一键安装脚本</p>
+<ul>
+<li><a href="https://github.com/233boy/v2ray/wiki/V2Ray%E4%B8%80%E9%94%AE%E5%AE%89%E8%A3%85%E8%84%9A%E6%9C%AC" target="_blank" rel="noopener">V2Ray 一键安装脚本</a> 集成 <code>Caddy</code></li>
+<li><a href="https://github.com/wulabing/V2Ray_ws-tls_bash_onekey" target="_blank" rel="noopener">V2Ray_ws-tls_bash_onekey</a> 集成 <code>Nginx</code></li>
+<li><a href="https://github.com/iMeiji/shadowsocks_install/wiki/Project-V-%E9%85%8D%E7%BD%AE-WebSocket-TLS-Web-CDN" target="_blank" rel="noopener">LNMP 1.5</a> 安装 <code>Nginx</code></li>
+</ul>
+<blockquote>
+<p>未使用一键安装脚本，通过 <code>acme.sh</code> 手动配置</p>
+</blockquote>
+<p>修改服务端，删除 <code>TLS</code> 配置</p>
+<pre><code class="json">  &quot;inbounds&quot;: [
+    {
+      &quot;port&quot;: 10000,
+      &quot;listen&quot;:&quot;127.0.0.1&quot;,// 只监听 127.0.0.1，避免除本机外的机器探测到开放了 10000 端口
+      &quot;protocol&quot;: &quot;vmess&quot;,
+      &quot;settings&quot;: {
+        &quot;clients&quot;: [
+          {
+            &quot;id&quot;: &quot;b831381d-6324-4d53-ad4f-8cda48b30811&quot;,
+            &quot;alterId&quot;: 64
+          }
+        ]
+      },
+      &quot;streamSettings&quot;: {
+        &quot;network&quot;: &quot;ws&quot;,
+        &quot;wsSettings&quot;: {
+        &quot;path&quot;: &quot;/ray&quot;
+        }
+      }
+    }
+  ],</code></pre>
+<p><code>Nginx</code> 配置</p>
+<pre><code>server {
+  listen  443 ssl;
+  ssl on;
+  ssl_certificate       /etc/v2ray/v2ray.crt;
+  ssl_certificate_key   /etc/v2ray/v2ray.key;
+  ssl_protocols         TLSv1 TLSv1.1 TLSv1.2;
+  ssl_ciphers           HIGH:!aNULL:!MD5;
+  server_name           mydomain.me;
+        location /ray { # 与 V2Ray 配置中的 path 保持一致
+        proxy_redirect off;
+        proxy_pass http://127.0.0.1:10000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection &quot;upgrade&quot;;
+        proxy_set_header Host $http_host;
+
+        # Show realip in v2ray access.log
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+}</code></pre><p>客户端输入</p>
+<ul>
+<li>域名</li>
+<li>端口 <code>443</code></li>
+<li>传输协议：<code>ws</code></li>
+<li>path：<code>/ray</code></li>
+<li>底层传输安全：TLS</li>
+</ul>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://blog.sprov.xyz/2019/04/27/v2ray-wstls-or-http2tls-tutorial/" target="_blank" rel="noopener">v2ray 配置 ws + tls 或 http2 + tls 教程</a></li>
+<li><a href="https://toutyrater.github.io/advanced/" target="_blank" rel="noopener">高级篇</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/web/" rel="tag"># web</a>
+              <a href="/tags/ssl/" rel="tag"># ssl</a>
+              <a href="/tags/tls/" rel="tag"># tls</a>
+              <a href="/tags/vps/" rel="tag"># vps</a>
+              <a href="/tags/Let-s-Encrypt/" rel="tag"># Let's Encrypt</a>
+              <a href="/tags/acme-sh/" rel="tag"># acme.sh</a>
+              <a href="/tags/nginx/" rel="tag"># nginx</a>
+              <a href="/tags/caddy/" rel="tag"># caddy</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/10/08/acme/" rel="next" title="Let's Encrypt 申请 SSL 证书">
+                  <i class="fa fa-chevron-left"></i> Let's Encrypt 申请 SSL 证书
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/10/09/strftime-options/" rel="prev" title="strftime 转换控制符">
+                  strftime 转换控制符 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#安装证书和密钥"><span class="nav-number">1.</span> <span class="nav-text">安装证书和密钥</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TLS"><span class="nav-number">2.</span> <span class="nav-text">TLS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#WebSocket-TLS"><span class="nav-number">3.</span> <span class="nav-text">WebSocket + TLS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#HTTP-2-TLS"><span class="nav-number">4.</span> <span class="nav-text">HTTP&#x2F;2 + TLS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#WebSocket-TLS-Web"><span class="nav-number">5.</span> <span class="nav-text">WebSocket + TLS + Web</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">6.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="在monitor模式下使用wireshark抓包分析802.11帧格式，用于分析Airkiss协议及实现">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Radiotap、Prism 和 802.11 帧格式分析">
+<meta property="og:url" content="http://yoursite.com/2019/05/06/radiotap-header-and-802-11-frame/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="在monitor模式下使用wireshark抓包分析802.11帧格式，用于分析Airkiss协议及实现">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/wifi/osi.jpg">
+<meta property="og:image" content="http://yoursite.com/images/wifi/1557144650029.png">
+<meta property="og:image" content="http://yoursite.com/images/wifi/1557230043892.png">
+<meta property="og:image" content="http://yoursite.com/images/wifi/1557148199457.png">
+<meta property="og:image" content="http://yoursite.com/images/wifi/1561025089882.png">
+<meta property="og:image" content="http://yoursite.com/images/wifi/1557147251762.png">
+<meta property="og:image" content="http://yoursite.com/images/wifi/1557147333236.png">
+<meta property="og:image" content="http://yoursite.com/images/wifi/1557147475086.png">
+<meta property="og:image" content="http://yoursite.com/images/wifi/1557148967247.png">
+<meta property="og:image" content="http://yoursite.com/images/wifi/1557149262208.png">
+<meta property="og:image" content="http://yoursite.com/images/wifi/1557191433854.png">
+<meta property="og:image" content="http://yoursite.com/images/wifi/1557191518505.png">
+<meta property="og:image" content="http://yoursite.com/images/wifi/1557191243718.png">
+<meta property="article:published_time" content="2019-05-06T06:37:15.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.682Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="802.11">
+<meta property="article:tag" content="radiotap">
+<meta property="article:tag" content="802.2">
+<meta property="article:tag" content="802.3">
+<meta property="article:tag" content="SNAP">
+<meta property="article:tag" content="LLC">
+<meta property="article:tag" content="MAC">
+<meta property="article:tag" content="airkiss">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/wifi/osi.jpg">
+
+<link rel="canonical" href="http://yoursite.com/2019/05/06/radiotap-header-and-802-11-frame/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Radiotap、Prism 和 802.11 帧格式分析 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/06/radiotap-header-and-802-11-frame/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Radiotap、Prism 和 802.11 帧格式分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-05-06 14:37:15" itemprop="dateCreated datePublished" datetime="2019-05-06T14:37:15+08:00">2019-05-06</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/802-11/" itemprop="url" rel="index">
+                    <span itemprop="name">802.11</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/Airkiss/" itemprop="url" rel="index">
+                    <span itemprop="name">Airkiss</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.7k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在<code>monitor</code>模式下使用<code>wireshark</code>抓包分析<code>802.11</code>帧格式，用于分析<code>Airkiss</code>协议及实现</p>
+<a id="more"></a>
+
+<h2 id="802-协议及-OSI-模型"><a href="#802-协议及-OSI-模型" class="headerlink" title="802 协议及 OSI 模型"></a>802 协议及 OSI 模型</h2><ul>
+<li>802.2 ：逻辑链路控制 Logical Link Control</li>
+<li>802.3 ：以太网 Ethernet （CSMA/CD）</li>
+<li>802.11：无线局域网 Wireless LAN</li>
+</ul>
+<p><code>802.11</code>是一个协议簇，包括物理层规范、增强型 MAC 层规范及高层协议规范。</p>
+<p><code>802.11</code>与<code>802.3</code>一样，主要定义了<code>OSI</code>模型中物理层和数据链路层的相关规范，其中数据链路层由<code>MAC</code>子层和<code>LLC</code>子层组成，<code>802.11</code>和<code>802.3</code>的<code>LLC</code>子层统一由<code>802.2</code>描述，<code>802.2</code>是为各种媒介向上层提供一个统一的接口。可不管是有线或者无线，都是以<code>802.2</code>为标准，进行封装的。一张老图描述<code>802</code>协议簇在<code>OSI</code>模型关系</p>
+<p><img src="/images/wifi/osi.jpg" alt="OSI"></p>
+<h2 id="Radiotap"><a href="#Radiotap" class="headerlink" title="Radiotap"></a>Radiotap</h2><p><a href="http://www.radiotap.org/fields/defined" target="_blank" rel="noopener">Radiotap 官网</a></p>
+<p><code>monitor</code>模式下<code>802.11</code>在收到帧之后还要在外边包一层称为<code>prism</code>或<code>radiotap</code>的头部，里面包含无线协议帧相关的信息，诸如信号强度、噪声强度、信道、时间戳等。<code>radiotap</code>比传统的<code>prism</code>或<code>AVS</code>头部更有灵活性，<code>radiotap</code>头已经完全取代了<code>prism</code>，两者功能一样，但前者是后者的扩展。该报头属于<code>802.11</code>的规范内容。</p>
+<p><img src="/images/wifi/1557144650029.png" alt="1557144650029"></p>
+<p>这个头部是在<code>802.11</code>成帧后（RX）流经内核<code>mac80211</code>层时加上去的，代码在<code>net/mac80211</code>里。所以<strong>这是一个纯软件机制</strong>，这个头部对于底层无意义，像<code>iwconfig</code>, <code>iwlist scanning</code>这些工具显示出来的数据并不依赖这个头部的信息。那么它的用途是什么？答案是供给像<code>wireshark</code>这样的协议分析工具用的，这样这些工具就不用实时从硬件获得 RF 射频信息，直接解析协议报文即可。</p>
+<blockquote>
+<p> 另外在<code>monitor</code>模式下发送（TX）流经<code>802.11</code>层时需要脱掉<code>radiotap</code>头部，也就是要求编写 raw 套接字程序通过<code>monitor</code>状态的网卡发送<code>802.11</code>帧时，需要手工把<code>radiotap</code>头部加上，否则内核会认为是异常帧而丢弃。</p>
+</blockquote>
+<h2 id="Prism"><a href="#Prism" class="headerlink" title="Prism"></a>Prism</h2><p>各个帧的头部见 <a href="https://www.tcpdump.org/linktypes.html" target="_blank" rel="noopener">LINK-LAYER HEADER TYPES</a></p>
+<p>本文涉及</p>
+<ol>
+<li><a href="http://www.radiotap.org/" target="_blank" rel="noopener">Radiotap</a></li>
+<li><a href="https://www.tcpdump.org/linktypes/LINKTYPE_IEEE802_11_PRISM.html" target="_blank" rel="noopener">Prism</a></li>
+</ol>
+<p>是在内核中处理，<code>Linux 4.9</code>相关代码<code>linux/if_arp.h</code>及<code>net/mac80211/iface.c</code></p>
+<pre><code>#define ARPHRD_IEEE802_TR 800       /* Magic type ident for TR  */
+#define ARPHRD_IEEE80211 801        /* IEEE 802.11          */
+#define ARPHRD_IEEE80211_PRISM 802  /* IEEE 802.11 + Prism2 header  */
+#define ARPHRD_IEEE80211_RADIOTAP 803   /* IEEE 802.11 + radiotap header */
+
+case NL80211_IFTYPE_MONITOR:
+  sdata-&gt;dev-&gt;type = ARPHRD_IEEE80211_RADIOTAP;
+  sdata-&gt;dev-&gt;netdev_ops = &amp;ieee80211_monitorif_ops;
+  sdata-&gt;u.mntr.flags = MONITOR_FLAG_CONTROL | MONITOR_FLAG_OTHER_BSS;
+  break;</code></pre><p>因此在<code>Linux 4.9</code>下抓包格式为<code>802.11 plus Radiotap header</code></p>
+<p>而在<code>Linux 2.6</code>使用的<code>wifi</code>驱动中有如下代码</p>
+<pre><code class="c">#define RTMP_OS_NETDEV_SET_TYPE_MONITOR(_pNetDev)   RTMP_OS_NETDEV_SET_TYPE(_pNetDev, ARPHRD_IEEE80211_PRISM)</code></pre>
+<p>因此抓包格式为<code>802.11 plus Prism header</code>，如下<br><img src="/images/wifi/1557230043892.png" alt="1557230043892"></p>
+<h2 id="802-11-帧结构"><a href="#802-11-帧结构" class="headerlink" title="802.11 帧结构"></a>802.11 帧结构</h2><p>和所有其他的<code>802</code>链路层一样，<code>802.11</code>可以传输各种不同的网络层协议。<a href="https://warpproject.org/trac/wiki/802.11/MAC/Upper/MACHighFramework/EthEncap" target="_blank" rel="noopener">和以太网不同的是</a>，<code>802.11</code>是以<code>802.2</code>的逻辑链路控制封装来携带上层协议。</p>
+<p><code>802.11</code>封装上层协议下图</p>
+<p><img src="/images/wifi/1557148199457.png" alt="1557148199457"></p>
+<p><code>RFC 1042</code>与<code>802.1H</code>均衍生自<code>802.2</code>的子网络访问协议（sub-network access protocol ，简称<code>SNAP</code> ）</p>
+<p><strong>当<code>AP</code>使用加密模式时，<code>802.11 MAC payload</code>为加密状态，看不到内部封装，只有在非加密状态才能解包分析</strong></p>
+<p>协议关系图，从上到下三层分别为网络层、数据链路层和物理层，截图自<code>网络协议图【科来软件 -2011】</code></p>
+<p><img src="/images/wifi/1561025089882.png" alt="1561025089882"></p>
+<h2 id="MAC"><a href="#MAC" class="headerlink" title="MAC"></a>MAC</h2><p>具体<code>802.11</code>帧结构见 <a href="https://www.cnblogs.com/hzl6255/p/4084173.html" target="_blank" rel="noopener">802.11 MAC 层</a>，<code>airkiss</code>是基于<code>802.11 MAC 数据帧</code>，因此后续分析全部基于数据帧</p>
+<p>数据帧<code>MAC</code>头如下</p>
+<p><img src="/images/wifi/1557147251762.png" alt="1557147251762"></p>
+<p>其中<code>Address</code>字段由 T<code>o DS/From DS</code>位来决定</p>
+<p><img src="/images/wifi/1557147333236.png" alt="1557147333236"></p>
+<p>示例</p>
+<p><img src="/images/wifi/1557147475086.png" alt="1557147475086"></p>
+<h2 id="SNAP"><a href="#SNAP" class="headerlink" title="SNAP"></a>SNAP</h2><p><code>SNAP</code>全称<code>Subnetwork Access Protocol</code>，是<code>802.2 LLC</code>的扩展，具体见 <a href="https://en.wikipedia.org/wiki/Subnetwork_Access_Protocol" target="_blank" rel="noopener">Subnetwork Access Protocol</a></p>
+<p>子网络访问协议<code>SNAP</code>规范了在<code>IEEE802</code>网络上传输<code>IP 数据报的标准方法。换句话说，</code>IP<code>数据报可以封装在</code>802.2 LLC<code>，</code>SNAP<code>数据链路层和</code>802.3<code>、</code>802.4<code>、</code>802.5<code>或</code>802.11<code>网络物理层中，然后在</code>IEEE802`网络上发送。</p>
+<p><img src="/images/wifi/1557148967247.png" alt="1557148967247"></p>
+<p>当<code>DASP</code>、<code>SSAP</code>为<code>0xAA</code>或<code>0XAB</code>时，<strong>在<code>802.11</code>中只有数据帧含有<code>SNAP</code></strong>，如下图</p>
+<p><img src="/images/wifi/1557149262208.png" alt="1557149262208"></p>
+<p>根据<code>Type</code>可以看出<code>Ethernet type</code>，可以看到继续解析层次为<code>IP</code>-&gt;<code>UDP</code>-&gt;<code>DATA</code></p>
+<h3 id="加密帧结构"><a href="#加密帧结构" class="headerlink" title="加密帧结构"></a>加密帧结构</h3><p>如下图</p>
+<p><img src="/images/wifi/1557191433854.png" alt="1557191433854"></p>
+<p><code>wireshark</code>识别<code>protocol</code>为<code>802.11</code>，更为上层的数据因为加密的原因无法识别，详细数据如下</p>
+<p><img src="/images/wifi/1557191518505.png" alt="1557191518505"></p>
+<h3 id="airkiss-数据"><a href="#airkiss-数据" class="headerlink" title="airkiss 数据"></a>airkiss 数据</h3><p><img src="/images/wifi/1557191243718.png" alt="1557191243718"></p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ol>
+<li>因为网卡及路由的原因，<code>header</code>长度不一定，因此采用连续发送<code>1-4</code>长度负载来确定整个链路层长度</li>
+<li>因为采用<code>mudp</code>，因此会出现乱序</li>
+<li>当链接加密<code>AP</code>时，只能分析到<code>802.11</code>，更高层协议因为加密原因无法拆包</li>
+<li><code>airkiss</code>只关心<code>data</code>长度，不关心<code>data</code>内容</li>
+</ol>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://libtins.github.io/tutorial/802.11/" target="_blank" rel="noopener">IEEE 802.11 - libtins</a></li>
+<li><a href="http://www.networksorcery.com/enp/protocol/IEEE8022.htm" target="_blank" rel="noopener">IEEE 802.2. LLC, Logical Link Control</a></li>
+<li><a href="https://stackoverflow.com/questions/42834940/how-to-find-out-encapsulated-protocol-inside-ieee802-11-frame" target="_blank" rel="noopener">How to find out encapsulated protocol inside IEEE802.11 Frame?</a></li>
+<li><a href="https://www.freebuf.com/articles/wireless/130194.html" target="_blank" rel="noopener">无线网络嗅探中的 Radiotap</a></li>
+<li><a href="https://witestlab.poly.edu/blog/802-11-wireless-lan-2/" target="_blank" rel="noopener">Understanding the 802.11 Wireless LAN MAC frame format</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Subnetwork_Access_Protocol" target="_blank" rel="noopener">Subnetwork Access Protocol</a></li>
+<li><a href="https://blog.51cto.com/yaotongshaonian/1725599" target="_blank" rel="noopener">以太网两种帧的格式 Ethernet_II and IEEE 802.3</a></li>
+<li><a href="https://www.cnblogs.com/aixin0813/p/3255000.html" target="_blank" rel="noopener">802.11 网络协议细节</a></li>
+<li><a href="https://warpproject.org/trac/wiki/802.11/MAC/Upper/MACHighFramework/EthEncap" target="_blank" rel="noopener">Ethernet Encapsulation and De-encapsulation</a></li>
+<li><a href="https://blog.csdn.net/hengkong_horse/article/details/8752908" target="_blank" rel="noopener">80211 与 IEEE 802 网络技术族谱简介</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/802-11/" rel="tag"># 802.11</a>
+              <a href="/tags/radiotap/" rel="tag"># radiotap</a>
+              <a href="/tags/802-2/" rel="tag"># 802.2</a>
+              <a href="/tags/802-3/" rel="tag"># 802.3</a>
+              <a href="/tags/SNAP/" rel="tag"># SNAP</a>
+              <a href="/tags/LLC/" rel="tag"># LLC</a>
+              <a href="/tags/MAC/" rel="tag"># MAC</a>
+              <a href="/tags/airkiss/" rel="tag"># airkiss</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/05/06/nfs-error/" rel="next" title="ubuntu 升级 18.04 之后 nfs 出错">
+                  <i class="fa fa-chevron-left"></i> ubuntu 升级 18.04 之后 nfs 出错
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/05/27/zsh-Customization/" rel="prev" title="ubuntu 下定制 zsh">
+                  ubuntu 下定制 zsh <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#802-协议及-OSI-模型"><span class="nav-number">1.</span> <span class="nav-text">802 协议及 OSI 模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Radiotap"><span class="nav-number">2.</span> <span class="nav-text">Radiotap</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Prism"><span class="nav-number">3.</span> <span class="nav-text">Prism</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#802-11-帧结构"><span class="nav-number">4.</span> <span class="nav-text">802.11 帧结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#MAC"><span class="nav-number">5.</span> <span class="nav-text">MAC</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SNAP"><span class="nav-number">6.</span> <span class="nav-text">SNAP</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#加密帧结构"><span class="nav-number">6.1.</span> <span class="nav-text">加密帧结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#airkiss-数据"><span class="nav-number">6.2.</span> <span class="nav-text">airkiss 数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#总结"><span class="nav-number">6.3.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">7.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="kernel启动调用流程：start_kernel -&gt; rest_init -&gt; kernel_thread -&gt; init -&gt; do_basic_setup -&gt; do_initcalls">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 的 initcall函数">
+<meta property="og:url" content="http://yoursite.com/2016/10/24/linux-initcall/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="kernel启动调用流程：start_kernel -&gt; rest_init -&gt; kernel_thread -&gt; init -&gt; do_basic_setup -&gt; do_initcalls">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2016-10-24T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.666Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="module">
+<meta property="article:tag" content="driver">
+<meta property="article:tag" content="initcall">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2016/10/24/linux-initcall/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linux 的 initcall函数 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/10/24/linux-initcall/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 的 initcall函数
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-10-25 00:00:00" itemprop="dateCreated datePublished" datetime="2016-10-25T00:00:00+08:00">2016-10-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>4k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>kernel启动调用流程：<br><code>start_kernel</code> -&gt; <code>rest_init</code> -&gt; <code>kernel_thread</code> -&gt; <code>init</code> -&gt; <code>do_basic_setup</code> -&gt; <code>do_initcalls</code></p>
+<a id="more"></a>
+
+
+<h2 id="module-init"><a href="#module-init" class="headerlink" title="module_init"></a>module_init</h2><pre><code class="c:include/linux/init.h">/* initcalls are now grouped by functionality into separate                   
+ * subsections. Ordering inside the subsections is determined                 
+ * by link order.                                                             
+ * For backwards compatibility, initcall() puts the call in                   
+ * the device init subsection.                                                
+ *                                                                            
+ * The `id&#39; arg to __define_initcall() is needed so that multiple initcalls                                                        
+ * can point at the same handler without causing duplicate-symbol build errors.
+ */                                                                           
+
+#define __define_initcall(level,fn,id) \                                      
+    static initcall_t __initcall_##fn##id __used \                            
+    __attribute__((__section__(&quot;.initcall&quot; level &quot;.init&quot;))) = fn              
+
+#define core_initcall(fn)       __define_initcall(&quot;1&quot;,fn,1)                   
+#define postcore_initcall(fn)   __define_initcall(&quot;2&quot;,fn,2)               
+#define arch_initcall(fn)       __define_initcall(&quot;3&quot;,fn,3)                   
+#define subsys_initcall(fn)     __define_initcall(&quot;4&quot;,fn,4)                   
+#define fs_initcall(fn)         __define_initcall(&quot;5&quot;,fn,5)                   
+#define rootfs_initcall(fn)     __define_initcall(&quot;rootfs&quot;,fn,rootfs)         
+#define device_initcall(fn)     __define_initcall(&quot;6&quot;,fn,6)                   
+#define late_initcall(fn)       __define_initcall(&quot;7&quot;,fn,7)                   
+
+#define __initcall(fn) device_initcall(fn)                             
+
+/**                                                                           
+ * module_init() - driver initialization entry point                          
+ * @x: function to be run at kernel boot time or module insertion             
+ *                                                                            
+ * module_init() will either be called during do_initcalls() (if              
+ * builtin) or at module insertion time (if a module).  There can only        
+ * be one per module.                                                         
+ */                                                                           
+#define module_init(x)  __initcall(x);         </code></pre>
+<p>可以发现这些 <code>*_initcall(fn)</code> 最终都是通过 <code>__define_initcall(level,fn)</code> 宏定义生成的。</p>
+<pre><code class="c">#define __define_initcall(level,fn,id) \                                      
+    static initcall_t __initcall_##fn##id __used \                            
+    __attribute__((__section__(&quot;.initcall&quot; level &quot;.init&quot;))) = fn              </code></pre>
+<p>定义一个 <code>initcall_t</code> 型的初始化函数，函数存放在 <code>.initcall”level”.init</code> section内。<br><code>.initcall”level”.init</code> section定义在vmlinux.lds内。</p>
+<p><code>__initcall_start</code> 和 <code>__initcall_end</code> 定义在vmlinux.lds内，表示 <code>initcall section</code> 的起始和结束地址。</p>
+<pre><code class="c:arch/csky/kernel/vmlinux.lds">__initcall_start = .;
+*(.initcall1.init)
+*(.initcall2.init)
+*(.initcall3.init)
+*(.initcall4.init)
+*(.initcall5.init)
+*(.initcallrootfs.init)
+*(.initcall6.init)
+*(.initcall7.init)
+__initcall_end = .;</code></pre>
+<p>正好包括了上面 <code>init.h</code> 里定义的从 <code>core_initcall</code> 到 <code>late_initcall</code> 等7个level等级的 <code>.initcall”level”.init section</code>.<br>因此通过不同的 <code>*_initcall</code> 声明的函数指针最终都会存放不同level等级的 <code>.initcall”level”.init section</code> 内。<br>这些不同level的section按level等级高低依次存放。</p>
+<h2 id="do-initcalls"><a href="#do-initcalls" class="headerlink" title="do_initcalls"></a>do_initcalls</h2><p>kernel启动调用流程：</p>
+<p><code>start_kernel</code> -&gt; <code>rest_init</code> -&gt; <code>kernel_thread</code> -&gt; <code>init</code> -&gt; <code>do_basic_setup</code> -&gt; <code>do_initcalls</code></p>
+<pre><code class="c:init/main.c:rest_init">static void noinline __init_refok rest_init(void)                             
+    __releases(kernel_lock)                                                   
+{                                                                             
+    int pid;                                                                  
+
+    kernel_thread(kernel_init, NULL, CLONE_FS | CLONE_SIGHAND);               
+    numa_default_policy();                                                    
+    pid = kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES);              
+    kthreadd_task = find_task_by_pid_ns(pid, &amp;init_pid_ns);                   
+    unlock_kernel();                                                          
+
+    /*                                                                        
+     * The boot idle thread must execute schedule()                           
+     * at least once to get things moving:                                    
+     */                                                                       
+    init_idle_bootup_task(current);                                           
+    preempt_enable_no_resched();                                              
+    schedule();                                                               
+    preempt_disable();                                                        
+
+    /* Call into cpu_idle with preempt disabled */                            
+    cpu_idle();                                                               
+}                    </code></pre>
+<p>通过 <code>kernel_thread</code> 创建一个内核线程执行init函数。<br>其实这里创建的即Linux的1号进程(init进程), 为linux中所有其他进程的父进程。</p>
+<pre><code class="c:init/main.c:do_initcalls">static void __init do_initcalls(void)                                         
+{                                                                             
+    initcall_t *call;                                                         
+
+    for (call = __early_initcall_end; call &lt; __initcall_end; call++)                                                               
+        do_one_initcall(*call);                                               
+
+    /* Make sure there is no pending stuff from the initcall sequence */      
+    flush_scheduled_work();                                                   
+}                                                                             </code></pre>
+<p><code>__initcall_start</code> 和 <code>__initcall_end</code> 定义在 <code>vmlinux.lds</code> 内，表示 <code>initcall section</code> 的起始和结束地址。</p>
+<p>依次循环调用预先存储在 <code>initcall section</code> 内的所有各个级别的初始化函数。</p>
+<h2 id="tips"><a href="#tips" class="headerlink" title="tips"></a>tips</h2><p><code>rest_init</code> 函数原型：</p>
+<pre><code class="c">static void noinline __init_refok rest_init(void)                             
+    __releases(kernel_lock)       </code></pre>
+<p>其中 <code>__releases(kernel_lock)</code> 用于kernel代码静态检测</p>
+<p>Sparse 诞生于 2004 年, 是由linux之父开发的, 目的就是提供一个静态检查代码的工具, 从而减少linux内核的隐患.</p>
+<p>内核代码中还有一个简略的关于 Sparse的说明文件: Documentation/sparse.txt</p>
+<p>Sparse通过 gcc 的扩展属性 <code>__attribute__</code> 以及自己定义的 <code>__context__</code> 来对代码进行静态检查.</p>
+<ul>
+<li><code>__acquires(x)   __attribute__((context(x, 0, 1)))</code>   参数x 在执行前引用计数必须是0,执行后,引用计数必须为1</li>
+<li><code>__releases(x)  __attribute__((context(x, 1, 0)))</code>   与 <code>__acquires(x)</code> 相反</li>
+<li><code>__acquire(x)   __context__(x, 1)</code>   参数x 的引用计数 + 1</li>
+<li><code>__release(x)   __context__(x, -1)</code>  与 <code>__acquire(x)</code> 相反</li>
+</ul>
+<p>其中 <code>__acquires(x)</code> 和 <code>__releases(x)</code>, <code>__acquire(x)</code> 和 <code>__release(x)</code> 必须配对使用, 否则 Sparse 会给出警告</p>
+<pre><code class="c">void __lockfunc _raw_spin_lock(raw_spinlock_t *lock) __acquires(lock);
+void __lockfunc _raw_spin_unlock(raw_spinlock_t *lock) __releases(lock);
+# define __acquires(x) __attribute__((context(x,0,1)))
+# define __releases(x) __attribute__((context(x,1,0)))</code></pre>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/module/" rel="tag"># module</a>
+              <a href="/tags/driver/" rel="tag"># driver</a>
+              <a href="/tags/initcall/" rel="tag"># initcall</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2016/10/17/github-fork-and-push/" rel="next" title="Github 贡献代码流程">
+                  <i class="fa fa-chevron-left"></i> Github 贡献代码流程
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2016/11/06/regex-notes/" rel="prev" title="正则表达式必知必会笔记">
+                  正则表达式必知必会笔记 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#module-init"><span class="nav-number">1.</span> <span class="nav-text">module_init</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#do-initcalls"><span class="nav-number">2.</span> <span class="nav-text">do_initcalls</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tips"><span class="nav-number">3.</span> <span class="nav-text">tips</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

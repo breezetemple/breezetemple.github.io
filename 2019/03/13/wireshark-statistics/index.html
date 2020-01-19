@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="wireshark statistics常用图形工具  IO Graph Flow Graph HTTP Packet Counter HTTP Requests HTTP Request Sequences TCP Throughput TCP Window Scaling TCP Round Trip Time">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Wireshark 图形显示分析网络数据">
+<meta property="og:url" content="http://yoursite.com/2019/03/13/wireshark-statistics/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="wireshark statistics常用图形工具  IO Graph Flow Graph HTTP Packet Counter HTTP Requests HTTP Request Sequences TCP Throughput TCP Window Scaling TCP Round Trip Time">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1552440846433.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1552896238527.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1552902520535.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1552959516799.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1552959550482.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1552972558253.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1552972717700.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1552441053261.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1552441081950.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1552441138425.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1552441180076.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1552441779141.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1552441808903.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1552441901150.png">
+<meta property="article:published_time" content="2019-03-13T01:56:20.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.678Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="wireshark">
+<meta property="article:tag" content="window scaling">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/wireshark/1552440846433.png">
+
+<link rel="canonical" href="http://yoursite.com/2019/03/13/wireshark-statistics/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Wireshark 图形显示分析网络数据 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/13/wireshark-statistics/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Wireshark 图形显示分析网络数据
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-03-13 09:56:20" itemprop="dateCreated datePublished" datetime="2019-03-13T09:56:20+08:00">2019-03-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><code>wireshark statistics</code>常用图形工具</p>
+<ul>
+<li>IO Graph</li>
+<li>Flow Graph</li>
+<li>HTTP Packet Counter</li>
+<li>HTTP Requests</li>
+<li>HTTP Request Sequences</li>
+<li>TCP Throughput</li>
+<li>TCP Window Scaling</li>
+<li>TCP Round Trip Time</li>
+</ul>
+<a id="more"></a>
+
+<h2 id="IO-Graph"><a href="#IO-Graph" class="headerlink" title="IO Graph"></a>IO Graph</h2><p><code>IO Graphs</code>这个窗口可以让我们对网络上的<code>数据吞吐</code>情况进行绘图。这样就可以很容易地发现数据吞吐的峰值，找出不同协议中的性能瓶颈，并且还可以用来比较实时的数据流。</p>
+<p>选中任意一个 TCP 数据包，在菜单栏选择<strong>“Statistics”</strong>-&gt;<strong>“IO Graphs”</strong>。这是一台电脑从互联网下载文件时的例子：</p>
+<p><img src="/images/wireshark/1552440846433.png" alt="1552440846433"></p>
+<p><img src="/images/wireshark/1552896238527.png" alt="1552896238527"></p>
+<p>过滤条件为空，此图形<strong>显示所有流量</strong>。 双击<code>Y Axis</code>将 Y 轴改为<code>bits/tick</code>这样就可以看到<strong>每秒的流量</strong></p>
+<p><img src="/images/wireshark/1552902520535.png" alt="1552902520535"></p>
+<h3 id="常用过滤条件"><a href="#常用过滤条件" class="headerlink" title="常用过滤条件"></a>常用过滤条件</h3><ol>
+<li><code>tcp.analysis.lost_segment</code>：表明已经在抓包中看到不连续的序列号。报文丢失会造成重复的 ACK，这会导致重传</li>
+<li><code>tcp.analysis.duplicate_ack</code>：显示被确认过不止一次的报文。大量的重复 ACK 是 TCP 端点之间高延时的迹象</li>
+<li><code>tcp.analysis.retransmission</code>：显示抓包中的所有重传。如果重传次数不多的话还是正常的，过多重传可能有问题。这通常意味着应用性能缓慢和 / 或用户报文丢失</li>
+<li><code>tcp.analysis.window_update</code>：将传输过程中的 TCP window 大小图形化。如果看到窗口大小下降为零，这意味着发送方已经退出了，并等待接收方确认所有已传送数据。这可能表明接收端已经不堪重负了</li>
+<li><code>tcp.analysis.bytes_in_flight</code>：某一时间点网络上未确认字节数。未确认字节数不能超过你的 TCP 窗口大小（定义于最初 3 此 TCP 握手），为了最大化吞吐量你想要获得尽可能接近 TCP 窗口大小。如果看到连续低于 TCP 窗口大小，可能意味着报文丢失或路径上其他影响吞吐量的问题</li>
+<li><code>tcp.analysis.ack_rtt</code>：衡量抓取的 TCP 报文与相应的 ACK。如果这一时间间隔比较长那可能表示某种类型的网络延时（报文丢失，拥塞，等等）</li>
+</ol>
+<p>在抓包中应用以上一些过滤条件：</p>
+<p><img src="/images/wireshark/1552959516799.png" alt="1552959516799"></p>
+<p>得到如下图：</p>
+<p><img src="/images/wireshark/1552959550482.png" alt="1552959550482"></p>
+<ul>
+<li>Line 是 HTTP 总体流量，显示形式为 packets/tick，时间间隔 1 秒</li>
+<li>Red 是 TCP 丢失报文片段</li>
+<li>Green 是 TCP 重复 ACK</li>
+<li>Blue 重传</li>
+</ul>
+<h3 id="函数"><a href="#函数" class="headerlink" title="函数"></a>函数</h3><p><code>IO Graphs</code>有六个可用函数：<code>SUM</code>, <code>MIN</code>, <code>AVG</code>, <code>MAX</code>, <code>COUNT</code>, <code>LOAD</code></p>
+<p><code>MIN</code>、<code>AVG</code>和<code>MAX</code>帧之间的最小，平均和最大时间，这对于查看帧 / 报文之间的延时非常有用可以将这些函数结合<code>frame.time_delta</code>过滤条件看清楚帧延时，并使得往返延时更为明显。</p>
+<p><img src="/images/wireshark/1552972558253.png" alt="1552972558253"></p>
+<p><code>COUNT</code>此函数计算时间间隔内事件发生的次数，在查看 TCP 分析标识符时很有用，例如重传。例图如下：</p>
+<p><img src="/images/wireshark/1552972717700.png" alt="1552972717700"></p>
+<p><code>SUM</code>该函数统计事件的累加值。有两种常见的用例是看在捕获 TCP 数据量，以及检查 TCP 序列号。</p>
+<h2 id="Flow-Graph"><a href="#Flow-Graph" class="headerlink" title="Flow Graph"></a>Flow Graph</h2><p><code>数据流图</code>功能可以将连接可视化，并且将一段时间中的数据流显示出来。数据流图一般以<code>列</code>的方式将主机之间的连接显示出来，并将数据组织到一起，便于更加直观地解读。</p>
+<p>选择菜单栏的<strong><code>Statistics</code></strong>-&gt;<strong><code>Flow Graph</code></strong>，就可以打开数据流图窗口：</p>
+<p><img src="/images/wireshark/1552441053261.png" alt="1552441053261"></p>
+<p>从上图中我们可以更好地看到整个连接的情况，比如 TCP 的<code>三次握手</code>，数据传输以及 HTTP 协议等的信息都一目了然。</p>
+<h2 id="Packet-Counter"><a href="#Packet-Counter" class="headerlink" title="Packet Counter"></a>Packet Counter</h2><p><strong><code>Statistics</code></strong>-&gt;<strong><code>HTTP</code></strong>-&gt;<strong><code>Packet Counter</code></strong>，每一个网站的报文数量。帮助识别有多少响应和请求</p>
+<p><img src="/images/wireshark/1552441081950.png" alt="1552441081950"></p>
+<h2 id="Requests"><a href="#Requests" class="headerlink" title="Requests"></a>Requests</h2><p><strong><code>Statistics</code></strong>-&gt;<strong><code>HTTP</code></strong>-&gt;<strong><code>Requests</code></strong>，各网站的请求分布</p>
+<p><img src="/images/wireshark/1552441138425.png" alt="1552441138425"></p>
+<h2 id="Request-Sequences"><a href="#Request-Sequences" class="headerlink" title="Request Sequences"></a>Request Sequences</h2><p><strong><code>Statistics</code></strong>-&gt;<strong><code>HTTP</code></strong>-&gt;<strong><code>Request Sequences</code></strong></p>
+<p><img src="/images/wireshark/1552441180076.png" alt="1552441180076"></p>
+<h2 id="Throughput"><a href="#Throughput" class="headerlink" title="Throughput"></a>Throughput</h2><p><strong><code>Statistics</code></strong>-&gt;<strong><code>TCP</code></strong>-&gt;<strong><code>Throughput</code></strong>，显示 TCP 流吞吐量图形</p>
+<p><img src="/images/wireshark/1552441779141.png" alt="1552441779141"></p>
+<h2 id="Window-Scaling"><a href="#Window-Scaling" class="headerlink" title="Window Scaling"></a>Window Scaling</h2><p>显示 TCP 滑动窗口图形</p>
+<p><img src="/images/wireshark/1552441808903.png" alt="1552441808903"></p>
+<h2 id="Round-Trip-Time"><a href="#Round-Trip-Time" class="headerlink" title="Round Trip Time"></a>Round Trip Time</h2><p>Wireshark 的另一个绘图功能就是对所捕获的文件进行往返时间的绘图。<code>往返时间</code>（round-trip time, RTT）是指一个数据包从发出到确认被成功接收所需要的时间。或者说，往返时间就是数据包抵达目的地的时间，加上收到对方的确认信息的时间之和。通过对这个时间的分析，可以找到通信中的瓶颈，确定是否存在延迟。</p>
+<p>选择<strong><code>Statistics</code></strong>-&gt;<strong><code>TCP Stram Graph</code></strong>-&gt;<strong><code>Round Trip Time Graph</code></strong>，来查看往返时间图：</p>
+<p><img src="/images/wireshark/1552441901150.png" alt="1552441901150"></p>
+<p>上图中的每个点代表的是一个数据包的往返时间。在默认情况下，这些值按照序号进行排序。单击图中任意一个点，就可以在<strong>Packet List</strong>面板中看到相应的数据包。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/wireshark/" rel="tag"># wireshark</a>
+              <a href="/tags/window-scaling/" rel="tag"># window scaling</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/03/05/connect-to-hidden-ap/" rel="next" title="connect-to-hidden-ap">
+                  <i class="fa fa-chevron-left"></i> connect-to-hidden-ap
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/03/16/wireshark-filter/" rel="prev" title="应用 Wireshark 显示过滤器分析特定数据流">
+                  应用 Wireshark 显示过滤器分析特定数据流 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#IO-Graph"><span class="nav-number">1.</span> <span class="nav-text">IO Graph</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#常用过滤条件"><span class="nav-number">1.1.</span> <span class="nav-text">常用过滤条件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#函数"><span class="nav-number">1.2.</span> <span class="nav-text">函数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Flow-Graph"><span class="nav-number">2.</span> <span class="nav-text">Flow Graph</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Packet-Counter"><span class="nav-number">3.</span> <span class="nav-text">Packet Counter</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Requests"><span class="nav-number">4.</span> <span class="nav-text">Requests</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Request-Sequences"><span class="nav-number">5.</span> <span class="nav-text">Request Sequences</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Throughput"><span class="nav-number">6.</span> <span class="nav-text">Throughput</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Window-Scaling"><span class="nav-number">7.</span> <span class="nav-text">Window Scaling</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Round-Trip-Time"><span class="nav-number">8.</span> <span class="nav-text">Round Trip Time</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

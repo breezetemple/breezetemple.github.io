@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="记录Raw socket相关知识点，以及数据链路层数据访问  Layer 2: MAC &amp; LLC Layer 3: Network">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Raw Socket L2 vs L3">
+<meta property="og:url" content="http://yoursite.com/2019/04/28/raw-socket-L2-vs-L3/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="记录Raw socket相关知识点，以及数据链路层数据访问  Layer 2: MAC &amp; LLC Layer 3: Network">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/socket/1556452439780.png">
+<meta property="og:image" content="http://yoursite.com/images/socket/1556455755725.png">
+<meta property="article:published_time" content="2019-04-28T11:39:59.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.682Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="socket">
+<meta property="article:tag" content="LLC">
+<meta property="article:tag" content="MAC">
+<meta property="article:tag" content="raw socket">
+<meta property="article:tag" content="layer 2">
+<meta property="article:tag" content="layer 3">
+<meta property="article:tag" content="OSI Model">
+<meta property="article:tag" content="IP">
+<meta property="article:tag" content="AF_INET">
+<meta property="article:tag" content="AF_PACKET">
+<meta property="article:tag" content="SOCK_RAW">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/socket/1556452439780.png">
+
+<link rel="canonical" href="http://yoursite.com/2019/04/28/raw-socket-L2-vs-L3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Raw Socket L2 vs L3 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/04/28/raw-socket-L2-vs-L3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Raw Socket L2 vs L3
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-04-28 19:39:59" itemprop="dateCreated datePublished" datetime="2019-04-28T19:39:59+08:00">2019-04-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/Socket/" itemprop="url" rel="index">
+                    <span itemprop="name">Socket</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/Airkiss/" itemprop="url" rel="index">
+                    <span itemprop="name">Airkiss</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>5.6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>记录<code>Raw socket</code>相关知识点，以及数据链路层数据访问</p>
+<ul>
+<li>Layer 2: MAC &amp; LLC</li>
+<li>Layer 3: Network</li>
+</ul>
+<a id="more"></a>
+
+<h2 id="OSI-Model"><a href="#OSI-Model" class="headerlink" title="OSI Model"></a>OSI Model</h2><p><code>OSI</code>七层模型如下</p>
+<p><img src="/images/socket/1556452439780.png" alt="1556452439780"></p>
+<ul>
+<li>Layer2: <code>MAC &amp; LLC</code>，数据类型 <a href="https://en.wikipedia.org/wiki/Frame_networking" target="_blank" rel="noopener">Frame</a></li>
+<li>Layer3: <code>Network</code>，数据类型 <a href="https://en.wikipedia.org/wiki/Network_packet" target="_blank" rel="noopener">Packet</a></li>
+</ul>
+<h2 id="Raw-Socket"><a href="#Raw-Socket" class="headerlink" title="Raw Socket"></a>Raw Socket</h2><p>每一层级网络数据都由两部分组成：<code>Header</code>和<code>Payload</code>，<code>TCP</code>报文如下</p>
+<p><img src="/images/socket/1556455755725.png" alt="1556455755725"></p>
+<p>通常使用的流式套接字<code>SOCK_STREAM</code>和数据包式套接字<code>SOCK_DGRAM</code>，已经由系统提供的协议栈处理过，应用只能处理<code>Payload</code>部分，<code>Header</code>部分已被处理过。而当需要处理<code>Header</code>部分时，需要使用<code>raw socket</code>，它位于系统核心，可以处理<code>Header</code>部分，而<code>raw socket</code>根据能力不同分为<code>L2</code>和<code>L3</code>，部分资料摘录如下：</p>
+<ol>
+<li>non-Raw socket<blockquote>
+<p>you can just determine Transport Layer Payload. i.e it is OS task to create Transport,Network and Data Link layer headers.</p>
+</blockquote>
+</li>
+<li>Raw socket<blockquote>
+<p>you can determine every section of packet,either header or payload. Please note that raw socket is a general word. I categorize raw socket into: Network Socket andd Data-Link Socket (or alternativly L3 Socket and L2 Socket)</p>
+</blockquote>
+</li>
+</ol>
+<h2 id="L3-Socket-–-Network-Socket"><a href="#L3-Socket-–-Network-Socket" class="headerlink" title="L3 Socket – Network Socket"></a>L3 Socket – Network Socket</h2><blockquote>
+<p>In L3 Socket you can determine header and payload of packet in network layer. For example if network layer protocol is IPv4, you can determine IPv4 header and payload. Thus you can set transport layer header/payload, ICMP header/payload, Routing Protocols headder/payload.</p>
+</blockquote>
+<p>创建方式</p>
+<pre><code class="c">socket(AF_INET, SOCK_RAW, protocol)</code></pre>
+<p>在头文件<code>netinet/in.h</code>中定义了系统中该字段目前能取的值，注意：有些系统中不一定实现了<code>netinet/in.h</code>中的所有协议。源代码的<code>linux/in.h</code>中和<code>netinet/in.h</code>中的内容一样。常用的如下</p>
+<ul>
+<li><code>IPPROTO_IP(0)</code>: 用于接收任何的 IP 数据包。其中的校验和和协议分析由程序自己完成</li>
+<li><code>IPPROTO_RAW(255)</code>: 只能用来发送 IP 包，而不能接收任何的数据。发送的数据需要自己填充 IP 包头，并且自己计算校验和</li>
+<li>其他像<code>IPPROTO_TCP(6)</code>这种非 0、非 255 的协议，当操作系统内核碰到 IP 头中 protocol 域和创建 socket 所使用参数 protocol 相同的 IP 包，就会交给这个<code>raw socket</code>来处理，因此，一般来说，要想接收什么样的数据包，就应该在参数 protocol 里来指定相应的协议。当内核向此 raw socket 交付数据包的时候，是包括整个 IP 头的，并且已经是重组好的 IP 包</li>
+</ul>
+<p>用这种方式可以得到原始的 IP 包，然后就可以自定义 IP 所承载的具体协议类型，如<code>TCP</code>，<code>UDP</code>或<code>ICMP</code>，并手动对每种承载在 IP 协议之上的报文进行填充。</p>
+<p>注意其中一个参数<code>IP_HDRINCL</code>，允许用户构造 IP 头</p>
+<pre><code class="c">const int on =1;
+if (setsockopt (sockfd, IPPROTO_IP, IP_HDRINCL, &amp;on, sizeof(on)) &lt; 0) {
+    printf(&quot;setsockopt error!\n&quot;);
+}</code></pre>
+<p><strong>L3 原始套接字处理的只是 IP 层及其以上的数据，可以处理<code>IP Header</code>及<code>TCP/UDP Header</code></strong>，比如实现 SYN FLOOD 攻击、处理 PING 报文等。当需要操作更底层的数据的时候，就需要采用其他的方式。</p>
+<h2 id="L2-Socket-–-Data-Link-Socket"><a href="#L2-Socket-–-Data-Link-Socket" class="headerlink" title="L2 Socket – Data-Link Socket"></a>L2 Socket – Data-Link Socket</h2><blockquote>
+<p>In L2 Socket you can set header and payload of packet in data link layer, i.e everything in packet. Thus you do everything done with L3 Socket + determine ARP header/payload, PPP header/payload, PPPOE header/payload , …. .</p>
+</blockquote>
+<p>为了实现直接从链路层收发数据帧，用到原始套接字的如下形式</p>
+<pre><code class="c">socket(PF_PACKET, type, protocol)</code></pre>
+<ul>
+<li><code>type</code>可取<code>SOCK_RAW</code>或<code>SOCK_DGRAM</code>。它们两个都使用一种与设备无关的标准物理层地址结构<code>struct sockaddr_ll</code>，但具体操作的报文格式不同：<ul>
+<li><code>SOCK_RAW</code>：直接向网络硬件驱动程序发送或接收没有任何处理的完整数据报文，<strong>包括物理帧的帧头</strong></li>
+<li><code>SOCK_DGRAM</code>：这种类型的套接字对于收到的数据报文的物理帧帧头会被系统自动去掉，<strong>不包括物理帧的帧头</strong>，然后再将其往协议栈上层传递。发送时根据<code>sockaddr_ll</code>中的目的地址信息添加<code>MAC</code>头</li>
+</ul>
+</li>
+<li><code>protocol</code>，链路层协议，<code>linux/if_ether.h</code>，常用如下：<ul>
+<li><code>ETH_P_IP</code>只接收发往目的 MAC 是本机的 IP 类型的数据帧</li>
+<li><code>ETH_P_ARP</code>只接收发往目的 MAC 是本机的 ARP 类型的数据帧</li>
+<li><code>ETH_P_RARP</code>只接受发往目的 MAC 是本机的 RARP 类型的数据帧</li>
+<li><code>ETH_P_ALL</code>接收发往目的 MAC 是本机的所有类型 (ip,arp,rarp) 的数据帧，同时还可以接收从本机发出去的所有数据帧。<strong>在混杂模式 /Monitor 打开的情况下，还会接收到发往目的 MAC 为非本地硬件地址的数据帧</strong></li>
+</ul>
+</li>
+</ul>
+<p>发送数据的时候需要自己组织整个以太网数据帧。和地址相关的结构体就不能再用前面的<code>struct sockaddr_in</code>了，而是<code>struct sockaddr_ll</code>，头文件<code>linux/if_packet.h</code>，如下：</p>
+<pre><code class="c">struct sockaddr_ll{
+    unsigned short sll_family; /* 总是 AF_PACKET */
+    unsigned short sll_protocol; /* 物理层的协议 */
+    int sll_ifindex; /* 接口号 */
+    unsigned short sll_hatype; /* 报头类型 */
+    unsigned char sll_pkttype; /* 分组类型 */
+    unsigned char sll_halen; /* 地址长度 */
+    unsigned char sll_addr[8]; /* 物理层地址 */
+};</code></pre>
+<ul>
+<li><p><code>sll_family</code>，使用<code>AF_PACKET</code></p>
+</li>
+<li><p><code>sll_protocol</code>，见头文件<code>linux/if_ether.h</code>，例如<code>ETH_P_ALL</code></p>
+</li>
+<li><p><code>sll_ifindex</code>，设置为<code>0</code>表示处理所有<code>interface</code>，单网卡设备无所谓，示例代码如下</p>
+<pre><code class="c">struct  sockaddr_ll  sll;
+struct ifreq ifr;
+
+strcpy(ifr.ifr_name, &quot;eth0&quot;);
+ioctl(sockfd, SIOCGIFINDEX, &amp;ifr);
+sll.sll_ifindex = ifr.ifr_ifindex;</code></pre>
+</li>
+<li><p><code>sll_hatype</code>，ARP 硬件地址类型，定义在<code>linux/if_arp.h</code>中，例如</p>
+<ul>
+<li><code>ARPHRD_ETHER</code>以太网</li>
+<li><code>ARPHRD_IEEE80211</code> IEEE 802.11</li>
+<li><code>ARPHRD_IEEE80211_PRISM</code> IEEE 802.11 + Prism2 header</li>
+<li><code>ARPHRD_IEEE80211_RADIOTAP</code> IEEE 802.11 + radiotap header <strong>Monitor 模式抓下来的类型</strong></li>
+</ul>
+</li>
+<li><p><code>sll_pkttype</code>，分组类型，定义在<code>linux/if_packet.h</code>，例如</p>
+<pre><code class="c">  3 #define PACKET_HOST     0       /* To us        */
+  4 #define PACKET_BROADCAST    1       /* To all       */
+  5 #define PACKET_MULTICAST    2       /* To group     */
+  6 #define PACKET_OTHERHOST    3       /* To someone else  */
+  7 #define PACKET_OUTGOING     4       /* Outgoing of any type */
+  8 #define PACKET_LOOPBACK     5       /* MC/BRD frame looped back */
+  9 #define PACKET_USER     6       /* To user space    */
+ 10 #define PACKET_KERNEL       7       /* To kernel space  */</code></pre>
+</li>
+<li><p><code>sll_addr</code>和<code>sll_halen</code>指示物理层（如以太网，802.3，802.4 或 802.5 等）地址及其长度，<strong>严格依赖于具体的硬件设备</strong>。类似于获取接口索引<code>sll_ifindex</code>，要获取接口的物理地址，可以采用如下代码</p>
+<pre><code class="c">struct ifreq ifr;
+
+strcpy(ifr.ifr_name, &quot;eth0&quot;);
+ioctl(sockfd, SIOCGIFHWADDR, &amp;ifr);</code></pre>
+</li>
+</ul>
+<p>默认情况下，从任何接口收到的符合指定协议的所有数据报文都会被传送到原始 PACKET 套接字口，而使用<code>bind</code>系统调用并以一个<code>sochddr_ll</code>结构体对象将 PACKET 套接字与某个网络接口相绑定，就可使我们的 PACKET 原始套接字只接收指定接口的数据报文。示例代码如下</p>
+<pre><code class="c">struct sockaddr_ll sll;
+struct ifreq ifr;
+
+/* find the interface index */
+memset( &amp;ifr, 0, sizeof( ifr ) );
+strncpy( ifr.ifr_name, iface, sizeof( ifr.ifr_name ) - 1 );
+
+if( ioctl( fd, SIOCGIFINDEX, &amp;ifr ) &lt; 0 )
+{
+    printf(&quot;Interface %s: \n&quot;, iface);
+    perror( &quot;ioctl(SIOCGIFINDEX) failed&quot; );
+    return( 1 );
+}
+
+memset( &amp;sll, 0, sizeof( sll ) );
+sll.sll_family   = AF_PACKET;
+sll.sll_ifindex  = ifr.ifr_ifindex;
+//sll.sll_ifindex  = if_nametoindex(iface);
+sll.sll_protocol = htons( ETH_P_ALL );
+
+/* bind the raw socket to the interface */
+
+if( bind( fd, (struct sockaddr *) &amp;sll, sizeof( sll ) ) &lt; 0 )
+{
+    printf(&quot;Interface %s: \n&quot;, iface);
+    perror( &quot;bind(ETH_P_ALL) failed&quot; );
+    return( 1 );
+}</code></pre>
+<p><strong>L2 Socket 可以处理链路层数据，可以处理<code>MAC Header</code></strong>，如果创建这个原始套接字时指定了非 0 的协议参数，那么接收到的数据报协议字段必须匹配该值。如果这个套接字已由<code>bind</code>调用绑定了某个 IP 地址，那么接收到的数据报的目的地址必须匹配这个绑定地址。</p>
+<h3 id="SOCK-PACKET"><a href="#SOCK-PACKET" class="headerlink" title="SOCK_PACKET"></a>SOCK_PACKET</h3><p>老的内核<code>Linux 2.0</code>接口提供的接口用于处理数据链路层数据，具体信息参看<code>libpcap/pcap-linux.c</code></p>
+<pre><code class="c">socket(PF_INET, SOCK_PACKET, htons(ETH_P_ALL))</code></pre>
+<p>如果系统已经提供<code>PF_PACKET</code>支持，不建议使用<code>SOCK_PACKET</code></p>
+<h2 id="Programming-Example"><a href="#Programming-Example" class="headerlink" title="Programming Example"></a>Programming Example</h2><ul>
+<li>socket(AF_INET,RAW_SOCKET,…) means L3 socket , Network Layer Protocol = IPv4</li>
+<li>socket(AF_IPX,RAW_SOCKET,…) means L3 socket , Network Layer Protocol = IPX</li>
+<li>socket(AF_INET6,RAW_SOCKET,…) means L3 socket , Network Layer Protocol=IPv6</li>
+<li>socket(AF_PACKET,RAW_SOCKET,…) means L2 socket , Data-link Layer Protocol= Ethernet</li>
+<li>socket(AF_PACKET,SOCK_DGRAM,…) means L2 socket , Data-link Layer Protocol= Ethernet without MAC Header</li>
+<li>socket(PF_INET, SOCK_PACKET, htons(ETH_P_ALL)) means L2 socket , Data-link Layer Protocol= Ethernet</li>
+</ul>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://smallbiztrends.com/2013/09/osi-model-layer-networking.html" target="_blank" rel="noopener">Is the Extra Layer Better? Layer 2 Versus Layer 3 Networking</a></li>
+<li><a href="https://stackoverflow.com/questions/14774668/what-is-raw-socket-in-socket-programming" target="_blank" rel="noopener">what is RAW socket in socket programming</a></li>
+<li><a href="https://blog.csdn.net/whatday/article/details/79232598" target="_blank" rel="noopener">原始套接字 SOCK_RAW</a></li>
+<li><a href="http://abcdxyzk.github.io/blog/2015/04/14/kernel-net-sock-raw/" target="_blank" rel="noopener">Linux 网络编程：原始套接字 SOCK_RAW</a></li>
+<li><a href="https://blog.csdn.net/zimu2702/article/details/7185917" target="_blank" rel="noopener">IPPROTO_IP , IPPROTO_RAW</a></li>
+<li><a href="https://medium.com/@qre0ct/difference-between-pf-inet-sockets-and-pf-packet-sockets-5a58ab9fe8e3" target="_blank" rel="noopener">Difference between PF_INET sockets and PF_PACKET sockets ?</a></li>
+<li><a href="https://blog.csdn.net/gqtcgq/article/details/44874349" target="_blank" rel="noopener">原始套接字和数据链路层访问</a></li>
+<li><a href="https://en.wikipedia.org/wiki/OSI_model" target="_blank" rel="noopener">OSI Model</a></li>
+<li><a href="https://austinmarton.wordpress.com/2011/09/14/sending-raw-ethernet-packets-from-a-specific-interface-in-c-on-linux/" target="_blank" rel="noopener">Sending raw Ethernet packets from a specific interface in C on Linux</a></li>
+<li><a href="http://man7.org/linux/man-pages/man7/packet.7.html" target="_blank" rel="noopener">PACKET(7) Linux Programmer’s Manual</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/socket/" rel="tag"># socket</a>
+              <a href="/tags/LLC/" rel="tag"># LLC</a>
+              <a href="/tags/MAC/" rel="tag"># MAC</a>
+              <a href="/tags/raw-socket/" rel="tag"># raw socket</a>
+              <a href="/tags/layer-2/" rel="tag"># layer 2</a>
+              <a href="/tags/layer-3/" rel="tag"># layer 3</a>
+              <a href="/tags/OSI-Model/" rel="tag"># OSI Model</a>
+              <a href="/tags/IP/" rel="tag"># IP</a>
+              <a href="/tags/AF-INET/" rel="tag"># AF_INET</a>
+              <a href="/tags/AF-PACKET/" rel="tag"># AF_PACKET</a>
+              <a href="/tags/SOCK-RAW/" rel="tag"># SOCK_RAW</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/04/19/airkiss-client-and-raw-socket/" rel="next" title="AirKiss Client 实现评估及 raw socket">
+                  <i class="fa fa-chevron-left"></i> AirKiss Client 实现评估及 raw socket
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/05/06/nfs-error/" rel="prev" title="ubuntu 升级 18.04 之后 nfs 出错">
+                  ubuntu 升级 18.04 之后 nfs 出错 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#OSI-Model"><span class="nav-number">1.</span> <span class="nav-text">OSI Model</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Raw-Socket"><span class="nav-number">2.</span> <span class="nav-text">Raw Socket</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#L3-Socket-–-Network-Socket"><span class="nav-number">3.</span> <span class="nav-text">L3 Socket – Network Socket</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#L2-Socket-–-Data-Link-Socket"><span class="nav-number">4.</span> <span class="nav-text">L2 Socket – Data-Link Socket</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SOCK-PACKET"><span class="nav-number">4.1.</span> <span class="nav-text">SOCK_PACKET</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Programming-Example"><span class="nav-number">5.</span> <span class="nav-text">Programming Example</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">6.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

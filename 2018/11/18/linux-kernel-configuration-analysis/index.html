@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="解析 Linux 4.9 内核配置项">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 内核配置项解析">
+<meta property="og:url" content="http://yoursite.com/2018/11/18/linux-kernel-configuration-analysis/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="解析 Linux 4.9 内核配置项">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2018-11-18T07:33:57.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.678Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="kernel">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2018/11/18/linux-kernel-configuration-analysis/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linux 内核配置项解析 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/linux-kernel-configuration-analysis/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 内核配置项解析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-11-18 15:33:57" itemprop="dateCreated datePublished" datetime="2018-11-18T15:33:57+08:00">2018-11-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>19k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>17 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>解析 <code>Linux 4.9</code> 内核配置项</p>
+<a id="more"></a>
+
+<h2 id="General-setup-常规设置"><a href="#General-setup-常规设置" class="headerlink" title="General setup 常规设置"></a>General setup 常规设置</h2><ul>
+<li><code>Cross-compiler tool prefix</code> 交叉编译工具前缀（比如 <code>arm-linux-</code> 相当于使用 <code>make CROSS_COMPILE=arm-linux-</code> 进行编译）. 除非你想配置后默认自动进行交叉编译，否则不要使用此选项</li>
+<li><code>Compile also drivers which will not load</code> 显示专属于其他平台 <code>（非 x86 平台）</code> 的驱动选项（需要交叉编译）, 仅供驱动开发者使用，普通的发行版制作者应该选 <code>N</code></li>
+<li><code>Local version - append to kernel release</code> 在内核版本后面加上自定义的版本字符串（最大 64 字符）, 可以用 <code>uname -a</code> 命令看到</li>
+<li><code>Automatically append version information to the version string</code> 自动在版本字符串 <code>CONFIG_LOCALVERSION</code> 后面添加版本信息（类似 <code>-gxxxxxxxx</code> 格式）, 需要有 <code>perl</code> 以及 <code>git 仓库</code> 支持</li>
+<li><code>Kernel compression mode</code> 内核镜像的压缩格式，可选 <code>Gzip/Bzip2/LZMA/XZ/LZO</code> 格式之一. 你的系统中需要有相应的压缩工具</li>
+</ul>
+<p><code>Default hostname</code><br><code>CONFIG_DEFAULT_HOSTNAME</code><br>设置默认主机名，默认值是”(none)”. 用户可以随后使用系统调用 sethostname() 来修改主机名。<br><code>Support for paging of anonymous memory (swap)</code><br>CONFIG_SWAP<br>使用交换分区或者交换文件来做为虚拟内存<br>System V IPC<br>CONFIG_SYSVIPC<br>System V 进程间通信 (IPC) 支持，用于进程间同步和交换数据，许多程序需要这个功能. 选”Y”, 除非你确实知道自己在做什么<br>POSIX Message Queues<br>CONFIG_POSIX_MQUEUE<br>POSIX 消息队列是 POSIX IPC 的一部分，如果你想编译和运行那些使用”mq_*”系统调用的程序（比如为 Solaris 开发的程序）, 或者需要使用 Docker 容器，就必须开启此选项.POSIX 消息队列可以作为”mqueue”文件系统挂载以方便用户对队列进行操作. 不确定的选”Y”.<br>open by fhandle syscalls<br>CONFIG_FHANDLE<br>用户程序可以使用句柄（而非文件名）来追踪文件（使用 open_by_handle_at(2)/name_to_handle_at(2) 系统调用）, 即使某文件被重命名，用户程序依然可定位那个文件. 此特性有助于实现用户空间文件服务器 (userspace file server). 建议选”Y”, 因为 systemd 和 udev 依赖于它。<br>uselib syscall<br>CONFIG_USELIB<br>启用老旧的 uselib() 系统接口支持，仅在你需要使用基于 libc5 的古董级程序时才需要，不确定的选”N”.<br>Auditing support<br>CONFIG_AUDIT<br>内核审计（跟踪每个进程的活动情况）支持，某些安全相关的内核子系统（例如 SELinux) 需要它. 但是它会与 systemd 冲突，所以在使用 systemd 的系统上必须关闭。<br>Enable system-call auditing support<br>CONFIG_AUDITSYSCALL<br>对系统调用进行审计. 既可独立使用，也可被其他内核子系统（例如 SELinux) 使用。<br>Make audit loginuid immutable<br>CONFIG_AUDIT_LOGINUID_IMMUTABLE<br>审计时使用固定的 loginuid. 在使用 systemd 之类的系统上应该开启 (login 服务由 init 进程负责重启）, 在使用 SysVinit 或 Upstart 之类的系统上应该关闭 (login 服务由系统管理员手动重启）.OpenRC 就是一个基于 SysVinit 的系统。<br>IRQ subsystem<br>IRQ（中断请求）子系统<br>Expose hardware/virtual IRQ mapping via debugfs<br>CONFIG_IRQ_DOMAIN_DEBUG<br>通过 debugfs 中的 irq_domain_mapping 文件向用户显示硬件 IRQ 号 /Linux IRQ 号之间的对应关系. 仅用于开发调试。<br>Support sparse irq numbering<br>CONFIG_SPARSE_IRQ<br>稀疏 IRQ 号支持. 它允许在小型设备上（例如嵌入式设备）定义一个很高的 CONFIG_NR_CPUS 值，但仍然不希望占用太多内核”memory footprint”（一段可以被操作或被管理的内存区域）的场合. 稀疏 IRQ 也更适合 NUMA 平台，因为它以一种对 NUMA 更友好的方式分发中断描述符. 不确定的选”N”.<br>Timers subsystem<br>Linux 内核时钟子系统<br>Timer tick handling<br>内核时钟滴答处理程序，更多信息可以参考内核源码树下的”Documentation/timers/NO_HZ.txt”文件<br>Periodic timer ticks (constant rate, no dynticks)<br>CONFIG_HZ_PERIODIC<br>无论 CPU 是否需要，都强制按照固定频率不断触发时钟中断. 这是最耗电的方式，不推荐使用<br>Idle dynticks system (tickless idle)<br>CONFIG_NO_HZ_IDLE<br>CPU 在空闲状态时不产生不必要的时钟中断，以使处理器能够在较低能耗状态下运行以节约电力，适合于大多数场合<br>Full dynticks system (tickless)<br>CONFIG_NO_HZ_FULL<br>完全无滴嗒：即使 CPU 在忙碌状态也尽可能关闭所有时钟中断，适用于 CPU 在同一时间仅运行一个任务，或者用户空间程序极少与内核交互的场合. 即使开启此选项，也需要额外设置”nohz_full=?”内核命令行参数才能真正生效。<br>Full dynticks system on all CPUs by default<br>CONFIG_NO_HZ_FULL_ALL<br>即使没有设置”nohz_full”引导参数，也默认对所有 CPU(boot CPU 除外）开启完全无滴答特性。<br>Old Idle dynticks config<br>CONFIG_NO_HZ<br>等价于 CONFIG_NO_HZ_IDLE, 临时用来兼容老版本内核选项，未来会被删除。<br>High Resolution Timer Support<br>CONFIG_HIGH_RES_TIMERS<br>高精度定时器 (hrtimer) 是从 2.6.16 开始引入，用于取代传统 timer wheel（基于 jiffies 定时器）的时钟子系统. 可以降低与内核其他模块的耦合性，还可以提供比 1 毫秒更高的精度（因为它可以读取 HPET/TSC 等新型硬件时钟源）, 可以更好的支持音视频等对时间精度要求较高的应用. 建议选”Y”.『提示』这里说的”定时器”是指”软件定时器”, 而不是主板或 CPU 上集成的硬件时钟发生器 (ACPI PM Timer/HPET Timer/TSC Timer).<br>CPU/Task time and stats accounting<br>CPU/ 进程的时间及状态统计<br>Cputime accounting<br>CPU 时间统计方式<br>Simple tick based cputime accounting<br>CONFIG_TICK_CPU_ACCOUNTING<br>简单的基于滴答的统计，适用于大多数场合<br>Deterministic task and CPU time accounting<br>CONFIG_VIRT_CPU_ACCOUNTING_NATIVE<br>通过读取 CPU 计数器进行统计，可以提供更精确的统计，但是对性能有一些不利影响。<br>Full dynticks CPU time accounting<br>CONFIG_VIRT_CPU_ACCOUNTING_GEN<br>利用上下文跟踪子系统，通过观察每一个内核与用户空间的边界进行统计. 该选项对性能有显著的不良影响，目前仅用于完全无滴答子系统 (CONFIG_NO_HZ_FULL) 的调试<br>Fine granularity task level IRQ time accounting<br>CONFIG_IRQ_TIME_ACCOUNTING<br>通过读取 TSC 时间戳进行统计，这是统计进程 IRQ 时间的更细粒度的统计方式，但对性能有些不良影响（特别是在 RDTSC 指令速度较慢的 CPU 上）.<br>BSD Process Accounting<br>CONFIG_BSD_PROCESS_ACCT<br>BSD 进程记账支持. 用户空间程序可以要求内核将进程的统计信息写入一个指定的文件，主要包括进程的创建时间 / 创建者 / 内存占用等信息. 不确定的选”N”.<br>BSD Process Accounting version 3 file format<br>CONFIG_BSD_PROCESS_ACCT_V3<br>使用新的 v3 版文件格式，可以包含每个进程的 PID 和其父进程的 PID, 但是不兼容老版本的文件格式. 比如 GNU Accounting Utilities 这样的工具可以识别 v3 格式<br>Export task/process statistics through netlink<br>CONFIG_TASKSTATS<br>通过 netlink 接口向用户空间导出进程的统计信息，与 BSD Process Accounting 的不同之处在于这些统计信息在整个进程生存期都是可用的。<br>Enable per-task delay accounting<br>CONFIG_TASK_DELAY_ACCT<br>在统计信息中包含进程等候系统资源 (cpu,IO 同步，内存交换等）所花费的时间<br>Enable extended accounting over taskstats<br>CONFIG_TASK_XACCT<br>在统计信息中包含进程的更多扩展信息. 不确定的选”N”.<br>Enable per-task storage I/O accounting<br>CONFIG_TASK_IO_ACCOUNTING<br>在统计信息中包含进程在存储设备上的 I/O 字节数。<br>RCU Subsystem<br>RCU(Read-Copy Update) 子系统. 它允许程序查看到正在被修改 / 更新的文件. 在读多写少的情况下，这是一个高性能的锁机制，对于被 RCU 保护的共享数据结构，读者不需要获得任何锁就可以访问它（速度非常快）, 但写者在访问它时首先拷贝一个副本，然后对副本进行修改，最后使用一个回调机制在适当的时机把指向原来数据的指针重新指向新的被修改的数据，速度非常慢.RCU 只适用于读多写少的情况：如网络路由表的查询更新，设备状态表的维护，数据结构的延迟释放以及多径 I/O 设备的维护等。<br>RCU Implementation<br>RCU 的实现方式<br>Tree-based hierarchical RCU<br>CONFIG_TREE_RCU<br>基于树型分层结构的实现. 最适用于多 CPU 的非实时系统。<br>Preemptible tree-based hierarchical RCU<br>CONFIG_TREE_PREEMPT_RCU<br>抢占式基于树型分层结构的实现. 最适用于那些要求快速响应的多 CPU 实时系统。<br>UP-only small-memory-footprint RCU<br>CONFIG_TINY_RCU<br>最简单的实现，能够大幅降低 RCU 系统的内存占用. 最适用于单 CPU 的非实时系统。<br>Preemptible UP-only small-memory-footprint RCU<br>CONFIG_TINY_PREEMPT_RCU<br>抢占式简单实现，能够大幅降低 RCU 系统的内存占用. 最适用于那些要求快速响应的单 CPU 实时系统。<br>Consider userspace as in RCU extended quiescent state<br>CONFIG_RCU_USER_QS<br>在内核和用户边界设置钩子函数，将运行在用户态的 CPU 从全局 RCU 状态机制中移除，这样就不会在 RCU 系统中维护此 CPU 的时钟滴答. 除非你想要帮助开发 CONFIG_NO_HZ_FULL 模块，否则不要打开此选项，而且它还会对性能有不利影响。<br>Force context tracking<br>CONFIG_CONTEXT_TRACKING_FORCE<br>默认在内核和用户边界进行探测（上下文跟踪）, 以便测试依赖于此特性的各种功能（比如用户空间的 RCU extended quiescent state), 这个特性目前仅用于调试目的，未来也许会用于为 CONFIG_NO_HZ_FULL 模块提供支持<br>Tree-based hierarchical RCU fanout value<br>CONFIG_RCU_FANOUT<br>这个选项控制着树形 RCU 层次结构的端点数 (fanout), 以允许 RCU 子系统在拥有海量 CPU 的系统上高效工作. 这个值必须至少等于 CONFIG_NR_CPUS 的 1/4 次方 (4 次根号）. 生产系统上应该使用默认值 (64). 仅在你想调试 RCU 子系统时才需要减小此值。<br>Tree-based hierarchical RCU leaf-level fanout value<br>CONFIG_RCU_FANOUT_LEAF<br>这个选项控制着树形 RCU 层次结构的叶子层的端点数 (leaf-level fanout). 对于期望拥有更高能耗比（更节能）的系统，请保持其默认值 (16). 对于拥有成千上万个 CPU 的系统来说，应该考虑将其设为最大值 (CONFIG_RCU_FANOUT).<br>Disable tree-based hierarchical RCU auto-balancing<br>CONFIG_RCU_FANOUT_EXACT<br>强制按照 CONFIG_RCU_FANOUT_LEAF 的值，而不是使用自动平衡树结构来实现 RCU 子系统. 目前仅用于调试目的. 未来也许会用于增强 NUMA 系统的性能。<br>Accelerate last non-dyntick-idle CPU’s grace periods<br>CONFIG_RCU_FAST_NO_HZ<br>即使 CPU 还在忙碌，也允许进入 dynticks-idle 状态，并且阻止 RCU 每 4 个滴答就唤醒一次该 CPU, 这样能够更有效的使用电力，同时也拉长了 RCU grace period 的时间，造成性能降低. 如果能耗比对你而言非常重要（你想节省每一分电力）, 并且你不在乎系统性能的降低 (CPU 唤醒时间增加）, 可以开启此选项. 台式机和服务器建议关闭此选项。<br>Enable RCU priority boosting<br>CONFIG_RCU_BOOST<br>允许提升 RCU 子系统的实时优先级（包括读操作与写操作）, 以避免 RCU 操作被阻塞太长时间. 如果系统的 CPU 负载经常很重，或者你需要快速的实时响应系统，那么就选”Y”, 否则应该选”N”.<br>Real-time priority to boost RCU readers to<br>CONFIG_RCU_BOOST_PRIO<br>允许提升被长时间抢占（阻塞）的 RCU 读操作的实时优先级到什么程度. 取值范围是 [1,99]. 默认值”1”适用于实时应用程序中不包含 CPU 密集型 (CPU-bound) 线程的常规场合（例如大多数桌面系统）. 但是如果你的实时应用程序拥有一个或多个 CPU 密集型线程，那么可能需要增加这个值，具体可以参考内核帮助的说明. 仅在你确实理解了的情况下再改变默认值。<br>Milliseconds to delay boosting after RCU grace-period start<br>CONFIG_RCU_BOOST_DELAY<br>在提升 RCU 读操作的优先级之前，允许有多长时间潜伏期（阻塞）, 取值范围是 [0,3000], 单位是毫秒，默认值是”500”. 不确定的请使用默认值。<br>Offload RCU callback processing from boot-selected CPUs<br>CONFIG_RCU_NOCB_CPU<br>如果你想帮助调试内核可以开启，否则请关闭。<br>Build-forced no-CBs CPUs<br>在开启 CONFIG_RCU_NOCB_CPU 选项的情况下，指定哪些 CPU 是 No-CB CPU, 相当于预先设置”rcu_nocbs=”内核引导参数。<br>Kernel .config support<br>CONFIG_IKCONFIG<br>把内核的配置信息编译进内核中，以后可以通过 scripts/extract-ikconfig 脚本从内核镜像中提取这些信息<br>Enable access to .config through /proc/config.gz<br>CONFIG_IKCONFIG_PROC<br>允许通过 /proc/config.gz 文件访问内核的配置信息<br>Kernel log buffer size<br>CONFIG_LOG_BUF_SHIFT<br>设置内核日志缓冲区的最小尺寸（合理的设置应该等于 CONFIG_LOG_CPU_MAX_BUF_SHIFT<em>最大 CPU 数量）: 12（最小值）=4KB,…,16=64KB,17=128KB,18=256KB,…,25（最大值）<br>CPU kernel log buffer size contribution<br>CONFIG_LOG_CPU_MAX_BUF_SHIFT<br>每个 CPU 的内核日志缓存大小（通常只有几行文字，但在报告故障时可能会产生大量文字）. 例如在最大 CPU 数量（包含热插拔 CPU) 为 64 的系统上，如果 CONFIG_LOG_BUF_SHIFT=18, 那么该值应该设为 12<br>Memory placement aware NUMA scheduler<br>CONFIG_NUMA_BALANCING<br>允许自动根据 NUMA 系统的节点分布状况进行进程 / 内存均衡（方法很原始，就是简单的内存移动）. 这个选项对 UMA 系统无效.『提示』UMA 系统的例子：(1) 只有一颗物理 CPU（即使是多核）的电脑，(2) 不支持”虚拟 NUMA”, 或”虚拟 NUMA”被禁用的虚拟机（即使所在的物理机是 NUMA 系统）<br>Automatically enable NUMA aware memory/task placement<br>CONFIG_NUMA_BALANCING_DEFAULT_ENABLED<br>在 NUMA(Non-Uniform Memory Access Architecture) 系统上自动启用进程 / 内存均衡，也就是自动开启 CONFIG_NUMA_BALANCING 特性。<br>Control Group support<br>CONFIG_CGROUPS<br>Cgroup(Control Group) 是一种进程管理机制，可以针对一组进程进行系统资源的分配和管理，可用于 Cpusets,CFS（完全公平调度器）, 内存管理等子系统. 此外，systemd 与 Docker/LXC 等容器也依赖于它. 更多细节可以参考内核的”Documentation/cgroups/cgroups.txt”文件<br>Example debug cgroup subsystem<br>CONFIG_CGROUP_DEBUG<br>导出 cgroups 框架的调试信息，仅用于调试目的。<br>Freezer cgroup subsystem<br>CONFIG_CGROUP_FREEZER<br>允许冻结 / 解冻 cgroup 内所有进程.Docker 依赖于它。<br>PIDs cgroup subsystem<br>CONFIG_CGROUP_PIDS<br>允许限制同一 cgroup 内所有进程的数量，超出限制后将无法 fork() 出新进程。<br>Device controller for cgroups<br>CONFIG_CGROUP_DEVICE<br>允许为 cgroup 建立设备白名单，这样 cgroup 内的进程将仅允许对白名单中的设备进行 mknod/open 操作.Docker 依赖于它。<br>Cpuset support<br>CONFIG_CPUSETS<br>CPUSET 支持：允许将 CPU 和内存进行分组，并指定某些进程只能运行于特定的分组.Docker 依赖于它. 这里有一篇 CPUSET 的用法<br>Include legacy /proc/<pid>/cpuset file<br>CONFIG_PROC_PID_CPUSET<br>提供过时的 /proc/<pid>/cpuset 文件接口<br>Simple CPU accounting cgroup subsystem<br>CONFIG_CGROUP_CPUACCT<br>提供一个简单的资源控制器 (Resource Controller, 用于实现一组任务间的资源共享）, 以监控 cgroup 内所有进程的总 CPU 使用量.Docker 依赖于它。<br>Resource counters<br>CONFIG_RESOURCE_COUNTERS<br>为 cgroup 提供独立于 controller 资源计数器<br>Memory Resource Controller for Control Groups<br>CONFIG_MEMCG<br>为 cgroup 添加内存资源控制器，包含匿名内存和页面缓存 (Documentation/cgroups/memory.txt). 开启此选项后，将会增加关联到每个内存页 fixed memory 大小，具体在 64 位系统上是 40bytes/PAGE_SIZE. 仅在你确实明白什么是 memory resource controller 并且确实需要的情况下才开启此选项. 此功能可以通过命令行选项”cgroup_disable=memory”进行关闭.Docker 依赖于它。<br>Memory Resource Controller Swap Extension<br>CONFIG_MEMCG_SWAP<br>给 Memory Resource Controller 添加对 swap 的管理功能. 这样就可以针对每个 cgroup 限定其使用的 mem+swap 总量. 如果关闭此选项，memory resource controller 将仅能限制 mem 的使用量，而无法对 swap 进行控制（进程有可能耗尽 swap). 开启此功能会对性能有不利影响，并且为了追踪 swap 的使用也会消耗更多的内存（如果 swap 的页面大小是 4KB, 那么每 1GB 的 swap 需要额外消耗 512KB 内存）, 所以在内存较小的系统上不建议开启。<br>Memory Resource Controller Swap Extension enabled by default<br>CONFIG_MEMCG_SWAP_ENABLED<br>如果开启此选项，那么将默认开启 CONFIG_MEMCG_SWAP 特性，否则将默认关闭. 即使默认开启也可以通过内核引导参数”swapaccount=0”禁止此特性。<br>Memory Resource Controller Kernel Memory accounting<br>CONFIG_MEMCG_KMEM<br>为 Memory Resource Controller 添加对内核对象所占用内存的管理功能. 和标准的 Memory Resource Controller 对内存的控制不一样之处在于：这些内核对象所占用的内存是基于每个内存页的，并且可以被 swap 到硬盘. 使用这个功能可以确保 cgroup 中的进程不会单独耗尽所有内核资源。<br>HugeTLB Resource Controller for Control Groups<br>CONFIG_CGROUP_HUGETLB<br>为 cgroup 添加对 HugeTLB 页的资源控制功能. 开启此选项之后，你就可以针对每个 cgroup 限定其对 HugeTLB 的使用.Docker 依赖于它。<br>Enable perf_event per-cpu per-container group (cgroup) monitoring<br>CONFIG_CGROUP_PERF<br>将 per-cpu 模式进行扩展，使其可以监控属于特定 cgroup 并运行于特定 CPU 上的线程。<br>Group CPU scheduler<br>CONFIG_CGROUP_SCHED<br>让 CPU 调度程序可以在不同的 cgroup 之间分配 CPU 的带宽.Docker 依赖于它.systemd 资源控制单元 (resource control unit) 的 CPUShares 功能依赖于它。<br>Group scheduling for SCHED_OTHER<br>CONFIG_FAIR_GROUP_SCHED<br>公平 CPU 调度策略，也就是在多个 cgroup 之间平均分配 CPU 带宽.”鸡血补丁”CONFIG_SCHED_AUTOGROUP（自动分组调度功能）依赖于它.Docker 依赖于它.systemd 资源控制单元 (resource control unit) 的 CPUShares 功能也依赖于它。<br>CPU bandwidth provisioning for FAIR_GROUP_SCHED<br>CONFIG_CFS_BANDWIDTH<br>允许用户为运行在 CONFIG_FAIR_GROUP_SCHED 中的进程定义 CPU 带宽限制. 对于没有定义 CPU 带宽限制的 cgroup 而言，可以无限制的使用 CPU 带宽. 详情参见 Documentation/scheduler/sched-bwc.txt 文件.systemd 资源控制单元 (resource control unit) 的 CPUQuota 功能也依赖于它。<br>Group scheduling for SCHED_RR/FIFO<br>CONFIG_RT_GROUP_SCHED<br>允许用户为 cgroup 分配实时 CPU 带宽，还可以对非特权用户的实时进程组进行调度. 详情参见 Documentation/scheduler/sched-rt-group.txt 文档. 使用 systemd 的系统应该选”N”.<br>Block IO controller<br>CONFIG_BLK_CGROUP<br>通用的块 IO 控制器接口，可以用于实现各种不同的控制策略. 目前，IOSCHED_CFQ 用它来在不同的 cgroup 之间分配磁盘 IO 带宽（需要额外开启 CONFIG_CFQ_GROUP_IOSCHED),block io throttle 也会用它来针对特定块设备限制 IO 速率上限（需要额外开启 CONFIG_BLK_DEV_THROTTLING). 更多信息可以参考”Documentation/cgroups/blkio-controller.txt”文件。<br>Enable Block IO controller debugging<br>CONFIG_DEBUG_BLK_CGROUP<br>仅用于调试 Block IO controller 目的。<br>Checkpoint/restore support<br>CONFIG_CHECKPOINT_RESTORE<br>在内核中添加”检查点 / 恢复”支持. 也就是添加一些辅助的代码用于设置进程的 text, data, heap 段，并且在 /proc 文件系统中添加一些额外的条目. 用于检测两个进程是否共享同一个内核资源的 kcmp() 系统调用依赖于它. 使用 systemd 的建议开启此项。<br>Namespaces support<br>CONFIG_NAMESPACES<br>命名空间支持. 主要用于支持基于容器的轻量级虚拟化技术（比如 LXC 和 Linux-VServer 以及 Docker).<br>UTS namespace<br>CONFIG_UTS_NS<br>uname() 系统调用的命名空间支持<br>IPC namespace<br>CONFIG_IPC_NS<br>进程间通信对象 ID 的命名空间支持<br>User namespace<br>CONFIG_USER_NS<br>允许容器使用 user 命名空间. 如果开启此项，建议同时开启 CONFIG_MEMCG 和 CONFIG_MEMCG_KMEM 选项，以允许用户空间使用”memory cgroup”限制非特权用户的内存使用量. 不确定的选”N”, 如果你打算构建一个 VPS 服务器就必须选”Y”.<br>PID Namespaces<br>CONFIG_PID_NS<br>进程 PID 命名空间支持<br>Network namespace<br>CONFIG_NET_NS<br>网络协议栈的命名空间支持.systemd 服务单元 (service unit) 中的”PrivateNetwork/PrivateDevices”依赖于它。<br>Require conversions between uid/gids and their internal representation<br>CONFIG_UIDGID_STRICT_TYPE_CHECKS<br>强制将 uid/gid 转换为内部表示形式，以让那些未对 uid/gid 进行转换的内核子系统代码也能正常编译. 不确定的选”N”.<br>Automatic process group scheduling<br>CONFIG_SCHED_AUTOGROUP<br>每个 TTY 动态地创建任务分组 (cgroup), 这样就可以降低高负载情况下的桌面延迟. 也就是传说中的桌面”鸡血补丁”, 桌面用户建议开启. 但服务器建议关闭。<br>Enable deprecated sysfs features to support old userspace tools<br>CONFIG_SYSFS_DEPRECATED<br>为了兼容旧版本的应用程序而保留过时的 sysfs 特性. 仅当在使用 2008 年以前的发行版时才需要开启，2009 年之后的发行版中必须关闭. 此外，使用 udev 或 systemd 的系统也必须关闭。<br>Enable deprecated sysfs features by default<br>CONFIG_SYSFS_DEPRECATED_V2<br>默认开启上述特性<br>Kernel-&gt;user space relay support (formerly relayfs)<br>CONFIG_RELAY<br>在某些文件系统（比如 debugfs) 中提供中继 (relay) 支持（从内核空间向用户空间传递大批量数据）. 主要用于调试内核。<br>Initial RAM filesystem and RAM disk (initramfs/initrd) support<br>CONFIG_BLK_DEV_INITRD<br>初始内存文件系统 (initramfs,2.6 以上内核的新机制，使用 cpio 格式，占据的内存随数据的增减自动增减）与初始内存盘 (initrd,2.4 以前内核遗留的老机制，使用 loop 设备，占据一块固定的内存，需要额外开启 CONFIG_BLK_DEV_RAM 选项才生效）支持，一般通过 lilo/grub 的 initrd 指令加载. 更多细节可以参考”Documentation/initrd.txt”文件，关于 initrd 到 initramfs 的进化（墙内镜像）, 可以参考 IBM 上的两篇文章：Linux2.6 内核的 Initrd 机制解析和 Linux 初始 RAM 磁盘（initrd）概述。<br>Initramfs source file(s)<br>CONFIG_INITRAMFS_SOURCE<br>如果你想将 initramfs 镜像直接嵌入内核（比如嵌入式环境或者想使用 EFI stub kernel), 而不是通过 lilo/grub 这样的引导管理器加载，可以使用此选项，否则请保持空白. 这个选项指明用来制作 initramfs 镜像的原料，可以是一个.cpio 文件，或一个 Initramfs 虚根目录（其下包含”bin,dev,etc,lib,proc,sys”等子目录）, 或一个描述文件. 细节可以参考”Documentation/early-userspace/README”文档.『注意』内核帮助文档说可以指定多个目录或文件是错误的，实际只能接受单一的目录或文件<br>User ID to map to 0 (user root)<br>INITRAMFS_ROOT_UID<br>此选项仅在 CONFIG_INITRAMFS_SOURCE 中包含目录时才有效，将此值设为非零（例如”37”), 那么所有 UID=37 的文件在打包到 initramfs 镜像内时，其 UID 都将被设为”0”.<br>Group ID to map to 0 (group root)<br>INITRAMFS_ROOT_GID<br>此选项仅在 CONFIG_INITRAMFS_SOURCE 中包含目录时才有效，将此值设为非零（例如”37”), 那么所有 GID=37 的文件在打包到 initramfs 镜像内时，其 GID 都将被设为”0”.<br>Support initial ramdisks compressed using gzip<br>CONFIG_RD_GZIP<br>支持经过 gzip 压缩的 ramdisk 或 cpio 镜像<br>Support initial ramdisks compressed using bzip2<br>CONFIG_RD_BZIP2<br>支持经过 bzip2 压缩的 ramdisk 或 cpio 镜像<br>Support initial ramdisks compressed using LZMA<br>CONFIG_RD_LZMA<br>支持经过 LZMA 压缩的 ramdisk 或 cpio 镜像<br>Support initial ramdisks compressed using XZ<br>CONFIG_RD_XZ<br>支持经过 XZ 压缩的 ramdisk 或 cpio 镜像<br>Support initial ramdisks compressed using LZO<br>CONFIG_RD_LZO<br>支持经过 LZO 压缩的 ramdisk 或 cpio 镜像<br>Built-in initramfs compression mode<br>选择 initramfs 镜像的压缩格式.”gzip”是兼容性最好的格式，但是压缩率却最低.”XZ”是目前渐渐流行的格式，压缩率高，解压速度也不慢。<br>Optimize for size<br>CONFIG_CC_OPTIMIZE_FOR_SIZE<br>编译时优化内核尺寸（使用 GCC 的”-Os”而不是”-O2”参数编译）, 这会得到更小的内核，但是运行速度可能会更慢. 主要用于嵌入式环境。<br>Configure standard kernel features (expert users)<br>CONFIG_EXPERT<br>配置标准的内核特性（仅供专家使用）. 这个选项允许你改变内核的”标准”特性（比如用于需要”非标准”内核的特定环境中）, 仅在你确实明白自己在干什么的时候才开启。<br>Enable 16-bit UID system calls<br>CONFIG_UID16<br>允许对 UID 系统调用进行过时的 16-bit 包装，建议关闭<br>Multiple users, groups and capabilities support<br>CONFIG_MULTIUSER<br>多用户（组）支持. 若选”N”, 则所有进程都将以”UID=0,GID=0”运行（也就是禁止存在非 root 用户）. 选”Y”, 除非你确实知道自己在干什么。<br>sgetmask/ssetmask syscalls support<br>CONFIG_SGETMASK_SYSCALL<br>是否开启已被反对使用的 sys_sgetmask/sys_ssetmask 系统调用（已不再被 libc 支持）. 建议选”N”.<br>Sysfs syscall support<br>CONFIG_SYSFS_SYSCALL<br>是否开启已被反对使用的 sys_sysfs 系统调用（已不再被 libc 支持）. 建议选”N”.<br>Sysctl syscall support<br>CONFIG_SYSCTL_SYSCALL<br>二进制 sysctl 接口支持. 由于现在流行直接通过 /proc/sys 以 ASCII 明码方式修改内核参数（需要开启 CONFIG_PROC_SYSCTL 选项）, 所以已经不需要再通过二进制接口去控制内核参数，建议关闭它以减小内核尺寸。<br>Load all symbols for debugging/ksymoops<br>CONFIG_KALLSYMS<br>装载所有的调试符号表信息，会增大内核体积，仅供调试时选择<br>Include all symbols in kallsyms<br>CONFIG_KALLSYMS_ALL<br>在 /proc/kallsyms 中包含内核知道的所有符号，内核将会增大 300K, 仅在你确实需要的时候再开启<br>Enable support for printk<br>CONFIG_PRINTK<br>允许内核向终端打印字符信息. 任何由 printk 显示的字符串通常记录在 /var/log/messages 文件里. 如果关闭，内核在初始化过程中将不会输出字符信息，这会导致很难诊断系统故障，并且”dmesg”命令也会失效. 仅在你确实不想看到任何内核信息时选”N”. 否则请选”Y”.<br>BUG() support<br>CONFIG_BUG<br>显示故障和失败条件 (BUG 和 WARN), 禁用它将可能导致隐含的错误被忽略. 建议仅在嵌入式设备或者无法显示故障信息的系统上关闭<br>Enable ELF core dumps<br>CONFIG_ELF_CORE<br>内存转储支持，可以帮助调试 ELF 格式的程序，用于调试和开发用户态程序<br>Enable PC-Speaker support<br>CONFIG_PCSPKR_PLATFORM<br>主板上的蜂鸣器支持. 主板上的蜂鸣器只能发出或长或短的”滴”或”嘟嘟”声，一般用于系统报警. 不要和能够播放音乐的扬声器混淆. 如果你的主板上没有就关闭，有的话（开机自检完成后一般能听到”滴”的一声）还是建议开启。<br>Enable full-sized data structures for core<br>CONFIG_BASE_FULL<br>在内核中使用全尺寸的数据结构. 禁用它将使得某些内核的数据结构减小以节约内存，但是将会降低性能<br>Enable futex support<br>CONFIG_FUTEX<br>快速用户空间互斥 (fast userspace mutexes) 可以使线程串行化以避免竞态条件，也提高了响应速度. 禁用它将导致内核不能正确的运行基于 glibc 的程序<br>Enable eventpoll support<br>CONFIG_EPOLL<br>Epoll 系列系统调用 (epoll_</em>) 支持，这是当前在 Linux 下开发大规模并发网络程序（比如 Nginx) 的热门人选，设计目的是取代既有 POSIX select(2) 与 poll(2) 系统接口，systemd 依赖于它. 建议开启。<br>Enable signalfd() system call<br>CONFIG_SIGNALFD<br>signalfd() 系统调用支持，建议开启. 传统的处理信号的方式是注册信号处理函数，由于信号是异步发生的，要解决数据的并发访问和可重入问题.signalfd 可以将信号抽象为一个文件描述符，当有信号发生时可以对其 read, 这样可以将信号的监听放到 select/poll/epoll 监听队列中.systemd 依赖于它。<br>Enable timerfd() system call<br>CONFIG_TIMERFD<br>timerfd() 系统调用支持，建议开启.timerfd 可以实现定时器功能，将定时器抽象为文件描述符，当定时器到期时可以对其 read, 这样也可以放到 select/poll/epoll 监听队列中. 更多信息可以参考 linux 新的 API signalfd、timerfd、eventfd 使用说明.systemd 依赖于它。<br>Enable eventfd() system call<br>CONFIG_EVENTFD<br>eventfd() 系统调用支持，建议开启.eventfd 实现了线程之间事件通知的方式，eventfd 的缓冲区大小是 sizeof(uint64_t), 向其 write 可以递增这个计数器，read 操作可以读取，并进行清零.eventfd 也可以放到 select/poll/epoll 监听队列中. 当计数器不是 0 时，有可读事件发生，可以进行读取。<br>Enable bpf() system call<br>CONFIG_BPF_SYSCALL<br>开启内核的 bpf() 系统调用支持（从 3.15 版本开始引入）, 以支持 eBPF 功能. 可用于内核调试与网络包过滤 (tcpdump,libpcap,iptables). 不确定的选”N”.<br>Use full shmem filesystem<br>CONFIG_SHMEM<br>完全使用 shmem 来代替 ramfs.shmem 是基于共享内存的文件系统（可以使用 swap), 在启用 CONFIG_TMPFS 后可以挂载为 tmpfs 供用户空间使用，它比简单的 ramfs 先进许多. 仅在微型嵌入式环境中且没有 swap 的情况下才可能会需要使用原始的 ramfs.<br>Enable AIO support<br>CONFIG_AIO<br>开启 POSIX 异步 IO 支持. 它常常被高性能的多线程程序使用，建议开启<br>Enable madvise/fadvise syscalls<br>CONFIG_ADVISE_SYSCALLS<br>开启内核的 madvise()/fadvise() 系统调用支持 (2.6.16 版本开始引入）. 以允许应用程序预先提示内核，它将如何使用特定的内存与文件. 这种措施有助于提升应用程序的性能. 建议选”Y”.<br>Enable userfaultfd() system call<br>CONFIG_USERFAULTFD<br>开启内核的 userfaultfd() 系统调用支持（从 4.3 版本开始引入）. 该特性可以被诸如 QEMU/KVM 之类的虚拟化技术用来提高 GuestOS 热迁移性能。<br>Enable PCI quirk workarounds<br>CONFIG_PCI_QUIRKS<br>开启针对多种 PCI 芯片组的错误规避功能，仅在确定你的 PCI 芯片组确实没有没有任何 bug 时才关闭此功能. 至于究竟哪些芯片组有 bug, 你可以直接打开”drivers/pci/quirks.c”文件查看. 不确定的选”Y”.<br>Enable membarrier() system call<br>CONFIG_MEMBARRIER<br>开启内核的 membarrier() 系统调用支持（与 Memory Barrier 相关）. 有助于提升多 CPU 场景下的并行计算性能. 建议选”Y”.<br>Embedded system<br>CONFIG_EMBEDDED<br>如果你是为嵌入式系统编译内核，可以开启此选项，这样一些高级选项就会显示出来. 单独选中此项本身对内核并无任何改变。<br>Kernel Performance Events And Counters<br>CONFIG_PERF_EVENTS<br>性能相关的事件和计数器支持（既有硬件的支持也有软件的支持）. 大多数现代 CPU 都会通过性能计数寄存器对特定类型的硬件事件（指令执行，缓存未命中，分支预测失败）进行计数，同时又丝毫不会减慢内核和应用程序的运行速度. 这些寄存器还会在某些事件计数到达特定的阈值时触发中断，从而可以对代码进行性能分析。Linux Performance Event 子系统对上述特性进行了抽象，提供了针对每个进程和每个 CPU 的计数器，并可以被 tools/perf/ 目录中的”perf”工具使用。<br>Debug: use vmalloc to back perf mmap() buffers<br>CONFIG_DEBUG_PERF_USE_VMALLOC<br>主要用于调试 vmalloc 代码。<br>Enable VM event counters for /proc/vmstat<br>CONFIG_VM_EVENT_COUNTERS<br>“/proc/vmstat”中包含了从内核导出的虚拟内存的各种统计信息. 开启此项后可以显示较详细的信息（包含各种事件计数器）, 关闭此项则仅仅显示内存页计数. 主要用于调试和统计。<br>Enable SLUB debugging support<br>CONFIG_SLUB_DEBUG<br>SLUB 调试支持，禁用后可显著降低内核大小，同时 /sys/kernel/slab 也将不复存在。<br>Disable heap randomization<br>CONFIG_COMPAT_BRK<br>禁用堆随机化 (heap randomization) 功能. 堆随机化可以让针对堆溢出的攻击变得困难，但是不兼容那些古董级的二进制程序 (2000 年以前）. 如果你不需要使用这些古董程序，那么选”N”.<br>Choose SLAB allocator<br>选择内存分配管理器<br>SLAB<br>CONFIG_SLAB<br>久经考验的 slab 内存分配器，在大多数情况下都具有良好的适应性。<br>SLUB (Unqueued Allocator)<br>CONFIG_SLUB<br>SLUB 与 SLAB 兼容，但通过取消大量的队列和相关开销，简化了 slab 的结构. 特别是在多核时拥有比 slab 更好的性能和更好的系统可伸缩性。<br>SLOB (Simple Allocator)<br>CONFIG_SLOB<br>SLOB 针对小型系统设计，做了非常激进的简化，以适用于内存非常有限（小于 64M) 的嵌入式环境。<br>SLUB per cpu partial cache<br>CONFIG_SLUB_CPU_PARTIAL<br>让 SLUB 内存分配器使用基于每个 CPU 的局部缓存，这样可以加速分配和释放属于此 CPU 范围内的对象，但这样做的代价是增加对象释放延迟的不确定性. 因为当这些局部缓存因为溢出而要被清除时，需要使用锁，从而导致延迟尖峰. 对于需要快速响应的实时系统，应该选”N”, 服务器则可以选”Y”.<br>Provide system-wide ring of trusted keys<br>CONFIG_SYSTEM_TRUSTED_KEYRING<br>在内核中创建一个密钥环，从而允许向密钥环上添加受信任的密钥，主要用于内核模块的签名. 如果你开启了 CONFIG_MODULE_SIG, 此项将被自动选中. 不需要使用内核模块签名检查功能的应该选”N”<br>Profiling support<br>CONFIG_PROFILING<br>添加扩展的性能分析支持，可以被 OProfile 之类的工具使用. 仅用于调试目的。<br>OProfile system profiling<br>CONFIG_OPROFILE<br>OProfile 性能分析工具支持，仅用于调试目的。<br>OProfile multiplexing support<br>CONFIG_OPROFILE_EVENT_MULTIPLEX<br>OProfile multiplexing 技术支持<br>Kprobes<br>CONFIG_KPROBES<br>Kprobes 是一个轻量级的内核调试工具，能在内核运行的几乎任意时间点进行暂停 / 读取 / 修改等操作的调试工具. 仅供调试使用。<br>Optimize very unlikely/likely branches<br>CONFIG_JUMP_LABEL<br>针对内核中某些”几乎总是为真”或者”几乎总是为假”的条件分支判断使用”asm goto”进行优化（在分支预测失败时会浪费很多时间在回退上，但是这种情况极少发生）. 很多内核子系统都支持进行这种优化. 建议开启。<br>Static key selftest<br>CONFIG_STATIC_KEYS_SELFTEST<br>在内核启动时对上述分支优化补丁进行一次自我检查。<br>Transparent user-space probes<br>CONFIG_UPROBES<br>Uprobes 与 Kprobes 类似，但主要用于用户空间的调试。<br>Stack Protector buffer overflow detection<br>GCC 的”stack-protector”功能可以在函数开始执行时，在函数的返回地址末端设置一个敏感值，当函数执行完成要返回时，检查这个敏感值，看看是否存在溢出. 如果有溢出则表明可能受到了堆栈溢出攻击，内核将通过 panic 来阻止可能的攻击. 选项中的”None”表示关闭此功能，”Regular”表示启用此功能但是仅提供较弱的保护（需要 GCC-4.2 及以上版本）,”Strong”则表示提供较强的保护（需要 GCC-4.9 及以上版本）<br>Enable GCOV-based kernel profiling<br>CONFIG_GCOV_KERNEL<br>基于 GCC 的 gcov（代码覆盖率测试工具）的代码分析支持，仅用于调试<br>Profile entire Kernel<br>CONFIG_GCOV_PROFILE_ALL<br>支持对整个内核进行分析. 内核体积将会显著增大，并且运行速度显著减慢。</p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://wiki.gentoo.org/wiki/Kernel/Configuration" target="_blank" rel="noopener">Kernel/Configuration</a></li>
+<li><a href="https://bhavyanshu.me/configuring-the-kernel/08/31/2013/" target="_blank" rel="noopener">Configuring the kernel</a></li>
+<li><a href="http://www.jinbuguo.com/kernel/longterm-linux-kernel-options.html" target="_blank" rel="noopener">Linux Kernel 4.4 Configuration</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/kernel/" rel="tag"># kernel</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/11/18/linux-support-ntfs/" rel="next" title="Linux 支持 NTFS 文件系统">
+                  <i class="fa fa-chevron-left"></i> Linux 支持 NTFS 文件系统
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/11/19/How-to-check-linux-support-usb-wifi-list/" rel="prev" title="确认 Linux 内核支持 wifi 型号列表">
+                  确认 Linux 内核支持 wifi 型号列表 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#General-setup-常规设置"><span class="nav-number">1.</span> <span class="nav-text">General setup 常规设置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">2.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

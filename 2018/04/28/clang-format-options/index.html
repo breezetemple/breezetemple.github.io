@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="Clang-Format 可用于格式化（排版）多种不同语言的代码，其自带的排版格式主要有：LLVM, Google, Chromium, Mozilla, WebKit。 但是自带的这几种排版格式可能并不满足个人编码习惯的全部要求，Clang-Format 也提供了使用自定义排版格式的功能。 如果在 Ubuntu 中安装了 Clang-Format，则可以使用以下命令导出上述 5 种自带的排版格式">
+<meta property="og:type" content="article">
+<meta property="og:title" content="clang-format 格式化代码">
+<meta property="og:url" content="http://yoursite.com/2018/04/28/clang-format-options/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="Clang-Format 可用于格式化（排版）多种不同语言的代码，其自带的排版格式主要有：LLVM, Google, Chromium, Mozilla, WebKit。 但是自带的这几种排版格式可能并不满足个人编码习惯的全部要求，Clang-Format 也提供了使用自定义排版格式的功能。 如果在 Ubuntu 中安装了 Clang-Format，则可以使用以下命令导出上述 5 种自带的排版格式">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2018-04-28T02:00:40.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.674Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="tools">
+<meta property="article:tag" content="style">
+<meta property="article:tag" content="clang-format">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2018/04/28/clang-format-options/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>clang-format 格式化代码 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/04/28/clang-format-options/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          clang-format 格式化代码
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-04-28 10:00:40" itemprop="dateCreated datePublished" datetime="2018-04-28T10:00:40+08:00">2018-04-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Editor/" itemprop="url" rel="index">
+                    <span itemprop="name">Editor</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>4.8k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Clang-Format 可用于格式化（排版）多种不同语言的代码，其自带的排版格式主要有：LLVM, Google, Chromium, Mozilla, WebKit。</p>
+<p>但是自带的这几种排版格式可能并不满足个人编码习惯的全部要求，Clang-Format 也提供了使用自定义排版格式的功能。</p>
+<p>如果在 Ubuntu 中安装了 Clang-Format，则可以使用以下命令导出上述 5 种自带的排版格式，并且可以对其中某一个导出的文件进行修改，实现自定义格式化：</p>
+<pre><code>clang-format -style= 格式名 -dump-config &gt; 文件名</code></pre><a id="more"></a>
+
+<h2 id="options"><a href="#options" class="headerlink" title="options"></a>options</h2><pre><code>---
+# 语言：None, Cpp, Java, JavaScript, ObjC, Proto, TableGen, TextProto
+Language:   Cpp
+# BasedOnStyle: LLVM
+# 访问说明符 (public、private 等）的偏移
+AccessModifierOffset:   -4
+# 开括号（开圆括号、开尖括号、开方括号）后的对齐：Align, DontAlign, AlwaysBreak（总是在开括号后换行）
+AlignAfterOpenBracket:  Align
+# 连续赋值时，对齐所有等号
+AlignConsecutiveAssignments:    true
+# 连续声明时，对齐所有声明的变量名
+AlignConsecutiveDeclarations:   true
+# 左对齐逃脱换行（使用反斜杠换行）的反斜杠
+AlignEscapedNewlinesLeft:   true
+# 水平对齐二元和三元表达式的操作数
+AlignOperands:  true
+# 对齐连续的尾随的注释
+AlignTrailingComments:  true
+# 允许函数声明的所有参数在放在下一行
+AllowAllParametersOfDeclarationOnNextLine:  true
+# 允许短的块放在同一行
+AllowShortBlocksOnASingleLine:  false
+# 允许短的 case 标签放在同一行
+AllowShortCaseLabelsOnASingleLine:  false
+# 允许短的函数放在同一行：None, InlineOnly（定义在类中）, Empty（空函数）, Inline（定义在类中，空函数）, All
+AllowShortFunctionsOnASingleLine:   Empty
+# 允许短的 if 语句保持在同一行
+AllowShortIfStatementsOnASingleLine:    false
+# 允许短的循环保持在同一行
+AllowShortLoopsOnASingleLine:   false
+# 总是在定义返回类型后换行 (deprecated)
+AlwaysBreakAfterDefinitionReturnType:   None
+# 总是在返回类型后换行：None, All, TopLevel（顶级函数，不包括在类中的函数）,
+#   AllDefinitions（所有的定义，不包括声明）, TopLevelDefinitions（所有的顶级函数的定义）
+AlwaysBreakAfterReturnType: None
+# 总是在多行 string 字面量前换行
+AlwaysBreakBeforeMultilineStrings:  false
+# 总是在 template 声明后换行
+AlwaysBreakTemplateDeclarations:    false
+# false 表示函数实参要么都在同一行，要么都各自一行
+BinPackArguments:   true
+# false 表示所有形参要么都在同一行，要么都各自一行
+BinPackParameters:  true
+# 大括号换行，只有当 BreakBeforeBraces 设置为 Custom 时才有效
+BraceWrapping:
+  # class 定义后面
+  AfterClass:   false
+  # 控制语句后面
+  AfterControlStatement:    false
+  # enum 定义后面
+  AfterEnum:    false
+  # 函数定义后面
+  AfterFunction:    false
+  # 命名空间定义后面
+  AfterNamespace:   false
+  # ObjC 定义后面
+  AfterObjCDeclaration: false
+  # struct 定义后面
+  AfterStruct:  false
+  # union 定义后面
+  AfterUnion:   false
+  # catch 之前
+  BeforeCatch:  true
+  # else 之前
+  BeforeElse:   true
+  # 缩进大括号
+  IndentBraces: false
+# 在二元运算符前换行：None（在操作符后换行）, NonAssignment（在非赋值的操作符前换行）, All（在操作符前换行）
+BreakBeforeBinaryOperators: NonAssignment
+# 在大括号前换行：Attach（始终将大括号附加到周围的上下文）, Linux（除函数、命名空间和类定义，与 Attach 类似）,
+#   Mozilla（除枚举、函数、记录定义，与 Attach 类似）, Stroustrup（除函数定义、catch、else，与 Attach 类似）,
+#   Allman（总是在大括号前换行）, GNU（总是在大括号前换行，并对于控制语句的大括号增加额外的缩进）, WebKit（在函数前换行）, Custom
+#   注：这里认为语句块也属于函数
+BreakBeforeBraces:  Custom
+# 在三元运算符前换行
+BreakBeforeTernaryOperators:    true
+# 在构造函数的初始化列表的逗号前换行
+BreakConstructorInitializersBeforeComma:    false
+# 每行字符的限制，0 表示没有限制
+ColumnLimit:    200
+# 描述具有特殊意义的注释的正则表达式，它不应该被分割为多行或以其它方式改变
+CommentPragmas: &#39;^ IWYU pragma:&#39;
+# 构造函数的初始化列表要么都在同一行，要么都各自一行
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+# 构造函数的初始化列表的缩进宽度
+ConstructorInitializerIndentWidth:  4
+# 延续的行的缩进宽度
+ContinuationIndentWidth:    4
+# 去除 C++11 的列表初始化的大括号{后和}前的空格
+Cpp11BracedListStyle:   false
+# 继承最常用的指针和引用的对齐方式
+DerivePointerAlignment: false
+# 关闭格式化
+DisableFormat:  false
+# 自动检测函数的调用和定义是否被格式为每行一个参数 (Experimental)
+ExperimentalAutoDetectBinPacking:   false
+# 需要被解读为 foreach 循环而不是函数调用的宏
+ForEachMacros:  [ foreach, Q_FOREACH, BOOST_FOREACH ]
+# 对#include 进行排序，匹配了某正则表达式的#include 拥有对应的优先级，匹配不到的则默认优先级为 INT_MAX（优先级越小排序越靠前），
+#   可以定义负数优先级从而保证某些#include 永远在最前面
+IncludeCategories:
+  - Regex:  &#39;^&quot;(llvm|llvm-c|clang|clang-c)/&#39;
+    Priority:   2
+  - Regex:  &#39;^(&lt;|&quot;(gtest|isl|json)/)&#39;
+    Priority:   3
+  - Regex:  &#39;.*&#39;
+    Priority:   1
+# 缩进 case 标签
+IndentCaseLabels:   false
+# 缩进宽度
+IndentWidth:    4
+# 函数返回类型换行时，缩进函数声明或函数定义的函数名
+IndentWrappedFunctionNames: false
+# 保留在块开始处的空行
+KeepEmptyLinesAtTheStartOfBlocks:   true
+# 开始一个块的宏的正则表达式
+MacroBlockBegin:    &#39;&#39;
+# 结束一个块的宏的正则表达式
+MacroBlockEnd:  &#39;&#39;
+# 连续空行的最大数量
+MaxEmptyLinesToKeep:    1
+# 命名空间的缩进：None, Inner（缩进嵌套的命名空间中的内容）, All
+NamespaceIndentation:   Inner
+# 使用 ObjC 块时缩进宽度
+ObjCBlockIndentWidth:   4
+# 在 ObjC 的 @property 后添加一个空格
+ObjCSpaceAfterProperty: false
+# 在 ObjC 的 protocol 列表前添加一个空格
+ObjCSpaceBeforeProtocolList:    true
+# 在 call（后对函数调用换行的 penalty
+PenaltyBreakBeforeFirstCallParameter:   19
+# 在一个注释中引入换行的 penalty
+PenaltyBreakComment:    300
+# 第一次在&lt;《前换行的 penalty
+PenaltyBreakFirstLessLess:  120
+# 在一个字符串字面量中引入换行的 penalty
+PenaltyBreakString: 1000
+# 对于每个在行字符数限制之外的字符的 penalty
+PenaltyExcessCharacter: 1000000
+# 将函数的返回类型放到它自己的行的 penalty
+PenaltyReturnTypeOnItsOwnLine:  60
+# 指针和引用的对齐：Left, Right, Middle
+PointerAlignment:   Left
+# 允许重新排版注释
+ReflowComments: true
+# 允许排序#include
+SortIncludes:   true
+# 在 C 风格类型转换后添加空格
+SpaceAfterCStyleCast:   false
+# 在赋值运算符之前添加空格
+SpaceBeforeAssignmentOperators: true
+# 开圆括号之前添加一个空格：Never, ControlStatements, Always
+SpaceBeforeParens:  ControlStatements
+# 在空的圆括号中添加空格
+SpaceInEmptyParentheses:    false
+# 在尾随的评论前添加的空格数（只适用于 //)
+SpacesBeforeTrailingComments:   2
+# 在尖括号的《后和》前添加空格
+SpacesInAngles: true
+# 在容器 (ObjC 和 JavaScript 的数组和字典等）字面量中添加空格
+SpacesInContainerLiterals:  true
+# 在 C 风格类型转换的括号中添加空格
+SpacesInCStyleCastParentheses:  true
+# 在圆括号的（后和）前添加空格
+SpacesInParentheses:    true
+# 在方括号的『后和』前添加空格，lamda 表达式和未指明大小的数组的声明不受影响
+SpacesInSquareBrackets: true
+# 标准：Cpp03, Cpp11, Auto
+Standard:   Cpp11
+# tab 宽度
+TabWidth:   4
+# 使用 tab 字符：Never, ForIndentation, ForContinuationAndIndentation, Always
+UseTab: Never
+...</code></pre><h2 id="how-to-use"><a href="#how-to-use" class="headerlink" title="how to use"></a>how to use</h2><pre><code>clang-format -style=file in.c &gt; out.c</code></pre><ol>
+<li><a href="https://blog.csdn.net/softimite_zifeng/article/details/78357898" target="_blank" rel="noopener">Clang-Format 格式化选项介绍</a></li>
+<li><a href="https://github.com/KratosMultiphysics/Kratos/wiki/How-to-configure-clang%E2%80%90format" target="_blank" rel="noopener">How to configure clang‐format</a></li>
+<li><a href="http://clang.llvm.org/docs/ClangFormat.html" target="_blank" rel="noopener">Clang 7 documentation</a></li>
+<li><a href="http://clang.llvm.org/docs/ClangFormatStyleOptions.html" target="_blank" rel="noopener">Clang-Format Style Options</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/tools/" rel="tag"># tools</a>
+              <a href="/tags/style/" rel="tag"># style</a>
+              <a href="/tags/clang-format/" rel="tag"># clang-format</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/04/17/tcp-sack/" rel="next" title="tcp sack 选项对网络性能的影响">
+                  <i class="fa fa-chevron-left"></i> tcp sack 选项对网络性能的影响
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/04/28/indent-options/" rel="prev" title="indent 选项">
+                  indent 选项 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#options"><span class="nav-number">1.</span> <span class="nav-text">options</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#how-to-use"><span class="nav-number">2.</span> <span class="nav-text">how to use</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

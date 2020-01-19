@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="这个工具的下载和移植都很简单。移植后能得到 wpa_supplicant 和 wpa_cli。wpa_supplicant 运行在后台，使用socket与前台进行数据通信。wpa_cli 可以用来进行调试和查看 wpa_supplicant 的运行">
+<meta property="og:type" content="article">
+<meta property="og:title" content="how_to_use_wpa_supplicant">
+<meta property="og:url" content="http://yoursite.com/2017/11/01/how-to-use-wpa-supplicant/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="这个工具的下载和移植都很简单。移植后能得到 wpa_supplicant 和 wpa_cli。wpa_supplicant 运行在后台，使用socket与前台进行数据通信。wpa_cli 可以用来进行调试和查看 wpa_supplicant 的运行">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2017-11-01T11:33:12.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.670Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="wpa_supplicant">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2017/11/01/how-to-use-wpa-supplicant/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>how_to_use_wpa_supplicant | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/11/01/how-to-use-wpa-supplicant/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          how_to_use_wpa_supplicant
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2017-11-01 19:33:12" itemprop="dateCreated datePublished" datetime="2017-11-01T19:33:12+08:00">2017-11-01</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>22k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>20 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>这个工具的下载和移植都很简单。移植后能得到 <code>wpa_supplicant</code> 和 <code>wpa_cli</code>。<code>wpa_supplicant</code> 运行在后台，使用socket与前台进行数据通信。<code>wpa_cli</code> 可以用来进行调试和查看 <code>wpa_supplicant</code> 的运行</p>
+<a id="more"></a>
+
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p>在文件 <code>wpa_supplicant.conf</code> 中添加</p>
+<pre><code>ctrl_interface=DIR=/var/run/wpa_supplicant</code></pre><p><strong>如果没有的话，无法使用wpa_cli</strong></p>
+<p><code>wpa_supplicant</code> 执行时会在 <code>/var/run/wpa_supplicant</code> 下创建 <code>socket</code> 文件</p>
+<h2 id="执行"><a href="#执行" class="headerlink" title="执行"></a>执行</h2><pre><code>wpa_supplicant -d -Dnl80211 -i ra0 -c /etc/wpa_supplicant/wpa_supplicant.conf &amp;
+wpa_supplicant -i ra0 -t -f wpa_supplicant_tmp -Dwext -c /etc/wpa_supplicant/wpa_supplicant.conf &amp;</code></pre><h2 id="在C代码中集成wpa-cli"><a href="#在C代码中集成wpa-cli" class="headerlink" title="在C代码中集成wpa_cli"></a>在C代码中集成wpa_cli</h2><p><code>wpa_cli</code> 启动之前的必要条件</p>
+<ul>
+<li>加载好驱动并且开启了网卡</li>
+<li>建立/var/run/文件夹</li>
+<li>建立一个或者使用原有的配置文件，这个文件的第一行如下：</li>
+</ul>
+<pre><code>ctrl_interface=/var/run/wpa_supplicant  </code></pre><p><code>ctrl_interface</code> 指向的是一个目录，在这个目录中默认会生成一个文件 <code>/var/run/wpa_supplicant/wlan0</code>，这是 <code>local socket address</code>，用于我们的程序和后台程序 <code>wpa_supplicant</code> 进行通信（我们必须知道 <code>wpa_supplicant</code> 作为后台服务程序是通过本地socket和客户端进行通信的）</p>
+<h3 id="wpa-supplicant后台服务程序"><a href="#wpa-supplicant后台服务程序" class="headerlink" title="wpa_supplicant后台服务程序"></a>wpa_supplicant后台服务程序</h3><pre><code>wpa_supplicant -i ra0 -t -f wpa_supplicant_tmp -Dwext -c /etc/wpa_supplicant/wpa_supplicant.conf &amp;</code></pre><h3 id="wpa-ctrl函数接口"><a href="#wpa-ctrl函数接口" class="headerlink" title="wpa_ctrl函数接口"></a>wpa_ctrl函数接口</h3><pre><code>static struct wpa_ctrl *ctrl_conn;
+static struct wpa_ctrl *mon_conn;
+
+static int wpa_cli_open_connection(const char *ifname, int attach)
+{
+#if defined(CONFIG_CTRL_IFACE_UDP) || defined(CONFIG_CTRL_IFACE_NAMED_PIPE)
+    ctrl_conn = wpa_ctrl_open(ifname);
+    if (ctrl_conn == NULL)
+        return -1;
+
+    if (attach &amp;&amp; interactive)
+        mon_conn = wpa_ctrl_open(ifname);
+    else
+        mon_conn = NULL;
+#else /* CONFIG_CTRL_IFACE_UDP || CONFIG_CTRL_IFACE_NAMED_PIPE */
+    char *cfile = NULL;
+    int flen, res;
+
+    if (ifname == NULL)
+        return -1;
+
+#ifdef ANDROID
+    if (access(ctrl_iface_dir, F_OK) &lt; 0) {
+        cfile = os_strdup(ifname);
+        if (cfile == NULL)
+            return -1;
+    }
+#endif /* ANDROID */
+
+    if (cfile == NULL) {
+        flen = os_strlen(ctrl_iface_dir) + os_strlen(ifname) + 2;
+        cfile = os_malloc(flen);
+        if (cfile == NULL)
+            return -1;
+        res = os_snprintf(cfile, flen, &quot;%s/%s&quot;, ctrl_iface_dir,
+                  ifname);
+        if (res &lt; 0 || res &gt;= flen) {
+            os_free(cfile);
+            return -1;
+        }
+    }
+
+    ctrl_conn = wpa_ctrl_open(cfile);
+    if (ctrl_conn == NULL) {
+        os_free(cfile);
+        return -1;
+    }
+
+    if (attach &amp;&amp; interactive)
+        mon_conn = wpa_ctrl_open(cfile);
+    else
+        mon_conn = NULL;
+    os_free(cfile);
+#endif /* CONFIG_CTRL_IFACE_UDP || CONFIG_CTRL_IFACE_NAMED_PIPE */
+
+    if (mon_conn) {
+        printf(&quot;\033[32m%s[%d]\n\033[0m&quot;, __func__, __LINE__);
+        if (wpa_ctrl_attach(mon_conn) == 0) {
+            wpa_cli_attached = 1;
+            if (interactive)
+                eloop_register_read_sock(
+                    wpa_ctrl_get_fd(mon_conn),
+                    wpa_cli_mon_receive, NULL, NULL);
+        } else {
+            printf(&quot;Warning: Failed to attach to &quot;
+                   &quot;wpa_supplicant.\n&quot;);
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+struct wpa_ctrl * wpa_ctrl_open(const char *ctrl_path)
+{
+    struct wpa_ctrl *ctrl;
+    static int counter = 0;
+    int ret;
+    size_t res;
+    int tries = 0;
+
+    ctrl = os_malloc(sizeof(*ctrl));
+    if (ctrl == NULL)
+        return NULL;
+    os_memset(ctrl, 0, sizeof(*ctrl));
+
+    ctrl-&gt;s = socket(PF_UNIX, SOCK_DGRAM, 0);
+    if (ctrl-&gt;s &lt; 0) {
+        os_free(ctrl);
+        return NULL;
+    }
+
+    ctrl-&gt;local.sun_family = AF_UNIX;
+    counter++;
+try_again:
+    ret = os_snprintf(ctrl-&gt;local.sun_path, sizeof(ctrl-&gt;local.sun_path),
+              CONFIG_CTRL_IFACE_CLIENT_DIR &quot;/&quot;
+              CONFIG_CTRL_IFACE_CLIENT_PREFIX &quot;%d-%d&quot;,
+              (int) getpid(), counter);
+    if (ret &lt; 0 || (size_t) ret &gt;= sizeof(ctrl-&gt;local.sun_path)) {
+        close(ctrl-&gt;s);
+        os_free(ctrl);
+        return NULL;
+    }
+    tries++;
+    if (bind(ctrl-&gt;s, (struct sockaddr *) &amp;ctrl-&gt;local,
+            sizeof(ctrl-&gt;local)) &lt; 0) {
+        if (errno == EADDRINUSE &amp;&amp; tries &lt; 2) {
+            /*
+             * getpid() returns unique identifier for this instance
+             * of wpa_ctrl, so the existing socket file must have
+             * been left by unclean termination of an earlier run.
+             * Remove the file and try again.
+             */
+            unlink(ctrl-&gt;local.sun_path);
+            goto try_again;
+        }
+        close(ctrl-&gt;s);
+        os_free(ctrl);
+        return NULL;
+    }
+
+#ifdef ANDROID
+    chmod(ctrl-&gt;local.sun_path, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+    chown(ctrl-&gt;local.sun_path, AID_SYSTEM, AID_WIFI);
+    /*
+     * If the ctrl_path isn&#39;t an absolute pathname, assume that
+     * it&#39;s the name of a socket in the Android reserved namespace.
+     * Otherwise, it&#39;s a normal UNIX domain socket appearing in the
+     * filesystem.
+     */
+    if (ctrl_path != NULL &amp;&amp; *ctrl_path != &#39;/&#39;) {
+        char buf[21];
+        os_snprintf(buf, sizeof(buf), &quot;wpa_%s&quot;, ctrl_path);
+        if (socket_local_client_connect(
+                ctrl-&gt;s, buf,
+                ANDROID_SOCKET_NAMESPACE_RESERVED,
+                SOCK_DGRAM) &lt; 0) {
+            close(ctrl-&gt;s);
+            unlink(ctrl-&gt;local.sun_path);
+            os_free(ctrl);
+            return NULL;
+        }
+        return ctrl;
+    }
+#endif /* ANDROID */
+
+    ctrl-&gt;dest.sun_family = AF_UNIX;
+    res = os_strlcpy(ctrl-&gt;dest.sun_path, ctrl_path,
+             sizeof(ctrl-&gt;dest.sun_path));
+    if (res &gt;= sizeof(ctrl-&gt;dest.sun_path)) {
+        close(ctrl-&gt;s);
+        os_free(ctrl);
+        return NULL;
+    }
+    if (connect(ctrl-&gt;s, (struct sockaddr *) &amp;ctrl-&gt;dest,
+            sizeof(ctrl-&gt;dest)) &lt; 0) {
+        close(ctrl-&gt;s);
+        unlink(ctrl-&gt;local.sun_path);
+        os_free(ctrl);
+        return NULL;
+    }
+
+    return ctrl;
+}</code></pre><p>从函数中可以看出，使用wpa_ctrl_open打开两次，获得两个wpa_ctrl变量。这些变量代表着后台服务程序wpa_supplicant，通过这两个变量可以和wpa_supplicant进行通信。不过他们的分工有点不同，一个变量用于客户端主动给服务程序发起命令，另外一个变量用于监控wpa_supplicant的是否有数据发给客户端程序。</p>
+<h3 id="支持的命令"><a href="#支持的命令" class="headerlink" title="支持的命令"></a>支持的命令</h3><pre><code>static struct wpa_cli_cmd wpa_cli_commands[] = {
+    { &quot;status&quot;, wpa_cli_cmd_status,
+      cli_cmd_flag_none,
+      &quot;[verbose] = get current WPA/EAPOL/EAP status&quot; },
+    { &quot;ping&quot;, wpa_cli_cmd_ping,
+      cli_cmd_flag_none,
+      &quot;= pings wpa_supplicant&quot; },
+    { &quot;relog&quot;, wpa_cli_cmd_relog,
+      cli_cmd_flag_none,
+      &quot;= re-open log-file (allow rolling logs)&quot; },
+    { &quot;note&quot;, wpa_cli_cmd_note,
+      cli_cmd_flag_none,
+      &quot;&lt;text&gt; = add a note to wpa_supplicant debug log&quot; },
+    { &quot;mib&quot;, wpa_cli_cmd_mib,
+      cli_cmd_flag_none,
+      &quot;= get MIB variables (dot1x, dot11)&quot; },
+    { &quot;help&quot;, wpa_cli_cmd_help,
+      cli_cmd_flag_none,
+      &quot;= show this usage help&quot; },
+    { &quot;interface&quot;, wpa_cli_cmd_interface,
+      cli_cmd_flag_none,
+      &quot;[ifname] = show interfaces/select interface&quot; },
+    { &quot;level&quot;, wpa_cli_cmd_level,
+      cli_cmd_flag_none,
+      &quot;&lt;debug level&gt; = change debug level&quot; },
+    { &quot;license&quot;, wpa_cli_cmd_license,
+      cli_cmd_flag_none,
+      &quot;= show full wpa_cli license&quot; },
+    { &quot;quit&quot;, wpa_cli_cmd_quit,
+      cli_cmd_flag_none,
+      &quot;= exit wpa_cli&quot; },
+    { &quot;set&quot;, wpa_cli_cmd_set,
+      cli_cmd_flag_none,
+      &quot;= set variables (shows list of variables when run without &quot;
+      &quot;arguments)&quot; },
+    { &quot;get&quot;, wpa_cli_cmd_get,
+      cli_cmd_flag_none,
+      &quot;&lt;name&gt; = get information&quot; },
+    { &quot;logon&quot;, wpa_cli_cmd_logon,
+      cli_cmd_flag_none,
+      &quot;= IEEE 802.1X EAPOL state machine logon&quot; },
+    { &quot;logoff&quot;, wpa_cli_cmd_logoff,
+      cli_cmd_flag_none,
+      &quot;= IEEE 802.1X EAPOL state machine logoff&quot; },
+    { &quot;pmksa&quot;, wpa_cli_cmd_pmksa,
+      cli_cmd_flag_none,
+      &quot;= show PMKSA cache&quot; },
+    { &quot;reassociate&quot;, wpa_cli_cmd_reassociate,
+      cli_cmd_flag_none,
+      &quot;= force reassociation&quot; },
+    { &quot;preauthenticate&quot;, wpa_cli_cmd_preauthenticate,
+      cli_cmd_flag_none,
+      &quot;&lt;BSSID&gt; = force preauthentication&quot; },
+    { &quot;identity&quot;, wpa_cli_cmd_identity,
+      cli_cmd_flag_none,
+      &quot;&lt;network id&gt; &lt;identity&gt; = configure identity for an SSID&quot; },
+    { &quot;password&quot;, wpa_cli_cmd_password,
+      cli_cmd_flag_sensitive,
+      &quot;&lt;network id&gt; &lt;password&gt; = configure password for an SSID&quot; },
+    { &quot;new_password&quot;, wpa_cli_cmd_new_password,
+      cli_cmd_flag_sensitive,
+      &quot;&lt;network id&gt; &lt;password&gt; = change password for an SSID&quot; },
+    { &quot;pin&quot;, wpa_cli_cmd_pin,
+      cli_cmd_flag_sensitive,
+      &quot;&lt;network id&gt; &lt;pin&gt; = configure pin for an SSID&quot; },
+    { &quot;otp&quot;, wpa_cli_cmd_otp,
+      cli_cmd_flag_sensitive,
+      &quot;&lt;network id&gt; &lt;password&gt; = configure one-time-password for an SSID&quot;
+    },
+    { &quot;passphrase&quot;, wpa_cli_cmd_passphrase,
+      cli_cmd_flag_sensitive,
+      &quot;&lt;network id&gt; &lt;passphrase&gt; = configure private key passphrase\n&quot;
+      &quot;  for an SSID&quot; },
+    { &quot;bssid&quot;, wpa_cli_cmd_bssid,
+      cli_cmd_flag_none,
+      &quot;&lt;network id&gt; &lt;BSSID&gt; = set preferred BSSID for an SSID&quot; },
+    { &quot;blacklist&quot;, wpa_cli_cmd_blacklist,
+      cli_cmd_flag_none,
+      &quot;&lt;BSSID&gt; = add a BSSID to the blacklist\n&quot;
+      &quot;blacklist clear = clear the blacklist\n&quot;
+      &quot;blacklist = display the blacklist&quot; },
+    { &quot;log_level&quot;, wpa_cli_cmd_log_level,
+      cli_cmd_flag_none,
+      &quot;&lt;level&gt; [&lt;timestamp&gt;] = update the log level/timestamp\n&quot;
+      &quot;log_level = display the current log level and log options&quot; },
+    { &quot;list_networks&quot;, wpa_cli_cmd_list_networks,
+      cli_cmd_flag_none,
+      &quot;= list configured networks&quot; },
+    { &quot;select_network&quot;, wpa_cli_cmd_select_network,
+      cli_cmd_flag_none,
+      &quot;&lt;network id&gt; = select a network (disable others)&quot; },
+    { &quot;enable_network&quot;, wpa_cli_cmd_enable_network,
+      cli_cmd_flag_none,
+      &quot;&lt;network id&gt; = enable a network&quot; },
+    { &quot;disable_network&quot;, wpa_cli_cmd_disable_network,
+      cli_cmd_flag_none,
+      &quot;&lt;network id&gt; = disable a network&quot; },
+    { &quot;add_network&quot;, wpa_cli_cmd_add_network,
+      cli_cmd_flag_none,
+      &quot;= add a network&quot; },
+    { &quot;remove_network&quot;, wpa_cli_cmd_remove_network,
+      cli_cmd_flag_none,
+      &quot;&lt;network id&gt; = remove a network&quot; },
+    { &quot;set_network&quot;, wpa_cli_cmd_set_network,
+      cli_cmd_flag_sensitive,
+      &quot;&lt;network id&gt; &lt;variable&gt; &lt;value&gt; = set network variables (shows\n&quot;
+      &quot;  list of variables when run without arguments)&quot; },
+    { &quot;get_network&quot;, wpa_cli_cmd_get_network,
+      cli_cmd_flag_none,
+      &quot;&lt;network id&gt; &lt;variable&gt; = get network variables&quot; },
+    { &quot;save_config&quot;, wpa_cli_cmd_save_config,
+      cli_cmd_flag_none,
+      &quot;= save the current configuration&quot; },
+    { &quot;disconnect&quot;, wpa_cli_cmd_disconnect,
+      cli_cmd_flag_none,
+      &quot;= disconnect and wait for reassociate/reconnect command before\n&quot;
+      &quot;  connecting&quot; },
+    { &quot;reconnect&quot;, wpa_cli_cmd_reconnect,
+      cli_cmd_flag_none,
+      &quot;= like reassociate, but only takes effect if already disconnected&quot;
+    },
+    { &quot;scan&quot;, wpa_cli_cmd_scan,
+      cli_cmd_flag_none,
+      &quot;= request new BSS scan&quot; },
+    { &quot;scan_results&quot;, wpa_cli_cmd_scan_results,
+      cli_cmd_flag_none,
+      &quot;= get latest scan results&quot; },
+    { &quot;bss&quot;, wpa_cli_cmd_bss,
+      cli_cmd_flag_none,
+      &quot;&lt;&lt;idx&gt; | &lt;bssid&gt;&gt; = get detailed scan result info&quot; },
+    { &quot;get_capability&quot;, wpa_cli_cmd_get_capability,
+      cli_cmd_flag_none,
+      &quot;&lt;eap/pairwise/group/key_mgmt/proto/auth_alg&gt; = get capabilies&quot; },
+    { &quot;reconfigure&quot;, wpa_cli_cmd_reconfigure,
+      cli_cmd_flag_none,
+      &quot;= force wpa_supplicant to re-read its configuration file&quot; },
+    { &quot;terminate&quot;, wpa_cli_cmd_terminate,
+      cli_cmd_flag_none,
+      &quot;= terminate wpa_supplicant&quot; },
+    { &quot;interface_add&quot;, wpa_cli_cmd_interface_add,
+      cli_cmd_flag_none,
+      &quot;&lt;ifname&gt; &lt;confname&gt; &lt;driver&gt; &lt;ctrl_interface&gt; &lt;driver_param&gt;\n&quot;
+      &quot;  &lt;bridge_name&gt; = adds new interface, all parameters but &lt;ifname&gt;\n&quot;
+      &quot;  are optional&quot; },
+    { &quot;interface_remove&quot;, wpa_cli_cmd_interface_remove,
+      cli_cmd_flag_none,
+      &quot;&lt;ifname&gt; = removes the interface&quot; },
+    { &quot;interface_list&quot;, wpa_cli_cmd_interface_list,
+      cli_cmd_flag_none,
+      &quot;= list available interfaces&quot; },
+    { &quot;ap_scan&quot;, wpa_cli_cmd_ap_scan,
+      cli_cmd_flag_none,
+      &quot;&lt;value&gt; = set ap_scan parameter&quot; },
+    { &quot;scan_interval&quot;, wpa_cli_cmd_scan_interval,
+      cli_cmd_flag_none,
+      &quot;&lt;value&gt; = set scan_interval parameter (in seconds)&quot; },
+    { &quot;bss_expire_age&quot;, wpa_cli_cmd_bss_expire_age,
+      cli_cmd_flag_none,
+      &quot;&lt;value&gt; = set BSS expiration age parameter&quot; },
+    { &quot;bss_expire_count&quot;, wpa_cli_cmd_bss_expire_count,
+      cli_cmd_flag_none,
+      &quot;&lt;value&gt; = set BSS expiration scan count parameter&quot; },
+    { &quot;stkstart&quot;, wpa_cli_cmd_stkstart,
+      cli_cmd_flag_none,
+      &quot;&lt;addr&gt; = request STK negotiation with &lt;addr&gt;&quot; },
+    { &quot;ft_ds&quot;, wpa_cli_cmd_ft_ds,
+      cli_cmd_flag_none,
+      &quot;&lt;addr&gt; = request over-the-DS FT with &lt;addr&gt;&quot; },
+    { &quot;wps_pbc&quot;, wpa_cli_cmd_wps_pbc,
+      cli_cmd_flag_none,
+      &quot;[BSSID] = start Wi-Fi Protected Setup: Push Button Configuration&quot; },
+    { &quot;wps_pin&quot;, wpa_cli_cmd_wps_pin,
+      cli_cmd_flag_sensitive,
+      &quot;&lt;BSSID&gt; [PIN] = start WPS PIN method (returns PIN, if not &quot;
+      &quot;hardcoded)&quot; },
+    { &quot;wps_check_pin&quot;, wpa_cli_cmd_wps_check_pin,
+      cli_cmd_flag_sensitive,
+      &quot;&lt;PIN&gt; = verify PIN checksum&quot; },
+    { &quot;wps_cancel&quot;, wpa_cli_cmd_wps_cancel, cli_cmd_flag_none,
+      &quot;Cancels the pending WPS operation&quot; },
+#ifdef CONFIG_WPS_OOB
+    { &quot;wps_oob&quot;, wpa_cli_cmd_wps_oob,
+      cli_cmd_flag_sensitive,
+      &quot;&lt;DEV_TYPE&gt; &lt;PATH&gt; &lt;METHOD&gt; [DEV_NAME] = start WPS OOB&quot; },
+#endif /* CONFIG_WPS_OOB */
+    { &quot;wps_reg&quot;, wpa_cli_cmd_wps_reg,
+      cli_cmd_flag_sensitive,
+      &quot;&lt;BSSID&gt; &lt;AP PIN&gt; = start WPS Registrar to configure an AP&quot; },
+    { &quot;wps_ap_pin&quot;, wpa_cli_cmd_wps_ap_pin,
+      cli_cmd_flag_sensitive,
+      &quot;[params..] = enable/disable AP PIN&quot; },
+    { &quot;wps_er_start&quot;, wpa_cli_cmd_wps_er_start,
+      cli_cmd_flag_none,
+      &quot;[IP address] = start Wi-Fi Protected Setup External Registrar&quot; },
+    { &quot;wps_er_stop&quot;, wpa_cli_cmd_wps_er_stop,
+      cli_cmd_flag_none,
+      &quot;= stop Wi-Fi Protected Setup External Registrar&quot; },
+    { &quot;wps_er_pin&quot;, wpa_cli_cmd_wps_er_pin,
+      cli_cmd_flag_sensitive,
+      &quot;&lt;UUID&gt; &lt;PIN&gt; = add an Enrollee PIN to External Registrar&quot; },
+    { &quot;wps_er_pbc&quot;, wpa_cli_cmd_wps_er_pbc,
+      cli_cmd_flag_none,
+      &quot;&lt;UUID&gt; = accept an Enrollee PBC using External Registrar&quot; },
+    { &quot;wps_er_learn&quot;, wpa_cli_cmd_wps_er_learn,
+      cli_cmd_flag_sensitive,
+      &quot;&lt;UUID&gt; &lt;PIN&gt; = learn AP configuration&quot; },
+    { &quot;wps_er_set_config&quot;, wpa_cli_cmd_wps_er_set_config,
+      cli_cmd_flag_none,
+      &quot;&lt;UUID&gt; &lt;network id&gt; = set AP configuration for enrolling&quot; },
+    { &quot;wps_er_config&quot;, wpa_cli_cmd_wps_er_config,
+      cli_cmd_flag_sensitive,
+      &quot;&lt;UUID&gt; &lt;PIN&gt; &lt;SSID&gt; &lt;auth&gt; &lt;encr&gt; &lt;key&gt; = configure AP&quot; },
+    { &quot;ibss_rsn&quot;, wpa_cli_cmd_ibss_rsn,
+      cli_cmd_flag_none,
+      &quot;&lt;addr&gt; = request RSN authentication with &lt;addr&gt; in IBSS&quot; },
+#ifdef CONFIG_AP
+    { &quot;sta&quot;, wpa_cli_cmd_sta,
+      cli_cmd_flag_none,
+      &quot;&lt;addr&gt; = get information about an associated station (AP)&quot; },
+    { &quot;all_sta&quot;, wpa_cli_cmd_all_sta,
+      cli_cmd_flag_none,
+      &quot;= get information about all associated stations (AP)&quot; },
+#endif /* CONFIG_AP */
+    { &quot;suspend&quot;, wpa_cli_cmd_suspend, cli_cmd_flag_none,
+      &quot;= notification of suspend/hibernate&quot; },
+    { &quot;resume&quot;, wpa_cli_cmd_resume, cli_cmd_flag_none,
+      &quot;= notification of resume/thaw&quot; },
+    { &quot;drop_sa&quot;, wpa_cli_cmd_drop_sa, cli_cmd_flag_none,
+      &quot;= drop SA without deauth/disassoc (test command)&quot; },
+    { &quot;roam&quot;, wpa_cli_cmd_roam,
+      cli_cmd_flag_none,
+      &quot;&lt;addr&gt; = roam to the specified BSS&quot; },
+#ifdef CONFIG_P2P
+    { &quot;p2p_find&quot;, wpa_cli_cmd_p2p_find, cli_cmd_flag_none,
+      &quot;[timeout] [type=*] = find P2P Devices for up-to timeout seconds&quot; },
+    { &quot;p2p_stop_find&quot;, wpa_cli_cmd_p2p_stop_find, cli_cmd_flag_none,
+      &quot;= stop P2P Devices search&quot; },
+    { &quot;p2p_connect&quot;, wpa_cli_cmd_p2p_connect, cli_cmd_flag_none,
+      &quot;&lt;addr&gt; &lt;\&quot;pbc\&quot;|PIN&gt; = connect to a P2P Devices&quot; },
+    { &quot;p2p_listen&quot;, wpa_cli_cmd_p2p_listen, cli_cmd_flag_none,
+      &quot;[timeout] = listen for P2P Devices for up-to timeout seconds&quot; },
+    { &quot;p2p_group_remove&quot;, wpa_cli_cmd_p2p_group_remove, cli_cmd_flag_none,
+      &quot;&lt;ifname&gt; = remove P2P group interface (terminate group if GO)&quot; },
+    { &quot;p2p_group_add&quot;, wpa_cli_cmd_p2p_group_add, cli_cmd_flag_none,
+      &quot;= add a new P2P group (local end as GO)&quot; },
+    { &quot;p2p_prov_disc&quot;, wpa_cli_cmd_p2p_prov_disc, cli_cmd_flag_none,
+      &quot;&lt;addr&gt; &lt;method&gt; = request provisioning discovery&quot; },
+    { &quot;p2p_get_passphrase&quot;, wpa_cli_cmd_p2p_get_passphrase,
+      cli_cmd_flag_none,
+      &quot;= get the passphrase for a group (GO only)&quot; },
+    { &quot;p2p_serv_disc_req&quot;, wpa_cli_cmd_p2p_serv_disc_req,
+      cli_cmd_flag_none,
+      &quot;&lt;addr&gt; &lt;TLVs&gt; = schedule service discovery request&quot; },
+    { &quot;p2p_serv_disc_cancel_req&quot;, wpa_cli_cmd_p2p_serv_disc_cancel_req,
+      cli_cmd_flag_none,
+      &quot;&lt;id&gt; = cancel pending service discovery request&quot; },
+    { &quot;p2p_serv_disc_resp&quot;, wpa_cli_cmd_p2p_serv_disc_resp,
+      cli_cmd_flag_none,
+      &quot;&lt;freq&gt; &lt;addr&gt; &lt;dialog token&gt; &lt;TLVs&gt; = service discovery response&quot; },
+    { &quot;p2p_service_update&quot;, wpa_cli_cmd_p2p_service_update,
+      cli_cmd_flag_none,
+      &quot;= indicate change in local services&quot; },
+    { &quot;p2p_serv_disc_external&quot;, wpa_cli_cmd_p2p_serv_disc_external,
+      cli_cmd_flag_none,
+      &quot;&lt;external&gt; = set external processing of service discovery&quot; },
+    { &quot;p2p_service_flush&quot;, wpa_cli_cmd_p2p_service_flush,
+      cli_cmd_flag_none,
+      &quot;= remove all stored service entries&quot; },
+    { &quot;p2p_service_add&quot;, wpa_cli_cmd_p2p_service_add,
+      cli_cmd_flag_none,
+      &quot;&lt;bonjour|upnp&gt; &lt;query|version&gt; &lt;response|service&gt; = add a local &quot;
+      &quot;service&quot; },
+    { &quot;p2p_service_del&quot;, wpa_cli_cmd_p2p_service_del,
+      cli_cmd_flag_none,
+      &quot;&lt;bonjour|upnp&gt; &lt;query|version&gt; [|service] = remove a local &quot;
+      &quot;service&quot; },
+    { &quot;p2p_reject&quot;, wpa_cli_cmd_p2p_reject,
+      cli_cmd_flag_none,
+      &quot;&lt;addr&gt; = reject connection attempts from a specific peer&quot; },
+    { &quot;p2p_invite&quot;, wpa_cli_cmd_p2p_invite,
+      cli_cmd_flag_none,
+      &quot;&lt;cmd&gt; [peer=addr] = invite peer&quot; },
+    { &quot;p2p_peers&quot;, wpa_cli_cmd_p2p_peers, cli_cmd_flag_none,
+      &quot;[discovered] = list known (optionally, only fully discovered) P2P &quot;
+      &quot;peers&quot; },
+    { &quot;p2p_peer&quot;, wpa_cli_cmd_p2p_peer, cli_cmd_flag_none,
+      &quot;&lt;address&gt; = show information about known P2P peer&quot; },
+    { &quot;p2p_set&quot;, wpa_cli_cmd_p2p_set, cli_cmd_flag_none,
+      &quot;&lt;field&gt; &lt;value&gt; = set a P2P parameter&quot; },
+    { &quot;p2p_flush&quot;, wpa_cli_cmd_p2p_flush, cli_cmd_flag_none,
+      &quot;= flush P2P state&quot; },
+    { &quot;p2p_cancel&quot;, wpa_cli_cmd_p2p_cancel, cli_cmd_flag_none,
+      &quot;= cancel P2P group formation&quot; },
+    { &quot;p2p_unauthorize&quot;, wpa_cli_cmd_p2p_unauthorize, cli_cmd_flag_none,
+      &quot;&lt;address&gt; = unauthorize a peer&quot; },
+    { &quot;p2p_presence_req&quot;, wpa_cli_cmd_p2p_presence_req, cli_cmd_flag_none,
+      &quot;[&lt;duration&gt; &lt;interval&gt;] [&lt;duration&gt; &lt;interval&gt;] = request GO &quot;
+      &quot;presence&quot; },
+    { &quot;p2p_ext_listen&quot;, wpa_cli_cmd_p2p_ext_listen, cli_cmd_flag_none,
+      &quot;[&lt;period&gt; &lt;interval&gt;] = set extended listen timing&quot; },
+#endif /* CONFIG_P2P */
+
+#ifdef CONFIG_INTERWORKING
+    { &quot;fetch_anqp&quot;, wpa_cli_cmd_fetch_anqp, cli_cmd_flag_none,
+      &quot;= fetch ANQP information for all APs&quot; },
+    { &quot;stop_fetch_anqp&quot;, wpa_cli_cmd_stop_fetch_anqp, cli_cmd_flag_none,
+      &quot;= stop fetch_anqp operation&quot; },
+    { &quot;interworking_select&quot;, wpa_cli_cmd_interworking_select,
+      cli_cmd_flag_none,
+      &quot;[auto] = perform Interworking network selection&quot; },
+    { &quot;interworking_connect&quot;, wpa_cli_cmd_interworking_connect,
+      cli_cmd_flag_none,
+      &quot;&lt;BSSID&gt; = connect using Interworking credentials&quot; },
+    { &quot;anqp_get&quot;, wpa_cli_cmd_anqp_get, cli_cmd_flag_none,
+      &quot;&lt;addr&gt; &lt;info id&gt;[,&lt;info id&gt;]... = request ANQP information&quot; },
+#endif /* CONFIG_INTERWORKING */
+    { &quot;sta_autoconnect&quot;, wpa_cli_cmd_sta_autoconnect, cli_cmd_flag_none,
+      &quot;&lt;0/1&gt; = disable/enable automatic reconnection&quot; },
+    { &quot;tdls_discover&quot;, wpa_cli_cmd_tdls_discover,
+      cli_cmd_flag_none,
+      &quot;&lt;addr&gt; = request TDLS discovery with &lt;addr&gt;&quot; },
+    { &quot;tdls_setup&quot;, wpa_cli_cmd_tdls_setup,
+      cli_cmd_flag_none,
+      &quot;&lt;addr&gt; = request TDLS setup with &lt;addr&gt;&quot; },
+    { &quot;tdls_teardown&quot;, wpa_cli_cmd_tdls_teardown,
+      cli_cmd_flag_none,
+      &quot;&lt;addr&gt; = tear down TDLS with &lt;addr&gt;&quot; },
+    { &quot;signal_poll&quot;, wpa_cli_cmd_signal_poll,
+      cli_cmd_flag_none,
+      &quot;= get signal parameters&quot; },
+    { NULL, NULL, cli_cmd_flag_none, NULL }
+};</code></pre><h3 id="在C语言中集成wpa-cli"><a href="#在C语言中集成wpa-cli" class="headerlink" title="在C语言中集成wpa_cli"></a>在C语言中集成wpa_cli</h3><p>简化不使用监控socket代码如下：</p>
+<pre><code>#ifndef CONFIG_CTRL_IFACE_CLIENT_DIR
+#define CONFIG_CTRL_IFACE_CLIENT_DIR &quot;/tmp&quot;
+#endif
+#ifndef CONFIG_CTRL_IFACE_CLIENT_PREFIX
+#define CONFIG_CTRL_IFACE_CLIENT_PREFIX &quot;wpa_ctrl_&quot;
+#endif
+struct wpa_ctrl * wpa_ctrl_open(const char *ctrl_path)
+{
+    struct wpa_ctrl *ctrl = NULL;
+    static int counter = 0;
+    int ret;
+    size_t res;
+    int tries = 0;
+
+    ctrl = GxCore_Mallocz(sizeof(*ctrl));
+    if (ctrl == NULL)
+        return NULL;
+    memset(ctrl, 0, sizeof(*ctrl));
+
+    ctrl-&gt;s = socket(PF_UNIX, SOCK_DGRAM, 0);
+    if (ctrl-&gt;s &lt; 0) {
+        GXCORE_FREE(ctrl);
+        return NULL;
+    }
+    ctrl-&gt;local.sun_family = AF_UNIX;
+    counter++;
+try_again:
+    ret = snprintf(ctrl-&gt;local.sun_path, sizeof(ctrl-&gt;local.sun_path),
+            CONFIG_CTRL_IFACE_CLIENT_DIR &quot;/&quot;
+            CONFIG_CTRL_IFACE_CLIENT_PREFIX &quot;%d-%d&quot;,
+            (int) getpid(), counter);
+    if (ret &lt; 0 || (size_t) ret &gt;= sizeof(ctrl-&gt;local.sun_path)) {
+        close(ctrl-&gt;s);
+        GXCORE_FREE(ctrl);
+        return NULL;
+    }
+    tries++;
+    if (bind(ctrl-&gt;s, (struct sockaddr *) &amp;ctrl-&gt;local,
+                sizeof(ctrl-&gt;local)) &lt; 0) {
+        if (errno == EADDRINUSE &amp;&amp; tries &lt; 2) {
+            /*
+             * getpid() returns unique identifier for this instance
+             * of wpa_ctrl, so the existing socket file must have
+             * been left by unclean termination of an earlier run.
+             * Remove the file and try again.
+             */
+            unlink(ctrl-&gt;local.sun_path);
+            goto try_again;
+        }
+        close(ctrl-&gt;s);
+        GXCORE_FREE(ctrl);
+        return NULL;
+    }
+    ctrl-&gt;dest.sun_family = AF_UNIX;
+    res = strlcpy(ctrl-&gt;dest.sun_path, ctrl_path,
+            sizeof(ctrl-&gt;dest.sun_path));
+    if (res &gt;= sizeof(ctrl-&gt;dest.sun_path)) {
+        close(ctrl-&gt;s);
+        GXCORE_FREE(ctrl);
+        return NULL;
+    }
+    if (connect(ctrl-&gt;s, (struct sockaddr *) &amp;ctrl-&gt;dest,
+                sizeof(ctrl-&gt;dest)) &lt; 0) {
+        close(ctrl-&gt;s);
+        unlink(ctrl-&gt;local.sun_path);
+        GXCORE_FREE(ctrl);
+        return NULL;
+    }
+
+    return ctrl;
+}
+
+static int wpa_cli_open_connection(const char *ifname, int attach)
+{
+    char *cfile = NULL;
+    int flen, res;
+
+    if (ifname == NULL)
+        return -1;
+    if (cfile == NULL) {
+        flen = strlen(ctrl_iface_dir) + strlen(ifname) + 2;
+        cfile = GxCore_Mallocz(flen);
+        if (cfile == NULL)
+            return -1;
+        res = snprintf(cfile, flen, &quot;%s/%s&quot;, ctrl_iface_dir,
+                ifname);
+        if (res &lt; 0 || res &gt;= flen) {
+            GXCORE_FREE(cfile);
+            return -1;
+        }
+    }
+    ctrl_conn = wpa_ctrl_open(cfile);
+    if (ctrl_conn == NULL) {
+        GXCORE_FREE(cfile);
+        return -1;
+    }
+
+    GXCORE_FREE(cfile);
+
+    return 0;
+
+}
+
+static void wpa_ctrl_close(struct wpa_ctrl *ctrl)
+{
+    if (ctrl == NULL)
+        return;
+    unlink(ctrl-&gt;local.sun_path);
+    if (ctrl-&gt;s &gt;= 0)
+        close(ctrl-&gt;s);
+    GXCORE_FREE(ctrl);
+    ctrl = NULL;
+}
+
+static void wpa_cli_close_connection(void)
+{
+    if (ctrl_conn == NULL)
+        return;
+
+    wpa_ctrl_close(ctrl_conn);
+    ctrl_conn = NULL;
+}
+
+static void wpa_cli_cleanup(void)
+{
+    wpa_cli_close_connection();
+}
+
+static int wpa_cli(const char *ifname, char *cmd)
+{
+    int ret = 0;
+    char *argv[1] = {};
+    argv[0] = cmd;
+
+    GXCORE_FREE(ctrl_ifname);
+    ctrl_ifname = GxCore_Strdup(ifname);
+
+    if (wpa_cli_open_connection(ctrl_ifname, 0) &lt; 0) {
+        //printf(&quot;Failed to connect to wpa_supplicant - wpa_ctrl_open\n&quot;);
+        GXCORE_FREE(ctrl_ifname);
+        return -1;
+    }
+
+    ret = wpa_request(ctrl_conn, 1, &amp;argv[0]);
+    GXCORE_FREE(ctrl_ifname);
+    wpa_cli_cleanup();
+
+    return ret;
+}</code></pre><h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://www.jianshu.com/p/683fcf66c222" target="_blank" rel="noopener">无线网络配置 wpa_supplicant</a></li>
+<li><a href="http://blog.sina.com.cn/s/blog_640531380102wldy.html" target="_blank" rel="noopener">wpa_supplicant使用笔记</a></li>
+<li><a href="https://stackoverflow.com/questions/38215480/getting-started-with-wpa-supplicant-using-c" target="_blank" rel="noopener">Getting started with wpa_supplicant using C</a></li>
+<li><a href="http://blog.csdn.net/king523103/article/details/38014419" target="_blank" rel="noopener">WPA_Supplicant使用及配置</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/wpa-supplicant/" rel="tag"># wpa_supplicant</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2017/10/26/linux-netlink-socket-get-hotplug-info/" rel="next" title="linux-netlink-socket-get-hotplug-info">
+                  <i class="fa fa-chevron-left"></i> linux-netlink-socket-get-hotplug-info
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2017/11/09/how-to-check-network-status/" rel="prev" title="how-to-check-network-status">
+                  how-to-check-network-status <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#配置"><span class="nav-number">1.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#执行"><span class="nav-number">2.</span> <span class="nav-text">执行</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#在C代码中集成wpa-cli"><span class="nav-number">3.</span> <span class="nav-text">在C代码中集成wpa_cli</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#wpa-supplicant后台服务程序"><span class="nav-number">3.1.</span> <span class="nav-text">wpa_supplicant后台服务程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#wpa-ctrl函数接口"><span class="nav-number">3.2.</span> <span class="nav-text">wpa_ctrl函数接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#支持的命令"><span class="nav-number">3.3.</span> <span class="nav-text">支持的命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#在C语言中集成wpa-cli"><span class="nav-number">3.4.</span> <span class="nav-text">在C语言中集成wpa_cli</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">4.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

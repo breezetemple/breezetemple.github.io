@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="Duktape是一个可嵌入的Javascript引擎，主要关注便携性和精简及紧凑性。 Duktape很容易集成到C&#x2F;C++项目： 添加duktape.c和duktape.h到您的build中，并使用Duktape API从C代码中，调用ECMAScript代码的功能，反之亦然。 Movian使用Duktape作为Javascript引擎。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="duktape">
+<meta property="og:url" content="http://yoursite.com/2017/08/01/duktape/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="Duktape是一个可嵌入的Javascript引擎，主要关注便携性和精简及紧凑性。 Duktape很容易集成到C&#x2F;C++项目： 添加duktape.c和duktape.h到您的build中，并使用Duktape API从C代码中，调用ECMAScript代码的功能，反之亦然。 Movian使用Duktape作为Javascript引擎。">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2017-08-01T12:07:09.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.670Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="duktape">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2017/08/01/duktape/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>duktape | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/01/duktape/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          duktape
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2017-08-01 20:07:09" itemprop="dateCreated datePublished" datetime="2017-08-01T20:07:09+08:00">2017-08-01</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Movian/" itemprop="url" rel="index">
+                    <span itemprop="name">Movian</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>8.5k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>8 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Duktape是一个可嵌入的Javascript引擎，主要关注便携性和精简及紧凑性。</p>
+<p>Duktape很容易集成到C/C++项目： 添加duktape.c和duktape.h到您的build中，并使用Duktape API从C代码中，调用ECMAScript代码的功能，反之亦然。</p>
+<p>Movian使用Duktape作为Javascript引擎。</p>
+<a id="more"></a>
+
+<h2 id="Programming-model"><a href="#Programming-model" class="headerlink" title="Programming model"></a>Programming model</h2><p>Create a Duktape <strong>heap</strong> (a garbage collection region) and an initial <strong>context</strong> (essentially a thread handle) in your program.</p>
+<h3 id="Heap-and-context"><a href="#Heap-and-context" class="headerlink" title="Heap and context"></a>Heap and context</h3><p>A Duktape heap is a single region for garbage collection. A heap is used to allocate storage for strings, Ecmascript objects, and other variable size, garbage collected data. Objects in the heap have an internal heap header which provides the necessary information for reference counting, mark-and-sweep garbage collection, object finalization, etc. Heap objects can reference each other, creating a reachability graph from a garbage collection perspective. For instance, the properties of an Ecmascript object reference both the keys and values of the object’s property set. You can have multiple heaps, but objects in different heaps cannot reference each other directly; you need to use serialization to pass values between heaps.</p>
+<p>A Duktape context is an Ecmascript “thread of execution” which lives in a certain Duktape heap. A context is represented by a duk_context * in the Duktape API, and is associated with an internal Duktape coroutine (a form of a co-operative thread). Each context is also associated with an environment consisting of global objects; contexts may share the same global environment but can also have different environments. The context handle is given to almost every Duktape API call, and allows the caller to interact with the value stack of the Duktape coroutine: values can be inserted and queries, functions can be called, and so on.</p>
+<p><strong>A Duktape heap</strong></p>
+<pre><code>duk_context * ec-&gt;ec_duk
+ec-&gt;ec_duk = duk_create_heap(es_mem_alloc, es_mem_realloc, es_mem_free, ec, NULL);
+
+duk_set_top(ec-&gt;ec_duk, 0);
+if (do_gc) duk_gc(ec-&gt;ec_duk, 0);
+duk_destroy_heap(ec-&gt;ec_duk);
+ec-&gt;ec_duk = NULL;</code></pre><p><strong>A Duktape context</strong></p>
+<pre><code>duk_context *ctx = ec-&gt;ec_duk;
+duk_push_global_stash(ctx);
+duk_push_object(ctx);
+duk_put_prop_string(ctx, -2, &quot;roots&quot;);
+duk_push_global_object(ctx);</code></pre><h2 id="source-code"><a href="#source-code" class="headerlink" title="source code"></a>source code</h2><h3 id="object"><a href="#object" class="headerlink" title="object"></a>object</h3><pre><code>int obj_idx = duk_push_object(ctx);
+
+duk_push_int(ctx, 42);
+duk_put_prop_string(ctx, obj_idx, &quot;meaningOfLife&quot;);
+/* object is now: { &quot;meaningOfLife&quot;: 42 } */
+
+duk_push_string(ctx, &quot;v2.0&quot;);
+duk_put_prop_string(ctx, obj_idx, &quot;currentVersionString&quot;);
+/* object is now: { &quot;currentVersionString&quot;: &quot;v2.0&quot; } */
+
+
+duk_pop(ctx);  /* pop object */</code></pre><h3 id="function"><a href="#function" class="headerlink" title="function"></a>function</h3><pre><code>const duk_function_list_entry my_module_funcs[] = {
+    { &quot;tweak&quot;, do_tweak, 0 /* no args */ },
+    { &quot;adjust&quot;, do_adjust, 3 /* 3 args */ },
+    { &quot;frobnicate&quot;, do_frobnicate, DUK_VARARGS /* variable args */ },
+    { NULL, NULL, 0 }
+};
+
+/* Initialize an object with a set of function properties, and set it to
+ * global object &#39;MyModule&#39;.
+ */
+
+duk_push_global_object(ctx);
+duk_push_object(ctx);  /* -&gt; [ ... global obj ] */
+duk_put_function_list(ctx, -1, my_module_funcs);
+duk_put_prop_string(ctx, -2, &quot;MyModule&quot;);  /* -&gt; [ ... global ] */
+duk_pop(ctx);
+
+
+/*
+* In Javascript
+*/
+MyModule.tweak();
+MyModule.adjust(a, b, c);</code></pre><h3 id="duk-push-c-function"><a href="#duk-push-c-function" class="headerlink" title="duk_push_c_function()"></a>duk_push_c_function()</h3><pre><code>duk_ret_t my_addtwo(duk_context *ctx) {
+    double a, b;
+
+    /* Here one can expect that duk_get_top(ctx) == 2, because nargs
+     * for duk_push_c_function() is 2.
+     */
+
+    a = duk_get_number(ctx, 0);
+    b = duk_get_number(ctx, 1);
+    duk_push_number(ctx, a + b);
+    return 1;   /*  1 = return value at top
+                 *  0 = return &#39;undefined&#39;
+                 * &lt;0 = throw error (use DUK_RET_xxx constants)
+                 */
+}
+
+void test(void) {
+    duk_idx_t func_idx;
+
+    func_idx = duk_push_c_function(ctx, my_addtwo, 2);
+    duk_push_int(ctx, 2);
+    duk_push_int(ctx, 3);  /* -&gt; [ ... func 2 3 ] */
+    duk_call(ctx, 2);      /* -&gt; [ ... res ] */
+    printf(&quot;2+3 is %ld\n&quot;, (long) duk_get_int(ctx, -1));
+    duk_pop(ctx);
+}</code></pre><h3 id="duk-push-lstring"><a href="#duk-push-lstring" class="headerlink" title="duk_push_lstring"></a>duk_push_lstring</h3><pre><code>const char tmp1[5] = { &#39;f&#39;, &#39;\0&#39;, &#39;\0&#39;, &#39;x&#39;, &#39;y&#39; };
+const char tmp2[1] = { &#39;\0&#39; };
+
+duk_push_lstring(ctx, tmp1, 5);   /* push the string &quot;f\x00\x00xy&quot; */
+duk_push_lstring(ctx, tmp2, 1);   /* push the string &quot;\x00&quot; */
+duk_push_lstring(ctx, tmp2, 0);   /* push empty string */
+duk_push_lstring(ctx, NULL, 0);   /* push empty string */
+duk_push_lstring(ctx, NULL, 10);  /* push empty string */</code></pre><h3 id="duk-is-object"><a href="#duk-is-object" class="headerlink" title="duk_is_object"></a>duk_is_object</h3><p>Returns 1 if value at idx is an object, otherwise returns 0. If idx is invalid, also returns 0.</p>
+<p><code>duk_bool_t duk_is_object(duk_context *ctx, duk_idx_t idx)</code></p>
+<h3 id="duk-get-prop-string"><a href="#duk-get-prop-string" class="headerlink" title="duk_get_prop_string"></a><a href="http://duktape.org/api.html#duk_get_prop_string" target="_blank" rel="noopener">duk_get_prop_string</a></h3><pre><code>int es_prop_to_int(duk_context *ctx, int obj_idx, const char *id, int def)
+{
+    if (!duk_is_object(ctx, obj_idx)) return def;
+
+    duk_get_prop_string(ctx, obj_idx, id);
+    if (duk_is_number(ctx, -1)) def = duk_to_int(ctx, -1);
+    duk_pop(ctx);
+    return def;
+}
+
+rstr_t * es_prop_to_rstr(duk_context *ctx, int obj_idx, const char *id)
+{
+    rstr_t *r = NULL;
+
+    if(!duk_is_object(ctx, obj_idx)) return NULL;
+
+    duk_get_prop_string(ctx, obj_idx, id);
+    const char *str = duk_get_string(ctx, -1);
+    if(str != NULL) r = rstr_alloc(str);
+    duk_pop(ctx);
+    return r;
+}</code></pre><h3 id="duk-to-boolean"><a href="#duk-to-boolean" class="headerlink" title="duk_to_boolean"></a><a href="http://duktape.org/api.html#duk_to_boolean" target="_blank" rel="noopener">duk_to_boolean</a></h3><p><code>duk_bool_t duk_to_boolean(duk_context *ctx, duk_idx_t idx)</code></p>
+<p>Replace the value at idx with an Ecmascript <a href="http://www.ecma-international.org/ecma-262/5.1/#sec-9.2" target="_blank" rel="noopener">ToBoolean()</a> coerced value. Returns 1 if the result of the coercion true, 0 otherwise. If idx is invalid, throws an error.</p>
+<h3 id="duk-dup"><a href="#duk-dup" class="headerlink" title="duk_dup"></a><a href="http://duktape.org/api.html#duk_dup" target="_blank" rel="noopener">duk_dup</a></h3><pre><code>void es_dumpstack(duk_context *ctx)
+{
+  int size = duk_get_top(ctx);
+  printf(&quot;STACKDUMP\n&quot;);
+  for(int i = -1; i &gt; -1 - size; i--) {
+    duk_dup(ctx, i);
+    printf(&quot;  [%5d]: %s\n&quot;, i, duk_safe_to_string(ctx, -1));
+    duk_pop(ctx);
+  }
+}</code></pre><ul>
+<li><a href="http://duktape.org/api.html#duk_get_top" target="_blank" rel="noopener">duk_get_top</a> Get current stack top</li>
+<li><a href="http://duktape.org/api.html#duk_dup" target="_blank" rel="noopener">duk_dup</a> Push a duplicate of value at from_idx to the stack</li>
+<li><a href="http://duktape.org/api.html#duk_pop" target="_blank" rel="noopener">duk_pop</a> Pop one element off the stack</li>
+</ul>
+<p>上述函数将<code>stack</code>中所有元素打印出来，并清空<code>stack</code></p>
+<h2 id="Example"><a href="#Example" class="headerlink" title="Example"></a>Example</h2><pre><code>int ecmascript_plugin_load(const char *id, const char *url,
+                       char *errbuf, size_t errlen,
+                       int version, const char *manifest,
+                       int flags)
+{
+  char storage[PATH_MAX];
+
+  snprintf(storage, sizeof(storage), &quot;%s/plugins/%s&quot;, gconf.persistent_path, id);
+
+  es_context_t *ec = es_context_create(id, flags | ECMASCRIPT_PLUGIN, url, storage);
+//TRACE(TRACE_ERROR, &quot;[load]&quot;, &quot;[%s] %s [%s]\n&quot;, id, url, manifest);
+  es_context_begin(ec);
+
+  duk_context *ctx = ec-&gt;ec_duk;
+
+  duk_push_global_object(ctx);
+
+  int plugin_obj_idx = duk_push_object(ctx);
+
+  duk_push_string(ctx, id);
+  duk_put_prop_string(ctx, plugin_obj_idx, &quot;id&quot;);
+
+  duk_push_string(ctx, url);
+  duk_put_prop_string(ctx, plugin_obj_idx, &quot;url&quot;);
+
+  duk_push_string(ctx, manifest);
+  duk_put_prop_string(ctx, plugin_obj_idx, &quot;manifest&quot;);
+
+  duk_push_int(ctx, version);
+  duk_put_prop_string(ctx, plugin_obj_idx, &quot;apiversion&quot;);
+
+//TRACE(TRACE_ERROR, &quot;[ec_path]&quot;, &quot;%s\n&quot;, ec-&gt;ec_path);
+  if(ec-&gt;ec_path) 
+  {
+    duk_push_string(ctx, ec-&gt;ec_path);
+    duk_put_prop_string(ctx, plugin_obj_idx, &quot;path&quot;);
+  }
+
+  duk_put_prop_string(ctx, -2, &quot;Plugin&quot;);
+  duk_pop(ctx);
+
+  if(version == 1)
+  {
+    int64_t ts0 = arch_get_ts();
+
+    if(es_load_and_compile(ec, &quot;dataroot://res/ecmascript/legacy/api-v1.js&quot;))
+      goto bad;
+
+    int64_t ts1 = arch_get_ts();
+
+    if(duk_pcall(ctx, 0)) 
+    {
+      es_dump_err(ctx);
+      goto bad;
+    }
+
+    int64_t ts2 = arch_get_ts();
+
+    if(es_load_and_compile(ec, url)) 
+    {
+      duk_pop(ctx);
+      goto bad;
+    }
+
+    int64_t ts3 = arch_get_ts();
+
+    duk_swap_top(ctx, 0);
+    if(duk_pcall_method(ctx, 0))
+      es_dump_err(ctx);
+
+    int64_t ts4 = arch_get_ts();
+
+    es_debug(ec, &quot;API v1 emulation: Compile:%dms Exec:%dms&quot;,
+             ((int)(ts1 - ts0)) / 1000,
+             ((int)(ts2 - ts1)) / 1000);
+
+    es_debug(ec, &quot;Plugin main:      Compile:%dms Exec:%dms&quot;,
+             ((int)(ts3 - ts2)) / 1000,
+             ((int)(ts4 - ts3)) / 1000);
+  }
+  else
+  {
+    es_exec(ec, url);
+  }
+
+bad:
+  es_context_end(ec, 1);
+  es_context_release(ec);
+
+  return 0;
+}</code></pre><p>Javascript中相关代码</p>
+<pre><code>var plugin = {
+
+  createService: function(title, url, type, enabled, icon) {
+    return require(&#39;movian/service&#39;).create(title, url, type, enabled, icon);
+  },
+
+  createStore: function(name) {
+    return require(&#39;movian/store&#39;).create(name);
+  },
+
+  addURI: function(re, callback) {
+    var page = require(&#39;movian/page&#39;);
+    return new page.Route(re, callback);
+  },
+
+  addSearcher: function(title, icon, cb) {
+    var page = require(&#39;movian/page&#39;);
+    return new page.Searcher(title, icon,cb);
+  },
+
+  //get from c source code
+  path: Plugin.path,
+
+  getDescriptor: function() {
+    if(this.descriptor === undefined)
+      this.descriptor = JSON.parse(Plugin.manifest);
+
+    return this.descriptor;
+  },
+
+  getAuthCredentials: popup.getAuthCredentials,
+
+  addHTTPAuth: require(&#39;native/io&#39;).httpInspectorCreate,
+
+  copyFile: require(&#39;native/fs&#39;).copyfile,
+  selectView: misc.selectView,
+
+  createSettings: function(title, icon, description) {
+    var settings = require(&#39;movian/settings&#39;);
+    return new settings.globalSettings(Plugin.id, title, icon, description);
+  },
+
+  cachePut: function(stash, key, obj, maxage) {
+    misc.cachePut(&#39;plugin/&#39; + Plugin.id + &#39;/&#39; + stash,
+                      key, JSON.stringify(obj), maxage);
+  },
+
+  cacheGet: function(stash, key) {
+    var v = misc.cacheGet(&#39;plugin/&#39; + Plugin.id + &#39;/&#39; + stash, key);
+    return v ? JSON.parse(v) : null;
+  },
+
+  config: {},
+
+  properties: prop.global.plugin[Plugin.id],
+
+  addItemHook: function(conf) {
+    require(&#39;movian/itemhook&#39;).create(conf);
+  },
+
+  addSubtitleProvider: function(fn) {
+    require(&#39;native/subtitle&#39;).addProvider(function(root, query, basescore, autosel) {
+      var req = Object.create(query);
+      req.addSubtitle = function(url, title, language, format,
+                                 source, score) {
+        require(&#39;native/subtitle&#39;).addItem(root, url, title, language, format, source,
+                                 basescore + score, autosel);
+      }
+      fn(req);
+    }, Plugin.id, Plugin.id);
+  }
+
+};</code></pre><h2 id="es-modules"><a href="#es-modules" class="headerlink" title="es_modules"></a>es_modules</h2><h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://ourjs.com/detail/548a73b58a34fa3204000005" target="_blank" rel="noopener">Duktape：一个新的小巧的超精简可嵌入式JavaScript引擎</a></li>
+<li><a href="http://wiki.duktape.org/Home.html" target="_blank" rel="noopener">Duktape Wiki</a></li>
+<li><a href="http://duktape.org/guide.html" target="_blank" rel="noopener">Duktape Programmer’s Guide</a></li>
+<li><a href="http://duktape.org/api.html#duk_push_global_stash" target="_blank" rel="noopener">Duktape API</a></li>
+<li><a href="https://github.com/andoma/movian" target="_blank" rel="noopener">Movian</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/duktape/" rel="tag"># duktape</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2017/08/01/system-shell/" rel="next" title="system-shell">
+                  <i class="fa fa-chevron-left"></i> system-shell
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2017/08/03/size-t/" rel="prev" title="size_t">
+                  size_t <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Programming-model"><span class="nav-number">1.</span> <span class="nav-text">Programming model</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Heap-and-context"><span class="nav-number">1.1.</span> <span class="nav-text">Heap and context</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#source-code"><span class="nav-number">2.</span> <span class="nav-text">source code</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#object"><span class="nav-number">2.1.</span> <span class="nav-text">object</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#function"><span class="nav-number">2.2.</span> <span class="nav-text">function</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#duk-push-c-function"><span class="nav-number">2.3.</span> <span class="nav-text">duk_push_c_function()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#duk-push-lstring"><span class="nav-number">2.4.</span> <span class="nav-text">duk_push_lstring</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#duk-is-object"><span class="nav-number">2.5.</span> <span class="nav-text">duk_is_object</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#duk-get-prop-string"><span class="nav-number">2.6.</span> <span class="nav-text">duk_get_prop_string</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#duk-to-boolean"><span class="nav-number">2.7.</span> <span class="nav-text">duk_to_boolean</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#duk-dup"><span class="nav-number">2.8.</span> <span class="nav-text">duk_dup</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Example"><span class="nav-number">3.</span> <span class="nav-text">Example</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#es-modules"><span class="nav-number">4.</span> <span class="nav-text">es_modules</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">5.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="airkiss 用于智能配网，基于 802.11 协议，本文记录相关知识点">
+<meta property="og:type" content="article">
+<meta property="og:title" content="无线嗅探及 airkiss 协议分析">
+<meta property="og:url" content="http://yoursite.com/2019/01/04/airkiss/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="airkiss 用于智能配网，基于 802.11 协议，本文记录相关知识点">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/wifi/WIFI.png">
+<meta property="og:image" content="http://yoursite.com/images/wifi/802.11_OSI.png">
+<meta property="og:image" content="http://yoursite.com/images/wifi/snap.png">
+<meta property="og:image" content="http://yoursite.com/images/wifi/80211.png">
+<meta property="article:published_time" content="2019-01-04T05:19:14.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.678Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="wireshark">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="iw">
+<meta property="article:tag" content="802.11">
+<meta property="article:tag" content="802.2">
+<meta property="article:tag" content="airkiss">
+<meta property="article:tag" content="monitor mode">
+<meta property="article:tag" content="radiotap header">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/wifi/WIFI.png">
+
+<link rel="canonical" href="http://yoursite.com/2019/01/04/airkiss/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>无线嗅探及 airkiss 协议分析 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/04/airkiss/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          无线嗅探及 airkiss 协议分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-01-04 13:19:14" itemprop="dateCreated datePublished" datetime="2019-01-04T13:19:14+08:00">2019-01-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/802-11/" itemprop="url" rel="index">
+                    <span itemprop="name">802.11</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/Airkiss/" itemprop="url" rel="index">
+                    <span itemprop="name">Airkiss</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>8.2k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>7 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><code>airkiss</code> 用于智能配网，基于 <code>802.11</code> 协议，本文记录相关知识点</p>
+<a id="more"></a>
+
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p><code>airkiss</code> 首先需要网卡有监听空中无线包的能力，包括 <code>监听</code> 和 <code>混杂</code> 两种模式，并以 <code>802.11</code> 格式从数据链路层截取数据（要求的是不带 <code>radiotap header</code> 的 <code>802.11</code> 数据帧）</p>
+<h2 id="radiotap-header"><a href="#radiotap-header" class="headerlink" title="radiotap header"></a>radiotap header</h2><p><code>radiotap</code> 包含了信号强度、噪声强度、信道、时间戳等信息。 <code>radiotap</code> 比传统的 <code>Prism</code> 或 <code>AVS</code> 头更有灵活性，成为 <code>ieee802.11</code> 事实上的标准。在 <code>WLAN</code> 无线网络抓包的时候不管是用 <code>wireshark</code>、 <code>tcpdump</code> 还是 <code>scapy</code> 都会出现 <code>Radiotap</code>、 <code>LLC</code>、 <code>SNAP</code> 协议层。典型数据帧如下</p>
+<pre><code>Frame 6662: 103 bytes on wire (824 bits), 103 bytes captured (824 bits) on interface 0
+Radiotap Header v0, Length 21
+    Header revision: 0
+    Header pad: 0
+    Header length: 21
+    Present flags
+    Flags: 0x00
+    Channel frequency: 2422 [BG 3]
+    Channel flags: 0x0480, 2 GHz spectrum, Dynamic CCK-OFDM
+    Antenna signal: -49dBm
+    Antenna: 1
+    RX flags: 0x0000
+    MCS information
+    [Data Rate: 65.0 Mb/s]
+802.11 radio information
+IEEE 802.11 QoS Data, Flags: .p.....T
+Data (48 bytes)</code></pre><h2 id="协议"><a href="#协议" class="headerlink" title="协议"></a>协议</h2><p>每一次接收到的 <code>802.11</code> 帧中只需要解析出 <code>length</code>， <code>airkiss</code> 就是围绕 <code>length</code> 进行编码的协议， <code>length</code> 为 <code>802.11</code> 数据帧长度，</p>
+<p>配合开源工程 <a href="https://github.com/pannzh/Airkiss" target="_blank" rel="noopener">Airkiss</a> 分析协议过程如下</p>
+<ul>
+<li><code>Cap len</code> 为读取携带 <code>radiotap header</code> 的原始数据长度，十进制</li>
+<li><code>length</code> 为计算之后 <code>802.11</code> 数据长度，且过滤不符合的数据帧，十六进制</li>
+</ul>
+<p><code>length</code> 为计算之后 <code>802.11</code> 数据长度，且过滤不符合的数据帧，十六进制</p>
+<h3 id="discover-发现过程"><a href="#discover-发现过程" class="headerlink" title="discover- 发现过程"></a>discover- 发现过程</h3><p>协议规定发送前导码 <code>{1, 2, 3, 4}</code>，这个值是差异值，在 <code>wireshark</code> 抓包如下</p>
+<pre><code>314    0.000342132    HuaweiTe_0e:74:56    Broadcast    802.11    100    795    QoS Data, SN=795, FN=0, Flags=.p.....T
+318    0.000077578    HuaweiTe_0e:74:56    Broadcast    802.11    101    796    QoS Data, SN=796, FN=0, Flags=.p.....T
+322    0.000007695    HuaweiTe_0e:74:56    Broadcast    802.11    102    797    QoS Data, SN=797, FN=0, Flags=.p.....T
+326    0.000035866    HuaweiTe_0e:74:56    Broadcast    802.11    103    798    QoS Data, SN=798, FN=0, Flags=.p.....T</code></pre><p>其中 <code>radiotap header</code> 长度为 <code>21</code>，代码判断如下</p>
+<pre><code class="c">// 1 2 3 4
+if((_akcontext.data.guide_code.length_record[1] - _akcontext.data.guide_code.length_record[0] == 1) &amp;&amp;
+(_akcontext.data.guide_code.length_record[2] - _akcontext.data.guide_code.length_record[1] == 1) &amp;&amp;
+(_akcontext.data.guide_code.length_record[3] - _akcontext.data.guide_code.length_record[2] == 1))
+{
+    _akcontext.base_len = _akcontext.data.guide_code.length_record[0] - 1;
+    success = 1;
+}
+
+if(success)
+{
+    _akcontext.airkiss_state = AIRKISS_STATE_SRC_LOCKED;
+    resest_airkiss_data();
+    akconf-&gt;printf(&quot;airkiss_recv_discover success\n&quot;);
+    akconf-&gt;printf(&quot;base len:%d\n&quot;, _akcontext.base_len);
+}</code></pre>
+<p>调试打印</p>
+<pre><code>Cap len:100
+length:4f --&gt; 0x1
+Cap len:46
+length:1c
+Cap len:34
+length:10
+Cap len:28
+length:a
+Cap len:101
+length:50 --&gt; 0x2
+Cap len:46
+length:1c
+Cap len:44
+length:1a
+Cap len:28
+length:a
+Cap len:34
+length:10
+Cap len:28
+length:a
+Cap len:102
+length:51 -&gt; 0x3
+Cap len:46
+length:1c
+Cap len:28
+length:a
+Cap len:34
+length:10
+Cap len:28
+length:a
+Cap len:103
+length:52 --&gt; 0x4
+airkiss_recv_discover success
+base len:78
+Lock channel in 3</code></pre><h3 id="magic-code-字段"><a href="#magic-code-字段" class="headerlink" title="magic code 字段"></a>magic code 字段</h3><p><code>magic code</code> 由 4 个 <code>9bits</code> 组成，格式如下</p>
+<pre><code>第 1 个 9bits 0x0 length(high)
+第 2 个 9bits 0x1 length(low)
+第 3 个 9bits 0x2 ssid crc(high)
+第 4 个 9bits 0x3 ssid crc(low)</code></pre><p><code>length</code> 为要发送数据的长度， <code>ssid crc</code> 为要发送 <code>ssid</code> 的 <code>crc8</code> 值</p>
+<p>代码如下</p>
+<pre><code class="c">if(((_akcontext.data.magic_code.record[0]&amp;0x01f0)==0x0000)&amp;&amp;
+    ((_akcontext.data.magic_code.record[1]&amp;0x01f0)==0x0010)&amp;&amp;
+        ((_akcontext.data.magic_code.record[2]&amp;0x01f0)==0x0020)&amp;&amp;
+        ((_akcontext.data.magic_code.record[3]&amp;0x01f0)==0x0030))
+{
+    _akcontext.total_len = ((_akcontext.data.magic_code.record[0] &amp; 0x000F) &lt;&lt; 4) + (_akcontext.data.magic_code.record[1] &amp; 0x000F);
+    _akcontext.ssid_crc = ((_akcontext.data.magic_code.record[2] &amp; 0x000F) &lt;&lt; 4) + (_akcontext.data.magic_code.record[3] &amp; 0x000F);
+    //TODO:double check magic code
+    _akcontext.airkiss_state = AIRKISS_STATE_MAGIC_CODE_COMPLETE;
+    resest_airkiss_data();
+    akconf-&gt;printf(&quot;airkiss_process_magic_code success\n&quot;);
+    akconf-&gt;printf(&quot;total_len:%d, ssid crc:%x\n&quot;, _akcontext.total_len, _akcontext.ssid_crc);
+}</code></pre>
+<p>调试打印信息</p>
+<pre><code>Cap len:100
+length:4f --&gt; 0x1
+Cap len:46
+Cap len:34
+Cap len:34
+Cap len:34
+Cap len:28
+Cap len:124
+length:67 --&gt; 0x19
+Cap len:46
+Cap len:119
+Cap len:131
+length:6e --&gt; 0x20
+Cap len:46
+Cap len:162
+length:8d --&gt; 0x3f
+airkiss_process_magic_code success
+total_len:25, ssid crc:f</code></pre><h3 id="prefix-code"><a href="#prefix-code" class="headerlink" title="prefix code"></a>prefix code</h3><p><code>prefix code</code> 由 4 个 <code>9bits</code> 组成，格式如下</p>
+<pre><code>第 1 个 9bits 0x4 psw length(high)
+第 2 个 9bits 0x5 psw length(low)
+第 3 个 9bits 0x6 psw len crc(high)
+第 4 个 9bits 0x7 psw len crc(low)</code></pre><p><code>psw length</code> 为要发送 <code>psw</code> 的长度， <code>psw len crc</code> 为 <code>psw len</code> 的 <code>crc8</code> 值</p>
+<p>代码如下：</p>
+<pre><code class="c">if((_akcontext.data.prefix_code.record[0]&amp;0x01f0)==0x0040&amp;&amp;
+    (_akcontext.data.prefix_code.record[1]&amp;0x01f0)==0x0050&amp;&amp;
+        (_akcontext.data.prefix_code.record[2]&amp;0x01f0)==0x0060&amp;&amp;
+        (_akcontext.data.prefix_code.record[3]&amp;0x01f0)==0x0070)
+{
+    _akcontext.pswd_len = ((_akcontext.data.prefix_code.record[0] &amp; 0x000F) &lt;&lt; 4) + (_akcontext.data.prefix_code.record[1] &amp; 0x000F);
+    if(_akcontext.pswd_len &gt; PASSWORD_MAX_LEN)
+        _akcontext.pswd_len = 0;
+    _akcontext.pswd_lencrc = ((_akcontext.data.prefix_code.record[2] &amp; 0x000F) &lt;&lt; 4) + (_akcontext.data.prefix_code.record[3] &amp; 0x000F);
+    if(calcrc_1byte(_akcontext.pswd_len)==_akcontext.pswd_lencrc)
+    {
+        _akcontext.airkiss_state = AIRKISS_STATE_PREFIX_CODE_COMPLETE;
+    }
+    else
+    {
+        akconf-&gt;printf(&quot;password length crc error.\n&quot;);
+        resest_airkiss_data();
+        return;
+    }
+
+    // only receive password and random
+    _akcontext.need_seq = ((_akcontext.pswd_len + 1) + 3)/4;
+    _akcontext.seq_success_map_cmp = (1 &lt;&lt; _akcontext.need_seq) - 1;
+
+    resest_airkiss_data();
+    akconf-&gt;printf(&quot;airkiss_process_prefix_code success\n&quot;);
+    akconf-&gt;printf(&quot;pswd_len:%d, pswd_lencrc:%x, need seq:%d, seq map:%x\n&quot;,
+            _akcontext.pswd_len, _akcontext.pswd_lencrc, _akcontext.need_seq, _akcontext.seq_success_map_cmp);
+}</code></pre>
+<p>调试信息</p>
+<pre><code>Cap len:163
+length:8e --&gt; ox40
+Cap len:46
+Cap len:158
+Cap len:34
+Cap len:28
+Cap len:190
+length:a9 --&gt; 0x5b
+Cap len:46
+Cap len:185
+Cap len:34
+Cap len:34
+Cap len:34
+Cap len:28
+Cap len:197
+length:b0 --&gt; 0x62
+Cap len:46
+Cap len:192
+Cap len:34
+Cap len:28
+Cap len:211
+length:be --&gt; 0x70
+airkiss_process_prefix_code success
+pswd_len:11, pswd_lencrc:20, need seq:3, seq map:7</code></pre><h3 id="sequence-header-amp-data"><a href="#sequence-header-amp-data" class="headerlink" title="sequence header &amp; data"></a>sequence header &amp; data</h3><p>将要发送的数据按照 4 字节为单位进行划分，每 4 个数据加上 <code>sequence header</code> 组成一个 <code>sequence</code>，以 <code>sequence</code> 为单位进行数据发送，<strong>如果最后一个 <code>sequence</code> 不够 4 字节，不用补全</strong>，格式如下</p>
+<p><code>sequence header</code> 格式如下</p>
+<pre><code>第 1 个 9bits 0 1 sequence crc8（低 7 位）
+第 2 个 9bits 0 1 sequence index</code></pre><p><code>data</code> 格式如下</p>
+<pre><code>第 1 个 9bits 1 data（第 7-0bit)
+第 2 个 9bits 1 data（第 7-0bit)
+第 3 个 9bits 1 data（第 7-0bit)
+第 4 个 9bits 1 data（第 7-0bit)</code></pre><p>代码实现如下</p>
+<pre><code class="c">if(((_akcontext.data.seq_code.record[0]&amp;0x180)==0x80) &amp;&amp;
+    ((_akcontext.data.seq_code.record[1]&amp;0x180)==0x80) &amp;&amp;
+    ((_akcontext.data.seq_code.record[2]&amp;0x0100)==0x0100) &amp;&amp;
+    ((_akcontext.data.seq_code.record[3]&amp;0x0100)==0x0100) &amp;&amp;
+    ((_akcontext.data.seq_code.record[4]&amp;0x0100)==0x0100) &amp;&amp;
+    ((_akcontext.data.seq_code.record[5]&amp;0x0100)==0x0100) &amp;&amp;
+    ((_akcontext.data.seq_code.record[1]&amp;0x7F) &lt;= ((_akcontext.total_len&gt;&gt;2)+1)))
+{
+    unsigned char tempBuffer[6] = {0};
+    tempBuffer[0]=_akcontext.data.seq_code.record[0]&amp;0x7F; //seq crc
+    tempBuffer[1]=_akcontext.data.seq_code.record[1]&amp;0x7F; //seq index
+    tempBuffer[2]=_akcontext.data.seq_code.record[2]&amp;0xFF; //data, same as following
+    tempBuffer[3]=_akcontext.data.seq_code.record[3]&amp;0xFF;
+    tempBuffer[4]=_akcontext.data.seq_code.record[4]&amp;0xFF;
+    tempBuffer[5]=_akcontext.data.seq_code.record[5]&amp;0xFF;
+
+    if(tempBuffer[0] == (calcrc_bytes(tempBuffer+1,5)&amp;0x7F) )
+        ...
+    }
+}</code></pre>
+<p>调试信息</p>
+<pre><code>Cap len:408
+Cap len:338
+length:13d --&gt; 0xef
+Cap len:46
+Cap len:34
+Cap len:28
+Cap len:229
+length:d0 --&gt; 0x82
+Cap len:46
+Cap len:42
+Cap len:28
+Cap len:42
+Cap len:28
+Cap len:34
+Cap len:34
+Cap len:28
+Cap len:412
+length:187 -&gt; 0x139
+Cap len:46
+Cap len:34
+Cap len:28
+Cap len:408
+length:183 -&gt; 0x135
+Cap len:46
+Cap len:34
+Cap len:28
+Cap len:412
+length:187 -&gt; 0x139
+Cap len:46
+Cap len:28
+Cap len:34
+Cap len:34
+Cap len:34
+Cap len:34
+Cap len:34
+Cap len:34
+Cap len:34
+Cap len:34
+Cap len:28
+Cap len:416
+length:18b -&gt; 0x13d
+[crc:6f][index:2]:39,35,39,3d; seq mapped:4</code></pre><p><code>sequence header</code> 数据为 <code>0x13d-78</code> <code>0xd0-78</code> –&gt; <code>0xef 0x82</code></p>
+<h2 id="802-11-802-2"><a href="#802-11-802-2" class="headerlink" title="802.11/802.2"></a>802.11/802.2</h2><ul>
+<li><code>IEEE 802.11</code> 定义了媒体访问控制层（MAC 层）和物理层。物理层</li>
+<li><code>IEEE 802.2</code> 是对数据链路层上层逻辑链路控制 (LLC) 连接的建立和管理的规范</li>
+</ul>
+<p>几个概念：</p>
+<ul>
+<li><code>PHY</code> 物理层的芯片我们简称之为 PHY，物理层 <code>Physical Layer</code></li>
+<li>数据链路层 <code>Data Link Layer</code> 是 <code>OSI</code> 模型的第二层，负责建立和管理节点间的链路。该层通常又被分为介质访问控制 <code>MAC</code> 和逻辑链路控制 <code>LLC</code> 两个子层<ul>
+<li><code>MAC</code> 数据链路层的芯片一般简称之为 MAC 控制器</li>
+<li><code>LLC</code> 子层的主要任务是建立和维护网络连接，执行差错校验、流量控制和链路控制</li>
+</ul>
+</li>
+</ul>
+<p>** <code>WIFI</code> <code>MAC</code> 和 <code>PHY</code> 层及协议在 <code>OSI</code> 位置**<br><img src="/images/wifi/WIFI.png" alt=""><br><img src="/images/wifi/802.11_OSI.png" alt=""></p>
+<p><code>Airkiss</code> 需要关心的 <code>length</code> 从 <code>802.2 SNAP LLC</code> 解析，数据格式<br><img src="/images/wifi/snap.png" alt=""></p>
+<p><code>802.11</code> 帧结构如下， <code>airkiss</code> 对 <code>Address1/Address2/Address3</code> 字段进行了过滤<br><img src="/images/wifi/80211.png" alt=""></p>
+<h2 id="协议细节理解"><a href="#协议细节理解" class="headerlink" title="协议细节理解"></a>协议细节理解</h2><h3 id="前导码及发现过程"><a href="#前导码及发现过程" class="headerlink" title="前导码及发现过程"></a>前导码及发现过程</h3><blockquote>
+<p>利用 <code>802.2 SNAP</code> 数据包中的 <code>Length</code> 字段进行通信。在实际应用中采用 <code>UDP</code> 广播包作为信息的载体。每一包的数据都是按照 <code>Airkiss</code> 通信协议进行编码。<strong>一个 <code>UDP</code> 包发送要经过 <code>IP</code> 层、数据链路层的封装，并且通过加密 ( <code>WPA2、WPA、WEP</code> ) 后才被发送出去，所以发送方发送 <code>UDP</code> 长度与接收方监听 <code>SNAP</code> 包长度存在差异，而且由于底层加密方式的差异，使得这个差异值也具有不确定性</strong></p>
+</blockquote>
+<p>因此需要监听信道计算差异值，这个差异值就是底层封装对 <code>Length</code> 的差异，后续传输的所有 <code>Length</code> 需要减去差异值</p>
+<h3 id="误识别"><a href="#误识别" class="headerlink" title="误识别"></a>误识别</h3><p>如果发送数据中包括递增值，例如 <code>1234</code>、 <code>4567</code> 或 <code>abcd</code> 会导致前导码识别错误，正式库中有处理？</p>
+<h3 id="应用数据组成"><a href="#应用数据组成" class="headerlink" title="应用数据组成"></a>应用数据组成</h3><p><code>password</code> + <code>random</code> + <code>ssid</code></p>
+<ol>
+<li><code>password</code> 和 <code>ssid</code> 可以发送经过 <code>AES</code> 加密后的数据， <code>AES Key</code> 私下协商， <code>Airkiss</code> 协议无规定？</li>
+<li><code>random</code> 为 <code>airkiss server</code> 生成的随机数，在连接成功之后 <code>airkiss client</code> 将这个值发送回来以完成配网</li>
+</ol>
+<h3 id="端口的选择"><a href="#端口的选择" class="headerlink" title="端口的选择"></a>端口的选择</h3><ol>
+<li><code>airkiss server</code> 可以是 <code>eth</code> 或 <code>wlan</code></li>
+<li><code>airkiss client</code> 可以是 <code>eth</code> 或 <code>wlan</code></li>
+<li>可以使用 <code>setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, (void *)&amp;ifr, sizeof(ifr)))</code> 限制使用具体 <code>interface</code></li>
+</ol>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://iot.weixin.qq.com/wiki/airkiss_developer_manual.pdf" target="_blank" rel="noopener">AirKiss 库文件使用指南</a></li>
+<li><a href="https://www.jianshu.com/p/b3a2a8ae7042" target="_blank" rel="noopener">揭开智能配置上网（微信 Airkiss）的奥妙面纱</a></li>
+<li><a href="https://blog.csdn.net/u012503786/article/details/78783874" target="_blank" rel="noopener">IEEE 802.11 的帧格式介绍</a></li>
+<li><a href="https://wenku.baidu.com/view/0e825981ad02de80d5d8409c.html" target="_blank" rel="noopener">Airkiss 协议详解</a></li>
+<li><a href="https://github.com/pannzh/Airkiss" target="_blank" rel="noopener">Airkiss</a></li>
+<li><a href="https://segmentfault.com/a/1190000011811798" target="_blank" rel="noopener">Radiotap 头信息解析</a></li>
+<li><a href="https://www.freebuf.com/articles/wireless/130194.html" target="_blank" rel="noopener">无线网络嗅探中的 Radiotap</a></li>
+<li><a href="https://www.cisco.com/c/zh_cn/support/docs/wireless-mobility/80211/200527-Fundamentals-of-802-11-Wireless-Sniffing.pdf" target="_blank" rel="noopener">基本 802.11 无线探测</a></li>
+<li><a href="http://www.itcertnotes.com/2011/05/ieee-80211-frame-types.html" target="_blank" rel="noopener">IEEE 802.11 Frame Types</a></li>
+<li><a href="https://blog.csdn.net/neilengineer/article/details/45962681" target="_blank" rel="noopener">WIFI MAC 和 PHY 在 OSI 模型中的层次</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/wireshark/" rel="tag"># wireshark</a>
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/iw/" rel="tag"># iw</a>
+              <a href="/tags/802-11/" rel="tag"># 802.11</a>
+              <a href="/tags/802-2/" rel="tag"># 802.2</a>
+              <a href="/tags/airkiss/" rel="tag"># airkiss</a>
+              <a href="/tags/monitor-mode/" rel="tag"># monitor mode</a>
+              <a href="/tags/radiotap-header/" rel="tag"># radiotap header</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/01/03/wireless-analysis-one-monitoring/" rel="next" title="无线网络分析 - 监听">
+                  <i class="fa fa-chevron-left"></i> 无线网络分析 - 监听
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/01/10/airkiss-udp-problems/" rel="prev" title="airkiss server 实现过程遇到的问题">
+                  airkiss server 实现过程遇到的问题 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#radiotap-header"><span class="nav-number">2.</span> <span class="nav-text">radiotap header</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#协议"><span class="nav-number">3.</span> <span class="nav-text">协议</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#discover-发现过程"><span class="nav-number">3.1.</span> <span class="nav-text">discover- 发现过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#magic-code-字段"><span class="nav-number">3.2.</span> <span class="nav-text">magic code 字段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#prefix-code"><span class="nav-number">3.3.</span> <span class="nav-text">prefix code</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sequence-header-amp-data"><span class="nav-number">3.4.</span> <span class="nav-text">sequence header &amp; data</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#802-11-802-2"><span class="nav-number">4.</span> <span class="nav-text">802.11&#x2F;802.2</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#协议细节理解"><span class="nav-number">5.</span> <span class="nav-text">协议细节理解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#前导码及发现过程"><span class="nav-number">5.1.</span> <span class="nav-text">前导码及发现过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#误识别"><span class="nav-number">5.2.</span> <span class="nav-text">误识别</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#应用数据组成"><span class="nav-number">5.3.</span> <span class="nav-text">应用数据组成</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#端口的选择"><span class="nav-number">5.4.</span> <span class="nav-text">端口的选择</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">6.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

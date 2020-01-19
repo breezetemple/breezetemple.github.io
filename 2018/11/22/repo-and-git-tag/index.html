@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="开发环境由 gerrit、 git 以及 repo 搭建而成，本文记录此开发环境下对 branch 以及 tag 的管理">
+<meta property="og:type" content="article">
+<meta property="og:title" content="repo 以及 git tag branch">
+<meta property="og:url" content="http://yoursite.com/2018/11/22/repo-and-git-tag/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="开发环境由 gerrit、 git 以及 repo 搭建而成，本文记录此开发环境下对 branch 以及 tag 的管理">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2018-11-22T08:45:28.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.678Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="git">
+<meta property="article:tag" content="repo">
+<meta property="article:tag" content="gerrit">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2018/11/22/repo-and-git-tag/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>repo 以及 git tag branch | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/22/repo-and-git-tag/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          repo 以及 git tag branch
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-11-22 16:45:28" itemprop="dateCreated datePublished" datetime="2018-11-22T16:45:28+08:00">2018-11-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Git/" itemprop="url" rel="index">
+                    <span itemprop="name">Git</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Repo/" itemprop="url" rel="index">
+                    <span itemprop="name">Repo</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.1k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>开发环境由 <code>gerrit</code>、 <code>git</code> 以及 <code>repo</code> 搭建而成，本文记录此开发环境下对 <code>branch</code> 以及 <code>tag</code> 的管理</p>
+<a id="more"></a>
+
+<h2 id="repo"><a href="#repo" class="headerlink" title="repo"></a>repo</h2><p><code>repo</code> 是用来管理 <code>git</code> 仓库的脚本工具，常用命令如下</p>
+<ul>
+<li><code>repo init</code></li>
+<li><code>repo sync</code></li>
+<li><code>repo forall</code></li>
+</ul>
+<h3 id="repo-init"><a href="#repo-init" class="headerlink" title="repo init"></a>repo init</h3><p>可以使用 <code>repo init --help</code> 查询具体命令，常用命令如下</p>
+<pre><code>repo init -u xxx -b branch_name -m NAME.xml</code></pre><p><code>repo</code> 可以管理多个 <code>branch</code> / <code>revision</code> 和多个 <code>manifest file</code>，默认分别为 <code>master</code> 和 <code>default.xml</code></p>
+<h3 id="repo-sync"><a href="#repo-sync" class="headerlink" title="repo sync"></a>repo sync</h3><p>可以使用 <code>repo sync --help</code> 查询具体命令，常用命令如下</p>
+<pre><code class="shell">repo sync
+repo sync project_name
+repo sync -c -d</code></pre>
+<h3 id="repo-forall"><a href="#repo-forall" class="headerlink" title="repo forall"></a>repo forall</h3><p>可以使用 <code>repo sync --help</code> 查询具体命令，常用命令如下</p>
+<pre><code class="shell">repo forall -c &#39;command line&#39;
+repo forall -c &#39;git checkou .&#39;
+repo forall -c &#39;git tag newtag&#39;</code></pre>
+<h3 id="repo-切换分支"><a href="#repo-切换分支" class="headerlink" title="repo 切换分支"></a>repo 切换分支</h3><pre><code class="shell">repo init -b new_branch
+repo sync
+repo forall -c git reset --hard
+repo init -b new_branch
+repo sync</code></pre>
+<h2 id="git"><a href="#git" class="headerlink" title="git"></a>git</h2><p><code>tag</code> 是 <code>branch</code> 上的一个节点，是静态的里程碑。 <code>tag</code> 名字就是这个节点的别名。</p>
+<h3 id="branch"><a href="#branch" class="headerlink" title="branch"></a>branch</h3><p><a href="https://git-scm.com/book/zh/v1/Git-%E5%88%86%E6%94%AF" target="_blank" rel="noopener">Git 分支</a></p>
+<pre><code class="shell">git branch -a
+git branch -av
+git branch -avv
+git checkout -b newbranch
+git branch newbranch
+git branch -d newbranch
+git checkout v2 -b origin/v2.5.0</code></pre>
+<h3 id="tag"><a href="#tag" class="headerlink" title="tag"></a>tag</h3><p><a href="https://www.yiibai.com/git/git_tag.html" target="_blank" rel="noopener">git tag 命令</a><br><a href="https://blog.csdn.net/albertsh/article/details/63253614" target="_blank" rel="noopener">git tag 常用操作</a></p>
+<pre><code class="shell">git tag
+git tag -l &#39;regex&#39;
+git show tagname
+git branch -a --contains tagname
+git checkout tagname
+git branch branchname tagname
+git tag v0.2.0
+git tag v0.2.0 -light
+git tag -a v0.1.0 -m &quot;release 0.1.0 version&quot;
+git tag -d v0.1.2
+git tag -a v0.1.0 49e0cd22f6bd9510fe65084e023d9c4316b446a6
+git push origin v0.1.0
+git push origin -–tags</code></pre>
+<h2 id="gerrit"><a href="#gerrit" class="headerlink" title="gerrit"></a>gerrit</h2><p><a href="https://review.openstack.org/Documentation/cmd-query.html" target="_blank" rel="noopener">gerrit query</a><br><a href="https://review.openstack.org/Documentation/cmd-review.html" target="_blank" rel="noopener">gerrit review</a><br><a href="https://gerrit-review.googlesource.com/Documentation/cmd-create-branch.html" target="_blank" rel="noopener">gerrit create-branch</a></p>
+<p>通过 <code>ssh</code> 可以直接操作 <code>gerrit</code>，涉及到如下命令</p>
+<pre><code class="shell">ssh -p 29418 review.example.com gerrit create-branch myproject newbranch master</code></pre>
+<pre><code class="shell">  $ ssh -p 29418 review.example.com gerrit review \
+    --verified +1 \
+    --code-review +2 \
+    --submit \
+    --project this/project \
+    $(git rev-list origin/master..HEAD)</code></pre>
+<h2 id="example"><a href="#example" class="headerlink" title="example"></a>example</h2><h3 id="创建分支"><a href="#创建分支" class="headerlink" title="创建分支"></a>创建分支</h3><pre><code class="shell">git clone ssh://git@192.168.110.254/manfiest.git
+cd manfiest
+git co origin/$SOURCE_VERSION -b $RELEASE_VERSION
+sed -i &quot;s/\&quot;$SOURCE_VERSION\&quot;/\&quot;$RELEASE_VERSION\&quot;/g&quot; ./default.xml
+git ci -m &quot;$RELEASE_VERSION&quot; -a
+git push --all
+
+ssh git@192.168.110.254 -t /home/git/repack
+
+ssh -p 29418 git@192.168.110.254 gerrit create-branch projects/xx $RELEASE_VERSION $SOURCE_VERSION</code></pre>
+<h3 id="创建-tag"><a href="#创建-tag" class="headerlink" title="创建 tag"></a>创建 tag</h3><pre><code class="shell">git clone ssh://git@192.168.110.254/manfiest.git
+cd manfiest
+git co origin/$SOURCE_VERSION -b $RELEASE_VERSION
+sed -i &quot;s/\&quot;$SOURCE_VERSION\&quot;/\&quot;refs\/tags\/$RELEASE_VERSION\&quot;/g&quot; ./default.xml
+git ci -m &quot;$RELEASE_VERSION&quot; -a
+git push --all
+
+ssh git@192.168.110.254 -t /home/git/repack
+
+cd xx; git tag $RELEASE_VERSION; git push $SOURCE_VERSION --tags; cd -</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://blog.csdn.net/fengxingzhe001/article/details/64921578" target="_blank" rel="noopener">Repo 切换分支与同步代码</a></li>
+<li><a href="https://gerrit-review.googlesource.com/Documentation/" target="_blank" rel="noopener">Gerrit Code Review for Git</a></li>
+<li><a href="https://gerrit-review.googlesource.com/Documentation/cmd-index.html" target="_blank" rel="noopener">Gerrit Code Review - Command Line Tools</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/git/" rel="tag"># git</a>
+              <a href="/tags/repo/" rel="tag"># repo</a>
+              <a href="/tags/gerrit/" rel="tag"># gerrit</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/11/20/device-tree-and-linux-driver/" rel="next" title="device-tree-and-linux-driver">
+                  <i class="fa fa-chevron-left"></i> device-tree-and-linux-driver
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/11/23/repo-manifest-tutorial/" rel="prev" title="repo manifest 使用指南">
+                  repo manifest 使用指南 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#repo"><span class="nav-number">1.</span> <span class="nav-text">repo</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#repo-init"><span class="nav-number">1.1.</span> <span class="nav-text">repo init</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#repo-sync"><span class="nav-number">1.2.</span> <span class="nav-text">repo sync</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#repo-forall"><span class="nav-number">1.3.</span> <span class="nav-text">repo forall</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#repo-切换分支"><span class="nav-number">1.4.</span> <span class="nav-text">repo 切换分支</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#git"><span class="nav-number">2.</span> <span class="nav-text">git</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#branch"><span class="nav-number">2.1.</span> <span class="nav-text">branch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tag"><span class="nav-number">2.2.</span> <span class="nav-text">tag</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gerrit"><span class="nav-number">3.</span> <span class="nav-text">gerrit</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#example"><span class="nav-number">4.</span> <span class="nav-text">example</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#创建分支"><span class="nav-number">4.1.</span> <span class="nav-text">创建分支</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#创建-tag"><span class="nav-number">4.2.</span> <span class="nav-text">创建 tag</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">5.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

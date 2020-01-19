@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="URI 是 Movian Plugin 的入口，本篇文章分析 URI 的实现">
+<meta property="og:type" content="article">
+<meta property="og:title" content="movian-plugin-tips">
+<meta property="og:url" content="http://yoursite.com/2018/01/11/movian-plugin-uri/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="URI 是 Movian Plugin 的入口，本篇文章分析 URI 的实现">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2018-01-11T02:31:15.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.670Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="movian">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2018/01/11/movian-plugin-uri/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>movian-plugin-tips | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/01/11/movian-plugin-uri/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          movian-plugin-tips
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-01-11 10:31:15" itemprop="dateCreated datePublished" datetime="2018-01-11T10:31:15+08:00">2018-01-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Movian/" itemprop="url" rel="index">
+                    <span itemprop="name">Movian</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.7k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><code>URI</code> 是 <code>Movian Plugin</code> 的入口，本篇文章分析 <code>URI</code> 的实现</p>
+<a id="more"></a>
+
+<h2 id="addURI"><a href="#addURI" class="headerlink" title="addURI"></a>addURI</h2><p><code>plugin object</code></p>
+<pre><code class="api-v1.js">addURI: function(re, callback) {
+  var page = require(&#39;movian/page&#39;);
+  return new page.Route(re, callback);
+},</code></pre>
+<p><code>page</code></p>
+<pre><code class="page.js">exports.Route = function(re, callback) {
+
+  this.route = require(&#39;native/route&#39;).create(re, function(pageprop, sync, args) {
+
+    try {
+
+      // First, convert the raw page prop object into a proxied one
+      pageprop = prop.makeProp(pageprop);
+
+      // 将参数拆分出来，传入 fun 中执行
+      // Prepend a Page object as first argument to callback
+      args.unshift(new Page(pageprop, sync, false));
+
+
+      callback.apply(null, args);
+    } catch(e) {
+
+      if(!prop.isZombie(pageprop)) {
+        throw e;
+      } else {
+        console.log(&quot;Page at route &quot; + re + &quot; was closed, error supressed&quot;);
+      }
+    }
+  });
+}</code></pre>
+<h2 id="URI-执行流程"><a href="#URI-执行流程" class="headerlink" title="URI 执行流程"></a>URI 执行流程</h2><p>在 <code>Movian</code> 输入 <code>ted:start</code> 之后的流程</p>
+<pre><code>11:15:19.974: navigator       [INFO ]: Opening search:ted:start
+11:15:19.975: ted             [DEBUG]: Opening route ^ted:start
+[prop directory {&quot;persistent&quot;, &quot;previous&quot;, &quot;how&quot;, &quot;close&quot;, &quot;url&quot;, &quot;parentUrl&quot;, &quot;directClose&quot;, &quot;eventSink&quot;, &quot;bookmarked&quot;, &quot;model&quot;, &quot;glw&quot;}]
+false
+[object Object]
+11:15:19.975: HTTP            [INFO ]: Connect to www.ted.com:443
+newest
+Newest
+
+
+11:30:06.881: navigator       [INFO ]: Opening ted:index:funny:Funny
+11:30:06.881: ted             [DEBUG]: Opening route ^ted:index:(.*):(.*)
+11:30:06.881: ted             [DEBUG]:   Page argument 1 : funny
+11:30:06.881: ted             [DEBUG]:   Page argument 2 : Funny
+[prop directory {&quot;persistent&quot;, &quot;previous&quot;, &quot;how&quot;, &quot;close&quot;, &quot;url&quot;, &quot;parentUrl&quot;, &quot;directClose&quot;, &quot;eventSink&quot;, &quot;bookmarked&quot;, &quot;model&quot;, &quot;glw&quot;}]
+false
+[object Object],funny,Funny</code></pre><p><code>nav_open0</code> -&gt;<br><code>nav_open_backend</code> -&gt;<br><code>nav_open_thread</code> -&gt;<br><code>backend_open</code> -&gt;<br><code>be_open</code> -&gt;<br><code>ecmascript_openuri</code> 完成参数的解析，传入函数中执行</p>
+<pre><code class="ecmascript.c">static backend_t be_ecmascript = {
+  .be_flags  = BACKEND_OPEN_CHECKS_URI,
+  .be_open   = ecmascript_openuri,
+  .be_search = ecmascript_search,
+};
+
+BE_REGISTER(ecmascript);</code></pre>
+<pre><code class="other">void backend_register(backend_t *be)
+{
+  LIST_INSERT_HEAD(&amp;backends, be, be_global_link);
+}
+
+#define BE_REGISTER(name)                                              \
+INITIALIZER(backend_init_ ## name) {                                 \
+  backend_register(&amp;be_ ## name);                                    \
+}</code></pre>
+<p>因此 <code>be_ecmascript</code> 注册到链表 <code>be</code> 中</p>
+<p>搜索 <code>URI ted:no</code> <code>locatedb_search</code></p>
+<pre><code>12:45:04.096: navigator       [INFO ]: Opening search:ted:nouri
+12:45:04.097: FA              [DEBUG]: Searcher: ted:nouri: executing &quot;locate -i -L -q -b &#39;ted:nouri&#39;&quot;
+12:45:06.085: FA              [DEBUG]: Searcher: ted:nouri: Done
+12:45:22.445: Callout         [DEBUG]: /data/OpenSourceCode/movian/src/upnp/upnp_event.c:150 executed for 1497161us
+12:45:24.057: Callout         [DEBUG]: /data/OpenSourceCode/movian/src/upnp/upnp_event.c:150 executed for 1405651us
+12:45:31.823: ted             [DEBUG]: Search for ted:no was closed, error supressed
+12:45:31.823: rutracker       [DEBUG]: Search for ted:no was closed, error supressed</code></pre><p><code>nav_open0</code> -&gt;<br><code>nav_open_backend</code> -&gt;<br><code>nav_open_thread</code> -&gt;<br><code>backend_open</code> -&gt;<br><code>be_open</code> -&gt;<br><code>locatedb_search</code> -&gt;<br><code>fa_searcher</code> -&gt;</p>
+<h2 id="examples"><a href="#examples" class="headerlink" title="examples"></a>examples</h2><pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:index:(.*):(.*)&quot;, function(page, sort, title) {
+    setPageHeader(page, plugin.getDescriptor().title + &#39; - Sorted by: &#39; + decodeURIComponent(title));
+    scraper(page, BASE_URL + &#39;/talks?sort=&#39; + sort);
+});
+
+plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
+    setPageHeader(page, plugin.getDescriptor().title + &#39; - Sort by:&#39;);
+    page.loading = true;
+    var doc = showtime.httpReq(BASE_URL + &#39;/talks&#39;).toString();
+    page.loading = false;
+    var sort = doc.match(/&lt;optgroup label=&quot;Sort by([\s\S]*?)&lt;\/optgroup&gt;/)[1];
+    // 1-uri component, 2-title
+    var re = /&lt;option value=&quot;([\s\S]*?)&quot;&gt;([\s\S]*?)&lt;\/option&gt;/g;
+    var match = re.exec(sort);
+    while (match) {
+        // sort: match[1]  title: encodeURIComponent(match[2])
+        // 与上面的 URI re 是对应的 plugin.getDescriptor().id + &quot;:index:(.*):(.*)&quot;
+        page.appendItem(plugin.getDescriptor().id + &#39;:index:&#39; + match[1] + &#39;:&#39; + encodeURIComponent(match[2]), &quot;directory&quot;, {
+            title: match[2]
+        });
+        match = re.exec(sort);
+    }
+});</code></pre>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/movian/" rel="tag"># movian</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/01/10/movian-plugin-somafm/" rel="next" title="movian-plugin-somafm">
+                  <i class="fa fa-chevron-left"></i> movian-plugin-somafm
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/01/12/XMLHttpRequest/" rel="prev" title="XMLHttpRequest">
+                  XMLHttpRequest <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#addURI"><span class="nav-number">1.</span> <span class="nav-text">addURI</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#URI-执行流程"><span class="nav-number">2.</span> <span class="nav-text">URI 执行流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#examples"><span class="nav-number">3.</span> <span class="nav-text">examples</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="DMA 和 Cache 一致性问题相关知识点  DMA Cache pgprot_noncached">
+<meta property="og:type" content="article">
+<meta property="og:title" content="嵌入式系统中 DMA 和 cache 一致性问题">
+<meta property="og:url" content="http://yoursite.com/2018/12/19/Cache-incoherence-due-to-DMA/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="DMA 和 Cache 一致性问题相关知识点  DMA Cache pgprot_noncached">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/linux/DMA.png">
+<meta property="article:published_time" content="2018-12-19T01:49:27.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.678Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="dma">
+<meta property="article:tag" content="cache">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/linux/DMA.png">
+
+<link rel="canonical" href="http://yoursite.com/2018/12/19/Cache-incoherence-due-to-DMA/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>嵌入式系统中 DMA 和 cache 一致性问题 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/19/Cache-incoherence-due-to-DMA/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          嵌入式系统中 DMA 和 cache 一致性问题
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-12-19 09:49:27" itemprop="dateCreated datePublished" datetime="2018-12-19T09:49:27+08:00">2018-12-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><code>DMA</code> 和 <code>Cache</code> 一致性问题相关知识点</p>
+<ol>
+<li><code>DMA</code></li>
+<li><code>Cache</code></li>
+<li><code>pgprot_noncached</code></li>
+</ol>
+<a id="more"></a>
+
+<p>关于代码深入分析见<a href="/2018/12/19/linux-kernel-dma-cache-coherence/" title="DMA 相关概念以及 arm 实现">DMA 相关概念以及 arm 实现</a></p>
+<h2 id="DMA"><a href="#DMA" class="headerlink" title="DMA"></a>DMA</h2><p><code>DMA(Direct memory access)</code> <strong>直接内存访问</strong>是一种硬件机制，它允许 <code>外围设备</code> 和 <code>主内存</code> 之间直接传输它们的 <code>I/O</code> 数据，而不需要 <code>CPU</code> 的参与。使用这种机制可以大大提高与设备通信的吞吐量</p>
+<p><code>DMA</code> 方式的数据传输由 <code>DMA 控制器 (DMAC)</code> 控制，在传输期间 <code>CPU</code> 可以并发地执行其他任务，当 <code>DMA</code> 结束后， <code>DMAC</code> 通过中断通知 <code>CPU</code> 数据传输已经结束，然后由 <code>CPU</code> 执行相应的中断服务程序进行后续处理</p>
+<p><img src="/images/linux/DMA.png" alt="DMA"></p>
+<h2 id="Cache-和不一致性问题"><a href="#Cache-和不一致性问题" class="headerlink" title="Cache 和不一致性问题"></a>Cache 和不一致性问题</h2><p><code>Cache</code> 即高速缓冲存储器，是一种特殊的存储器子系统，其中复制了频繁使用的数据以利于快速访问。</p>
+<p>假设 <code>DMA</code> 针对内存的目的地址和 <code>Cache</code> 缓存的对象没有重叠区域， <code>DMA</code> 和 <code>Cache</code> 之间就相安无事，但是，如果有重叠呢，经过 <code>DMA</code> 操作， <code>Cache</code> 缓存对应的内存的数据已经被修改，而 <code>CPU</code> 本身并不知道，它仍然认为 <code>Cache</code> 中的数据仍然还是内存中的数据，以后访问 <code>Cache</code> 映射的内存时，它仍然使用陈旧的 <code>Cache</code> 数据，这就会发生 <code>Cache</code> 与 <code>内存</code> 之间数据 <code>不一致性</code> 的错误。</p>
+<p><strong>最简单的方法是直接禁止 <code>DMA 目标地址范围内内存的 Cache 功能</code>，当然这是牺牲性能的，但却高可靠。</strong></p>
+<p><code>Cache</code> 带来的高效率与 <code>一致性问题</code> 需要平衡</p>
+<p>只要 <code>Cache</code> 的空间与主存空间在一定范围内保持适当比例的映射关系， <code>Cache</code> 的命中率还是相当高的。一般规定 <code>Cache</code> 与内存的空间比为 <code>4：1000</code>，即 <code>128kB Cache</code> 可映射 <code>32MB</code> 内存； <code>256kB Cache</code> 可映射 <code>64MB</code> 内存。在这种情况下。命中率都在 <code>90％</code> 以上。至于没有命中的数据， <code>CPU</code> 只好直接从内存获取。获取的同时，也把它拷进 <code>Cache</code>。</p>
+<h3 id="工作模式"><a href="#工作模式" class="headerlink" title="工作模式"></a>工作模式</h3><p><code>cache</code> 有两种工作模式</p>
+<ol>
+<li><code>wirte through</code>， <code>CPU</code> 对 <code>主存</code> 写数据时，不经过 <code>cache</code> 直接写到内存，此时对于写的实现比较简单，如果系统只用写穿模式的话， <code>cache</code> 则变成了读缓存</li>
+<li><code>write back</code>， <code>CPU</code> 写入数据时，不直接将数据写入内存，而是写入 <code>cache</code>，当 <code>cache</code> 数据被替换出去或者系统做 <code>cache flush</code> 时才写回主存</li>
+</ol>
+<h3 id="Cache-接口"><a href="#Cache-接口" class="headerlink" title="Cache 接口"></a>Cache 接口</h3><ol>
+<li><code>Flush</code>，把 <code>Cache</code> 内容写回 <code>Main Memory</code> , 当 <code>Cache</code> 为 <code>Write through</code> , 不需要 <code>Flush</code></li>
+<li><code>Invalidate</code>，把 <code>Cache</code> 内容直接丢掉不要</li>
+</ol>
+<h3 id="Cache-使用场景"><a href="#Cache-使用场景" class="headerlink" title="Cache 使用场景"></a>Cache 使用场景</h3><p>当有 <code>DMA</code> 在使用 <code>Main Memory</code> 的时候，一般要用到 <code>cache</code> 的处理。因为 <code>DMA</code> 在访问 <code>Main Memory</code> 时是不经过 <code>cache</code> 的。比较典型的比如在 <code>Ethernet</code>， <code>wireless</code>， <code>USB</code> 等驱动中， <code>DMA</code> 会操作 <code>descriptors</code> 和 <code>packet buffers</code>，驱动需要实现如下：</p>
+<ul>
+<li>如果 <code>Driver</code> 使用 <code>descripter</code> 和 <code>packet buffer</code> 的地址都是 <code>cache</code> 的地址，那么<ol>
+<li><code>Driver</code> 在 <code>读 descripter</code> 里一些状态比如 <code>Owned by CPU/DMA</code>，有没有收到包时，要对 <code>descripter</code> 当前结构里的内容做 <code>cache invalidate</code>，收到 <code>packet</code> 后，也要对 <code>packet buffer</code> 做 <code>cache invalidate</code></li>
+<li><code>Driver</code> 在 <code>写 descripter</code> 里一些状态比如 <code>Owned by DMA</code>，要发送包时，要对 <code>descripter</code> 当前结构里的内容做 <code>cache flush</code>，发送 <code>packet</code> 时，也要对 <code>packet buffer</code> 做 cache flush</li>
+</ol>
+</li>
+<li>有些 <code>Driver</code> 会对 <code>descripter</code> 使用 <code>uncache 地址</code>，那么上面两种情况里 <code>invalidate/flush</code> 就不用做了。一般很少会对 <code>packet buffer</code> 也用 <code>uncache 地址</code> 的，<strong>因为对 <code>packet</code> 内容的处理将会很频繁，使用 <code>uncache</code> 会很慢。而 <code>descripter</code> 一般由于结构比较小，如果也使用 <code>cache</code> 地址的话，做 <code>invalidate/flush</code> 的时间消耗可能会比 <code>uncache</code> 的还要多。</strong></li>
+</ul>
+<h2 id="DMA-映射"><a href="#DMA-映射" class="headerlink" title="DMA 映射"></a>DMA 映射</h2><p>因此在 <code>DMA</code> 是否使用 <code>cache</code> 的问题上，可以根据 <code>DMA</code> 缓冲区期望保留的的时间长短来决策。根据 <code>DMA</code> 缓冲区期望保留的时间长短，区分两种类型的 <code>DMA</code> 映射：</p>
+<ol>
+<li><code>一致性 DMA 映射 (Coherent DMA buffers)</code><blockquote>
+<p><code>一致性 DMA 映射</code> 申请的缓存区<strong>不使用 cache，因此可以保持 cache 一致性</strong>。一致性映射具有很长的生命周期，在这段时间内占用的映射寄存器，即使不使用也不会释放。生命周期为该驱动的生命周期</p>
+</blockquote>
+</li>
+<li><code>流式 DMA 映射</code><blockquote>
+<p><code>流式 DMA 映射</code> 实现比较复杂。<strong>生命周期比较短，而且使用 cache，需要处理一致性问题</strong>。一些硬件对流式映射有优化。建立 <code>流式 DMA 映射</code>，需要告诉内核数据的流动方向</p>
+</blockquote>
+<ol>
+<li><code>DMA</code> 从外设读取数据到供处理器使用时，可先 <code>invalidate</code> 操作。这样将迫使处理器在读取 <code>cache</code> 中的数据时，先从内存中读取数据到缓存，保证缓存和内存中数据的一致性</li>
+<li><code>DMA</code> 向外设写入由处理器提供的数据时，可先 <code>writeback</code> 操作。这样可以 <code>DMA</code> 传输数据之前先将缓存中的数据写回到内存中</li>
+<li>如果不清楚 <code>DMA</code> 操作的方向，也可先同时进行 <code>invalidate</code> 和 <code>writeback</code> 操作。操作的结果等同于 <code>invalidate</code> 和 <code>writeback</code> 操作效果的和。</li>
+</ol>
+</li>
+</ol>
+<h3 id="一致性-DMA-映射"><a href="#一致性-DMA-映射" class="headerlink" title="一致性 DMA 映射"></a>一致性 DMA 映射</h3><p><code>dma_alloc_coherent()</code> 首先分配一组连续的物理页用作后续 <code>DMA</code> 操作的缓冲区，然后在软件层面将该段物理地址空间重新映射到非缓存的虚拟地址空间，具体来说在页目录和页表项中<strong>关闭了这段映射区间上的 cache 功能，使得 cache 的一致性问题不再成为问题</strong>。因为关闭了 cache，失去了高速缓存功能，所以一致性映射在性能上打了折扣。</p>
+<h3 id="流式-DMA-映射"><a href="#流式-DMA-映射" class="headerlink" title="流式 DMA 映射"></a>流式 DMA 映射</h3><p>在 <code>流式 DMA 映射</code> 场合， <code>DMA</code> 传输通道所使用的缓冲区往往不是由当前驱动程序自身分配的，而且往往每次 <code>DMA</code> 传输都会重新建立一个 <code>流式映射的缓冲区</code>。此外，由于无法确定外部模块传入的 <code>DMA</code> 缓冲区的映射情况，所以设备驱动程序必须小心地处理可能会出现的 <code>cache 一致性问题</code>。</p>
+<p>需要注意的是，在某些平台上，比如 <code>ARM</code>，** <code>CPU</code> 的读 / 写用的是不同的 cache（读用的是 <code>cache</code>，写则用的是 <code>write buffer</code> ），所以建立 <code>流式 DMA 映射</code> 需要指明数据在 <code>DMA</code> 通道中的流向，以便由内核决定是操作 <code>cache</code> 还是 <code>write buffer</code>。**</p>
+<h2 id="pgprot-noncached"><a href="#pgprot-noncached" class="headerlink" title="pgprot_noncached"></a><code>pgprot_noncached</code></h2><p><code>arch:arm</code></p>
+<p><code>pgprot_noncached()</code> 是一个宏，它实际上<strong>禁止了相关页的 cache 和写缓冲 (write buffer)</strong>, 另外一个稍微少的一些限制的宏是：</p>
+<p><code>pgprot_writecombine(prot)</code> 它则没有禁止写缓冲</p>
+<pre><code class="c">#define pgprot_noncached(prot) \
+    __pgprot_modify(prot, L_PTE_MT_MASK, L_PTE_MT_UNCACHED)
+
+#define pgprot_writecombine(prot) \
+    __pgprot_modify(prot, L_PTE_MT_MASK, L_PTE_MT_BUFFERABLE)</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://en.wikipedia.org/wiki/Direct_memory_access" target="_blank" rel="noopener">Direct memory access</a></li>
+<li>[[Linux 内存』DMA 学习笔记一』(<a href="https://blog.csdn.net/u013686805/article/details/26607163" target="_blank" rel="noopener">https://blog.csdn.net/u013686805/article/details/26607163</a>)</li>
+<li><a href="https://blog.csdn.net/xinghun_4/article/details/8572822" target="_blank" rel="noopener">DMA 和 cache 不一致</a></li>
+<li><a href="https://blog.csdn.net/tangtang_yue/article/details/50635451" target="_blank" rel="noopener">DMA 映射</a></li>
+<li><a href="https://blog.csdn.net/waterhawk/article/details/50723677" target="_blank" rel="noopener">DMA 导致的 CACHE 一致性问题解决方案</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/dma/" rel="tag"># dma</a>
+              <a href="/tags/cache/" rel="tag"># cache</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/12/18/linux-auto-mknod/" rel="next" title="Linux 自动在 /dev 下创建设备文件">
+                  <i class="fa fa-chevron-left"></i> Linux 自动在 /dev 下创建设备文件
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/12/19/linux-kernel-dma-cache-coherence/" rel="prev" title="DMA 相关概念以及 arm 实现">
+                  DMA 相关概念以及 arm 实现 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#DMA"><span class="nav-number">1.</span> <span class="nav-text">DMA</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Cache-和不一致性问题"><span class="nav-number">2.</span> <span class="nav-text">Cache 和不一致性问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#工作模式"><span class="nav-number">2.1.</span> <span class="nav-text">工作模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Cache-接口"><span class="nav-number">2.2.</span> <span class="nav-text">Cache 接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Cache-使用场景"><span class="nav-number">2.3.</span> <span class="nav-text">Cache 使用场景</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DMA-映射"><span class="nav-number">3.</span> <span class="nav-text">DMA 映射</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#一致性-DMA-映射"><span class="nav-number">3.1.</span> <span class="nav-text">一致性 DMA 映射</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#流式-DMA-映射"><span class="nav-number">3.2.</span> <span class="nav-text">流式 DMA 映射</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pgprot-noncached"><span class="nav-number">4.</span> <span class="nav-text">pgprot_noncached</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">5.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

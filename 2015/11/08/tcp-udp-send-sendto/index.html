@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="$(document).ready(function(){         $(&quot;h2,h3,h4,h5,h6&quot;).each(function(i,item){             var tag &#x3D; $(item).get(0).localName;             $(item).attr(&quot;id&quot;,&quot;wow&quot;+i);             $(&quot;#category&quot;).app">
+<meta property="og:type" content="article">
+<meta property="og:title" content="tcp udp send流程分析">
+<meta property="og:url" content="http://yoursite.com/2015/11/08/tcp-udp-send-sendto/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="$(document).ready(function(){         $(&quot;h2,h3,h4,h5,h6&quot;).each(function(i,item){             var tag &#x3D; $(item).get(0).localName;             $(item).attr(&quot;id&quot;,&quot;wow&quot;+i);             $(&quot;#category&quot;).app">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/socket/tcp-socket.jpg">
+<meta property="og:image" content="http://yoursite.com/images/socket/udp-socket.jpg">
+<meta property="article:published_time" content="2015-11-08T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.662Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="socket">
+<meta property="article:tag" content="network">
+<meta property="article:tag" content="tcp">
+<meta property="article:tag" content="udp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/socket/tcp-socket.jpg">
+
+<link rel="canonical" href="http://yoursite.com/2015/11/08/tcp-udp-send-sendto/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>tcp udp send流程分析 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/11/08/tcp-udp-send-sendto/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          tcp udp send流程分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-11-09 00:00:00" itemprop="dateCreated datePublished" datetime="2015-11-09T00:00:00+08:00">2015-11-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/Socket/" itemprop="url" rel="index">
+                    <span itemprop="name">Socket</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/TCP/" itemprop="url" rel="index">
+                    <span itemprop="name">TCP</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>7.7k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>7 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h2 id="tips"><a href="#tips" class="headerlink" title="tips"></a><strong>tips</strong></h2><p>net/ipv4/af_inet.c 查看：inet_stream_ops 和 inet_dgram_ops</p>
+<h2 id="TCP和UDP"><a href="#TCP和UDP" class="headerlink" title="TCP和UDP"></a><strong>TCP和UDP</strong></h2><p>TCP（传输控制协议）和UDP（用户数据报协议）是网络体系结构TCP/IP模型中传输层一层中的两个不同的通信协议。</p>
+<ol>
+<li>TCP：传输控制协议，一种面向连接的协议，给用户进程提供可靠的全双工的字节流，TCP套接口是字节流套接口(stream socket)的一种。</li>
+<li>UDP：用户数据报协议。UDP是一种无连接协议。UDP套接口是数据报套接口(datagram socket)的一种。</li>
+</ol>
+<h3 id="TCP-Client-Server框架"><a href="#TCP-Client-Server框架" class="headerlink" title="TCP Client-Server框架"></a><strong>TCP Client-Server框架</strong></h3><p><img src="/images/socket/tcp-socket.jpg" alt="TCP" title="TCP"></p>
+<p>服务器程序流程：</p>
+<ol>
+<li>程序初始化</li>
+<li>填写本机地址信息</li>
+<li>绑定并监听一个固定的端口</li>
+<li>收到Client的连接后建立一个socket连接</li>
+<li>产生一个新的进程与Client进行通信和信息处理</li>
+<li>子通信结束后中断与Client的连接</li>
+</ol>
+<p>客户端程序流程：</p>
+<ol>
+<li>程序初始化</li>
+<li>填写服务器地址信息</li>
+<li>连接服务器</li>
+<li>与服务器通信和信息处理</li>
+<li>通信结束后断开连接</li>
+</ol>
+<h3 id="UDP-Client-Server框架"><a href="#UDP-Client-Server框架" class="headerlink" title="UDP Client-Server框架"></a><strong>UDP Client-Server框架</strong></h3><p><img src="/images/socket/udp-socket.jpg" alt="UDP" title="UDP"></p>
+<p>服务器程序流程：</p>
+<ol>
+<li><p>程序初始化</p>
+</li>
+<li><p>填写本机地址信息</p>
+</li>
+<li><p>绑定一个固定的端口</p>
+</li>
+<li><p>收到Client的数据报后进行处理与通信</p>
+</li>
+<li><p>通信结束后断开连接</p>
+<p>客户端程序流程：</p>
+</li>
+<li><p>程序初始化</p>
+</li>
+<li><p>填写服务器地址信息</p>
+</li>
+<li><p>与服务器通信和信息处理</p>
+</li>
+<li><p>通信结束后断开连接</p>
+</li>
+</ol>
+<h3 id="Socket编程"><a href="#Socket编程" class="headerlink" title="Socket编程"></a><strong>Socket编程</strong></h3><p>Socket接口是TCP/IP网络的API，<br>网络的Socket数据传输是一种特殊的I/O，Socket也是一种文件描述符。<br>常用的Socket类型有两种：<strong>流式Socket（SOCK_STREAM）</strong>和<strong>数据报式Socket（SOCK_DGRAM）</strong>。</p>
+<ol>
+<li>流式是一种面向连接的Socket，针对于面向连接的TCP服务应用</li>
+<li>数据报式Socket是一种无连接的Socket，对应于无连接的UDP服务应用</li>
+</ol>
+<p><strong>创建套接字</strong></p>
+<pre><code>int socket(int domain, int type, int protocol);</code></pre><p><strong>建立地址和套接字的联系</strong></p>
+<pre><code>int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);</code></pre><p><strong>服务器端侦听客户端的请求</strong></p>
+<pre><code>int listen(int sockfd, int backlog);</code></pre><p><strong>建立服务器/客户端的连接 (面向连接TCP）</strong></p>
+<pre><code>//客户端请求连接 
+int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+
+//服务器端从编号为Sockid的Socket上接收客户连接请求 
+newsockid=accept(Sockid，Clientaddr, paddrlen)</code></pre><p><strong>发送/接收数据</strong></p>
+<pre><code>//面向连接：
+ssize_t send(int sockfd, const void *buf, size_t len, int flags);
+ssize_t recv(int sockfd, void *buf, size_t len, int flags);
+
+//面向无连接：
+ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
+ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);</code></pre><p><strong>释放套接字</strong></p>
+<pre><code>int close(int fd);</code></pre><h3 id="区别"><a href="#区别" class="headerlink" title="区别"></a><strong>区别</strong></h3><ol>
+<li>socket()的参数不同</li>
+<li>UDP Server不需要调用listen和accept</li>
+<li>UDP收发数据用sendto/recvfrom函数</li>
+<li>TCP：地址信息在connect/accept时确定</li>
+<li>UDP：在sendto/recvfrom函数中每次均需指定地址信息(客户端调用connect之后，不需要每次指定)</li>
+<li>UDP：shutdown函数无效</li>
+</ol>
+<h3 id="socket插入内核hash表"><a href="#socket插入内核hash表" class="headerlink" title="socket插入内核hash表"></a><strong>socket插入内核hash表</strong></h3><p>根据服务器和客户端的行为不同，bind()和sendto()都会调用到get_port()，<br>也就是说，在bind()或sendto()调用时，socket才被插入到内核表中。</p>
+<p><strong>bind() 绑定地址</strong></p>
+<pre><code>sys_bind -&gt; sock-&gt;ops-&gt;bind -&gt; inet_bind -&gt; sk-&gt;sk_prot-&gt;get_port</code></pre><p>sk-&gt;sk_prot是udp_prot，这里实际调用udp_v4_get_port()函数。</p>
+<p><strong>sendto() 发送到指定地址</strong></p>
+<pre><code>sys_sendto -&gt; sock_sendmsg -&gt; __sock_sendmsg -&gt; sock-&gt;ops-&gt;sendmsg</code></pre><p>由于<strong>创建的是udp socket，因此sock-&gt;ops指向inet_dgram_ops</strong>，sendmsg()实际调用inet_sendmsg()函数。该函数中的有如下语句：</p>
+<pre><code>if (!inet_sk(sk)-&gt;inet_num &amp;&amp; inet_autobind(sk))  
+    return -EAGAIN;  </code></pre><p>客户端在执行sendto()前仅仅执行了socket()操作，<br>此时inet_num=0，因此执行了inet_autobind()，<br>该函数会调用sk-&gt;sk_prot-&gt;get_port()。<br>从而回到了udp_v4_get_port()函数，它会将sk插入到内核表udp_table中。</p>
+<h2 id="UDP调用connect"><a href="#UDP调用connect" class="headerlink" title="UDP调用connect"></a><strong>UDP调用connect</strong></h2><p>标准的udp客户端开了套接口后，一般使用sendto和recvfrom函数来发数据，<br>udp发送数据有两种方法供大家选用的：</p>
+<ol>
+<li>socket–&gt;sendto()或recvfrom() </li>
+<li>socket–&gt;connect()–&gt;send()或recv()</li>
+</ol>
+<p>sendto和recvfrom在收发时指定地址，而send和recv则没有，地址是在connect指定的.</p>
+<pre><code>int connect(int sockfd, const struct sockaddr *serv_addr, socklen_t addrlen);</code></pre><p>在udp编程中，如果你只往一个地址发送，那么你可以使用send和recv，<br>在使用它们之前用connect指定目的地址。connect函数在udp中就是这个作用，用它来检测udp端口的是否开放是没有用的。</p>
+<p>udp中也有connect，只是它的connect不会进行三步握手，udp中调用connect时什么包也不发送。<br>调用connect是可选的，调用connect后就可以使用send、recv来进行UDP的收发包，而不必每次都要指定地址，<br>然后使用sendto、recvfrom进行操作，当然也可以调用sendto recvfrom。<br>没有调用connect那只能调用sendto、recvfrom，不可以调用send、recv。<br>调用sendto的时候第五个参数必须是NULL,第六个参数是0.<br>调用recvfrom,recv,read系统调用只能获取到先前connect的ip&amp;port发送的报文. </p>
+<p>UDP中使用connect可以提高效率.原因如下:</p>
+<ol>
+<li>普通的UDP发送两个报文内核做了如下:#1:建立连结#2:发送报文#3:断开连结#4:建立连结#5:发送报文#6:断开连结</li>
+<li>采用connect方式的UDP发送两个报文内核如下处理:#1:建立连结#2:发送报文#3:发送报文另外一点, 每次发送报文内核都由可能要做路由查询.</li>
+</ol>
+<p><strong>TCP中调用connect会引起三次握手,client与server建立连结.UDP中调用connect内核仅仅把对端ip&amp;port记录下来</strong>.<br><strong>UDP中可以多次调用connect,TCP只能调用一次connect</strong>.  UDP多次调用connect有两种用途:</p>
+<ol>
+<li><strong>指定一个新的ip&amp;port连结</strong>. 指定新连结,直接设置connect第二个参数即可.</li>
+<li><strong>断开和之前的ip&amp;port的连结</strong>. 断开连结,需要将connect第二个参数中的sin_family设置成AF_UNSPEC即可. </li>
+</ol>
+<p>UDP中使用connect的好处:</p>
+<ol>
+<li>会提升效率</li>
+<li>高并发服务中会增加系统稳定性</li>
+</ol>
+<p><strong>内核</strong>：发送时有两种调用方式：sys_send()和sys_sendto()，<br>两者的区别在于sys_sendto()需要给入目的地址的参数；<br>而sys_send()调用前需要调用sys_connect()来绑定目的地址信息；<br>两者的后续调用是相同的。如果调用sys_sendto()发送，<br>地址信息在sys_sendto()中从用户空间拷贝到内核空间，<br>而报文内容在udp_sendmsg()中从用户空间拷贝到内核空间。</p>
+<h2 id="TCP使用sendto"><a href="#TCP使用sendto" class="headerlink" title="TCP使用sendto"></a><strong>TCP使用sendto</strong></h2><p>tcp_v4_connect函数代码片段：</p>
+<pre><code>/* 记录目的端口和目的IP */
+inet-&gt;dport = usin-&gt;sin_port;
+inet-&gt;daddr = daddr;</code></pre><p><strong>将目标地址及端口记录在inet中</strong>！</p>
+<p>同样的，TCP也可以调用sendto、recvfrom来完成数据的读写。<strong>Linux内核中send系统调用</strong>：</p>
+<pre><code>SYSCALL_DEFINE4(send, int, fd, void __user *, buff, size_t, len,
+    unsigned int, flags)
+{
+    return sys_sendto(fd, buff, len, flags, NULL, 0);
+}</code></pre><p>可以看到，send直接调用sendto，后面两个参数直接填NULL，0，<br>因此对于TCP调用来将，使用sendto，并将后两个参数置0，一样可以工作。</p>
+<h2 id="TCP-UDP-Send流程代码分析"><a href="#TCP-UDP-Send流程代码分析" class="headerlink" title="TCP/UDP Send流程代码分析"></a><strong>TCP/UDP Send流程代码分析</strong></h2><p>TCP调用sendto时没有给定地址，如何来完成TCP传输？sendto函数原型：</p>
+<pre><code>SYSCALL_DEFINE6(sendto, int, fd, void __user *, buff, size_t, len,
+    unsigned, flags, struct sockaddr __user *, addr,
+    int, addr_len)
+{
+    struct socket *sock;
+    struct sockaddr_storage address;
+    int err;
+    struct msghdr msg;
+    struct iovec iov;
+    int fput_needed;
+
+    if (len &gt; INT_MAX)
+        len = INT_MAX;
+    sock = sockfd_lookup_light(fd, &amp;err, &amp;fput_needed);
+    if (!sock)
+        goto out;
+
+    iov.iov_base = buff;
+    iov.iov_len = len;
+    msg.msg_name = NULL;
+    msg.msg_iov = &amp;iov;
+    msg.msg_iovlen = 1;
+    msg.msg_control = NULL;
+    msg.msg_controllen = 0;
+    msg.msg_namelen = 0;
+
+    if (addr) {
+        err = move_addr_to_kernel(addr, addr_len, (struct sockaddr *)&amp;address);
+        if (err &lt; 0)
+            goto out_put;
+        msg.msg_name = (struct sockaddr *)&amp;address;
+        msg.msg_namelen = addr_len;
+    }
+
+    if (sock-&gt;file-&gt;f_flags &amp; O_NONBLOCK)
+        flags |= MSG_DONTWAIT;
+    msg.msg_flags = flags;
+    err = sock_sendmsg(sock, &amp;msg, len);
+
+    out_put:
+        fput_light(sock-&gt;file, fput_needed);
+    out:
+        return err;
+}                          </code></pre><p><strong>tips</strong>: 使用sock-&gt;file-&gt;f_flags &amp; O_NONBLOCK 来检查是否是nonblock的传送。</p>
+<p>sendto中首先调用函数move_addr_to_kernel，将地址copy进内核空间：</p>
+<pre><code>int move_addr_to_kernel(void __user *uaddr, int ulen, struct sockaddr *kaddr)                                                      
+{
+    if (ulen &lt; 0 || ulen &gt; sizeof(struct sockaddr_storage))
+        return -EINVAL;
+    if (ulen == 0)
+        return 0;
+    if (copy_from_user(kaddr, uaddr, ulen))
+        return -EFAULT;
+    return audit_sockaddr(ulen, kaddr);
+}</code></pre><p>对于TCP来说，传入参数分别为NULL，0，这部分不会执行到。</p>
+<pre><code>msg.msg_name = (struct sockaddr *)&amp;address;
+msg.msg_namelen = addr_len;</code></pre><p><strong>地址存入msg中，用于UDP连接</strong>。</p>
+<p>然后调用sock_sendmsg来完成数据发送，调用顺序：</p>
+<pre><code>sys_send -&gt; sys_sendto -&gt; sock_sendmsg -&gt; __sock_sendmsg -&gt; sock-&gt;ops-&gt;sendmsg -&gt; inet_sendmsg -&gt; sk-&gt;sk_prot-&gt;sendmsg
+
+static inline int __sock_sendmsg(struct kiocb *iocb, struct socket *sock,                                                          
+        struct msghdr *msg, size_t size)
+{
+    struct sock_iocb *si = kiocb_to_siocb(iocb);
+    int err;
+
+    si-&gt;sock = sock;
+    si-&gt;scm = NULL;
+    si-&gt;msg = msg;
+    si-&gt;size = size;
+
+    err = security_socket_sendmsg(sock, msg, size);
+    if (err)
+        return err;
+
+    return sock-&gt;ops-&gt;sendmsg(iocb, sock, msg, size);
+}</code></pre><p><strong>根据socket不同具体对应于tcp_sendmsg、udp_sendmsg</strong></p>
+<h3 id="udp-sendmsg"><a href="#udp-sendmsg" class="headerlink" title="udp sendmsg"></a><strong>udp sendmsg</strong></h3><p>udp_sendmsg代码分析：</p>
+<pre><code>int udp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg, size_t len);
+
+struct inet_sock *inet = inet_sk(sk);
+if (msg-&gt;msg_name) {
+    struct sockaddr_in * usin = (struct sockaddr_in*)msg-&gt;msg_name;
+    if (msg-&gt;msg_namelen &lt; sizeof(*usin))
+        return -EINVAL;
+    if (usin-&gt;sin_family != AF_INET) {
+        if (usin-&gt;sin_family != AF_UNSPEC)
+            return -EAFNOSUPPORT;
+    }
+
+    daddr = usin-&gt;sin_addr.s_addr;
+    dport = usin-&gt;sin_port;
+    if (dport == 0)
+        return -EINVAL;
+} else {
+    if (sk-&gt;sk_state != TCP_ESTABLISHED)
+        return -EDESTADDRREQ;
+    daddr = inet-&gt;daddr;
+    dport = inet-&gt;dport;
+    /* Open fast path for connected socket.
+       Route will not be used, if at least one option is set.
+     */
+    connected = 1;
+}
+ipc.addr = inet-&gt;saddr;</code></pre><p>这段代码<strong>获取要发送数据的目的地址和端口号</strong>。<br>一种情况是<strong>调用sendto()发送数据</strong>，此时目的的信息以参数传入，存储在msg-&gt;msg_name中，因此从中取出daddr和dport；<br>另一种情况是<strong>调用connect(), send()发送数据</strong>，在<strong>connect()调用时绑定了目的的信息，存储在inet中</strong>，<br>并且由于是调用了connect()，sk-&gt;sk_state会设置为TCP_ESTABLISHED。<br>以后调用send()发送数据时，无需要再给入目的信息参数，因此从inet中取出dadr和dport。而connected表示了该socket是否已绑定目的。</p>
+<h3 id="tcp-sendmsg"><a href="#tcp-sendmsg" class="headerlink" title="tcp sendmsg"></a><strong>tcp sendmsg</strong></h3><p>tcp_sendmsg代码分析，调用流程：</p>
+<pre><code>tcp_sendmsg -&gt; tcp_push -&gt; __tcp_push_pending_frames -&gt; tcp_write_xmit -&gt; tcp_transmit_skb
+
+static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb, int clone_it,
+        gfp_t gfp_mask)
+{
+    struct inet_sock *inet;
+    .
+    .
+    inet = inet_sk(sk);
+    /* Build TCP header and checksum it. */
+    th = tcp_hdr(skb);
+    th-&gt;source      = inet-&gt;sport;
+    th-&gt;dest        = inet-&gt;dport;
+    th-&gt;seq         = htonl(tcb-&gt;seq);
+    th-&gt;ack_seq     = htonl(tp-&gt;rcv_nxt);
+    *(((__be16 *)th) + 6)   = htons(((tcp_header_size &gt;&gt; 2) &lt;&lt; 12) |
+            tcb-&gt;flags);
+    .
+    .
+}</code></pre><p><strong>tcp_sendmsg目标地址在函数tcp_transmit_skb中获取，获取的值是调用connect时存储在inet中！</strong></p>
+<ol>
+<li><a href="http://www.cnblogs.com/hubavyn/p/4322819.html" target="_blank" rel="noopener">udp调用connect有什么作用</a></li>
+<li><a href="http://blog.csdn.net/vonkingdom/article/details/7057832" target="_blank" rel="noopener">UDP 的Connect函数的例子</a></li>
+<li><a href="http://blog.csdn.net/qy532846454/article/details/6993695" target="_blank" rel="noopener">Linux内核分析 - 网络：UDP模块 - 收发</a></li>
+<li><a href="http://blog.csdn.net/qy532846454/article/details/6942667" target="_blank" rel="noopener">Linux内核分析 - 网络：UDP模块 - socket</a></li>
+<li><a href="http://blog.csdn.net/cz_hyf/article/details/602802" target="_blank" rel="noopener">linux-Tcp IP协议栈源码阅读笔记</a></li>
+<li><a href="http://blog.chinaunix.net/uid-13746440-id-4825005.html" target="_blank" rel="noopener">Linux TCP/IP源码分析 Connect</a></li>
+<li><a href="http://blog.sina.com.cn/s/blog_5063e4c80101fvj3.html" target="_blank" rel="noopener">Linux TCP/IP 协议栈源码分析</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/socket/" rel="tag"># socket</a>
+              <a href="/tags/network/" rel="tag"># network</a>
+              <a href="/tags/tcp/" rel="tag"># tcp</a>
+              <a href="/tags/udp/" rel="tag"># udp</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2015/11/02/printf-formats/" rel="next" title="printf格式化输出">
+                  <i class="fa fa-chevron-left"></i> printf格式化输出
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2015/11/09/udp-packet-loss/" rel="prev" title="网络性能调优（TCP/UDP）">
+                  网络性能调优（TCP/UDP） <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#tips"><span class="nav-number">1.</span> <span class="nav-text">tips</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP和UDP"><span class="nav-number">2.</span> <span class="nav-text">TCP和UDP</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#TCP-Client-Server框架"><span class="nav-number">2.1.</span> <span class="nav-text">TCP Client-Server框架</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#UDP-Client-Server框架"><span class="nav-number">2.2.</span> <span class="nav-text">UDP Client-Server框架</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Socket编程"><span class="nav-number">2.3.</span> <span class="nav-text">Socket编程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#区别"><span class="nav-number">2.4.</span> <span class="nav-text">区别</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#socket插入内核hash表"><span class="nav-number">2.5.</span> <span class="nav-text">socket插入内核hash表</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#UDP调用connect"><span class="nav-number">3.</span> <span class="nav-text">UDP调用connect</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP使用sendto"><span class="nav-number">4.</span> <span class="nav-text">TCP使用sendto</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP-UDP-Send流程代码分析"><span class="nav-number">5.</span> <span class="nav-text">TCP&#x2F;UDP Send流程代码分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#udp-sendmsg"><span class="nav-number">5.1.</span> <span class="nav-text">udp sendmsg</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tcp-sendmsg"><span class="nav-number">5.2.</span> <span class="nav-text">tcp sendmsg</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

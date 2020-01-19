@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="iperfIperf 是一个 TCP&#x2F;IP 和 UDP&#x2F;IP 的性能测量工具，能够提供网络吞吐率信息，以及震动、丢包率、最大段和最大传输单元大小等统计信息；从而能够帮助我们测试网络性能，定位网络瓶颈。 $ iperf3 -h TCP 模式下 客户端&amp;服务器 在您需要测试启用 Iperf 服务器模式： $ iperf3 -s ---------------------------------">
+<meta property="og:type" content="article">
+<meta property="og:title" content="网络调试工具">
+<meta property="og:url" content="http://yoursite.com/2016/06/22/network-debug/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="iperfIperf 是一个 TCP&#x2F;IP 和 UDP&#x2F;IP 的性能测量工具，能够提供网络吞吐率信息，以及震动、丢包率、最大段和最大传输单元大小等统计信息；从而能够帮助我们测试网络性能，定位网络瓶颈。 $ iperf3 -h TCP 模式下 客户端&amp;服务器 在您需要测试启用 Iperf 服务器模式： $ iperf3 -s ---------------------------------">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2016-06-22T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.662Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="network">
+<meta property="article:tag" content="tools">
+<meta property="article:tag" content="tcpdump">
+<meta property="article:tag" content="wireshark">
+<meta property="article:tag" content="iperf">
+<meta property="article:tag" content="nslookup">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2016/06/22/network-debug/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>网络调试工具 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/06/22/network-debug/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          网络调试工具
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-06-23 00:00:00" itemprop="dateCreated datePublished" datetime="2016-06-23T00:00:00+08:00">2016-06-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>8.2k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>7 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="iperf"><a href="#iperf" class="headerlink" title="iperf"></a>iperf</h2><p>Iperf 是一个 TCP/IP 和 UDP/IP 的性能测量工具，能够提供网络吞吐率信息，以及震动、丢包率、最大段和最大传输单元大小等统计信息；<br>从而能够帮助我们测试网络性能，定位网络瓶颈。</p>
+<pre><code class="bash">$ iperf3 -h</code></pre>
+<p>TCP 模式下 客户端&amp;服务器</p>
+<p>在您需要测试启用 Iperf 服务器模式：</p>
+<pre><code class="bash">$ iperf3 -s
+-----------------------------------------------------------
+Server listening on 5201
+-----------------------------------------------------------</code></pre>
+<p>使用客户端模式连接第一台服务器。</p>
+<pre><code class="bash">$ iperf3 -c 127.0.0.1
+Connecting to host 127.0.0.1, port 5201
+[  4] local 127.0.0.1 port 50924 connected to 127.0.0.1 port 5201
+[ ID] Interval           Transfer     Bandwidth       Retr  Cwnd
+[  4]   0.00-1.00   sec  3.74 GBytes  32.1 Gbits/sec    0   1.12 MBytes       
+[  4]   1.00-2.00   sec  3.80 GBytes  32.7 Gbits/sec    0   1.25 MBytes       
+[  4]   2.00-3.00   sec  3.65 GBytes  31.3 Gbits/sec    0   1.62 MBytes     </code></pre>
+<p>server有类似输出：</p>
+<pre><code class="bash">[  5] local 127.0.0.1 port 5201 connected to 127.0.0.1 port 50924
+[ ID] Interval           Transfer     Bandwidth
+[  5]   0.00-1.00   sec  3.60 GBytes  30.9 Gbits/sec                  
+[  5]   1.00-2.00   sec  3.80 GBytes  32.6 Gbits/sec                  
+[  5]   2.00-3.00   sec  3.65 GBytes  31.3 Gbits/sec                  
+[  5]   3.00-4.00   sec  3.97 GBytes  34.1 Gbits/sec                  
+[  5]   4.00-5.00   sec  3.91 GBytes  33.6 Gbits/sec                  
+[  5]   5.00-6.00   sec  3.90 GBytes  33.5 Gbits/sec                  
+[  5]   5.00-6.00   sec  3.90 GBytes  33.5 Gbits/sec                  
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bandwidth
+[  5]   0.00-6.00   sec  0.00 Bytes  0.00 bits/sec                  sender
+[  5]   0.00-6.00   sec  25.7 GBytes  36.8 Gbits/sec                  receiver
+iperf3: the client has terminated
+-----------------------------------------------------------
+Server listening on 5201</code></pre>
+<p>测试 <code>UDP</code> 使用参数 <code>-u</code></p>
+<p>双向测试使用参数 <code>-d</code></p>
+<h2 id="netperf"><a href="#netperf" class="headerlink" title="netperf"></a>netperf</h2><p>与iperf类似，也使用client/server方式工作。<br>server端是netserver，用来侦听来自client端的连接，client端是netperf，用来向server发起网络测试。<br>在client与server之间，首先建立一个控制连接，传递有关测试配置的信息，以及测试的结果；<br>在控制连接建立并传递了测试配置信息以后，client与server之间会再建立一个测试连接，用来来回传递着特殊的流量模式，以测试网络的性能。</p>
+<ol>
+<li><a href="https://www.ibm.com/developerworks/cn/linux/l-netperf/" target="_blank" rel="noopener">netperf 与网络性能测量</a></li>
+</ol>
+<h2 id="tcpdump"><a href="#tcpdump" class="headerlink" title="tcpdump"></a>tcpdump</h2><p>TcpDump可以将网络中传送的数据包的“头”完全截获下来提供分析。<br>它支持针对网络层、协议、主机、网络或端口的过滤，并提供and、or、not等逻辑语句来帮助你去掉无用的信息。</p>
+<pre><code class="bash">tcpdump tcp port 23 host 172.16.14.107 
+tcpdump -w /path/to/log -i eth0 host &lt;CLIENTIP&gt; and port 80</code></pre>
+<h2 id="wireshark"><a href="#wireshark" class="headerlink" title="wireshark"></a>wireshark</h2><p>Wireshark（前称Ethereal）是一个网络封包分析软件。网络封包分析软件的功能是撷取网络封包，并尽可能显示出最为详细的网络封包资料。</p>
+<h2 id="host"><a href="#host" class="headerlink" title="host"></a>host</h2><p>用于查询DNS的工具，它通过常转换指定主机名称的主机名称为IP地址。当不指定参数时，它显示host命令的帮助信息</p>
+<pre><code class="bash">$ host -a www.baidu.com
+Trying &quot;www.baidu.com&quot;
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 57765
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 4
+
+;; QUESTION SECTION:
+;www.baidu.com.INANY
+
+;; ANSWER SECTION:
+www.baidu.com.459INCNAMEwww.a.shifen.com.
+
+;; ADDITIONAL SECTION:
+www.a.shifen.com.115INA115.239.211.112
+www.a.shifen.com.115INA115.239.210.27
+www.a.shifen.com.115INA180.97.33.108
+www.a.shifen.com.115INA180.97.33.107
+
+Received 122 bytes from 127.0.1.1#53 in 2 ms</code></pre>
+<h2 id="nslookup"><a href="#nslookup" class="headerlink" title="nslookup"></a>nslookup</h2><p>用于查找域名服务器的程序，nslookup有两种模式：互交和非互交</p>
+<pre><code class="bash">$ nslookup www.baidu.com
+Server:127.0.1.1
+Address:127.0.1.1#53
+
+Non-authoritative answer:
+www.baidu.comcanonical name = www.a.shifen.com.
+Name:www.a.shifen.com
+Address: 180.97.33.108
+Name:www.a.shifen.com
+Address: 180.97.33.107
+
+$ nslookup 
+&gt; www.baidu.com
+Server:127.0.1.1
+Address:127.0.1.1#53
+
+Non-authoritative answer:
+www.baidu.comcanonical name = www.a.shifen.com.
+Name:www.a.shifen.com
+Address: 180.97.33.107
+Name:www.a.shifen.com
+Address: 180.97.33.108
+&gt; set all
+Default server: 127.0.1.1
+Address: 127.0.1.1#53
+
+Set options:
+novcnodebugnod2
+searchrecurse
+timeout = 0retry = 3  port = 53ndots = 1
+querytype = A           class = IN
+srchlist = 
+&gt; exit</code></pre>
+<h2 id="dig"><a href="#dig" class="headerlink" title="dig"></a>dig</h2><p>是一个功能类似nslookup命令的工具。能得到更详细的DNS解析报告。在使用上要比 nslookup方便。可以作为网络故障的诊断工具</p>
+<p><strong>必要参数</strong>：@DNSserver DNS服务器地址  (默认：/etc/resolv.conf 文件查询)</p>
+<pre><code class="bash">$ dig @127.0.1.1 www.baidu.com
+
+; &lt;&lt;&gt;&gt; DiG 9.10.3-P4-Ubuntu &lt;&lt;&gt;&gt; @127.0.1.1 www.baidu.com
+; (1 server found)
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 46874
+;; flags: qr rd ra; QUERY: 1, ANSWER: 3, AUTHORITY: 5, ADDITIONAL: 6
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 4096
+;; QUESTION SECTION:
+;www.baidu.com.INA
+
+;; ANSWER SECTION:
+www.baidu.com.817INCNAMEwww.a.shifen.com.
+www.a.shifen.com.213INA115.239.210.27
+www.a.shifen.com.213INA115.239.211.112
+
+;; AUTHORITY SECTION:
+a.shifen.com.1094INNSns1.a.shifen.com.
+a.shifen.com.1094INNSns2.a.shifen.com.
+a.shifen.com.1094INNSns5.a.shifen.com.
+a.shifen.com.1094INNSns4.a.shifen.com.
+a.shifen.com.1094INNSns3.a.shifen.com.
+
+;; ADDITIONAL SECTION:
+ns1.a.shifen.com.43INA61.135.165.224
+ns2.a.shifen.com.274INA180.149.133.241
+ns3.a.shifen.com.43INA61.135.162.215
+ns4.a.shifen.com.558INA115.239.210.176
+ns5.a.shifen.com.204INA119.75.222.17
+
+;; Query time: 3 msec
+;; SERVER: 127.0.1.1#53(127.0.1.1)
+;; WHEN: Fri Jun 24 15:04:24 CST 2016
+;; MSG SIZE  rcvd: 271</code></pre>
+<p>用 dig 查看反向解析</p>
+<pre><code class="bash">dig -x 210.52.83.228 @server</code></pre>
+<p>查找一个域的授权 dns 服务器</p>
+<pre><code class="bash">dig xmgd.com. +nssearch</code></pre>
+<p>从根服务器开始追踪一个域名的解析过程</p>
+<pre><code class="bash">dig xmgd.com +trace</code></pre>
+<h2 id="netstat"><a href="#netstat" class="headerlink" title="netstat"></a>netstat</h2><p>netstat命令主要用于显示与IP、TCP、UDP和ICMP协议相关的统计数据及网络相关信息，例如可以用于检验本机各端口的网络连接情况。</p>
+<p>当你想看看哪个端口被哪个程序占用了；<br>当你想查看TCP连接状态；当你想统计网络连接信息时，这些都可以用netstat命令来搞定，这就是netstat。</p>
+<ul>
+<li>列出所有端口（包括监听和未监听的）</li>
+</ul>
+<pre><code class="bash">netstat -a      # 列出所有端口
+netstat -at     # 列出所有TCP端口
+netstat -au     # 列出所有UDP端口</code></pre>
+<ul>
+<li>列出所有处于监听状态的Sockets</li>
+</ul>
+<pre><code class="bash">netstat -l      # 只显示监听端口
+netstat -lt     # 只列出所有监听TCP端口
+netstat -lu     # 只列出所有监听UDP端口
+netstat -lx     # 只列出所有监听UNIX端口</code></pre>
+<ul>
+<li>显示所有端口的统计信息</li>
+</ul>
+<pre><code class="bash">netstat -s      # 显示所有端口的统计信息
+netstat -st     # 显示TCP端口的统计信息
+netstat -su     # 显示UDP端口的统计信息</code></pre>
+<ul>
+<li>显示路由信息</li>
+</ul>
+<pre><code class="bash">netstat -r</code></pre>
+<p>netstat是一个非常强大的命令，特别是和其它命令进行结合时，更能体现出它的强大性，比如统计TCP每个连接状态的数据：</p>
+<pre><code class="bash">netstat -n | awk &#39;/^tcp/ {++state[$NF]}; END {for(key in state) print key,&quot;\t&quot;,state[key]}&#39;</code></pre>
+<p>又比如查找请求数量排名前20的IP：</p>
+<pre><code class="bash">netstat -anlp|grep 80|grep tcp|awk &#39;{print $5}&#39;|awk -F: &#39;{print $1}&#39;|sort|uniq -c|sort -nr|head -n20</code></pre>
+<h2 id="ss"><a href="#ss" class="headerlink" title="ss"></a>ss</h2><p>ss命令用于显示socket状态.<br>他可以显示PACKET sockets, TCP sockets, UDP sockets, DCCP sockets, RAW sockets, Unix domain sockets等等统计.<br>它比其他工具展示等多tcp和state信息. 它是一个非常实用、快速、有效的跟踪IP连接和sockets的新工具</p>
+<p>常用ss命令：</p>
+<pre><code>ss -l 显示本地打开的所有端口
+ss -pl 显示每个进程具体打开的socket
+ss -t -a 显示所有tcp socket
+ss -u -a 显示所有的UDP Socekt
+ss -o state established &#39;( dport = :smtp or sport = :smtp )&#39; 显示所有已建立的SMTP连接
+ss -o state established &#39;( dport = :http or sport = :http )&#39; 显示所有已建立的HTTP连接
+ss -x src /tmp/.X11-unix/* 找出所有连接X服务器的进程
+ss -s 列出当前socket详细信息:</code></pre><p>显示sockets简要信息，列出当前已经连接，关闭，等待的tcp连接</p>
+<pre><code>$ ss -s
+Total: 1105 (kernel 0)
+TCP:   201 (estab 95, closed 4, orphaned 5, synrecv 0, timewait 2/0), ports 0
+
+Transport Total     IP        IPv6
+*     0         -         -        
+RAW  2         0         2        
+UDP  40        27        13       
+TCP  197       187       10       
+INET  239       214       25       
+FRAG  0         0         0        </code></pre><p>ss使用IP地址筛选</p>
+<pre><code>ss src ADDRESS_PATTERN
+src：表示来源
+ADDRESS_PATTERN：表示地址规则
+
+如下：
+ss src 120.33.31.1 # 列出来之20.33.31.1的连接
+
+＃　列出来至120.33.31.1,80端口的连接
+ss src 120.33.31.1:http
+ss src 120.33.31.1:80</code></pre><p>ss使用端口筛选</p>
+<pre><code>ss dport OP PORT
+OP:是运算符
+PORT：表示端口
+dport：表示过滤目标端口、相反的有sport</code></pre><p>OP运算符如下：</p>
+<pre><code>&lt;= or le : 小于等于 &gt;= or ge : 大于等于
+== or eq : 等于
+!= or ne : 不等于端口
+&lt; or lt : 小于这个端口 &gt; or gt : 大于端口</code></pre><p>OP实例</p>
+<pre><code>ss sport = :http 也可以是 ss sport = :80
+ss dport = :http
+ss dport \&gt; :1024
+ss sport \&gt; :1024
+ss sport \&lt; :32000
+ss sport eq :22
+ss dport != :22
+ss state connected sport = :http
+ss \( sport = :http or sport = :https \)
+ss -o state fin-wait-1 \( sport = :http or sport = :https \) dst 192.168.1/24</code></pre><h2 id="netem-amp-tc"><a href="#netem-amp-tc" class="headerlink" title="netem &amp; tc"></a>netem &amp; tc</h2><p>netem 是 Linux 2.6 及以上内核版本提供的一个网络模拟功能模块。<br>该功能模块可以用来在性能良好的局域网中,模拟出复杂的互联网传输性能,诸如低带宽、传输延迟、丢包等等情况。<br>使用 Linux 2.6 (或以上) 版本内核的很多发行版 Linux 都开启了该内核功能,<br>比如 Fedora、Ubuntu、Redhat、OpenSuse、CentOS、Debian 等等。</p>
+<p>tc 是Linux 系统中的一个工具,全名为 traffic control(流量控制)。<br>tc 可以用来控制 netem 的工作模式,也就是说,如果想使用 netem ,需要至少两个条件,一个是内核中的 netem 功能被包含,另一个是要有 tc 。</p>
+<p>将 eth0 网卡的传输设置为 100ms ,同时,大约有 30% 的包会延迟 ± 10ms 发送</p>
+<pre><code class="bash">$  tc qdisc add dev eth0 root netem delay 100ms 10ms 30%</code></pre>
+<p>将 eth0 网卡的传输设置为随机丢掉 1% 的数据包</p>
+<pre><code class="bash">$ tc qdisc add dev eth0 root netem loss 1%</code></pre>
+<h2 id="ping"><a href="#ping" class="headerlink" title="ping"></a>ping</h2><p>检测丢包</p>
+<p>何判断网络是否存在丢包呢？非常简单，通过常用的「ping」命令即可：</p>
+<pre><code class="bash">$ ping -f &lt;IP&gt;</code></pre>
+<p>关于其中的「-f」选项，在手册中是这样解释的：</p>
+<blockquote>
+<p>Flood ping. For every ECHO_REQUEST sent a period “.” is printed, while for ever ECHO_REPLY received a backspace is printed.  This provides a rapid display of how many packets are being dropped. If interval is not given, it sets interval to zero and outputs packets as fast as they come back or one hundred times per second, whichever is more. Only the super-user may use this option with zero interval.</p>
+</blockquote>
+<p>简单点说：发送洪水请求，每个请求打印一个点，每个响应删除一个点。<br>如果网络存在丢包，那么会呈现出一长串不断增加的点，简单易用，童叟无欺。</p>
+<pre><code class="bash">$ ping -f -i .2 www.baidu.com
+PING www.a.shifen.com (115.239.211.112) 56(84) bytes of data.
+......^C
+--- www.a.shifen.com ping statistics ---
+259 packets transmitted, 253 received, 2% packet loss, time 51837ms
+rtt min/avg/max/mdev = 2.948/4.136/15.631/1.465 ms, ipg/ewma 200.920/4.055 ms</code></pre>
+<h2 id="traceroute"><a href="#traceroute" class="headerlink" title="traceroute"></a>traceroute</h2><p>通过Traceroute我们可以知道信息从你的计算机到互联网另一端的主机是走的什么路径。<br>当然每次数据包由某一同样的出发点（source）到达某一同样的目的地(destination)走的路径可能会不一样，<br>但基本上来说大部分时候所走的路由是相同的。<br>UNIX系统中，我们称之为Traceroute,MS Windows中为Tracert。<br>Traceroute通过发送小的数据包到目的设备直到其返回，来测量其需要多长时间。<br>一条路径上的每个设备Traceroute要测3次。输出结果中包括每次测试的时间(ms)和设备的名称（如有的话）及其IP地址。</p>
+<pre><code class="bash">$ traceroute www.baidu.com
+traceroute to www.baidu.com (115.239.210.27), 30 hops max, 60 byte packets
+1  192.168.110.1 (192.168.110.1)  0.673 ms  0.653 ms  0.655 ms
+2  * * *
+3  192.168.3.1 (192.168.3.1)  1.267 ms  1.611 ms  1.609 ms
+4  * * *
+5  115.236.90.217 (115.236.90.217)  13.796 ms  13.775 ms  13.787 ms
+6  220.191.159.125 (220.191.159.125)  17.639 ms 61.164.3.241 (61.164.3.241)  3.710 ms 61.164.8.45 (61.164.8.45)  3.654 ms
+7  61.164.31.218 (61.164.31.218)  6.728 ms * *
+8  * * *
+9  115.239.209.10 (115.239.209.10)  11.003 ms 115.239.209.30 (115.239.209.30)  10.396 ms 115.239.209.14 (115.239.209.14)  11.438 ms
+10  * * *
+30  * * *</code></pre>
+<p>记录按序列号从1开始，每个纪录就是一跳，每跳表示一个网关，我们看到每行有三个时间，单位是 ms，其实就是-q的默认参数。<br>探测数据包向每个网关发送三个数据包后，网关响应后返回的时间；如果您用 traceroute -q 4 <a href="http://www.58.com" target="_blank" rel="noopener">www.58.com</a> ，表示向每个网关发送4个数据包。</p>
+<p><strong>有一些行是以星号表示的。出现这样的情况，可能是防火墙封掉了ICMP的返回信息，所以我们得不到什么相关的数据包返回数据。</strong></p>
+<hr>
+<ol>
+<li><a href="http://blog.sina.com.cn/s/blog_669638e10100h9ov.html" target="_blank" rel="noopener">iperf交叉编译和 使用</a></li>
+<li><a href="http://blog.csdn.net/mistyeyed/article/details/5918610" target="_blank" rel="noopener">iperf for Linux 在TOP6410上的交叉编译和使用</a></li>
+<li><a href="http://www.latelee.org/using-gnu-linux/compile-iperf.html" target="_blank" rel="noopener">网络性能测试工具iperf编译记录</a></li>
+<li><a href="http://luodw.cc/2015/12/27/dns03/" target="_blank" rel="noopener">域名解析之dig,host,nslookup命令</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/network/" rel="tag"># network</a>
+              <a href="/tags/tools/" rel="tag"># tools</a>
+              <a href="/tags/tcpdump/" rel="tag"># tcpdump</a>
+              <a href="/tags/wireshark/" rel="tag"># wireshark</a>
+              <a href="/tags/iperf/" rel="tag"># iperf</a>
+              <a href="/tags/nslookup/" rel="tag"># nslookup</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2016/06/22/clang-format/" rel="next" title="使用clang-format格式化你的代码">
+                  <i class="fa fa-chevron-left"></i> 使用clang-format格式化你的代码
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2016/06/23/python-crawling/" rel="prev" title="python crawling">
+                  python crawling <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#iperf"><span class="nav-number">1.</span> <span class="nav-text">iperf</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#netperf"><span class="nav-number">2.</span> <span class="nav-text">netperf</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tcpdump"><span class="nav-number">3.</span> <span class="nav-text">tcpdump</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#wireshark"><span class="nav-number">4.</span> <span class="nav-text">wireshark</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#host"><span class="nav-number">5.</span> <span class="nav-text">host</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#nslookup"><span class="nav-number">6.</span> <span class="nav-text">nslookup</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#dig"><span class="nav-number">7.</span> <span class="nav-text">dig</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#netstat"><span class="nav-number">8.</span> <span class="nav-text">netstat</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ss"><span class="nav-number">9.</span> <span class="nav-text">ss</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#netem-amp-tc"><span class="nav-number">10.</span> <span class="nav-text">netem &amp; tc</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ping"><span class="nav-number">11.</span> <span class="nav-text">ping</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#traceroute"><span class="nav-number">12.</span> <span class="nav-text">traceroute</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="了解正则表达式标准，各个之间存在一些差异  BRE (Basic Regular Expressions) ERE (Extended Regular Expressions) PCRE (Perl Compatible Regular Expressions)">
+<meta property="og:type" content="article">
+<meta property="og:title" content="正则表达式 BRE ERE PCRE 区别">
+<meta property="og:url" content="http://yoursite.com/2019/12/27/regular-expression/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="了解正则表达式标准，各个之间存在一些差异  BRE (Basic Regular Expressions) ERE (Extended Regular Expressions) PCRE (Perl Compatible Regular Expressions)">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-12-27T06:35:30.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.682Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="grep">
+<meta property="article:tag" content="sed">
+<meta property="article:tag" content="awk">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2019/12/27/regular-expression/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>正则表达式 BRE ERE PCRE 区别 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/12/27/regular-expression/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          正则表达式 BRE ERE PCRE 区别
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-12-27 14:35:30" itemprop="dateCreated datePublished" datetime="2019-12-27T14:35:30+08:00">2019-12-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/RE/" itemprop="url" rel="index">
+                    <span itemprop="name">RE</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.5k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>了解正则表达式标准，各个之间存在一些差异</p>
+<ul>
+<li>BRE (Basic Regular Expressions)</li>
+<li>ERE (Extended Regular Expressions)</li>
+<li>PCRE (Perl Compatible Regular Expressions)</li>
+</ul>
+<a id="more"></a>
+
+<h2 id="常用工具"><a href="#常用工具" class="headerlink" title="常用工具"></a>常用工具</h2><table class="table table-bordered table-striped">
+  <thead>
+    <tr><th>What</th><th>Syntax</th><th>Comments/gotchas</th></tr>
+  </thead>
+  <tbody id="programs-languages" class="subgroup">
+    <tr><th colspan="3">Programming languages</th></tr>
+    <tr><td><a href="http://perldoc.perl.org/perlre.html" target="_blank" rel="noopener">Perl</a></td><td>PCRE</td><td>PCRE is actually a separate implementation from Perl's, with <a href="http://en.wikipedia.org/wiki/Perl_Compatible_Regular_Expressions#Differences_from_Perl" target="_blank" rel="noopener">slight differences</a></td></tr>
+    <tr><td><a href="https://docs.python.org/library/re.html" target="_blank" rel="noopener">Python's <code>re</code> standard lib</a></td><td>Python's own syntax (Perl-inspired)</td><td></td></tr>
+    <tr><td><a href="http://ruby-doc.org/core-2.2.0/Regexp.html" target="_blank" rel="noopener">Ruby</a></td><td>Ruby's own syntax (Perl-inspired)</td><td></td></tr>
+    <tr><td><a href="http://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html" target="_blank" rel="noopener">Java's java.util.regex</a></td><td>Almost PCRE</td><td></td></tr>
+    <tr><td><a href="http://www.boost.org/doc/libs/1_49_0/libs/regex/doc/html/boost_regex/syntax/perl_syntax.html" target="_blank" rel="noopener">Boost.Regex</a></td><td>PCRE</td><td></td></tr>
+  </tbody>
+  <tbody id="programs-editors" class="subgroup">
+    <tr><th colspan="3">Text editors</th></tr>
+    <tr><td><a href="http://www.eclipse.org/tptp/home/downloads/installguide/gla_42/ref/rregexp.html" target="_blank" rel="noopener">Eclipse</a></td><td>PCRE</td><td></td></tr>
+    <tr><td>Emacs</td><td>?</td><td></td></tr>
+    <tr><td>Netbeans</td><td>PCRE</td><td></td></tr>
+    <tr><td>Notepad++</td><td>PCRE (Boost.Regex)</td><td></td></tr>
+    <tr><td>PyCharm</td><td>PCRE</td><td>Perl-inspired</td></tr>
+    <tr><td>Sublime Text</td><td>?</td><td></td></tr>
+    <tr><td>UltraEdit</td><td>PCRE</td><td></td></tr>
+    <tr><td>ViM</td><td>ViM</td><td></td></tr>
+  </tbody>
+  <tbody id="programs-cmdline" class="subgroup">
+    <tr><th colspan="3">Command-line tools</th></tr>
+    <tr><td>awk</td><td>ERE</td><td>might depend on the implementation</td></tr>
+    <tr><td>grep</td><td>BRE, <code>egrep</code> for ERE, <code>grep -P</code> for PCRE (optional)</td><td></td></tr>
+    <tr><td>less</td><td>ERE</td><td>usually; man page says "regular expression library supplied by your system"</td></tr>
+    <tr><td>screen</td><td>plain text</td><td></td></tr>
+    <tr><td>sed</td><td>BRE, <code>-E</code> switches to ERE</td><td></td></tr>
+  </tbody>
+</table>
+
+<h2 id="语法差异"><a href="#语法差异" class="headerlink" title="语法差异"></a>语法差异</h2><table class="table table-bordered table-striped">
+  <thead>
+    <tr><th>What</th><th><a href="http://perldoc.perl.org/perlre.html" target="_blank" rel="noopener">Perl</a>/PCRE</th><th><a href="https://docs.python.org/library/re.html" target="_blank" rel="noopener">Python's <code>re</code></a></th><th>POSIX (BRE)</th><th>POSIX extended (ERE)</th><th>ViM</th></tr>
+  </thead>
+  <tbody id="syntax-basics" class="subgroup">
+    <tr><th colspan="6">Basics</th></tr>
+    <tr><td>Custom character class</td><td><code>[...]</code></td><td><code>[...]</code></td><td><code>[...]</code></td><td><code>[...]</code></td><td><code>[...]</code></td></tr>
+    <tr><td>Negated custom character class</td><td><code>[^...]</code></td><td><code>[^...]</code></td><td><code>[^...]</code></td><td><code>[^...]</code></td><td><code>[^...]</code></td></tr>
+    <tr><td>\ special in class?</td><td>yes</td><td>yes</td><td>no, <code>]</code> escaped if comes first</td><td>no, <code>]</code> escaped if comes first</td><td>yes</td></tr>
+    <tr><td>Ranges</td><td><code>[a-z]</code>, <code>-</code> escaped if comes last</td><td><code>[a-z]</code>, <code>-</code> escaped if first or last</td><td><code>[a-z]</code>, <code>-</code> escaped if comes last</td><td></td><td><code>[a-z]</code>, <code>-</code> escaped if comes last</td></tr>
+    <tr><td>Alternation</td><td><code>|</code></td><td><code>|</code></td><td><code>\|</code></td><td><code>|</code></td><td><code>\|</code> <code>\&amp;</code> (low precedence)</td></tr>
+    <tr><td>Escaped character</td><td><code>\033</code> <code>\x1B</code> <code>\x{1234}</code> <code>\N{name}</code> <code>\N{U+263D}</code></td><td><code>\x12</code></td><td class="na"></td><td class="na"></td><td><code>\%d123</code> <code>\%x2A</code> <code>\%u1234</code> <code>\%U1234ABCD</code></td></tr>
+  </tbody>
+  <tbody id="syntax-characters" class="subgroup">
+    <tr><th colspan="6">Character classes</th></tr>
+    <tr><td>Any character (except newline)</td><td><code>.</code></td><td><code>.</code></td><td><code>.</code></td><td><code>.</code></td><td><code>.</code></td></tr>
+    <tr><td>Any character (including newline)</td><td class="na"></td><td class="na"></td><td class="na"></td><td class="na"></td><td><code>\_.</code></td></tr>
+    <tr><td>Match a "word" character (alphanumeric plus <code>_</code>)</td><td><code>\w</code> <code>[[:word:]]</code></td><td><code>\w</code></td><td><code>\w</code></td><td><code>\w</code></td><td><code>\w</code></td></tr>
+    <tr><td>Case</td><td><code>[[:upper:]]</code> / <code>[[:lower:]]</code></td><td class="na"></td><td><code>[[:upper:]]</code> / <code>[[:lower:]]</code></td><td><code>[[:upper:]]</code> / <code>[[:lower:]]</code></td><td><code>\u</code> <code>[[:upper:]]</code> / <code>\l</code> <code>[[:lower:]]</code></td></tr>
+    <tr><td>Match a non-"word" character</td><td><code>\W</code></td><td><code>\W</code></td><td class="na"></td><td class="na"></td><td><code>\W</code></td></tr>
+    <tr><td>Match a whitespace character (except newline)</td><td class="na"></td><td class="na"></td><td><code>\s</code> <code>[[:space:]]</code></td><td><code>\s</code> <code>[[:space:]]</code></td><td><code>\s</code> <code>[[:space:]]</code></td></tr>
+    <tr><td>Whitespace including newline</td><td><code>\s</code> <code>[[:space:]]</code></td><td><code>\s</code></td><td class="na"></td><td class="na"></td><td><code>\_s</code></td></tr>
+    <tr><td>Match a non-whitespace character</td><td><code>\S</code></td><td><code>\S</code></td><td><code>[^[:space:]]</code></td><td><code>[^[:space:]]</code></td><td><code>\S</code> <code>[^[:space:]]</code></td></tr>
+    <tr><td>Match a digit character</td><td><code>\d</code> <code>[[:digit:]]</code></td><td><code>\d</code></td><td><code>[[:digit:]]</code></td><td><code>[[:digit:]]</code></td><td><code>\d</code> <code>[[:digit:]]</code></td></tr>
+    <tr><td>Match a non-digit character</td><td><code>\D</code></td><td><code>\D</code></td><td><code>[^[:digit:]]</code></td><td><code>[^[:digit:]]</code></td><td><code>\D</code> <code>[^[:digit:]]</code></td></tr>
+    <tr><td>Any hexadecimal digit</td><td><code>[[:xdigit:]]</code></td><td class="na"></td><td><code>[[:xdigit:]]</code></td><td><code>[[:xdigit:]]</code></td><td><code>\x</code> <code>[[:xdigit:]]</code></td></tr>
+    <tr><td>Any octal digit</td><td></td><td class="na"></td><td></td><td></td><td><code>\o</code></td></tr>
+    <tr><td>Any graphical character excluding "word" characters</td><td><code>[[:punct:]]</code></td><td class="na"></td><td><code>[[:punct:]]</code></td><td><code>[[:punct:]]</code></td><td><code>[[:punct:]]</code></td></tr>
+    <tr><td>Any alphabetical character</td><td><code>[[:alpha:]]</code></td><td class="na"></td><td><code>[[:alpha:]]</code></td><td><code>[[:alpha:]]</code></td><td><code>\a</code> <code>[[:alpha:]]</code></td></tr>
+    <tr><td>Non-alphabetical character</td><td></td><td class="na"></td><td><code>[^[:alpha:]]</code></td><td><code>[^[:alpha:]]</code></td><td><code>\A</code> <code>[^[:alpha:]]</code></td></tr>
+    <tr><td>Any alphanumerical character</td><td><code>[[:alnum:]]</code></td><td class="na"></td><td><code>[[:alnum:]]</code></td><td><code>[[:alnum:]]</code></td><td><code>[[:alnum:]]</code></td></tr>
+    <tr><td>ASCII</td><td><code>[[:ascii:]]</code></td><td class="na"></td><td class="na"></td><td class="na"></td><td class="na"></td></tr>
+    <tr><td>Character equivalents (e = é = è) (as per locale)</td><td></td><td class="na"></td><td><code>[[=e=]]</code></td><td><code>[[=e=]]</code></td><td><code>[[=e=]]</code></td></tr>
+  </tbody>
+  <tbody id="syntax-assert" class="subgroup">
+    <tr><th colspan="6">Zero-width assertions</th></tr>
+    <tr><td>Word boundary</td><td><code>\b</code></td><td><code>\b</code></td><td><code>\b</code></td><td><code>\b</code></td><td><code>\&lt;</code> / <code>\&gt;</code></td></tr>
+    <tr><td>Anywhere but word boundary</td><td><code>\B</code></td><td><code>\B</code></td><td><code>\B</code></td><td><code>\B</code></td><td class="na"></td></tr>
+    <tr><td>Beginning of line/string</td><td><code>^</code> / <code>\A</code></td><td><code>^</code> / <code>\A</code></td><td><code>^</code></td><td><code>^</code></td><td><code>^</code> (beginning of pattern ) <code>\_^</code></td></tr>
+    <tr><td>End of line/string</td><td><code>$</code> / <code>\Z</code></td><td><code>$</code> / <code>\Z</code></td><td><code>$</code></td><td><code>$</code></td><td><code>$</code> (end of pattern) <code>\_$</code></td></tr>
+  </tbody>
+  <tbody id="syntax-groups" class="subgroup">
+    <tr><th colspan="6">Captures and groups</th></tr>
+    <tr><td>Capturing group</td><td><code>(...)</code> <code>(?&lt;name&gt;...)</code></td><td><code>(...)</code> <code>(?P&lt;name&gt;...)</code></td><td><code>\(...\)</code></td><td><code>(...)</code></td><td><code>\(...\)</code></td></tr>
+    <tr><td>Non-capturing group</td><td><code>(?:...)</code></td><td><code>(?:...)</code></td><td class="na"></td><td class="na"></td><td><code>\%(...\)</code></td></tr>
+    <tr><td>Backreference to a specific group.</td><td><code>\1</code> <code>\g1</code> <code>\g{-1}</code></td><td><code>\1</code></td><td><code>\1</code></td><td><code>\1</code> non-official</td><td><code>\1</code></td></tr>
+    <tr><td>Named backreference</td><td><code>\g{name}</code> <code>\k&lt;name&gt;</code></td><td><code>(?P=name)</code></td><td class="na"></td><td class="na"></td><td class="na"></td></tr>
+  </tbody>
+  <tbody id="syntax-lookaround" class="subgroup">
+    <tr><th colspan="6">Look-around</th></tr>
+    <tr><td>Positive look-ahead</td><td><code>(?=...)</code></td><td><code>(?=...)</code></td><td class="na"></td><td class="na"></td><td><code>\(...\)\@=</code></td></tr>
+    <tr><td>Negative look-ahead</td><td><code>(?!...)</code></td><td><code>(?!...)</code></td><td class="na"></td><td class="na"></td><td><code>\(...\)\@!</code></td></tr>
+    <tr><td>Positive look-behind</td><td><code>(?&lt;=...)</code></td><td><code>(?&lt;=...)</code></td><td class="na"></td><td class="na"></td><td><code>\(...\)\@&lt;=</code></td></tr>
+    <tr><td>Negative look-behind</td><td><code>(?&lt;!...)</code></td><td><code>(?&lt;!...)</code></td><td class="na"></td><td class="na"></td><td><code>\(...\)\@&lt;!</code></td></tr>
+  </tbody>
+  <tbody id="syntax-multiplicity" class="subgroup">
+    <tr><th colspan="6">Multiplicity</th></tr>
+    <tr><td>0 or 1</td><td><code>?</code></td><td><code>?</code></td><td><code>\?</code></td><td><code>?</code></td><td><code>\?</code></td></tr>
+    <tr><td>0 or more</td><td><code>*</code></td><td><code>*</code></td><td><code>*</code></td><td><code>*</code></td><td><code>*</code></td></tr>
+    <tr><td>1 or more</td><td><code>+</code></td><td><code>+</code></td><td><code>\+</code></td><td><code>+</code></td><td><code>\+</code></td></tr>
+    <tr><td>Specific number</td><td><code>{n}</code> <code>{n,m}</code> <code>{n,}</code></td><td><code>{n}</code> <code>{n,m}</code> <code>{n,}</code></td><td><code>\{n\}</code> <code>\{n,m\}</code> <code>\{n,\}</code></td><td><code>{n}</code> <code>{n,m}</code> <code>{n,}</code></td><td><code>\{n}</code> <code>\{n,m}</code> <code>\{n,}</code></td></tr>
+    <tr><td>0 or 1, non-greedy</td><td><code>??</code></td><td><code>??</code></td><td class="na"></td><td class="na"></td><td></td></tr>
+    <tr><td>0 or more, non-greedy</td><td><code>*?</code></td><td><code>*?</code></td><td class="na"></td><td class="na"></td><td><code>\{-}</code></td></tr>
+    <tr><td>1 or more, non-greedy</td><td><code>+?</code></td><td><code>+?</code></td><td class="na"></td><td class="na"></td><td></td></tr>
+    <tr><td>Specific number, non-greedy</td><td><code>{n,m}?</code> <code>{n,}?</code></td><td><code>{n,m}?</code> <code>{n,}?</code></td><td class="na"></td><td class="na"></td><td><code>\{-n,m}</code> <code>\{-n,}</code></td></tr>
+    <tr><td>0 or 1, don't give back on backtrack</td><td><code>?+</code></td><td class="na"></td><td class="na"></td><td class="na"></td><td class="na"></td></tr>
+    <tr><td>0 or more, don't give back on backtrack</td><td><code>*+</code></td><td class="na"></td><td class="na"></td><td class="na"></td><td class="na"></td></tr>
+    <tr><td>1 or more, don't give back on backtrack</td><td><code>++</code></td><td class="na"></td><td class="na"></td><td class="na"></td><td class="na"></td></tr>
+    <tr><td>Specific number, don't give back on backtrack</td><td><code>{n,m}+</code> <code>{n,}+</code></td><td class="na"></td><td class="na"></td><td class="na"></td><td class="na"></td></tr>
+  </tbody>
+  <tbody id="syntax-other" class="subgroup">
+    <tr><th colspan="6">Other</th></tr>
+    <tr><td>Independent non-backtracking pattern</td><td><code>(?&gt;...)</code></td><td class="na"></td><td class="na"></td><td class="na"></td><td><code>\(...\)\@&gt;</code></td></tr>
+    <tr><td>Make case-sensitive/insensitive</td><td><code>(?i)</code> / <code>(?-i)</code></td><td><code>(?i)</code> / <code>(?-i)</code></td><td class="na"></td><td class="na"></td><td><code>\c</code> / <code>\C</code></td></tr>
+  </tbody>
+</table>
+
+<p>BRE ERE 需要注意 <code>()</code> <code>{}</code> 的区别，另外都不支持 <code>\d\D</code></p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://liujiacai.net/blog/2014/12/07/regexp-favors/" target="_blank" rel="noopener">正则表达式“派别”简述</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Regular_expression#Character_classes" target="_blank" rel="noopener">Regular expression</a></li>
+<li><a href="https://blog.csdn.net/yufenghyc/article/details/51078107" target="_blank" rel="noopener">grep中使用”\d”匹配数字不成功的原因</a></li>
+<li><a href="https://remram44.github.io/regex-cheatsheet/regex.html" target="_blank" rel="noopener">Regex cheatsheet</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/grep/" rel="tag"># grep</a>
+              <a href="/tags/sed/" rel="tag"># sed</a>
+              <a href="/tags/awk/" rel="tag"># awk</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/12/27/doxygen-syntax/" rel="next" title="Doxygen 注释语法">
+                  <i class="fa fa-chevron-left"></i> Doxygen 注释语法
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2020/01/10/bear-cmake-error/" rel="prev" title="32/64系统支撑库导致 Bear 编译失败">
+                  32/64系统支撑库导致 Bear 编译失败 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#常用工具"><span class="nav-number">1.</span> <span class="nav-text">常用工具</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#语法差异"><span class="nav-number">2.</span> <span class="nav-text">语法差异</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">3.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

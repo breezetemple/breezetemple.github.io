@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="insmod *.ko 之后，部分驱动需要执行 mknod 才能正常工作，区别如下">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 自动在 &#x2F;dev 下创建设备文件">
+<meta property="og:url" content="http://yoursite.com/2018/12/18/linux-auto-mknod/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="insmod *.ko 之后，部分驱动需要执行 mknod 才能正常工作，区别如下">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/linux/mknod.png">
+<meta property="article:published_time" content="2018-12-18T02:26:50.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.678Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="mknod">
+<meta property="article:tag" content="insmod">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/linux/mknod.png">
+
+<link rel="canonical" href="http://yoursite.com/2018/12/18/linux-auto-mknod/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linux 自动在 /dev 下创建设备文件 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/18/linux-auto-mknod/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 自动在 /dev 下创建设备文件
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-12-18 10:26:50" itemprop="dateCreated datePublished" datetime="2018-12-18T10:26:50+08:00">2018-12-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.9k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><code>insmod *.ko</code> 之后，部分驱动需要执行 <code>mknod</code> 才能正常工作，区别如下</p>
+<a id="more"></a>
+
+<h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><p>针对驱动实现不同，使用不同，主要在于是否需要手动创建设备文件</p>
+<pre><code class="shell">mknod /dev/panel0 c 22 0
+insmod /lib/modules/ `uname -r` /panel.ko</code></pre>
+<h2 id="设备管理"><a href="#设备管理" class="headerlink" title="设备管理"></a>设备管理</h2><p>在 <code>Linux</code> 中有手动和自动两种设备管理，一种是 <code>mknod</code>，在 <code>insmod</code> 后 <code>/dev</code> 下必须有对应的设备文件，需要 <code>mknod</code> 来创建；另外一种在驱动中自动创建</p>
+<p>利用 <code>udev（mdev）</code> 来实现设备文件的自动创建，首先应保证支持 <code>udev（mdev）</code>，由 <code>busybox</code> 配置。</p>
+<p>在驱动用加入对 <code>mdev</code> 的支持主要做的就是：在驱动初始化的代码里调用 <code>class_create(...)</code> 为该设备创建一个 <code>class</code>，再为每个设备调用 <code>device_create(...)</code> 创建对应的设备。</p>
+<p>内核中定义的 <code>struct class</code> 结构体，顾名思义，一个 <code>struct class</code> 结构体类型变量对应一个类，内核同时提供了 <code>class_create(…)</code> 函数，可以用它来创建一个类，这个类存放于 <code>sysfs</code> 下面，一旦创建好了这个类，再调用 <code>device_create(…)</code> 函数来在 <code>/dev</code> 目录下创建相应的设备节点。</p>
+<p>这样，加载模块的时候，用户空间中的 <code>mdev</code> 会自动响应 <code>device_create()</code> 函数，去 <code>/sysfs</code> 下寻找对应的类从而创建设备节点。</p>
+<pre><code class="c">
+#include &lt;linux/module.h&gt;
+#include &lt;linux/fs.h&gt;
+#include &lt;linux/cdev.h&gt;
+#include &lt;linux/device.h&gt;
+
+static int major = 250;
+static int minor=0;
+static dev_t devno;
+static struct class *cls;
+static struct device *test_device;
+
+static int hello_open (struct inode *inode, struct file *filep)
+{
+    printk(&quot;hello_open \n&quot;);
+    return 0;
+}
+static struct file_operations hello_ops=
+{
+    .open = hello_open,
+};
+
+static int hello_init(void)
+{
+    int ret;
+    printk(&quot;hello_init \n&quot;);
+
+
+    devno = MKDEV(major,minor);
+    ret = register_chrdev(major,&quot;hello&quot;,&amp;hello_ops);
+
+    cls = class_create(THIS_MODULE, &quot;myclass&quot;);
+    if(IS_ERR(cls))
+    {
+        unregister_chrdev(major,&quot;hello&quot;);
+        return -EBUSY;
+    }
+    test_device = device_create(cls,NULL,devno,NULL,&quot;hello&quot;);//mknod /dev/hello
+    if(IS_ERR(test_device))
+    {
+        class_destroy(cls);
+        unregister_chrdev(major,&quot;hello&quot;);
+        return -EBUSY;
+    }
+    return 0;
+}
+static void hello_exit(void)
+{
+    device_destroy(cls,devno);
+    class_destroy(cls);
+    unregister_chrdev(major,&quot;hello&quot;);
+    printk(&quot;hello_exit \n&quot;);
+}
+MODULE_LICENSE(&quot;GPL&quot;);
+module_init(hello_init);
+module_exit(hello_exit);</code></pre>
+<p>下面可以看几个 class 几个名字的对应关系：<br><img src="/images/linux/mknod.png" alt="mknod"></p>
+<h3 id="不同内核版本区别"><a href="#不同内核版本区别" class="headerlink" title="不同内核版本区别"></a>不同内核版本区别</h3><pre><code class="c">#if LINUX_VERSION_CODE &gt;= KERNEL_VERSION(2,6,28)
+#   define CLASS_DEV_CREATE(class, devt, device, id)      device_create(class, devt, device, NULL, &quot;hello%d&quot;, id)
+#   define CLASS_DEV_DESTROY(class, devt)                 device_destroy(class, devt)
+#elif LINUX_VERSION_CODE &gt;= KERNEL_VERSION(2,6,26)
+#   define CLASS_DEV_CREATE(class, devt, device, id)      device_create(class, devt, device, NULL, &quot;hello%d&quot;, id)
+#   define CLASS_DEV_DESTROY(class, devt)                 device_destroy(class, devt)
+#elif LINUX_VERSION_CODE &gt;= KERNEL_VERSION(2,6,15)
+#   define CLASS_DEV_CREATE(class, devt, device, id)      class_device_create(class, devt, device, NULL, &quot;hello%d&quot;, id)
+#   define CLASS_DEV_DESTROY(class, devt)                 class_device_destroy(class, devt)
+#else
+#   define CLASS_DEV_CREATE(class, devt, device, id)      device_create_drvdata(class, devt, device, &quot;hello%d&quot;, id)
+#   define CLASS_DEV_DESTROY(classs, devt)                device_destroy(class, devt)
+#endif</code></pre>
+<h2 id="mdev"><a href="#mdev" class="headerlink" title="mdev"></a>mdev</h2><pre><code class="shell">echo &quot;mdev...&quot;
+echo /sbin/mdev &gt; /proc/sys/kernel/hotplug
+/sbin/mdev -s</code></pre>
+<p><code>mdev.conf</code> 如下</p>
+<pre><code class="mdev.conf">null                   0:0 666
+zero                   0:0 666
+urandom                0:0 444
+
+kmem                   0:9 000
+mem                    0:9 640
+port                   0:9 640
+
+console                0:5 600
+ptmx                   0:5 660
+pty[a-z].              0:0 660
+tty[a-z].              0:0 660
+tty[0-9][0-9]          0:0 660
+
+ttyS[0-9]              0:20 640
+
+sd[a-z][0-9]*          0:6 660 * /etc/hotplug/usb/automount.sh $MDEV $ACTION
+fd[0-9]*    0:11 660
+hd[a-z]*    0:6 660</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://blog.csdn.net/zqixiao_09/article/details/50849735" target="_blank" rel="noopener">Linux 字符设备驱动结构（二）—— 自动创建设备节点</a></li>
+<li><a href="https://blog.csdn.net/seanyxie/article/details/5726128" target="_blank" rel="noopener">自动在 /dev/ 下创建设备文件</a></li>
+<li><a href="http://www.cnblogs.com/hnrainll/archive/2011/06/24/2088577.html" target="_blank" rel="noopener">内核驱动模块如何在 /dev 文件下自动创建设备</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/mknod/" rel="tag"># mknod</a>
+              <a href="/tags/insmod/" rel="tag"># insmod</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/12/17/linux-memory-barrier/" rel="next" title="Linux 内存屏障">
+                  <i class="fa fa-chevron-left"></i> Linux 内存屏障
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/12/19/Cache-incoherence-due-to-DMA/" rel="prev" title="嵌入式系统中 DMA 和 cache 一致性问题">
+                  嵌入式系统中 DMA 和 cache 一致性问题 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#现象"><span class="nav-number">1.</span> <span class="nav-text">现象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#设备管理"><span class="nav-number">2.</span> <span class="nav-text">设备管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#不同内核版本区别"><span class="nav-number">2.1.</span> <span class="nav-text">不同内核版本区别</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mdev"><span class="nav-number">3.</span> <span class="nav-text">mdev</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">4.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

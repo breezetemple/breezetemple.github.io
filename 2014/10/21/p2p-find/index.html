@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="Device Discovery">
+<meta property="og:type" content="article">
+<meta property="og:title" content="P2P设备和Miracast设备发现过程">
+<meta property="og:url" content="http://yoursite.com/2014/10/21/p2p-find/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="Device Discovery">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://img.blog.csdn.net/20140319210923265?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvSW5ub3N0/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast">
+<meta property="og:image" content="http://yoursite.com/images/miracast/Normal_Beacon.JPG">
+<meta property="og:image" content="http://yoursite.com/images/miracast/Wfd_Beacon.JPG">
+<meta property="og:image" content="http://yoursite.com/images/miracast/Wfd_Beacon_data.JPG">
+<meta property="og:image" content="http://yoursite.com/images/miracast/P2P_Probe_Req.JPG">
+<meta property="og:image" content="http://yoursite.com/images/miracast/WFD_Probe_Req.JPG">
+<meta property="og:image" content="http://yoursite.com/images/miracast/WFD_Probe_Rsp.JPG">
+<meta property="og:image" content="http://yoursite.com/images/miracast/WFD_Probe_Rsp_data.JPG">
+<meta property="article:published_time" content="2014-10-21T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.658Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="P2P">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://img.blog.csdn.net/20140319210923265?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvSW5ub3N0/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast">
+
+<link rel="canonical" href="http://yoursite.com/2014/10/21/p2p-find/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>P2P设备和Miracast设备发现过程 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/10/21/p2p-find/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          P2P设备和Miracast设备发现过程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-10-22 00:00:00" itemprop="dateCreated datePublished" datetime="2014-10-22T00:00:00+08:00">2014-10-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>7.1k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>6 mins.</span>
+            </span>
+            <div class="post-description">Device Discovery</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <ul>
+<li>toc<br>{:toc}</li>
+</ul>
+<h2 id=""><a href="#" class="headerlink" title="*"></a>*</h2><p>P2P Device Discovery用于P2P Devcie能够互相发现并构建P2P Group</p>
+<p>WFD Devcie Discovery用于WFD Device能够互相发现并构建WFD Session，基于P2P技术，与之相比较多了WFD[协议2]内容</p>
+<h2 id="P2P-Device-Discovery"><a href="#P2P-Device-Discovery" class="headerlink" title="P2P Device Discovery"></a>P2P Device Discovery</h2><p>P2P Device<br>Discovery consists of two major phases: Scan and Find, which are described in<br>detail in the following sections. <strong>P2P设备发现主要有Scan和Find两个阶段</strong></p>
+<p>Device Discovery uses Probe Request and Probe Response frames to<br>exchange device information. The P2P Devices in a P2P Group are discovered<br>via a Probe Response frame from the P2P Group Owner.<strong>P2P设备发现利用Probe Request帧和Probe Response帧来发现周围P2P设备</strong></p>
+<p>A P2P Device shall not respond to Probe Request frames unless it is:<br><strong>允许对Probe Request帧进行应答（发送Probe Response帧）的三种情况</strong></p>
+<ul>
+<li>a P2P Group Owner or</li>
+<li>in the Listen State, or</li>
+<li>a P2P Device associated with an infrastructure AP on the channel on<br>which the Probe Request was sent — in which case the P2P Device may<br>respond provided it is not already a member of a P2P Group.</li>
+</ul>
+<p>A P2P Device shall not transmit Beacon frames unless it is a P2P Group Owner. <strong>只有P2P GO才可以发送Beacon帧（信标帧）</strong></p>
+<h3 id="Listen-State"><a href="#Listen-State" class="headerlink" title="Listen State"></a>Listen State</h3><p>In the Listen State a P2P Device dwells on a given channel,<br>termed the Listen Channel. This is a channel chosen from the list of Social<br>Channels. Channels 1, 6, and 11 in the 2.4 GHz band shall be used as the<br>Social Channels. The Listen Channel shall be chosen at the beginning of the<br>Device Discovery and shall remain the same until P2P Discovery completes.<br><strong>P2P Device在Device Discovery开始时在1,6,11频段中选择一个作为Listen Channel，<br>一旦选择好后，在整个P2P Discovery阶段就不再更改</strong></p>
+<p>A P2P Device in the Listen State shall only reply to Probe Request frames that<br>contain the P2P IE, the P2P Wildcard SSID element, a Wildcard BSSID, and a<br>Destination Address that is either the broadcast address or its P2P Device<br>Address.<br><strong>P2P Device监听Probe Request帧并回复Probe Response帧。只处理那些包含了P2P IE信息的Probe Request帧</strong></p>
+<p>One or more P2P IEs and the WSC IE shall be inserted after other information<br>elements in the Probe Response frames transmitted by a P2P Device.<br><strong>P2P IEs和WSC IE插入到Probe Response帧的尾部</strong></p>
+<h3 id="Scan-Phase"><a href="#Scan-Phase" class="headerlink" title="Scan Phase"></a>Scan Phase</h3><p>In the Scan Phase, devices collect information about surrounding devices or networks<br>by scanning all supported channels.<br>The P2P Device in the Scan Phase shall not reply to Probe Request frames.<br><strong>P2P Device会在各个频段上发送Probe Request帧。<br>P2P Device在这一阶段中不会处理来自其他设备的Probe Request帧</strong></p>
+<h3 id="Find-Phase"><a href="#Find-Phase" class="headerlink" title="Find Phase"></a>Find Phase</h3><p>The Find Phase is used to ensure that two simultaneously searching P2P<br>Devices arrive on a common channel to enable communication. This is<br>achieved by cycling between states where the P2P Device waits on a fixed<br>channel for Probe Request frames (the Listen State) or sends Probe Request<br>frames on a fixed list of channels (the Search State).<br><strong>Find Phase确保当两个设备处于同一频段，一方发送的帧才能被对方接收到，用于建立连接。<br>Search State中，P2P Device将发送Probe Request帧，<br>而Listen State中，它将接收其他设备的Probe Request帧并回复Probe Response帧</strong></p>
+<p>In the Find Phase, a P2P Device shall alternate between the<br>Listen and Search states as specified below.<br><strong>P2P Device将在Search State和Listen State之间来回切换</strong></p>
+<p>The duration of each Listen State within the Find Phase shall be a random<br>integer of 100 TU Intervals. This random number shall be no greater than the<br>maxDiscoverableInterval value and no less than the minDiscoverableInterval.<br>Default values for maxDiscoverableInterval and minDiscoverableInterval values<br>are 3 and 1 respectively. The randomness in the time spent in the Listen state is<br>to avoid a case where two P2P Devices in the Find Phase are in lock-step and<br>thus will never find each other. While in the Listen State within the Find Phase a<br>P2P Device shall be constantly available on the Listen Channel.<br><strong>在Find Phase中，Listen State的时间是100TU的整数倍，倍数值是一个随机数，<br>位于minDiscoverableInterval和maxDiscoverableInterval之间。<br>这两个值默认为1和3，而厂商可以修改。选择随机倍数的原因是为了防止两个Device进入Lock-Step，<br>即两个Device同时进入Listen State，等待相同的时间后又同时进入Search State。<br>如此，双方都无法处理对方的Probe Request信息（Search State中，Device只发送Probe Request）</strong></p>
+<p>P2P Devices in the Search State shall transmit one or more Probe Request<br>frames on each of the Social Channels.<br><strong>处于Find Phase中的Search State时，它将在1,6,11频段上发送Probe Request帧</strong></p>
+<p>A P2P Device in the Search State shall not reply to Probe Request frames.<br><strong>处于Find Phase中的Search State时，不会对Probe Request帧作出应答</strong></p>
+<p>流程图如下：</p>
+<p><img src="http://img.blog.csdn.net/20140319210923265?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvSW5ub3N0/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast" alt=""></p>
+<ul>
+<li>Device Discovery开始</li>
+<li>Sacn Phase，所有频段发送Probe Request帧</li>
+<li>Find Phase，Listen Channel确定，不一定一样。在Listen State和Search State中切换</li>
+<li>Listen State持续时间是100TU的随机整数倍，避免Lock-Step，只监听应答带有P2P IEs的Probe Request帧</li>
+<li>Search State在channel1、6、11上发送Probe Request，不响应Probe Request帧</li>
+<li>Find Phase中在Listen和Search中切换，一旦在某一个相同的channel上，完成Probe Request和Probe Response，即完成设备发现</li>
+<li>图中最终设备在channel 6上完成Devcie Found</li>
+</ul>
+<p><strong>针对各个帧中所必须的内容，例如P2P IEs、WSC等，协议中有明确描述。</strong></p>
+<h2 id="WFD-Devcie-Discovery"><a href="#WFD-Devcie-Discovery" class="headerlink" title="WFD Devcie Discovery"></a>WFD Devcie Discovery</h2><p>Wi-Fi Display Device Discovery builds upon the P2P Device Discovery mechanisms defined in [协议1]<br>enabling a WFD Device to quickly find a peer WFD Device and to determine whether a connection may be<br>established for a subsequent WFD Session.<br><strong>WFD Devcie Discovery基于P2P Device Discovery技术，用于找到WFD device并确认是否可以建立WFD Session</strong></p>
+<p>A WFD Device shall comply with all procedures as specified for P2P Device Discovery in [协议1] with the<br>following additions.</p>
+<ul>
+<li><p>A WFD Device shall include the WFD Information Element (WFD IE) in all beacon, probe<br>request and probe response frames. The WFD IE carries basic information such as device-type and<br>device-status as specified in section 5.1.1 so as to facilitate an optimal connection with a peer<br>WFD Device. If a WFD Device is acting as a GO and receives a Probe Request frame containing a<br>WFD IE, then that WFD Device shall respond with a Probe Response frame containing the<br>information of its WFD capable client(s) as specified in section 5.1.11.</p>
+</li>
+<li><p>A WFD Device that is associated with an infrastructure AP, and that is operating as a Wi-Fi P2P<br>device, should respond to Probe Requests containing a P2P IE, a WFD IE, and a P2P wildcard<br>SSID. The Probe Response frame shall have the P2P IE and the WFD IE. This Probe Response<br>frame should be transmitted on the channel on which the Probe Request was received.</p>
+</li>
+<li><p><strong>WFD 设备在所有的beacon、probe request和probe response帧中有WFD IE，含有WFD Device的基本信息。<br>当一个WFD Device作为P2P GO并且收到一个含有WFD IE的Probe Request帧时，应该以一个含有它的WFD capable client(s)<br>的Probe Response帧作为应答</strong></p>
+</li>
+<li><p><strong>当WFD Device与一个infrastructure AP连接，并且作为P2P设备操作时，对Probe Requests帧的应答Probe Response帧<br>应该含有P2P IE、WFD IE、P2P wildcard SSID。</strong></p>
+</li>
+</ul>
+<p><strong>在P2P Devcie Discovery基础上添加WFD IE可以实现WFD Device Discovery！！</strong></p>
+<h2 id="相关数据帧分析"><a href="#相关数据帧分析" class="headerlink" title="相关数据帧分析"></a>相关数据帧分析</h2><ul>
+<li>抓包环境    ：Omnipeek + winxp + Dlink DWA-125</li>
+<li>P2P GO      ：Wifi-MT7601</li>
+<li>WFD Sink    ：Wifi-MT7601</li>
+<li>P2P Client  ：Phone-Huawei3C</li>
+<li>WFD Source  ：Phone-Huawei3C</li>
+</ul>
+<p><strong>涉及三种数据帧</strong>：</p>
+<ul>
+<li><p>Beacon</p>
+</li>
+<li><p>Probe Request</p>
+</li>
+<li><p>Probe Response</p>
+</li>
+<li><p><strong>P2P IE : <code>OUI=50-6F-9A</code> 和 <code>OUI Type=0x9</code></strong></p>
+</li>
+<li><p><strong>WFD IE : <code>OUI=50-6F-9A</code> 和 <code>OUI Type=0xA</code></strong></p>
+</li>
+</ul>
+<h3 id="Beacon帧"><a href="#Beacon帧" class="headerlink" title="Beacon帧"></a>Beacon帧</h3><p>普通的网络中AP发送的Beacon不带有P2P IE、WFD IE等信息，数据帧如下：</p>
+<p><img src="/images/miracast/Normal_Beacon.JPG" alt="Normal Beacon" title="Normal Beacon"></p>
+<p>做为GO的P2P设备发送的Beacon带有P2P IE、WFD IE等信息，数据帧如下：</p>
+<p><img src="/images/miracast/Wfd_Beacon.JPG" alt="WFD Beacon" title="WFD Beacon"></p>
+<p>其中涉及WFD IE的数据高亮如下：</p>
+<p><img src="/images/miracast/Wfd_Beacon_data.JPG" alt="WFD Beacon Data" title="WFD Beacon Data for WFD IE"></p>
+<p>根据 <code>OUI=50-6F-9A</code> 和 <code>OUI Type=0xA</code> 可以确认为WFD IE（WFD Information Element），其他数据解析如下：</p>
+<ul>
+<li>Subelement ID = 0x0 : WFD Device Information</li>
+<li>Length = 0x0006 : Len段之后的数据长度</li>
+<li>WFD Device Information = 0x0011 : 二进制数据0000 0000 0001 0001<ul>
+<li>WFD Device Type bits 1:0 = 01b ： <strong>Primary Sink 说明是接收显示设备</strong></li>
+<li>WFD Session Availability bits 5:4 = 01b ： Available for WFD Session</li>
+<li>PC bit 7 = 0b : Preferred Connectivity (PC): P2P</li>
+</ul>
+</li>
+<li>Session Management Control Port = 0x1c44 : 默认端口7236</li>
+</ul>
+<h3 id="Probe-Request帧"><a href="#Probe-Request帧" class="headerlink" title="Probe Request帧"></a>Probe Request帧</h3><p>P2P Devcie和WFD Source进行设备发现时发送的Probe Request帧有一些区别，主要是是否含有WFD IE，数据帧如下：</p>
+<p>P2P Probe Request数据帧，只包含P2P IE：</p>
+<p><img src="/images/miracast/P2P_Probe_Req.JPG" alt="P2P Probe Request" title="P2P Probe Request(No WFD IE)"></p>
+<p>WFD Probe Request数据帧，包含P2P IE和WFD IE：</p>
+<p><img src="/images/miracast/WFD_Probe_Req.JPG" alt="WFD Probe Request" title="WFD Probe Request(with WFD IE)"></p>
+<p>WFD ID内容解析如下：</p>
+<ul>
+<li>Subelement ID = 0x0 : WFD Device Information</li>
+<li>Length = 0x0006 : Len段之后的数据长度</li>
+<li>WFD Device Information = 0x0010 : 二进制数据0000 0000 0001 0000<ul>
+<li>WFD Device Type bits 1:0 = 00b ： <strong>WFD Source 说明是发送设备</strong></li>
+<li>WFD Session Availability bits 5:4 = 01b ： Available for WFD Session</li>
+<li>PC bit 7 = 0b : Preferred Connectivity (PC): P2P</li>
+</ul>
+</li>
+<li>Session Management Control Port = 0x1c44 : 默认端口7236</li>
+</ul>
+<p><strong>根据数据帧内容可以知道:是否进行WFD Devcie Discovery取决于Probe Request帧中是否带有WFD IE！</strong></p>
+<h3 id="Probe-Response帧"><a href="#Probe-Response帧" class="headerlink" title="Probe Response帧"></a>Probe Response帧</h3><p>Probe Request有两种格式，但是对Request的响应Probe Response只有一种格式，不论请求中是否有WFD IE，<br>Probe Response中都有WFD IE，数据帧如下：</p>
+<p><img src="/images/miracast/WFD_Probe_Rsp.JPG" alt="WFD Probe Response" title="WFD Probe Response"></p>
+<p>数据帧中看不到对WFD IE的解析，是因为Omnipeek软件的版本比较低，对WFD的协议支持不够，具体WFD IE数据如下：</p>
+<p><img src="/images/miracast/WFD_Probe_Rsp_data.JPG" alt="WFD Probe Response" title="WFD Probe Response Date for WFD IE"></p>
+<p>数据解析如下：</p>
+<ul>
+<li>Head : DD 29 50 6F 9A 0A</li>
+<li>WFD Device Information : 00 00 06 00 11 1C 44 00 00 </li>
+<li>Associated BSSID : 01 00 06 28 C6 8E 3C 93 B4</li>
+<li>Coupled Sink Information : 06 00 07 00 00 00 00 00 00 00</li>
+<li>Alternative MAC Address : 0A 00 06 00 11 7F 21 B3 77</li>
+</ul>
+<p><strong>根据Probe Request中是否含有WFD IE，当收到Probe Response时完成P2P Device 或 WFD Device Discovery！</strong></p>
+<h2 id="相关标准协议"><a href="#相关标准协议" class="headerlink" title="相关标准协议"></a>相关标准协议</h2><ul>
+<li>Wi-Fi Peer-to-Peer (P2P) Technical Specification Version 1.2</li>
+<li>Wi-Fi Display Technical Specification v1.0.0</li>
+<li>Wi-Fi Protected Setup Specification 1.0h</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/P2P/" rel="tag"># P2P</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2014/10/20/Linux-system-programming-02/" rel="next" title="Linux系统编程-文件I/O">
+                  <i class="fa fa-chevron-left"></i> Linux系统编程-文件I/O
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2014/10/30/Linux-system-programming-03-io/" rel="prev" title="Linux系统编程-I/O多路复用">
+                  Linux系统编程-I/O多路复用 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#null"><span class="nav-number">1.</span> <span class="nav-text">*</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#P2P-Device-Discovery"><span class="nav-number">2.</span> <span class="nav-text">P2P Device Discovery</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Listen-State"><span class="nav-number">2.1.</span> <span class="nav-text">Listen State</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Scan-Phase"><span class="nav-number">2.2.</span> <span class="nav-text">Scan Phase</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Find-Phase"><span class="nav-number">2.3.</span> <span class="nav-text">Find Phase</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#WFD-Devcie-Discovery"><span class="nav-number">3.</span> <span class="nav-text">WFD Devcie Discovery</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#相关数据帧分析"><span class="nav-number">4.</span> <span class="nav-text">相关数据帧分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Beacon帧"><span class="nav-number">4.1.</span> <span class="nav-text">Beacon帧</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Probe-Request帧"><span class="nav-number">4.2.</span> <span class="nav-text">Probe Request帧</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Probe-Response帧"><span class="nav-number">4.3.</span> <span class="nav-text">Probe Response帧</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#相关标准协议"><span class="nav-number">5.</span> <span class="nav-text">相关标准协议</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

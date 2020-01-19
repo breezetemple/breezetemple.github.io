@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="使用 -static 编译出现以下警告 libcurl.a(netrc.c.o): In function &#96;Curl_parsenetrc&#39;: netrc.c:(.text.Curl_parsenetrc+0x23e): warning: Using &#39;getpwuid&#39; in statically linked applications requires at runt">
+<meta property="og:type" content="article">
+<meta property="og:title" content="静态编译使用 getaddrinfo 出现警告及动态静态混合使用">
+<meta property="og:url" content="http://yoursite.com/2018/11/12/statically-linked-binary-that-uses-getaddrinfo/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="使用 -static 编译出现以下警告 libcurl.a(netrc.c.o): In function &#96;Curl_parsenetrc&#39;: netrc.c:(.text.Curl_parsenetrc+0x23e): warning: Using &#39;getpwuid&#39; in statically linked applications requires at runt">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2018-11-12T03:06:56.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.678Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="gcc">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="libnss">
+<meta property="article:tag" content="static">
+<meta property="article:tag" content="getaddrinfp">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2018/11/12/statically-linked-binary-that-uses-getaddrinfo/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>静态编译使用 getaddrinfo 出现警告及动态静态混合使用 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/12/statically-linked-binary-that-uses-getaddrinfo/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          静态编译使用 getaddrinfo 出现警告及动态静态混合使用
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-11-12 11:06:56" itemprop="dateCreated datePublished" datetime="2018-11-12T11:06:56+08:00">2018-11-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.8k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>使用 <code>-static</code> 编译出现以下警告</p>
+<pre><code>libcurl.a(netrc.c.o): In function `Curl_parsenetrc&#39;:
+netrc.c:(.text.Curl_parsenetrc+0x23e): warning: Using &#39;getpwuid&#39; in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
+libplayer.a(stream_wfd.c.o): In function `wfd_stream_open&#39;:
+stream_wfd.c:(.text.wfd_stream_open+0x5fe): warning: Using &#39;getaddrinfo&#39; in statically linked applications requires at runtime the shared libraries from the glibc version used for linking</code></pre><blockquote>
+<p>glibc uses libnss to support a number of different providers for address resolution services. Unfortunately, you cannot statically link libnss, as exactly what providers it loads depends on the local system’s configuration.</p>
+</blockquote>
+<p>相关功能不能正常工作，需要使用 <code>动态编译</code> 解决此问题或者更换编译工具链为 <code>uclibc</code>、 <code>musl-gcc</code></p>
+<a id="more"></a>
+
+<h2 id="动态"><a href="#动态" class="headerlink" title="动态"></a>动态</h2><p>动态库后缀为 <code>.so</code>，是 <code>Shared Object</code> 的缩写，程序运行时的动态链接，多个进程可以链接同一个共享库。动态库在程序编译时并不会被连接到目标代码中，程序运行时被载入，因此在程序运行时还需要动态库存在。</p>
+<h3 id="编译生成动态库"><a href="#编译生成动态库" class="headerlink" title="编译生成动态库"></a>编译生成动态库</h3><pre><code class="shell">gcc -fPIC -shared -o libmax.so max.c</code></pre>
+<ul>
+<li><code>-fPIC</code> 为编译器选项，是 <code>Position Independent Code</code> 的缩写，表示要生成位置无关的代码，这是动态库需要的特性</li>
+<li><code>-shared</code> 为链接器选项，告诉 gcc 生成动态库而不是可执行文件</li>
+</ul>
+<h3 id="使用动态连接库"><a href="#使用动态连接库" class="headerlink" title="使用动态连接库"></a>使用动态连接库</h3><pre><code class="shell">gcc test.c -L. -lmax</code></pre>
+<ul>
+<li>生成可执行文件 <code>a.out</code></li>
+<li><code>-L.</code> 表示搜索要链接的库文件时包含当前路径</li>
+<li><code>-lmax</code> 表示要链接 <code>libmax.so</code>，如果同一目录下同时存在同名的动态库和静态库，比如 <code>libmax.so</code> 和 <code>libmax.a</code> 都在当前路径下，则 <code>gcc</code> 会优先链接动态库</li>
+</ul>
+<h3 id="运行"><a href="#运行" class="headerlink" title="运行"></a>运行</h3><pre><code class="shell">$ ./a.out
+./a.out: error while loading shared libraries: libmax.so: cannot open shared object file: No such file or directory</code></pre>
+<p>找不到 <code>libmax.so</code>，原来 <code>Linux</code> 是通过 <code>/etc/ld.so.cache</code> 文件搜寻要链接的动态库的。而 <code>/etc/ld.so.cache</code> 是 <code>ldconfig</code> 程序读取 <code>/etc/ld.so.conf</code> 文件生成的。（ <code>/etc/ld.so.conf</code> 中并不必包含 <code>/lib</code> 和 <code>/usr/lib</code>， <code>ldconfig</code> 程序会自动搜索这两个目录）<br>如果我们把 <code>libmax.so</code> 所在的路径添加到 <code>/etc/ld.so.conf</code> 中，再以 <code>root</code> 权限运行 <code>ldconfig</code> 程序，更新 <code>/etc/ld.so.cache</code>， <code>a.out</code> 运行时，就可以找到 <code>libmax.so</code>。</p>
+<p>还有另一种简单的方法，就是为 <code>a.out</code> 指定 <code>LD_LIBRARY_PATH</code></p>
+<pre><code class="shell">LD_LIBRARY_PATH=. ./a.out</code></pre>
+<p><code>LD_LIBRARY_PATH</code> 是寻找链接的动态库路径</p>
+<blockquote>
+<p>对于 <code>elf 格式的可执行程序</code>，是由 <code>ld-linux.so*</code> 来完成的，它先后搜索 <code>elf 文件</code> 的 <code>DT_RPATH</code> 段，环境变量 <code>LD_LIBRARY_PATH</code> , <code>/etc/ld.so.cache</code> 文件列表， <code>/lib/</code> , <code>/usr/lib</code> 目录，找到库文件后将其载入内存</p>
+</blockquote>
+<h2 id="静态"><a href="#静态" class="headerlink" title="静态"></a>静态</h2><p>静态库后缀为 <code>.a</code>，静态库在程序编译时会被连接到目标代码中，程序运行时将不再需要该静态库。</p>
+<pre><code>LDFLAGS += -static</code></pre><h2 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h2><h3 id="ldd"><a href="#ldd" class="headerlink" title="ldd"></a>ldd</h3><p>使用 <code>ldd</code> 查看可执行程序依赖那些动态库或着动态库依赖于那些动态库</p>
+<pre><code class="shell">$ ldd /lib/libxtables.so.10
+    linux-vdso.so.1 =&gt;  (0x00007ffdf51f5000)
+    libdl.so.2 =&gt; /lib/x86_64-linux-gnu/libdl.so.2 (0x00007fb9cda56000)
+    libc.so.6 =&gt; /lib/x86_64-linux-gnu/libc.so.6 (0x00007fb9cd676000)
+    /lib64/ld-linux-x86-64.so.2 (0x00007fb9cde67000)</code></pre>
+<h3 id="nm"><a href="#nm" class="headerlink" title="nm"></a>nm</h3><p>使用 <code>nm</code> 工具，查看静态库和动态库中有那些函数名</p>
+<pre><code class="shell">$ nm /lib/libxtables.so.10</code></pre>
+<p><code>nm</code> 列出的符号有很多， 常见的有三种：</p>
+<ul>
+<li><code>T 类</code>：是在库中定义的函数，用 T 表示，这是最常见的</li>
+<li><code>U 类</code>：是在库中被调用，但并没有在库中定义（表明需要其他库支持），用 U 表示</li>
+<li><code>W 类</code>：是所谓的 <code>弱态</code> 符号，它们虽然在库中被定义，但是可能被其他库中的同名符号覆盖，用 W 表示</li>
+</ul>
+<h3 id="ar"><a href="#ar" class="headerlink" title="ar"></a>ar</h3><p>使用 <code>ar</code> 工具，可以生成静态库，同时可以查看静态库中包含那些 <code>.o</code> 文件，即有那些源文件构成</p>
+<pre><code class="shell">$ ar -t libpng.a
+pngerror.c.o
+pngmem.c.o
+pngrio.c.o
+pngrutil.c.o
+pngtrans.c.o
+png.c.o
+pngget.c.o
+pngread.c.o
+pngpread.c.o
+pngrtran.c.o
+pngset.c.o</code></pre>
+<h3 id="如何查看动态库和静态库是-32-位，还是-64-位下的库"><a href="#如何查看动态库和静态库是-32-位，还是-64-位下的库" class="headerlink" title="如何查看动态库和静态库是 32 位，还是 64 位下的库"></a>如何查看动态库和静态库是 32 位，还是 64 位下的库</h3><ul>
+<li><code>file .so</code></li>
+<li><code>objdump -x .a</code></li>
+</ul>
+<h2 id="混合链接"><a href="#混合链接" class="headerlink" title="混合链接"></a>混合链接</h2><p>当 <code>ld</code> 使用了选项 <code>-static</code> 时会导致所有的库使用静态链接，因此当使用混合链接是一定不能使用 <code>-static</code>，只能通过 <code>-Wl,-Bstatic -llibname</code> 或 <code>-Wl,-Bdynamic -llibname</code> 来指定链接方式</p>
+<ul>
+<li><code>LIBRARY_PATH</code> 环境变量：指定程序静态链接库文件搜索路径</li>
+<li><code>LD_LIBRARY_PATH</code> 环境变量：指定程序动态链接库文件搜索路径</li>
+</ul>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://stackoverflow.com/questions/2725255/create-statically-linked-binary-that-uses-getaddrinfo" target="_blank" rel="noopener">statically-linked binary that uses getaddrinfo?</a></li>
+<li><a href="https://www.linuxquestions.org/questions/programming-9/glibc-warning-concerning-use-of-getaddrinfo-in-static-library-734169/" target="_blank" rel="noopener">Glibc warning concerning use of getaddrinfo() in static library</a></li>
+<li><a href="https://akkadia.org/drepper/no_static_linking.html" target="_blank" rel="noopener">Static Linking Considered Harmful</a></li>
+<li><a href="https://blog.csdn.net/yangyihongyangjiying/article/details/50616642" target="_blank" rel="noopener">linux 库 动态 静态 编译 混合 使用</a></li>
+<li><a href="https://blog.csdn.net/tenfyguo/article/details/5737974" target="_blank" rel="noopener">关于 GCC 中同时使用动态和静态库链接的操作参数和解释</a></li>
+<li><a href="https://stackoverflow.com/questions/3430400/linux-static-linking-is-dead" target="_blank" rel="noopener">Linux static linking is dead?</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/gcc/" rel="tag"># gcc</a>
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/libnss/" rel="tag"># libnss</a>
+              <a href="/tags/static/" rel="tag"># static</a>
+              <a href="/tags/getaddrinfp/" rel="tag"># getaddrinfp</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/11/09/Busybox-nslookup-fails/" rel="next" title="嵌入式 ARM 板子 Busybox 域名解析失败">
+                  <i class="fa fa-chevron-left"></i> 嵌入式 ARM 板子 Busybox 域名解析失败
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/11/13/linux-kernel-support-GSM/" rel="prev" title="嵌入式 Linux 系统支持 GSM/3G">
+                  嵌入式 Linux 系统支持 GSM/3G <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#动态"><span class="nav-number">1.</span> <span class="nav-text">动态</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#编译生成动态库"><span class="nav-number">1.1.</span> <span class="nav-text">编译生成动态库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用动态连接库"><span class="nav-number">1.2.</span> <span class="nav-text">使用动态连接库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#运行"><span class="nav-number">1.3.</span> <span class="nav-text">运行</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#静态"><span class="nav-number">2.</span> <span class="nav-text">静态</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#工具"><span class="nav-number">3.</span> <span class="nav-text">工具</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ldd"><span class="nav-number">3.1.</span> <span class="nav-text">ldd</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#nm"><span class="nav-number">3.2.</span> <span class="nav-text">nm</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ar"><span class="nav-number">3.3.</span> <span class="nav-text">ar</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#如何查看动态库和静态库是-32-位，还是-64-位下的库"><span class="nav-number">3.4.</span> <span class="nav-text">如何查看动态库和静态库是 32 位，还是 64 位下的库</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#混合链接"><span class="nav-number">4.</span> <span class="nav-text">混合链接</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">5.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

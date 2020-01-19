@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="DLNA及相关协议简介  DLNA 简介 DLNA 架构 DLNA 原理 UPnP 组件 UPnP 工作流程 UPnP 消息描述 UPnP 设备描述">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DLNA 协议分析及应用">
+<meta property="og:url" content="http://yoursite.com/2019/02/25/dlan-introduction/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="DLNA及相关协议简介  DLNA 简介 DLNA 架构 DLNA 原理 UPnP 组件 UPnP 工作流程 UPnP 消息描述 UPnP 设备描述">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://liuweiqiang.win/images/dlna/dlna_overview.png">
+<meta property="og:image" content="https://liuweiqiang.win/images/dlna/upnp_overview.png">
+<meta property="og:image" content="https://liuweiqiang.win/images/dlna/device_overview.png">
+<meta property="article:published_time" content="2019-02-25T06:56:44.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.678Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="upnp">
+<meta property="article:tag" content="dlna">
+<meta property="article:tag" content="ssdp">
+<meta property="article:tag" content="soap">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://liuweiqiang.win/images/dlna/dlna_overview.png">
+
+<link rel="canonical" href="http://yoursite.com/2019/02/25/dlan-introduction/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>DLNA 协议分析及应用 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/25/dlan-introduction/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DLNA 协议分析及应用
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-02-25 14:56:44" itemprop="dateCreated datePublished" datetime="2019-02-25T14:56:44+08:00">2019-02-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/UPnP/" itemprop="url" rel="index">
+                    <span itemprop="name">UPnP</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>12k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>11 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><code>DLNA</code>及相关协议简介</p>
+<ul>
+<li>DLNA 简介</li>
+<li>DLNA 架构</li>
+<li>DLNA 原理</li>
+<li>UPnP 组件</li>
+<li>UPnP 工作流程</li>
+<li>UPnP 消息描述</li>
+<li>UPnP 设备描述</li>
+</ul>
+<a id="more"></a>
+
+<h2 id="DLNA-简介"><a href="#DLNA-简介" class="headerlink" title="DLNA 简介"></a>DLNA 简介</h2><p>DLNA 的全称是<code>DIGITAL LIVING NETWORK ALLIANCE</code>（数字生活网络联盟）， 旨在解决个人 PC，消费电器，移动设备在内的无线网络和有线网络的互联互通，使得数字媒体和内容服务的无限制的共享和增长成为可能，目前成员公司已达 280 多家。</p>
+<h2 id="DLNA-架构"><a href="#DLNA-架构" class="headerlink" title="DLNA 架构"></a>DLNA 架构</h2><p>DLNA 将其整个应用规定成 5 个功能组件，从下到上依次为：</p>
+<ol>
+<li>网络互连：802.3 以太网，802.11WiFi，802.15 蓝牙</li>
+<li>网络协议：IPV4</li>
+<li>设备的发现控制和管理：UPnP</li>
+<li>媒体传输：HTTP/RTP</li>
+<li>媒体格式</li>
+</ol>
+<p><img src="https://liuweiqiang.win/images/dlna/dlna_overview.png" alt="DLNA ARCHITECTURE"></p>
+<p><code>DLNA</code>不是一种协议，但包括了实现相关标准所需要的一系列协议栈，<code>UPnP</code>是其中的关键协议</p>
+<p><code>DLNA</code>是基于<code>UPnP</code>协议，<code>DLNA</code>整个发现，控制，事件订阅部分都是由<code>Upnp Device Architecture</code>协议所定义，因此有必要了解下<code>UPnP</code>协议。</p>
+<p><img src="https://liuweiqiang.win/images/dlna/upnp_overview.png" alt="img"></p>
+<p><code>UPnP</code>协议结构最底层的<code>TCP/IP</code>协议是<code>UPnP</code>协议结构的基础。<code>IP</code>层用于数据的发送与接收。对于需要可靠传送的信息，使用<code>TCP</code>进行传送，反之则使用<code>UDP</code>。<code>UPnP</code>对网络物理设备没有要求，可以使用以太网、无线网、<code>IEEE1394</code>、红外进行连接，只要支持<code>IP</code>协议即可。</p>
+<p>构建在<code>TCP/IP</code>协议之上的是<code>HTTP</code>协议及其变种，这一部分是<code>UPnP</code>协议的核心部分，所有<code>UPnP</code>消息都被封装在<code>HTTP</code>协议及其变种之中。<code>HTTP</code>协议的变种是<code>HTTPU</code>和<code>HTTPMU</code>, 这些协议的格式沿袭了<code>HTTP</code>协议，只不过与<code>HTTP</code>协议不同的是它们通过<code>UDP</code>而不是<code>TCP</code>来发送消息，并且可以用于多播通信。</p>
+<p><code>UPnP</code>包含以下协议：</p>
+<ul>
+<li><code>SSDP</code>协议<br>简单服务发现协议 (Simple Service Discovery Protocol：SSDP)，内建在 HTTPU/HTTPMU 里，定义如何让网络上有的服务被发现的协议。包括控制点如何发现网络上有哪些服务，并取得这些服务的资讯，还有装置本身宣告他提供哪些服务。该协议运用在 UPnP 工作流程的设备发现部分。</li>
+<li><code>SOAP</code>协议<br>简单对象访问协议 ( Simple Object Access Protocol) 定义了可扩展标记语言 (XML) 和 HTTP 的使用来执行远程调用，包括控制点如何发送命令消息给设备，及设备接收到命令消息后如何发送响应消息给控制点。该协议运用在 UPnP 工作流程的设备控制部分。</li>
+<li><code>GENA</code>协议<br>一般事件通知架构 (Generic Event Notification Architecture：GENA) 定义在控制点想要监听设备的某个服务状态变量的状况时，控制点如何传送订阅讯息并如何接收通知讯息用的。该协议运用在 UPnP 工作流程的事件订阅部分。</li>
+</ul>
+<h2 id="DLNA-原理"><a href="#DLNA-原理" class="headerlink" title="DLNA 原理"></a>DLNA 原理</h2><p>参考 <a href="http://www.jianshu.com/p/fbc7c700cdb5" target="_blank" rel="noopener"> 《基于 DLNA 的移动端网络视频投屏技术初探》</a></p>
+<p>要实现从移动端将网络视频投放至智能电视或机顶盒，首先要保证这些设备在同一个局域网的相同网段下，即共享同一个网关，这样所有设备都能够拥有独立的 IP，从而具备相互通信的基础</p>
+<h3 id="设备发现"><a href="#设备发现" class="headerlink" title="设备发现"></a>设备发现</h3><p>当一个新的<code>Control Point</code>加入一个局域网时，为了获取当前网段里都有哪些智能设备，需要遵循<code>SSDP</code>向默认多播 IP 和端口发送获取信息的请求，这是一个 UDP 消息，所以建议在设备搜索过程多做几次发现请求，以免丢包带来的遗漏</p>
+<p>控制点可以获得的信息是：有一台设备，它的 IP 和端口号，设备描述文档 (<code>DDD</code>) 在什么位置、UUID 是什么</p>
+<h3 id="请求设备描述文档"><a href="#请求设备描述文档" class="headerlink" title="请求设备描述文档"></a>请求设备描述文档</h3><p><code>DDD</code>以及后面要说到的服务描述文档 (<code>SDD, Service Description Document</code>) 都是以 XML 格式返回给请求端的，这一步的通信则是基于 TCP/HTTP 进行可靠传输的。我们请求<code>Location</code>字段的内容即</p>
+<pre><code>http://10.2.9.152:49152/TxMediaRenderer_desc.xml</code></pre><p>响应</p>
+<pre><code>&lt;root xmlns=&quot;urn:schemas-upnp-org:device-1-0&quot; xmlns:dlna=&quot;urn:schemas-dlna-org:device-1-0&quot; configId=&quot;499354&quot;&gt;
+    &lt;specVersion&gt;
+        &lt;major&gt;1&lt;/major&gt;
+        &lt;minor&gt;1&lt;/minor&gt;
+    &lt;/specVersion&gt;
+    &lt;device&gt;
+        &lt;deviceType&gt;urn:schemas-upnp-org:device:MediaRenderer:1&lt;/deviceType&gt;
+        &lt;friendlyName&gt;我的设备&lt;/friendlyName&gt;
+        &lt;manufacturer&gt;Plutinosoft LLC&lt;/manufacturer&gt;
+        &lt;manufacturerURL&gt;http://www.plutinosoft.com&lt;/manufacturerURL&gt;
+        &lt;modelDescription&gt;Plutinosoft AV Media Renderer Device&lt;/modelDescription&gt;
+        &lt;modelName&gt;AV Renderer Device&lt;/modelName&gt;
+        &lt;modelURL&gt;http://www.plutinosoft.com/platinum&lt;/modelURL&gt;
+        &lt;UDN&gt;uuid:9c443d47158b-dmr&lt;/UDN&gt;
+        &lt;dlna:X_DLNADOC xmlns:dlna=&quot;urn:schemas-dlna-org:device-1-0&quot;&gt;DMR-1.50&lt;/dlna:X_DLNADOC&gt;
+        &lt;serviceList&gt;
+            &lt;service&gt;
+                &lt;serviceType&gt;urn:schemas-upnp-org:service:AVTransport:1&lt;/serviceType&gt;
+                &lt;serviceId&gt;urn:upnp-org:serviceId:AVTransport&lt;/serviceId&gt;
+                &lt;SCPDURL&gt;/AVTransport/9c443d47158b-dmr/scpd.xml&lt;/SCPDURL&gt;
+                &lt;controlURL&gt;/AVTransport/9c443d47158b-dmr/control.xml&lt;/controlURL&gt;
+                &lt;eventSubURL&gt;/AVTransport/9c443d47158b-dmr/event.xml&lt;/eventSubURL&gt;
+            &lt;/service&gt;
+            ...
+        &lt;/serviceList&gt;
+    &lt;/device&gt;
+&lt;/root&gt;</code></pre><p>返回设备的详细信息：设备名称、设备类型、UUID、服务列表，每个服务都有<code>serviceType</code>，<code>SCPDURL</code>，<code>serviceId</code>，<code>controlURL</code>和<code>eventSubURL</code></p>
+<h3 id="请求服务描述文档"><a href="#请求服务描述文档" class="headerlink" title="请求服务描述文档"></a>请求服务描述文档</h3><p>如何使用这个服务需要参考该服务的<code>SDD</code>。<code>SCPDURL</code>这个字段的内容就是请求<code>SDD</code>的路径地址，我们将其与之前在发现设备阶段获取到的响应消息中的 Location 字段内容中设备的 IP 和端口号拿过来，拼接成完整 URL 字符串</p>
+<pre><code>http://10.2.9.152:49152/AVTransport/9c443d47158b-dmr/scpd.xml</code></pre><p>返回一个动作列表，一个服务会包含一个或多个功能请求动作</p>
+<pre><code>&lt;scpd xmlns=&quot;urn:schemas-upnp-org:service-1-0&quot;&gt;
+    &lt;specVersion&gt;
+        &lt;major&gt;1&lt;/major&gt;
+        &lt;minor&gt;0&lt;/minor&gt;
+    &lt;/specVersion&gt;
+    &lt;actionList&gt;
+        &lt;action&gt;
+            &lt;name&gt;SetAVTransportURI&lt;/name&gt;
+            &lt;argumentList&gt;
+                &lt;argument&gt;
+                    &lt;name&gt;InstanceID&lt;/name&gt;
+                    &lt;direction&gt;in&lt;/direction&gt;
+                    &lt;relatedStateVariable&gt;A_ARG_TYPE_InstanceID&lt;/relatedStateVariable&gt;
+                &lt;/argument&gt;
+                &lt;argument&gt;
+                    &lt;name&gt;CurrentURI&lt;/name&gt;
+                    &lt;direction&gt;in&lt;/direction&gt;
+                    &lt;relatedStateVariable&gt;AVTransportURI&lt;/relatedStateVariable&gt;
+                &lt;/argument&gt;
+                &lt;argument&gt;
+                    &lt;name&gt;CurrentURIMetaData&lt;/name&gt;
+                    &lt;direction&gt;in&lt;/direction&gt;
+                    &lt;relatedStateVariable&gt;AVTransportURIMetaData&lt;/relatedStateVariable&gt;
+                &lt;/argument&gt;
+            &lt;/argumentList&gt;
+        &lt;/action&gt;
+        ...
+    &lt;/actionList&gt;
+    &lt;serviceStateTable&gt;
+        &lt;stateVariable sendEvents=&quot;no&quot;&gt;
+            &lt;name&gt;AVTransportURI&lt;/name&gt;
+            &lt;dataType&gt;string&lt;/dataType&gt;
+        &lt;/stateVariable&gt;
+        ...
+    &lt;/serviceStateTable&gt;
+&lt;/scpd&gt;</code></pre><p>如<code>SetAVTransportURI</code>这个请求的功能是将一个音视频资源的 URI 发送给渲染端。一个<code>Action</code>就好比一个 API 请求，你还需要传递一些要求的参数，这时就会用到该 Action 后面参数列表里规定的参数</p>
+<h3 id="服务动作请求"><a href="#服务动作请求" class="headerlink" title="服务动作请求"></a>服务动作请求</h3><p>有了动作所需要的全部信息，就可以按照 DLNA 规定的方式发给设备请求服务</p>
+<pre><code>POST /AVTransport/9c443d47158b-dmr/control.xml HTTP/1.1
+HOST: 10.2.9.152
+Content-Type: text/xml; charset=&quot;utf-8&quot;
+SOAPAction: &quot;urn:schemas-upnp-org:service:AVTransport:1#SetAVTransportURI&quot;
+&lt;?xml version=&quot;1.0&quot;?&gt;
+    &lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;
+    &lt;s:Body&gt;
+        &lt;u:SetAVTransportURI xmlns:u=&quot;urn:schemas-upnp-org:service:AVTransport:1&quot;&gt;
+            &lt;InstanceID&gt;0&lt;/InstanceID&gt;
+            &lt;CurrentURI&gt;yourAVURI&lt;/CurrentURI&gt;
+        &lt;/u:SetAVTransportURI&gt;
+    &lt;/s:Body&gt;
+&lt;/s:Envelope&gt;</code></pre><p>响应</p>
+<pre><code>HTTP/1.1 200 OK
+Content-Type: text/xml; charset=&quot;utf-8&quot;
+Date: Thu, 16 Feb 2017 09:09:45 GMT
+Server: OS/version UPnP/1.1 product/version
+&lt;?xml version=&quot;1.0&quot;?&gt;
+&lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;
+    &lt;s:Body&gt;
+        &lt;u:SetAVTransportURI xmlns:u=&quot;urn:schemas-upnp-org:service:AVTransport:1&quot;&gt;
+            &lt;u:SetAVTransportURIResponse&gt;
+                &lt;_xmlns:u&gt;&quot;urn:schemas-upnp-org:service:AVTransport:1&quot;&lt;/_xmlns:u&gt;
+            &lt;/u:SetAVTransportURIResponse&gt;
+        &lt;/u:SetAVTransportURI&gt;
+    &lt;/s:Body&gt;
+&lt;/s:Envelope&gt;</code></pre><h2 id="UPnP-组件"><a href="#UPnP-组件" class="headerlink" title="UPnP 组件"></a>UPnP 组件</h2><p>图为组件之间的关系：</p>
+<p><img src="https://liuweiqiang.win/images/dlna/device_overview.png" alt="img"></p>
+<ul>
+<li>服务 (Service)<br>在<code>UPnP</code>网络中，最新的控制控制单元就是服务，服务描述的设备在不同的情况下的活动和设备的状态。例如，时钟服务可以表述为时间变化（状态变化），当前的时间（时间状态）以及设置时间和读取时间两个活动，通过这两个活动，你就可以控制服务。</li>
+<li>设备 (Device)<br><code>UPnP</code>网络中定义的设备具有很广泛的含义，各种各样的家电、电脑外设、智能设备、无线设备、个人电脑等等都可以成为其中一员。一个<code>UPnP</code>设备可以是多个服务的载体和多个子设备的嵌套集。例如一台印表机有提供列印这样的服务；一台电视有提供收讯的服务，这些都属于设备。</li>
+<li>控制点 (ControlPoint)<br>在<code>UPnP</code>网络中，控制点指的是可以发现并控制其它设备的控制设备。在<code>UPnP</code>网络中，设备可以和控制点合并。也就是说，同一个设备，可以同时具有设备的功能和控制点的功能，即可以作为设备提供服务，也可以作为控制点发现和控制其它设备。</li>
+</ul>
+<h2 id="UPnP-工作流程"><a href="#UPnP-工作流程" class="headerlink" title="UPnP 工作流程"></a>UPnP 工作流程</h2><h3 id="寻址"><a href="#寻址" class="headerlink" title="寻址"></a>寻址</h3><p>UPnP 网络互连的基础是 IP 协议，因此必须先获取一个有效的 IP 地址。当设备首次与网络建立连接后，利用 DHCP 服务，使设备得到一个 IP 地址。这个 IP 地址可以是 DHCP 系统指定的，也可以是由设备选择的。设备还可以使用 Friendly Name，这就需要 DNS 来转换得到 IP</p>
+<h3 id="发现"><a href="#发现" class="headerlink" title="发现"></a>发现</h3><p>当一个设备被添加到网络后，UPnP 的发现协议允许该设备向网络上的控制点 (Control Point, CP) 通知自己拥有的服务。同样，当一个 CP 被添加到网络后，UPnP 发现协议允许该 CP 搜索网络上可用的设备。这两种情况下的组播消息一般是设备和服务的基本信息，如设备类型，唯一标识符，状态参数和指向更详细信息的一个指针等等。要注意设备信息和服务信息都是要组播出去的</p>
+<p>发现过程使用的协议是 SSDP(Simple Service Discovery Protocol，简单服务发现协议），采用 UDP 传输</p>
+<h3 id="描述"><a href="#描述" class="headerlink" title="描述"></a>描述</h3><p>描述分为两部分：</p>
+<ul>
+<li>一个是设备描述</li>
+<li>另一个是服务描述</li>
+</ul>
+<p>控制点在发现一个设备之后仍然对其知之甚少。为了使控制点了解到更多关于设备及其能力的信息或与设备进行交互，则控制点必须取得来自该设备在发现消息中所提供之 URL 的设备描述。设备可能包含其它逻辑设备，以及功能单元或服务 。对于设备的 UPnP 描述通过 XML 来表达，并包括诸如模型名称和号码、序列号、制造商名称和厂商专门网站 URL 等专门针对厂商的制造商信息。该描述还包括一列任意的嵌入式设备或服务，以及用于控制、事件触发和展示的 URL。对于每项服务，此描述均包括一列命令或动作，而服务（参数或变量）对于每个动作做出响应；针对服务的描述还包括一系列变量；这些变量模型化服务在运行时的状态，并通过数据类型、范围和事件特征进行描述。以下关于描述的部分说明了设备如何被描述，以及这些描述如何被 控制点取得。</p>
+<h3 id="控制"><a href="#控制" class="headerlink" title="控制"></a>控制</h3><p>在设备描述部分，还有关于如何控制设备的描述，会给出一个 Control URL，CP 可以向这个 URL 发送不同的控制信息就可以控制了，然后设备也可以返回一个信息反馈。</p>
+<p>这种 CP 和设备之间沟通信息按照<code>SOAP</code>(Simple Object Access Protocol) 的格式来写。消息体里面就可以写想调用的动作了，叫做 Action Invocation，可能还要传参数，比如想播放一个视频，要把视频的 URL 传过去，设备收到后会响应，表示能不能执行调用，出错的话会返回一个错误代码</p>
+<h3 id="事件"><a href="#事件" class="headerlink" title="事件"></a>事件</h3><p>在服务进行的整个时间内，只要变量值发生了变化或者模式的状态发生了改变，就产生了一个事件，该事件服务提供者（某设备的某个服务）会把该事件向整个网络进行多播。而且，CP 也可以事先向事件服务器订阅事件信息，保证将该 CP 感兴趣的事件及时准确地单播传送过来</p>
+<p>事件的订阅和推送这块用的通信协议是<code>General Event Notification Architecture(GENA)</code>，通过 HTTP/TCP/IP 传送。订阅过程如下：</p>
+<ol>
+<li>订阅。Subscriber 发送订阅消息主要包含事件 URL，服务 ID 号，这两个可以在设备服务描述信息中找到，以及寄送 URL，还会包含一个订阅期限 Duration</li>
+<li>成功订阅。Publisher 收到订阅信息，如果同意订阅的话就会为每个新 Subscriber 生成一个唯一的 ID 并记录 Subscriber 的 Duration 和 Delivery URL。还会记录一个顺序增长 EventKey 用来保证事件确实推送到 Subscriber 那里</li>
+<li>首次推送。订阅同意订阅之后还会向 Subscriber 发送一组初始变量或状态值，进行首次同步</li>
+<li>续订。Subscriber 必须在订阅到期前发送 Renewal 续订</li>
+<li>订阅到期。订阅到期后 Publisher 会把 Subscriber 的信息删除，Subscriber 又回到订阅前的状态。</li>
+<li>退订。Subscriber 发送 Cancel 信息将会取消订阅。Subscriber 因非正常退出网络的话，则不会退订直到订阅到期</li>
+<li>订阅操作失败信息。当订阅、续订和退订不能被 Publisher 接收或者出现错误时，Publisher 会发送一个错误代码</li>
+</ol>
+<h3 id="表达"><a href="#表达" class="headerlink" title="表达"></a>表达</h3><p>只要得到了设备的 URL，就可以取得该设备表达的 URL，取得该设备表达的 HTML，然后可以将此 HTML 纳入 CP 的本地浏览器上。这部分还包括与用户对话的界面，以及与用户进行会话的处理。因此设备表达可以理解成“遥控器”。这部分定义描述界面，规范界面以及传输界面内容。远程界面是供 CP 用户使用的，CP 用户通过远程界面完成设备描述的获取，控制设备，订阅收取设备事件等等</p>
+<h2 id="UPnP-消息描述"><a href="#UPnP-消息描述" class="headerlink" title="UPnP 消息描述"></a>UPnP 消息描述</h2><h3 id="UPnP-搜索"><a href="#UPnP-搜索" class="headerlink" title="UPnP 搜索"></a>UPnP 搜索</h3><pre><code>M-SEARCH * HTTP/1.1
+Man: &quot;ssdp:discover&quot; // 固定
+Mx: 10 // 等待时长
+Host: 239.255.255.250:1900 // 多播地址
+St: ssdp:all // 搜索所有 也可以指定特殊类型设备</code></pre><h3 id="UPnP-响应"><a href="#UPnP-响应" class="headerlink" title="UPnP 响应"></a>UPnP 响应</h3><pre><code>HTTP/1.1 200 OK
+CACHE-CONTROL: max-age=100 // 生命周期
+DATE: Tue, 06 Sep 2016 08:59:17 GMT // 响应时间
+EXT: // 想控制点确认 MAN 头域已经被设备理解
+LOCATION: http://192.168.31.242:49153/description.xml // 描述文件地址
+OPT: &quot;http://schemas.upnp.org/upnp/1/0/&quot;; ns=01
+01-NLS: 36b309d6-1dd2-11b2-a747-e67ed51c3f33
+SERVER: Linux/2.6.32.11.as, UPnP/1.0, Portable SDK for UPnP devices/1.6.18 // 版本信息
+X-User-Agent: redsonic
+ST: upnp:rootdevice
+USN: uuid:a22d1223-d889-b76b-0cc3-4c484a00002e::upnp:rootdevice</code></pre><h3 id="UPnP-通知"><a href="#UPnP-通知" class="headerlink" title="UPnP 通知"></a>UPnP 通知</h3><pre><code>NOTIFY * HTTP/1.1
+HOST: 239.255.255.250:1900 // 多播地址
+CACHE-CONTROL: max-age=100 // 缓存时间
+LOCATION: http://192.168.31.242:49153/description.xml // 描述文件地址
+OPT: &quot;http://schemas.upnp.org/upnp/1/0/&quot;; ns=01
+01-NLS: 36b309d6-1dd2-11b2-a747-e67ed51c3f33
+NT: urn:schemas-upnp-org:service:ConnectionManager:1
+NTS: ssdp:alive
+SERVER: Linux/2.6.32.11.as, UPnP/1.0, Portable SDK for UPnP devices/1.6.18
+X-User-Agent: redsonic
+USN: uuid:a22d1223-d889-b76b-0cc3-4c484a00002e::urn:schemas-upnp-org:service:ConnectionManager:1</code></pre><p>NT GENA 规定使用的标头。通知类型。必须采用以下一种形式。单一 URI。</p>
+<ul>
+<li>UPnP:rootdevice 向根设备发送一次。</li>
+<li>uuid:device-UUID 向每种设备 （根设备或嵌入式设备） 发送一次。 设备 UUID 由 UPnP 厂商指定。</li>
+<li>urn：schemas-UPnP-org:device:deviceType:v 向每种设备（根设备或嵌入式设备）发送一次。设备类型与版本 由 UPnP 论坛工作委员会定义。</li>
+<li>urn：schemas-UPnP-org:service:serviceType:v 向每种服务发送一次。服务类型与版本由 UPnP 论坛工作委员会 定义。</li>
+</ul>
+<p>NTS GENA 规定使用的标头。通知子类型。必须是 ssdp:alive。单一 URI。</p>
+<p>USN SSDP 要求使用的标头。 唯一服务名称。 必须是以下一种。 前缀（位于双冒号前）必须与设备描述中的 UDN 元素值相匹配。单一 URI。</p>
+<ul>
+<li>uuid:device-UUID::UPnP:rootdevice 向根设备发送一次。设备 UUID 由 UPnP 厂商指定。</li>
+<li>uuid:device-UUID 向每种设备 （根设备或嵌入式设备） 发送一次。 设备 UUID 由 UPnP 厂商指定。</li>
+<li>uuid:device-UUID::urn:schemas-UPnP-org:device:deviceType:v 向每种设备 （根设备或嵌入式设备） 发送一次。 设备 UUID 由 UPnP 厂商指定。设备类型与版本由 UPnP 论坛工作委员会定义。</li>
+<li>uuid:device-UUID::urn:schemas-UPnP-org:service:serviceType:v 向每种服务发送一次。设备 UUID 由 UPnP 厂商指定。服务类型 与版本由 UPnP 论坛工作委员会定义。</li>
+</ul>
+<h3 id="UPnP-离线"><a href="#UPnP-离线" class="headerlink" title="UPnP 离线"></a>UPnP 离线</h3><pre><code>NOTIFY * HTTP/1.1
+HOST: 239.255.255.250:1900 // 多播地址
+NT: urn:schemas-upnp-org:service:ConnectionManager:1
+NTS: ssdp:byebye
+SERVER: Linux/2.6.32.11.as, UPnP/1.0, Portable SDK for UPnP devices/1.6.18
+X-User-Agent: redsonic
+USN: uuid:a22d1223-d889-b76b-0cc3-4c484a00002e::urn:schemas-upnp-org:service:ConnectionManager:1</code></pre><h2 id="UPnP-设备描述"><a href="#UPnP-设备描述" class="headerlink" title="UPnP 设备描述"></a>UPnP 设备描述</h2><p>一个设备的 UPnP 描述包含多个特定厂商信息、所有嵌入式设备定义、设 备展示 URL、以及所有服务列表，包括控制 URL 和事件触发 URL。除了定义非 标准设备之外，UPnP 厂商可以为标准设备添加新的嵌入式设备和服务。</p>
+<pre><code>&lt;?xml version=&quot;1.0&quot;?&gt;
+&lt;root xmlns=&quot;urn:schemas-upnp-org:device-1-0&quot;&gt;
+    &lt;specVersion&gt;
+        &lt;major&gt;1&lt;/major&gt;
+        &lt;minor&gt;0&lt;/minor&gt;
+    &lt;/specVersion&gt;
+    &lt;URLBase&gt;base URL for all relative URLs&lt;/URLBase&gt;
+    &lt;device&gt;
+        &lt;deviceType&gt;urn:schemas-upnp-org:device:deviceType:v&lt;/deviceType&gt;
+        &lt;friendlyName&gt;short user-friendly title&lt;/friendlyName&gt;
+        &lt;manufacturer&gt;manufacturer name&lt;/manufacturer&gt;
+        &lt;manufacturerURL&gt;URL to manufacturer site&lt;/manufacturerURL&gt;
+        &lt;modelDescription&gt;long user-friendly title&lt;/modelDescription&gt;
+        &lt;modelName&gt;model name&lt;/modelName&gt;
+        &lt;modelNumber&gt;model number&lt;/modelNumber&gt;
+        &lt;modelURL&gt;URL to model site&lt;/modelURL&gt;
+        &lt;serialNumber&gt;manufacturer&#39;s serial number&lt;/serialNumber&gt;
+        &lt;UDN&gt;uuid:UUID&lt;/UDN&gt;
+        &lt;UPC&gt;Universal Product Code&lt;/UPC&gt;
+        &lt;iconList&gt;
+            &lt;icon&gt;
+            &lt;mimetype&gt;image/format&lt;/mimetype&gt;
+            &lt;width&gt;horizontal pixels&lt;/width&gt;
+            &lt;height&gt;vertical pixels&lt;/height&gt;
+            &lt;depth&gt;color depth&lt;/depth&gt;
+            &lt;url&gt;URL to icon&lt;/url&gt;
+            &lt;/icon&gt;
+            XML to declare other icons, if any, go here
+        &lt;/iconList&gt;
+        &lt;serviceList&gt;
+            &lt;service&gt;
+            &lt;serviceType&gt;urn:schemas-upnp-org:service:serviceType:v&lt;/serviceType&gt;
+            &lt;serviceId&gt;urn:upnp-org:serviceId:serviceID&lt;/serviceId&gt;
+            &lt;SCPDURL&gt;URL to service description&lt;/SCPDURL&gt;
+            &lt;controlURL&gt;URL for control&lt;/controlURL&gt;
+            &lt;eventSubURL&gt;URL for eventing&lt;/eventSubURL&gt;
+            &lt;/service&gt;
+            Declarations for other services defined by a UPnP Forum working committee (if any)
+            go here
+            Declarations for other services added by UPnP vendor (if any) go here
+        &lt;/serviceList&gt;
+        &lt;deviceList&gt;
+            Description of embedded devices defined by a UPnP Forum working committee (if any)
+            go here
+            Description of embedded devices added by UPnP vendor (if any) go here
+        &lt;/deviceList&gt;
+        &lt;presentationURL&gt;URL for presentation&lt;/presentationURL&gt;
+    &lt;/device&gt;
+&lt;/root&gt;</code></pre><h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://liuweiqiang.win/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/2016/08/29/DLNA-Cling.html" target="_blank" rel="noopener">DLNA 协议分析及应用</a></li>
+<li><a href="http://lakeshire.github.io/2017/12/12//archivers/dlna-cling/" target="_blank" rel="noopener">DLNA 开源库——Cling</a></li>
+<li><a href="https://www.jianshu.com/p/91b508b0260b" target="_blank" rel="noopener">DLNA 与 UPnP 初探</a></li>
+<li><a href="http://101.96.10.64/trinea.github.io/doc/upnp/UPnP-arch-DeviceArchitecture-v1.1.pdf" target="_blank" rel="noopener">UPnP™ Device Architecture 1.1</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/upnp/" rel="tag"># upnp</a>
+              <a href="/tags/dlna/" rel="tag"># dlna</a>
+              <a href="/tags/ssdp/" rel="tag"># ssdp</a>
+              <a href="/tags/soap/" rel="tag"># soap</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/02/22/upnp-and-ssdp/" rel="next" title="P2P 网络核心技术：UPnP 和 SSDP 协议">
+                  <i class="fa fa-chevron-left"></i> P2P 网络核心技术：UPnP 和 SSDP 协议
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/02/26/rtsp-protocol/" rel="prev" title="rtsp 协议">
+                  rtsp 协议 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#DLNA-简介"><span class="nav-number">1.</span> <span class="nav-text">DLNA 简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DLNA-架构"><span class="nav-number">2.</span> <span class="nav-text">DLNA 架构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DLNA-原理"><span class="nav-number">3.</span> <span class="nav-text">DLNA 原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#设备发现"><span class="nav-number">3.1.</span> <span class="nav-text">设备发现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#请求设备描述文档"><span class="nav-number">3.2.</span> <span class="nav-text">请求设备描述文档</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#请求服务描述文档"><span class="nav-number">3.3.</span> <span class="nav-text">请求服务描述文档</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#服务动作请求"><span class="nav-number">3.4.</span> <span class="nav-text">服务动作请求</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#UPnP-组件"><span class="nav-number">4.</span> <span class="nav-text">UPnP 组件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#UPnP-工作流程"><span class="nav-number">5.</span> <span class="nav-text">UPnP 工作流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#寻址"><span class="nav-number">5.1.</span> <span class="nav-text">寻址</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#发现"><span class="nav-number">5.2.</span> <span class="nav-text">发现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#描述"><span class="nav-number">5.3.</span> <span class="nav-text">描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#控制"><span class="nav-number">5.4.</span> <span class="nav-text">控制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#事件"><span class="nav-number">5.5.</span> <span class="nav-text">事件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#表达"><span class="nav-number">5.6.</span> <span class="nav-text">表达</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#UPnP-消息描述"><span class="nav-number">6.</span> <span class="nav-text">UPnP 消息描述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#UPnP-搜索"><span class="nav-number">6.1.</span> <span class="nav-text">UPnP 搜索</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#UPnP-响应"><span class="nav-number">6.2.</span> <span class="nav-text">UPnP 响应</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#UPnP-通知"><span class="nav-number">6.3.</span> <span class="nav-text">UPnP 通知</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#UPnP-离线"><span class="nav-number">6.4.</span> <span class="nav-text">UPnP 离线</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#UPnP-设备描述"><span class="nav-number">7.</span> <span class="nav-text">UPnP 设备描述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">8.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

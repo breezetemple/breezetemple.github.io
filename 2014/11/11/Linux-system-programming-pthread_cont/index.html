@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="$(document).ready(function(){         $(&quot;h2,h3,h4,h5,h6&quot;).each(function(i,item){             var tag &#x3D; $(item).get(0).localName;             $(item).attr(&quot;id&quot;,&quot;wow&quot;+i);             $(&quot;#category&quot;).app">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux系统编程-多线程同步条件变量">
+<meta property="og:url" content="http://yoursite.com/2014/11/11/Linux-system-programming-pthread_cont/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="$(document).ready(function(){         $(&quot;h2,h3,h4,h5,h6&quot;).each(function(i,item){             var tag &#x3D; $(item).get(0).localName;             $(item).attr(&quot;id&quot;,&quot;wow&quot;+i);             $(&quot;#category&quot;).app">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2014-11-11T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.658Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="thread">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2014/11/11/Linux-system-programming-pthread_cont/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linux系统编程-多线程同步条件变量 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/11/Linux-system-programming-pthread_cont/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux系统编程-多线程同步条件变量
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-11-12 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-12T00:00:00+08:00">2014-11-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux System Programming</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>5.1k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<p>与互斥锁不同，<strong>条件变量是用来等待而不是用来上锁的。<br>条件变量用来自动阻塞一个线程，直到某特殊情况发生为止。通常条件变量和互斥锁同时使用。</strong></p>
+<p>条件变量使我们可以睡眠等待某种条件出现。<br>条件变量是利用线程间共享的全局变量进行同步的一种机制，<br>主要包括两个动作：<strong>一个线程等待”条件变量的条件成立”而挂起；另一个线程使”条件成立”（给出条件成立信号）。</strong></p>
+<p><strong>条件的检测是在互斥锁的保护下进行的。<br>如果一个条件为假，一个线程自动阻塞，并释放等待状态改变的互斥锁。</strong><br>如果另一个线程改变了条件，它发信号给关联的条件变量，<br>唤醒一个或多个等待它的线程，重新获得互斥锁，重新评价条件。<br>如果两进程共享可读写的内存，条件变量可以被用来实现这两进程间的线程同步。</p>
+<p>使用条件变量之前要先进行初始化。<br>可以在单个语句中生成和初始化一个条件变量如：pthread_cond_t my_condition=PTHREAD_COND_INITIALIZER;（用于进程间线程的通信）。<br>可以利用函数pthread_cond_init动态初始化。</p>
+<p><strong>条件变量分为两部分: 条件和变量。<br>条件本身是由互斥量保护的。<br>线程在改变条件状态前先要锁住互斥量。<br>它利用线程间共享的全局变量进行同步的一种机制。</strong></p>
+<h2 id="API"><a href="#API" class="headerlink" title="API"></a><strong>API</strong></h2><pre><code>int pthread_cond_init(pthread_cond_t *cond,pthread_condattr_t *cond_attr);     
+int pthread_cond_destroy(pthread_cond_t *cond);  
+int pthread_cond_wait(pthread_cond_t *cond,pthread_mutex_t *mutex);
+int pthread_cond_timewait(pthread_cond_t *cond,pthread_mutex *mutex,const timespec *abstime);
+int pthread_cond_signal(pthread_cond_t *cond);
+int pthread_cond_broadcast(pthread_cond_t *cond);  //解除所有线程的阻塞</code></pre><p>条件变量采用的数据类型是pthread_cond_t, 在使用之前必须要进行初始化, 这包括两种方式:</p>
+<ul>
+<li>静态: 可以把常量PTHREAD_COND_INITIALIZER给静态分配的条件变量</li>
+<li>动态: pthread_cond_init函数, 释放动态条件变量的内存空间之前, 要用pthread_cond_destroy对其进行清理</li>
+</ul>
+<p>pthread_cond_wait()函数用于等待条件被触发。<br>该函数传入两个参数，一个条件变量一个互斥量，函数将条件变量和互斥量进行关联，<br>互斥量对该条件进行保护，传入的互斥量必须是已经锁住的。<br>调用pthread_cond_wait()函数后，会原子的执行以下两个动作：</p>
+<ul>
+<li>将调用线程放到等待条件的线程列表上，即进入睡眠</li>
+<li>对互斥量进行解锁</li>
+</ul>
+<p>由于这两个操作时原子操作，<br>这样就关闭了条件检查和线程进入睡眠等待条件改变这两个操作之间的时间通道，<br>这样就不会错过任何条件的变化。<br><strong>当pthread_cond_wait()返回后，互斥量会再次被锁住。</strong></p>
+<p>pthread_cond_timedwait()函数和pthread_cond_wait()的工作方式相似，只是多了一个等待时间。<br>等待时间的结构为struct timespec，</p>
+<pre><code>struct timespec{  
+    time_t  tv_sec    //Seconds.  
+    long    tv_nsec   //Nanoseconds.  
+};</code></pre><p>函数要求传入的时间值是一个绝对值，不是相对值，<br>例如，想要等待3分钟，必须先获得当前时间，然后加上3分钟。<br>要想获得当前系统时间的timespec值，没有直接可调用的函数，<br>需要通过调用gettimeofday函数获取timeval结构，然后转换成timespec结构，转换公式就是：</p>
+<pre><code>timeSpec.tv_sec = timeVal.tv_sec;  
+timeSpec.tv_nsec = timeVal.tv_usec * 1000; </code></pre><p>所以要等待3分钟，timespec时间结构的获得应该如下所示:</p>
+<pre><code>struct timeval now;  
+struct timespec until;  
+gettimeofday(&amp;now);//获得系统当前时间  
+
+//把时间从timeval结构转换成timespec结构  
+until.tv_sec = now.tv_sec;  
+until.tv_nsec = now.tv_usec * 1000;  
+
+//增加min  
+until.tv_sec += 3 * 60;  </code></pre><p>如果时间到后，条件还没有发生，那么会返回ETIMEDOUT错误。</p>
+<p><strong>从pthread_cond_wait()和pthread_cond_timewait()成功返回时，<br>线程需要重新计算条件，因为其他线程可能在运行过程中已经改变条件。</strong></p>
+<p>pthread_cond_signal() 和 pthread_cond_broadcast()<br>这两个函数都是用于向等待条件的线程发送唤醒信号，<br>pthread_cond_signal()函数只会唤醒等待该条件的某个线程，<br>pthread_cond_broadcast()会广播条件状态的改变，以唤醒等待该条件的所有线程。<br>例如多个线程只读共享资源，这是可以将它们都唤醒。<br>这里要注意的是：<strong>一定要在改变条件状态后，再给线程发送信号。</strong><br>考虑条件变量信号单播发送和广播发送的一种候选方式是坚持使用广播发送。<br><strong>只有在等待者代码编写确切，只有一个等待者需要唤醒，<br>且唤醒哪个线程无所谓，那么此时为这种情况使用单播，<br>所以其他情况下都必须使用广播发送。</strong></p>
+<p>在实际编程中，把共享数据和它们的同步变量集合到一个结构中，这往往是一个较好的编程技巧：</p>
+<pre><code>struct{  
+    pthread_mutex_t mutex;  
+    pthread_cond_t cond;  
+    int data;  
+}Data;  </code></pre><h2 id="Source-Code"><a href="#Source-Code" class="headerlink" title="Source Code"></a><strong>Source Code</strong></h2><pre><code>#include &lt;pthread.h&gt;  
+#include &lt;stdio.h&gt;  
+#include &lt;stdlib.h&gt;  
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;/* 初始化互斥锁*/  
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;/* 初始化条件变量*/  
+void *thread1(void *);  
+void *thread2(void *);  
+int i=1;  
+int main(void)  
+{  
+    pthread_t t_a;  
+    pthread_t t_b;  
+
+    pthread_create(&amp;t_a,NULL,thread1,(void *)NULL);/* 创建进程t_a*/  
+    sleep(1);
+    pthread_create(&amp;t_b,NULL,thread2,(void *)NULL); /* 创建进程t_b*/  
+
+    pthread_join(t_a, NULL);/* 等待进程t_a结束*/  
+    pthread_join(t_b, NULL);/* 等待进程t_b结束*/  
+
+    pthread_mutex_destroy(&amp;mutex);  
+    pthread_cond_destroy(&amp;cond);  
+
+    exit(0);  
+}  
+void *thread1(void *junk)  
+{  
+    for(i=1;i&lt;=6;i++)  
+    {  
+        pthread_mutex_lock(&amp;mutex);/* 锁住互斥量*/  
+        printf(&quot;thread1: lock %d\t i %d\n&quot;, __LINE__, i);  
+
+        if(i%3==0){  
+            printf(&quot;thread1:signal 1  %d\n&quot;, __LINE__);  
+            pthread_cond_signal(&amp;cond);/* 条件改变，发送信号，通知t_b进程*/  
+            printf(&quot;thread1:signal 2  %d\n&quot;, __LINE__);  
+            sleep(1);  
+        }  
+
+        pthread_mutex_unlock(&amp;mutex);/* 解锁互斥量*/  
+        printf(&quot;thread1: unlock %d\t i %d\n\n&quot;, __LINE__, i);  
+        sleep(1);  
+    }  
+}  
+void *thread2(void *junk)  
+{  
+    while(i&lt;6)  
+    {  
+        pthread_mutex_lock(&amp;mutex);  
+        printf(&quot;thread2: lock %d\t i %d\n&quot;, __LINE__, i);  
+
+        if(i%3!=0){  
+            printf(&quot;thread2: wait 1  %d\n&quot;, __LINE__);  
+            pthread_cond_wait(&amp;cond,&amp;mutex);/* 解锁mutex，并等待cond改变*/  
+            printf(&quot;thread2: wait 2  %d\n&quot;, __LINE__);  
+        }  
+
+        pthread_mutex_unlock(&amp;mutex);  
+        printf(&quot;thread2: unlock %d\t i %d\n\n&quot;, __LINE__, i);  
+        sleep(1);  
+    }  
+}</code></pre><p>编译运行结果如下：</p>
+<pre><code>thread1: lock 31     i 1
+thread1: unlock 41   i 1
+
+thread2: lock 50     i 1
+thread2: wait 1  53
+thread1: lock 31     i 2
+thread1: unlock 41   i 2
+
+thread1: lock 31     i 3
+thread1:signal 1  34
+thread1:signal 2  36
+thread1: unlock 41   i 3
+
+thread2: wait 2  55
+thread2: unlock 59   i 3
+
+thread1: lock 31     i 4
+thread1: unlock 41   i 4
+
+thread2: lock 50     i 4
+thread2: wait 1  53
+thread1: lock 31     i 5
+thread1: unlock 41   i 5
+
+thread1: lock 31     i 6
+thread1:signal 1  34
+thread1:signal 2  36
+thread1: unlock 41   i 6
+
+thread2: wait 2  55
+thread2: unlock 59   i 6</code></pre><p>线程1先执行，获得mutex锁，打印，然后释放mutex锁，然后阻塞自己1秒。</p>
+<p>线程2执行,阻塞在pthread_mutex_lock(&amp;mutex)<br>这行语句中，直到线程1释放mutex锁。<br>然后线程2得已执行，获取metux锁，满足if条件，到pthread_cond_wait (&amp;cond,&amp;mutex)<br>这里线程2阻塞，不仅仅是等待cond变量发生改变，同时释放mutex锁。<br>mutex锁释放后，线程1终于获得了mutex锁，得已继续运行，当线程1的if（i%3==0）的条件满足后，<br>通过pthread_cond_signal发送信号，<br>告诉等待cond的变量的线程（线程2），cond条件变量已经发生了改变。</p>
+<p>线程2并没有立即得到运行，因为线程2还在等待mutex锁的释放，<br>所以线程1继续往下走，直到线程1释放mutex锁，<br>线程2才能停止等待，打印语句，<br>然后往下走通过pthread_mutex_unlock(&amp;mutex)释放mutex锁，进入下一个循环。</p>
+<h2 id="References"><a href="#References" class="headerlink" title="References"></a><strong>References</strong></h2><ul>
+<li><a href="http://www.cnblogs.com/feisky/archive/2010/03/08/1680950.html" target="_blank" rel="noopener">Linux线程同步之条件变量</a></li>
+<li><a href="http://blog.csdn.net/anonymalias/article/details/9174481" target="_blank" rel="noopener">Linux线程同步之条件变量</a></li>
+<li><a href="http://my.oschina.net/solu/blog/125998" target="_blank" rel="noopener">线程同步之条件变量原理</a></li>
+<li><a href="http://www.blogjava.net/fhtdy2004/archive/2009/07/05/285519.html" target="_blank" rel="noopener">线程同步：何时互斥锁不够，还需要条件变量?</a></li>
+<li><a href="多线程同步条件变量">多线程同步条件变量</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/thread/" rel="tag"># thread</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2014/11/10/Linux-system-programming-thread/" rel="next" title="Linux系统编程-线程">
+                  <i class="fa fa-chevron-left"></i> Linux系统编程-线程
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2014/11/11/Linux-system-programming-File-and-Directory-Management/" rel="prev" title="Linux系统编程-文件和目录管理">
+                  Linux系统编程-文件和目录管理 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#API"><span class="nav-number">1.</span> <span class="nav-text">API</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Source-Code"><span class="nav-number">2.</span> <span class="nav-text">Source Code</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">3.</span> <span class="nav-text">References</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

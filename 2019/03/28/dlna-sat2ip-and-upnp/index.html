@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="本文记录DLNA、SAT2IP以及UPnP相关协议、实现理解 开源代码  gmediarender gmrender-resurrect – DMR libupnp-1.6.25 – lib minidlna-1.2.1 – DMS xbmc vlc – DMP libsatip minisatip – SAT2IP satip-client tvheadend  协议资料  UPnP-arch-">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DLNA SAT2IP 以及 UPnP 总结">
+<meta property="og:url" content="http://yoursite.com/2019/03/28/dlna-sat2ip-and-upnp/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="本文记录DLNA、SAT2IP以及UPnP相关协议、实现理解 开源代码  gmediarender gmrender-resurrect – DMR libupnp-1.6.25 – lib minidlna-1.2.1 – DMS xbmc vlc – DMP libsatip minisatip – SAT2IP satip-client tvheadend  协议资料  UPnP-arch-">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/dlna/1553738244030.png">
+<meta property="og:image" content="http://yoursite.com/images/dlna/1553738446538.png">
+<meta property="og:image" content="http://yoursite.com/images/dlna/1553738767542.png">
+<meta property="og:image" content="http://yoursite.com/images/dlna/1553738835036.png">
+<meta property="og:image" content="http://yoursite.com/images/dlna/1553740868260.png">
+<meta property="og:image" content="http://yoursite.com/images/dlna/1553740975457.png">
+<meta property="og:image" content="http://yoursite.com/images/dlna/1553741595183.png">
+<meta property="og:image" content="http://yoursite.com/images/sat2ip/20190226-093309.png">
+<meta property="article:published_time" content="2019-03-28T01:22:54.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.678Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="upnp">
+<meta property="article:tag" content="dlna">
+<meta property="article:tag" content="sat2ip">
+<meta property="article:tag" content="ssdp">
+<meta property="article:tag" content="soap">
+<meta property="article:tag" content="dms">
+<meta property="article:tag" content="dmr">
+<meta property="article:tag" content="dmp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/dlna/1553738244030.png">
+
+<link rel="canonical" href="http://yoursite.com/2019/03/28/dlna-sat2ip-and-upnp/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>DLNA SAT2IP 以及 UPnP 总结 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/28/dlna-sat2ip-and-upnp/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DLNA SAT2IP 以及 UPnP 总结
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-03-28 09:22:54" itemprop="dateCreated datePublished" datetime="2019-03-28T09:22:54+08:00">2019-03-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/UPnP/" itemprop="url" rel="index">
+                    <span itemprop="name">UPnP</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本文记录<code>DLNA</code>、<code>SAT2IP</code>以及<code>UPnP</code>相关协议、实现理解</p>
+<p>开源代码</p>
+<ul>
+<li>gmediarender</li>
+<li>gmrender-resurrect – DMR</li>
+<li>libupnp-1.6.25 – lib</li>
+<li>minidlna-1.2.1 – DMS</li>
+<li>xbmc</li>
+<li>vlc – DMP</li>
+<li>libsatip</li>
+<li>minisatip – SAT2IP</li>
+<li>satip-client</li>
+<li>tvheadend</li>
+</ul>
+<p>协议资料</p>
+<ul>
+<li>UPnP-arch-DeviceArchitecture-v1.1.pdf</li>
+<li>UPnP-arch-DeviceArchitecture-v2.0.pdf</li>
+<li>DLNA Guidelines June 2016 - Part 1-1 Architectures and Protocols.pdf</li>
+<li>DLNA Guidelines June 2016 - Part 1-2 XDMR.pdf</li>
+<li>DLNA Guidelines June 2016 - Part 5 Device Profiles.pdf</li>
+<li>satip_specification_version_1_2_2.pdf</li>
+</ul>
+<a id="more"></a>
+
+<h2 id="upnp"><a href="#upnp" class="headerlink" title="upnp"></a>upnp</h2><p>内容包含了<code>ssdp</code>、<code>soap</code>和<code>GENA</code>，主要过程包括发现、描述、控制、事件和展示</p>
+<p>设备分为两类：</p>
+<ul>
+<li><code>device</code>,Logical device. A container. May embed other logical devices. Embeds one or more services. Advertises its presence on network(s).<ul>
+<li><code>Root device</code>, A logical device that is not embedded in any other logical device.</li>
+<li><code>embedded device</code></li>
+</ul>
+</li>
+<li><code>control point</code>, Retrieves device and service descriptions, sends actions to services, polls for service state variables, and receives events<br>from services.</li>
+</ul>
+<p>一个<code>UPnP 设备</code>可以是多个服务的载体和多个子设备的嵌套集。而<code>控制点 CP</code>指的是可以发现并控制其它设备的设备。逻辑关系如下：</p>
+<p><img src="/images/dlna/1553738244030.png" alt="1553738244030"></p>
+<p>控制使用<code>SOAP</code>逻辑如下：</p>
+<p><img src="/images/dlna/1553738446538.png" alt="1553738446538"></p>
+<p>事件逻辑如下：</p>
+<p><img src="/images/dlna/1553738767542.png" alt="1553738767542"></p>
+<h2 id="DLNA-与-SAT2IP-图"><a href="#DLNA-与-SAT2IP-图" class="headerlink" title="DLNA 与 SAT2IP 图"></a>DLNA 与 SAT2IP 图</h2><p><img src="/images/dlna/1553738835036.png" alt="1553738835036"></p>
+<ul>
+<li><code>Discovery</code>阶段，<code>SAT2IP</code>存在<code>DEVICE ID Negotiation</code></li>
+<li><code>Description</code>阶段，<code>DLNA</code>存在<code>SCPDURL</code>、<code>controlURL</code>和<code>eventSubURL</code></li>
+<li><code>Media Transport</code>，<code>DLNA</code>中<code>HTTP</code>是必选，<code>RTP</code>是可选；而<code>SAT2IP</code>相反</li>
+</ul>
+<h2 id="DLNA"><a href="#DLNA" class="headerlink" title="DLNA"></a>DLNA</h2><p><code>UPnP AV Architecture</code> 定义了<code>UPnP AV</code>设备间媒体传送以及和<code>CP</code>间的交互。<code>UPnP AV</code>也定义了两种<code>UPnP AV</code>设备：<code>UPnP AV MediaServer Device（MSD）</code>和<code>UPnP AV MediaRenderer Device（MRD）</code>，同时定义了可以提供的四种服务：[DLNA1-1 4.4]</p>
+<ol>
+<li><code>AVTransport Service</code> （可控制多屏设备上的媒体 play，pause，seek，stop 等）</li>
+<li><code>RenderingControl Service</code> （可调节多屏设备上的音量，声音，静音等）</li>
+<li><code>ContentDirectory Service</code> （可获取多屏设备上可访问的媒体内容）</li>
+<li><code>ConnectionManager Service</code> （可提供所支持的传输协议信息及多屏设备的 MIME 格式信息）</li>
+</ol>
+<h3 id="DMS"><a href="#DMS" class="headerlink" title="DMS"></a>DMS</h3><blockquote>
+<p>A UPnP AV MediaServer shall identify in the Device Description Document the<br>ContentDirectory service and the ConnectionManager service using serviceType and serviceId<br>elements with the values given in Table 10.</p>
+</blockquote>
+<p><img src="/images/dlna/1553740868260.png" alt="1553740868260"></p>
+<p><code>minidlna</code>通过扫描指定目录并监控变化来提供服务</p>
+<h3 id="DMR"><a href="#DMR" class="headerlink" title="DMR"></a>DMR</h3><blockquote>
+<p>A UPnP AV MediaRenderer shall identify in the Device Description Document the<br>AVTransport service, the RenderingControl service, and the ConnectionManager service using<br>serviceType and serviceId elements with the values given in Table 9.</p>
+</blockquote>
+<p><img src="/images/dlna/1553740975457.png" alt="1553740975457"></p>
+<p><code>gmrender-resurrect</code>使用<code>GStream</code>来提供<code>render</code>服务</p>
+<h3 id="DMP"><a href="#DMP" class="headerlink" title="DMP"></a>DMP</h3><blockquote>
+<p>DLNA Device Class having home network environmental characteristics, with the role of finding<br>content exposed by a DMS or M-DMS and rendering the content locally</p>
+</blockquote>
+<p>相比于另外一个<code>Rendering Endpoint：DMR</code>多个主动搜索<code>DMS</code>功能，通过发送<code>M-SEARCH</code>来发现<code>DMS</code></p>
+<h3 id="DMC"><a href="#DMC" class="headerlink" title="DMC"></a>DMC</h3><blockquote>
+<p>A Digital Media Controller (DMC) with the role of finding content exposed by a DMS and<br>matching it to the rendering capacities of a DMR and setting up the connections between the<br>DMS and DMR.</p>
+</blockquote>
+<p>用于在<code>DMS</code>和<code>DMR</code>建立连接并控制</p>
+<h3 id="常见系统拓扑结构"><a href="#常见系统拓扑结构" class="headerlink" title="常见系统拓扑结构"></a>常见系统拓扑结构</h3><h4 id="客户端播放软件"><a href="#客户端播放软件" class="headerlink" title="客户端播放软件"></a>客户端播放软件</h4><p><code>minidlna</code>为<code>DMS</code>，<code>VLC</code>为<code>DMP</code>，通过搜索<code>DMS</code>并浏览目录来播放文件，逻辑如下</p>
+<ol>
+<li>Invoke UPnP actions to browse and select content.</li>
+<li>Request the content for playback.</li>
+<li>Transport the content to the DMP or the M-DMP.</li>
+</ol>
+<p><img src="/images/dlna/1553741595183.png" alt="1553741595183"></p>
+<h4 id="手机推送到-DMR"><a href="#手机推送到-DMR" class="headerlink" title="手机推送到 DMR"></a>手机推送到 DMR</h4><p><code>手机</code>为<code>DMS/DMC?</code>，<code>gmrender-resurrect</code>为<code>DMR</code>，<code>手机</code>发送<code>SOAP ACTION</code>来完成控制，然后<code>DMR</code>从<code>DMS</code>获取数据进行播放</p>
+<h2 id="SAT2IP"><a href="#SAT2IP" class="headerlink" title="SAT2IP"></a>SAT2IP</h2><p>结构图</p>
+<p><img src="/images/sat2ip/20190226-093309.png" alt="img"></p>
+<h3 id="SAT2IP-Server"><a href="#SAT2IP-Server" class="headerlink" title="SAT2IP Server"></a>SAT2IP Server</h3><p><code>SAT&gt;IP Servers</code> 处理 <code>SAT&gt;IP Clients</code>的请求并将电视直播节目转发给 <code>SAT&gt;IP Clients</code><br><code>Server</code>将<code>Tuner</code>数据编码为<code>RTSP</code>数据进行发送，参考<code>minisatip</code></p>
+<h3 id="SAT2IP-Client"><a href="#SAT2IP-Client" class="headerlink" title="SAT2IP Client"></a>SAT2IP Client</h3><p><code>vlc</code>实现了<code>SAT2IP Client</code>，同时支持<code>DMP</code></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本章总结<code>DMS</code>、<code>DMP</code>、<code>DMR</code>、<code>SAT2IP Server</code>以及<code>SAT2IP Client</code>相同与差异点</p>
+<ol>
+<li><code>DMP</code> = <code>DMR</code> + <code>DMC</code>，<code>DMR</code>是被动状态，等待其他设备的控制；而<code>DMP</code>会主动搜索<code>DMS</code>进行操作。一个是推，一个是拉</li>
+<li><code>DMP</code>与<code>SAT2IP Client</code>均存在交互界面，根据界面选取内容进行控制播放等。在<code>VLC</code>中整合为同一个功能<code>upnp.c</code>，区别在于发现的<code>server</code>类型不同，其中<code>SAT2IP</code>存在协商过程</li>
+<li><code>DLNA</code>与<code>SAT2IP</code>，设备发现及描述一致，需要<code>upnp</code>使用各自协议中规定字段</li>
+<li><code>DLNA</code>与<code>SAT2IP</code>设备控制不一样，<code>DLNA</code>使用<code>HTTP/SOAP</code>，<code>SAT2IP</code>使用<code>RTSP</code></li>
+<li><code>DMS</code>与<code>SAT2IP Server</code>，<code>SAT2IP</code>仅提供大网信号，且打包为<code>RTSP</code>进行传输；而<code>DMS</code>一般会提供多种格式文件，使用<code>HTTP GET/POST</code></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/upnp/" rel="tag"># upnp</a>
+              <a href="/tags/dlna/" rel="tag"># dlna</a>
+              <a href="/tags/sat2ip/" rel="tag"># sat2ip</a>
+              <a href="/tags/ssdp/" rel="tag"># ssdp</a>
+              <a href="/tags/soap/" rel="tag"># soap</a>
+              <a href="/tags/dms/" rel="tag"># dms</a>
+              <a href="/tags/dmr/" rel="tag"># dmr</a>
+              <a href="/tags/dmp/" rel="tag"># dmp</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/03/27/dlna-dmr-and-dmp/" rel="next" title="DLNA DMR 和 DMP 分析">
+                  <i class="fa fa-chevron-left"></i> DLNA DMR 和 DMP 分析
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/04/03/cros-compile-openssl-and-wolfssl/" rel="prev" title="openssl 和 wolfssl 及交叉编译移植">
+                  openssl 和 wolfssl 及交叉编译移植 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#upnp"><span class="nav-number">1.</span> <span class="nav-text">upnp</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DLNA-与-SAT2IP-图"><span class="nav-number">2.</span> <span class="nav-text">DLNA 与 SAT2IP 图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DLNA"><span class="nav-number">3.</span> <span class="nav-text">DLNA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#DMS"><span class="nav-number">3.1.</span> <span class="nav-text">DMS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DMR"><span class="nav-number">3.2.</span> <span class="nav-text">DMR</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DMP"><span class="nav-number">3.3.</span> <span class="nav-text">DMP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DMC"><span class="nav-number">3.4.</span> <span class="nav-text">DMC</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#常见系统拓扑结构"><span class="nav-number">3.5.</span> <span class="nav-text">常见系统拓扑结构</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#客户端播放软件"><span class="nav-number">3.5.1.</span> <span class="nav-text">客户端播放软件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#手机推送到-DMR"><span class="nav-number">3.5.2.</span> <span class="nav-text">手机推送到 DMR</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SAT2IP"><span class="nav-number">4.</span> <span class="nav-text">SAT2IP</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SAT2IP-Server"><span class="nav-number">4.1.</span> <span class="nav-text">SAT2IP Server</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SAT2IP-Client"><span class="nav-number">4.2.</span> <span class="nav-text">SAT2IP Client</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

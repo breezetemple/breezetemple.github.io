@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="mdev 是 busybox 自带的一个简化版的udev，适合于嵌入式的应用埸合。其具有使用简单的特点。它的作用，就是在系统启动和热插拔或动态加载驱动程序时，自动产生驱动程序所需的节点文件。在以busybox为基础构建嵌入式linux的根文件系统时，使用它是最优的选择。 mdev 的使用可以参看 busybox 中的 mdev.txt 文档">
+<meta property="og:type" content="article">
+<meta property="og:title" content="mdev">
+<meta property="og:url" content="http://yoursite.com/2017/07/28/mdev/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="mdev 是 busybox 自带的一个简化版的udev，适合于嵌入式的应用埸合。其具有使用简单的特点。它的作用，就是在系统启动和热插拔或动态加载驱动程序时，自动产生驱动程序所需的节点文件。在以busybox为基础构建嵌入式linux的根文件系统时，使用它是最优的选择。 mdev 的使用可以参看 busybox 中的 mdev.txt 文档">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2017-07-28T02:49:08.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.670Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="linux">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2017/07/28/mdev/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>mdev | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/07/28/mdev/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          mdev
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2017-07-28 10:49:08" itemprop="dateCreated datePublished" datetime="2017-07-28T10:49:08+08:00">2017-07-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>6.5k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>6 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><code>mdev</code> 是 <code>busybox</code> 自带的一个简化版的udev，适合于嵌入式的应用埸合。其具有使用简单的特点。它的作用，就是在系统启动和热插拔或动态加载驱动程序时，自动产生驱动程序所需的节点文件。在以busybox为基础构建嵌入式linux的根文件系统时，使用它是最优的选择。</p>
+<p><code>mdev</code> 的使用可以参看 <code>busybox</code> 中的 <code>mdev.txt</code> 文档</p>
+<a id="more"></a>
+
+<h2 id="mdev使用"><a href="#mdev使用" class="headerlink" title="mdev使用"></a>mdev使用</h2><h3 id="busybox-对-mdev-支持"><a href="#busybox-对-mdev-支持" class="headerlink" title="busybox 对 mdev 支持"></a>busybox 对 mdev 支持</h3><pre><code>Linux System Utilities  ---&gt;
+    [*] mdev
+    [*]   Support /etc/mdev.conf
+    [*]     Support command execution at device addition/removal</code></pre><h3 id="mdev-用法"><a href="#mdev-用法" class="headerlink" title="mdev 用法"></a>mdev 用法</h3><p>Mdev has two primary uses: initial population and dynamic updates. Both require sysfs support in the kernel and have it mounted at /sys. For dynamic updates, you also need to have hotplugging enabled in your kernel.</p>
+<p><strong>Here’s a typical code snippet from the init script:</strong></p>
+<pre><code>[0] mount -t proc proc /proc
+[1] mount -t sysfs sysfs /sys
+[2] echo /sbin/mdev &gt; /proc/sys/kernel/hotplug
+[3] mdev -s</code></pre><p><strong>Alternatively, without procfs the above becomes:</strong></p>
+<pre><code>[1] mount -t sysfs sysfs /sys
+[2] sysctl -w kernel.hotplug=/sbin/mdev
+[3] mdev -s</code></pre><p><strong>Of course, a more “full” setup would entail executing this before the previous code snippet:</strong></p>
+<pre><code>[4] mount -t tmpfs -o size=64k,mode=0755 tmpfs /dev
+[5] mkdir /dev/pts
+[6] mount -t devpts devpts /dev/pts</code></pre><blockquote>
+<p>The simple explanation here is that [1] you need to have /sys mounted before executing mdev. Then you [2] instruct the kernel to execute /sbin/mdev whenever a device is added or removed so that the device node can be created or destroyed.  Then you [3] seed /dev with all the device nodes that were created while the system was booting.</p>
+</blockquote>
+<blockquote>
+<p>For the “full” setup, you want to [4] make sure /dev is a tmpfs filesystem (assuming you’re running out of flash).  Then you want to [5] create the /dev/pts mount point and finally [6] mount the devpts filesystem on it.</p>
+</blockquote>
+<h3 id="mdev-conf"><a href="#mdev-conf" class="headerlink" title="mdev.conf"></a>mdev.conf</h3><p><code>/etc/mdev.conf</code> 配置文件，属于可选项</p>
+<pre><code>格式: &lt;device regex&gt; &lt;uid&gt;:&lt;gid&gt; &lt;octal permissions&gt;  [&lt;@|$|*&gt; &lt;command&gt;]
+@ 创建了设备之后运行
+$ 删除设备之前运行
+* 在创建设备之后和删除设备之前运行</code></pre><p>example</p>
+<pre><code>sd.* 0:0 0600 */etc/add_remove_log.sh
+mmcblk([0-9]+) root:disk 660 &gt;disk/mmc/%1/0</code></pre><h2 id="mdev-s"><a href="#mdev-s" class="headerlink" title="mdev -s"></a>mdev -s</h2><p><code>mdev --help</code></p>
+<pre><code>mdev -s is to be run during boot to scan /sys and populate /dev.</code></pre><p>以 <code>-s</code> 参数调用 <code>mdev</code>，扫描 <code>/sys/class</code> 和 <code>/sys/block</code> 中所有的类设备目录，如果在目录中含有名为 <code>dev</code> 的文件，且文件中包含设备号，则 <code>mdev</code> 利用这些信息为这个设备在 <code>/dev</code> 下创建设备节点文件，一般只在启动时执行一次 <code>mdev -s</code></p>
+<h3 id="Hotplug"><a href="#Hotplug" class="headerlink" title="Hotplug"></a>Hotplug</h3><p>由于启动时运行了命令 <code>echo /sbin/mdev &gt; /proc/sys/kernel/hotplug</code>，那么当有热插拔事件产生时，内核就会调用 <code>mdev</code>。这时 <code>mdev</code> 通过环境变量中的 <code>ACTION</code> 和<code>DEVPATH</code>，（这两个变量是系统自带的）来确定此次热插拔事件的动作以及影响了<code>/sys</code>中的那个目录。接着会看看这个目录中是否有 <code>dev</code> 的属性文件，如果有就利用这些信息为这个设备在 <code>/dev</code> 下创建设备节点文件。</p>
+<h2 id="驱动中增加对类设备接口支持"><a href="#驱动中增加对类设备接口支持" class="headerlink" title="驱动中增加对类设备接口支持"></a>驱动中增加对类设备接口支持</h2><p>在驱动程序的初始化函数中，使用以下类似的语句，就能在类设备目录下 <code>/sys/class</code> 添加包含设备号的名为 <code>dev</code> 的属性文件，并通过 <code>mdev</code> 在 <code>/dev</code> 下生成设备节点文件。</p>
+<pre><code>include/linux/device.h
+
+#define device_create_drvdata   device_create
+
+//一个struct class结构体类型变量对应一个类
+static struct class *mtd_class;
+
+//create your own class under /sysfs
+mtd_class = class_create(THIS_MODULE, &quot;mtd&quot;);
+//register your own device in sysfs, and this will cause udev to create corresponding device node
+device_creat e_drvdata(mtd_class, NULL, MKDEV(MTD_CHAR_MAJOR, mtd-&gt;index*2), NULL, &quot;mtd%d&quot;, mtd-&gt;index);
+
+//delete device node under /dev
+device_destroy(mtd_class, MKDEV(MTD_CHAR_MAJOR, mtd-&gt;index*2));
+//delete class created by us
+class_destroy(my_class);</code></pre><p>这部分代码适用与字符设备。在2.6较早的内核版本中，<code>device_create</code> 函数名称不同，是 <code>class_device_create</code></p>
+<h3 id="misc-设备"><a href="#misc-设备" class="headerlink" title="misc 设备"></a>misc 设备</h3><p><code>misc</code> 设备是主设备号为<code>10</code> 的字符设备，使用的注册函数为</p>
+<pre><code>&lt;linux/miscdevice.h&gt;
+
+static struct miscdevice flash_otp_miscdev =
+{
+    .minor = MISC_OTP_MINOR,
+    .name  = &quot;flash_otp&quot;,
+    .fops  = &amp;flash_otp_fops,
+};
+
+err = misc_register(&amp;flash_otp_miscdev);
+if (err) {
+    printk(&quot;flash otp probe: failed to register misc device\n&quot;);
+    kfree(info);
+    err = -EINVAL;
+}
+
+int misc_deregister(struct miscdevice *misc);</code></pre><p><code>misc</code> 是特殊的字符设备。注册驱动程序时采用 <code>misc_register</code> 函数注册，此函数中会自动创建设备节点，即设备节点文件，原因是 <code>misc_register</code> 会调用 <code>device_create</code></p>
+<pre><code>int misc_register(struct miscdevice * misc)
+{
+    struct miscdevice *c;
+    dev_t dev;
+    int err = 0;
+
+    INIT_LIST_HEAD(&amp;misc-&gt;list);  //链表项使用时必须初始化
+
+    mutex_lock(&amp;misc_mtx);
+    list_for_each_entry(c, &amp;misc_list, list) {
+        if (c-&gt;minor == misc-&gt;minor) {
+            mutex_unlock(&amp;misc_mtx);
+            return -EBUSY;
+        }
+    } //遍历链表如果发现次设备号一样的，返回错误
+
+    if (misc-&gt;minor == MISC_DYNAMIC_MINOR) {  //动态次设备号
+        int i = DYNAMIC_MINORS;
+        while (--i &gt;= 0)
+            if ( (misc_minors[i&gt;&gt;3] &amp; (1 &lt;&lt; (i&amp;7))) == 0)
+                break;
+        if (i&lt;0) {
+            mutex_unlock(&amp;misc_mtx);
+            return -EBUSY;
+        }
+        misc-&gt;minor = i;
+    }
+
+    if (misc-&gt;minor &lt; DYNAMIC_MINORS)
+        misc_minors[misc-&gt;minor &gt;&gt; 3] |= 1 &lt;&lt; (misc-&gt;minor &amp; 7);
+    dev = MKDEV(MISC_MAJOR, misc-&gt;minor);
+
+    //misc_class 在 misc_init 函数中创建
+    misc-&gt;this_device = device_create(misc_class, misc-&gt;parent, dev,
+                        misc, &quot;%s&quot;, misc-&gt;name);
+    //udev创建设备节点使用，linux设备模型相关
+    if (IS_ERR(misc-&gt;this_device)) {
+        err = PTR_ERR(misc-&gt;this_device);
+        goto out;
+    }
+
+    /*
+    * Add it to the front, so that later devices can &quot;override&quot;
+    * earlier defaults
+    */
+    list_add(&amp;misc-&gt;list, &amp;misc_list); //添加到misc_list之中
+    out:
+    mutex_unlock(&amp;misc_mtx);
+    return err;
+}</code></pre><blockquote>
+<p>杂项设备作为字符设备的封装，为字符设备提供的简单的编程接口，如果编写新的字符驱动，可以考虑使用杂项设备接口，方便简单，只需要初始化一个miscdevice的结构，调用misc_register就可以了。</p>
+</blockquote>
+<h3 id="block-设备节点文件"><a href="#block-设备节点文件" class="headerlink" title="block 设备节点文件"></a>block 设备节点文件</h3><p><code>mtdblock</code> 文件流程</p>
+<pre><code>static struct mtd_blktrans_ops mtdblock_tr = {
+    .name       = &quot;mtdblock&quot;,
+    .major      = 31,
+    .part_bits  = 0,
+    .blksize    = 512,
+    .open       = mtdblock_open,
+    .flush      = mtdblock_flush,
+    .release    = mtdblock_release,
+    .readsect   = mtdblock_readsect,
+    .writesect  = mtdblock_writesect,
+    .add_mtd    = mtdblock_add_mtd,
+    .remove_dev = mtdblock_remove_dev,
+    .owner      = THIS_MODULE,
+};
+
+static int __init init_mtdblock(void)
+{
+    return register_mtd_blktrans(&amp;mtdblock_tr);
+}
+
+static void __exit cleanup_mtdblock(void)
+{
+    deregister_mtd_blktrans(&amp;mtdblock_tr);
+}
+
+module_init(init_mtdblock);
+module_exit(cleanup_mtdblock);</code></pre><p><code>mtdblock_add_mtd</code> -&gt; <code>add_mtd_blktrans_dev</code> -&gt; <code>add_disk</code> -&gt; <code>register_disk</code><br>-&gt; <code>device_add</code> -&gt; <code>device_create_file</code> -&gt; <code>sysfs_create_file</code></p>
+<p><code>loop</code> 流程</p>
+<pre><code>static int __init loop_init(void)
+{
+    int i, nr;
+    unsigned long range;
+    struct loop_device *lo, *next;
+
+    /*
+     * loop module now has a feature to instantiate underlying device
+     * structure on-demand, provided that there is an access dev node.
+     * However, this will not work well with user space tool that doesn&#39;t
+     * know about such &quot;feature&quot;.  In order to not break any existing
+     * tool, we do the following:
+     *
+     * (1) if max_loop is specified, create that many upfront, and this
+     *     also becomes a hard limit.
+     * (2) if max_loop is not specified, create 8 loop device on module
+     *     load, user can further extend loop device by create dev node
+     *     themselves and have kernel automatically instantiate actual
+     *     device on-demand.
+     */
+
+    part_shift = 0;
+    if (max_part &gt; 0)
+        part_shift = fls(max_part);
+
+    if (max_loop &gt; 1UL &lt;&lt; (MINORBITS - part_shift))
+        return -EINVAL;
+
+   if (max_loop) {
+        nr = max_loop;
+        range = max_loop;
+    } else {
+        nr = 8;
+        range = 1UL &lt;&lt; (MINORBITS - part_shift);
+    }
+
+    if (register_blkdev(LOOP_MAJOR, &quot;loop&quot;))
+        return -EIO;
+
+    for (i = 0; i &lt; nr; i++) {
+        lo = loop_alloc(i);
+        if (!lo)
+            goto Enomem;
+        list_add_tail(&amp;lo-&gt;lo_list, &amp;loop_devices);
+    }
+
+    /* point of no return */
+
+    list_for_each_entry(lo, &amp;loop_devices, lo_list)
+        add_disk(lo-&gt;lo_disk);
+
+    blk_register_region(MKDEV(LOOP_MAJOR, 0), range,
+                  THIS_MODULE, loop_probe, NULL, NULL);
+
+    printk(KERN_INFO &quot;loop: module loaded\n&quot;);
+    return 0;
+
+Enomem:
+    printk(KERN_INFO &quot;loop: out of memory\n&quot;);
+
+    list_for_each_entry_safe(lo, next, &amp;loop_devices, lo_list)
+        loop_free(lo);
+
+    unregister_blkdev(LOOP_MAJOR, &quot;loop&quot;);
+    return -ENOMEM;
+}
+
+module_init(loop_init);</code></pre><h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://erwinchang.github.io/2017/01/18/mdev/" target="_blank" rel="noopener">mdev</a></li>
+<li><a href="http://blog.csdn.net/hugerat/article/details/3437099" target="_blank" rel="noopener">mdev的使用方法和原理</a></li>
+<li><a href="http://www.embeddedlinux.org.cn/ldd3note/_173.htm" target="_blank" rel="noopener">mdev使用</a></li>
+<li><a href="http://www.cnblogs.com/hnrainll/archive/2011/06/25/2090182.html" target="_blank" rel="noopener">mdev的使用以及mdev.conf的规则配置–busybox</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2017/07/25/circular-linked-lists/" rel="next" title="circular-linked-lists">
+                  <i class="fa fa-chevron-left"></i> circular-linked-lists
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2017/08/01/system-shell/" rel="prev" title="system-shell">
+                  system-shell <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#mdev使用"><span class="nav-number">1.</span> <span class="nav-text">mdev使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#busybox-对-mdev-支持"><span class="nav-number">1.1.</span> <span class="nav-text">busybox 对 mdev 支持</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mdev-用法"><span class="nav-number">1.2.</span> <span class="nav-text">mdev 用法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mdev-conf"><span class="nav-number">1.3.</span> <span class="nav-text">mdev.conf</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mdev-s"><span class="nav-number">2.</span> <span class="nav-text">mdev -s</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Hotplug"><span class="nav-number">2.1.</span> <span class="nav-text">Hotplug</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#驱动中增加对类设备接口支持"><span class="nav-number">3.</span> <span class="nav-text">驱动中增加对类设备接口支持</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#misc-设备"><span class="nav-number">3.1.</span> <span class="nav-text">misc 设备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#block-设备节点文件"><span class="nav-number">3.2.</span> <span class="nav-text">block 设备节点文件</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">4.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

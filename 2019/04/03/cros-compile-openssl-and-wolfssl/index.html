@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="嵌入式方案中使用openssl以及wolfssl记录">
+<meta property="og:type" content="article">
+<meta property="og:title" content="openssl 和 wolfssl 及交叉编译移植">
+<meta property="og:url" content="http://yoursite.com/2019/04/03/cros-compile-openssl-and-wolfssl/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="嵌入式方案中使用openssl以及wolfssl记录">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-04-03T06:58:52.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.682Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="openssl">
+<meta property="article:tag" content="wolfssl">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2019/04/03/cros-compile-openssl-and-wolfssl/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>openssl 和 wolfssl 及交叉编译移植 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/04/03/cros-compile-openssl-and-wolfssl/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          openssl 和 wolfssl 及交叉编译移植
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-04-03 14:58:52" itemprop="dateCreated datePublished" datetime="2019-04-03T14:58:52+08:00">2019-04-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/SSL/" itemprop="url" rel="index">
+                    <span itemprop="name">SSL</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>12k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>11 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>嵌入式方案中使用<code>openssl</code>以及<code>wolfssl</code>记录</p>
+<a id="more"></a>
+
+<h1 id="openssl"><a href="#openssl" class="headerlink" title="openssl"></a>openssl</h1><h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>转载 <a href="https://blog.csdn.net/guoliquan1/article/details/4703315" target="_blank" rel="noopener">OpenSSL 详细介绍</a></p>
+<h3 id="对称加密算法"><a href="#对称加密算法" class="headerlink" title="对称加密算法"></a>对称加密算法</h3><p>OpenSSL 一共提供了 8 种对称加密算法，其中 7 种是分组加密算法，仅有的一种流加密算法是 RC4。这 7 种分组加密算法分别是</p>
+<ul>
+<li><code>AES</code></li>
+<li><code>DES</code></li>
+<li><code>Blowfish</code></li>
+<li><code>CAST</code></li>
+<li><code>IDEA</code></li>
+<li><code>RC2</code></li>
+<li><code>RC5</code></li>
+</ul>
+<p>都支持<code>电子密码本模式（ECB）</code>、<code>加密分组链接模式（CBC）</code>、<code>加密反馈模式（CFB）</code>和<code>输出反馈模式（OFB）</code>四种常用的分组密码加密模式。其中，<code>AES</code> 使用的<code>加密反馈模式（CFB）</code>和<code>输出反馈模式（OFB）</code>分组长度是 128 位，其它算法使用的则是 64 位。事实上，<code>DES</code> 算法里面不仅仅是常用的<code>DES</code> 算法，还支持三个密钥和两个密钥<code>3DES</code> 算法。</p>
+<p>虽然每种加密算法都定义了自己的接口函数，但是<strong><code>OpenSSL</code> 还使用<code>EVP</code> 封装了所有的对称加密算法，使得各种对成加密算法能够使用统一的 API 接口<code>EVP_Encrypt</code> 和<code>EVP_Decrypt</code> 进行数据的加密和解密，大大提供了代码的可重用性能。</strong></p>
+<h3 id="非对称加密算法"><a href="#非对称加密算法" class="headerlink" title="非对称加密算法"></a>非对称加密算法</h3><p>OpenSSL 一共实现了 4 种非对称加密算法，包括</p>
+<ul>
+<li><code>DH</code>，一般用户密钥交换</li>
+<li><code>RSA</code>，既可以用于密钥交换，也可以用于数字签名，当然，如果你能够忍受其缓慢的速度，那么也可以用于数据加密</li>
+<li><code>DSA</code>，一般只用于数字签名</li>
+<li><code>EC</code>，<code>crypto/ec/ ecdsa_sign.c</code> 实现了签名算法；<code>crypto/ec/ec dh_ossl.c</code> 实现了密钥交换算法</li>
+</ul>
+<p>** 跟对称加密算法相似，OpenSSL 也使用 EVP 技术对不同功能的非对称加密算法进行封装，提供了统一的 API 接口。如果使用非对称加密算法进行密钥交换或者密钥加密，则使用 EVP_Seal 和 EVP_Open 进行加密和解密；如果使用非对称加密算法进行数字签名，则使用<code>EVP_Sign</code> 和<code>EVP_Verify</code> 进行签名和验证。 **</p>
+<h3 id="信息摘要算法"><a href="#信息摘要算法" class="headerlink" title="信息摘要算法"></a>信息摘要算法</h3><p>OpenSSL 实现了 5 种信息摘要算法，分别是 MD2、MD5、MDC2、SHA（SHA1）和 RIPEMD。SHA 算法事实上包括了 SHA 和 SHA1 两种信息摘要算法，此外，OpenSSL 还实现了 DSS 标准中规定的两种信息摘要算法 DSS 和 DSS1。</p>
+<p>OpenSSL 采用 EVP_Digest 接口作为信息摘要算法统一的 EVP 接口，对所有信息摘要算法进行了封装，提供了代码的重用性。</p>
+<h3 id="密钥和证书管理"><a href="#密钥和证书管理" class="headerlink" title="密钥和证书管理"></a>密钥和证书管理</h3><p>密钥和证书管理是 PKI 的一个重要组成部分，OpenSSL 为之提供了丰富的功能，支持多种标准。</p>
+<p>首先，OpenSSL 实现了 ASN.1 的证书和密钥相关标准，提供了对证书、公钥、私钥、证书请求以及 CRL 等数据对象的 DER、PEM 和 BASE64 的编解码功能。OpenSSL 提供了产生各种公开密钥对和对称密钥的方法、函数和应用程序，同时提供了对公钥和私钥的 DER 编解码功能。并实现了私钥的 PKCS#12 和 PKCS#8 的编解码功能。OpenSSL 在标准中提供了对私钥的加密保护功能，使得密钥可以安全地进行存储和分发。</p>
+<p>在此基础上，OpenSSL 实现了对证书的 X.509 标准编解码、PKCS#12 格式的编解码以及 PKCS#7 的编解码功能。并提供了一种文本数据库，支持证书的管理功能，包括证书密钥产生、请求产生、证书签发、吊销和验证等功能。</p>
+<p>事实上，OpenSSL 提供的 CA 应用程序就是一个小型的证书管理中心（CA），实现了证书签发的整个流程和证书管理的大部分机制。</p>
+<h3 id="Engine-机制"><a href="#Engine-机制" class="headerlink" title="Engine 机制"></a>Engine 机制</h3><p>Engine 机制的出现是在 OpenSSL 的 0.9.6 版的事情，开始的时候是将普通版本跟支持 Engine 的版本分开的，到了 OpenSSL 的 0.9.7 版，Engine 机制集成到了 OpenSSL 的内核中，成为了 OpenSSL 不可缺少的一部分。</p>
+<p><strong>Engine 机制目的是为了使 OpenSSL 能够透明地使用第三方提供的软件加密库或者硬件加密设备进行加密。OpenSSL 的 Engine 机制成功地达到了这个目的，这使得 OpenSSL 已经不仅仅使一个加密库，而是提供了一个通用地加密接口，能够与绝大部分加密库或者加密设备协调工作。</strong>当然，要使特定加密库或加密设备更 OpenSSL 协调工作，需要写少量的接口代码，但是这样的工作量并不大，虽然还是需要一点密码学的知识。Engine 机制的功能跟 Windows 提供的 CSP 功能目标是基本相同的。</p>
+<h3 id="BIO-机制"><a href="#BIO-机制" class="headerlink" title="BIO 机制"></a>BIO 机制</h3><p>BIO 机制是 OpenSSL 提供的一种高层 IO 接口，该接口封装了几乎所有类型的 IO 接口，如内存访问、文件访问以及 Socket 等。这使得代码的重用性大幅度提高，OpenSSL 提供 API 的复杂性也降低了很多。</p>
+<h3 id="OpenSSL-目录及功能描述"><a href="#OpenSSL-目录及功能描述" class="headerlink" title="OpenSSL 目录及功能描述"></a>OpenSSL 目录及功能描述</h3><ul>
+<li><code>Crypto</code> 存放 OpenSSL 所有加密算法源码文件和相关标注如 X.509 源码文件，是 OpenSSL 中最重要的目录，包含了 OpenSSL 密码算法库的所有内容</li>
+<li><code>SSL</code> 存放 OpenSSL 中 SSL 协议各个版本和 TLS 1.0 协议源码文件，包含了 OpenSSL 协议库的所有内容</li>
+<li><code>Apps</code> 存放 OpenSSL 中所有应用程序源码文件，如 CA、X509 等应用程序的源文件就存放在这里</li>
+<li><code>Doc</code> 存放了 OpenSSL 中所有的使用说明文档，包含三个部分：应用程序说明文档、加密算法库 API 说明文档以及 SSL 协议 API 说明文档</li>
+<li><code>Demos</code> 存放了一些基于 OpenSSL 的应用程序例子，这些例子一般都很简单，演示怎么使用 OpenSSL 其中的一个功能</li>
+<li><code>Include</code> 存放了使用 OpenSSL 的库时需要的头文件</li>
+<li><code>Test</code> 存放了 OpenSSL 自身功能测试程序的源码文件</li>
+</ul>
+<h3 id="OpenSSL-算法目录"><a href="#OpenSSL-算法目录" class="headerlink" title="OpenSSL 算法目录"></a>OpenSSL 算法目录</h3><p>openSSL 的算法目录 Crypto 目录包含了 OpenSSL 密码算法库的所有源代码文件，是 OpenSSL 中最重要的目录之一。OpenSSL 的密码算法库包含了 OpenSSL 中所有密码算法、密钥管理和证书管理相关标准的实现，在 Windows 下编译后的库文件名为 libeay32.lib，在 Linux 下编译后生产的库文件名为 libcrypto.a。Crypto 目录下包含了众多的子目录，这些目录大多数以相关的算法或标准名称的简写命名。当然，并非所有这些目录存放的源文件都是密码算法和标准，有些是 OpenSSL 本身的一些相关功能文件，如 BIO、DSO 和 EVP 等。</p>
+<h4 id="Crypto-子目录列表"><a href="#Crypto-子目录列表" class="headerlink" title="Crypto 子目录列表"></a>Crypto 子目录列表</h4><ul>
+<li><code>Aes</code> 对称算法，美国新的对称加密算法标准 AES 算法源码</li>
+<li><code>Bf</code> 对称算法，Blowfish 对称加密算法源码</li>
+<li><code>Cast</code> 对称算法，CAST 对称加密算法源码</li>
+<li><code>Des</code> 对称算法，包括了 DES 和 3DES 对称加密算法源码</li>
+<li><code>Idea</code> 对称算法，IDEA 对称加密算法源码</li>
+<li><code>Rc2</code> 对称算法，RC2 对称加密算法源码</li>
+<li><code>Rc4</code> 对称算法，RC4 对称加密算法源码</li>
+<li><code>Rc5</code> 对称算法，RC5 对称加密算法源码</li>
+<li><code>Dh</code> 非对称算法，DH 非对称密钥交换算法源码</li>
+<li><code>Dsa</code> 非对称算法，DSA 非对称算法源码，用于数字签名</li>
+<li><code>Ec</code> 非对称算法，EC 椭圆曲线算法源码</li>
+<li><code>Rsa</code> 非对称算法，RSA 非对称加密算法源码，既可以用于密钥交换，也可以用于数字签名</li>
+<li><code>Md2</code> 信息摘要算法，MD2 信息摘要算法源码</li>
+<li><code>Md5</code> 信息摘要算法，MD5 信息摘要算法源码</li>
+<li><code>Mdc2</code> 信息摘要算法，MDC2 信息摘要算法源码</li>
+<li><code>Sha</code> 信息摘要算法，SHA 信息摘要算法源码，包括了 SHA1 算法</li>
+<li><code>Ripemd</code> 信息摘要算法，RIPEMD-160 信息摘要算法源码</li>
+<li><code>Comp</code> 数据压缩算法数据压缩算法的函数接口，目前没有压缩算法，只是定义了一些空的接口函数</li>
+<li><code>Asn1 PKI</code> 相关标准 ASN.1 标准实现源码，只实现了 PKI 相关的部分，不是完全实现。包括 DER 编解码等功能</li>
+<li><code>Ocsp PKI</code> 相关标准 OCSP（在线证书服务协议）实现源码</li>
+<li><code>Pem PKI</code> 相关标准 PEM 标准实现源码，包括了 PEM 的编解码功能</li>
+<li><code>Pkcs7 PKI</code> 相关标准 PKCS#7 标准实现源码。PKCS#7 是实现加密信息封装的标准，包括了证书封装的标准和加密数据的封装标准</li>
+<li><code>Pkcs12 PKI</code> 相关标准 PKCS#12 标准实现源码。包括了 PKCS#12 文件的编解码功能。PKCS#12 是一种常用的证书和密钥封装格式</li>
+<li><code>X509 PKI</code> 相关标准 X.509 标准的实现源码。包括了 X.509 的编解码功能，证书管理功能等。X509v3 PKI 相关标准 X.509 第三版扩展功能的实现源码</li>
+<li><code>Krb5</code> 其它标准支持支持 Kerberos 协议的一些接口函数和结构定义</li>
+<li><code>Hmac</code> 其它标准支持 HMAC 标准的支持结构和函数源源代码</li>
+<li><code>Lhash</code> 其它标准支持动态 HASH 表结构和函数源代码</li>
+<li><code>Bio</code> 自定义 OpenSSL 自身定义的一种抽象 IO 接口，封装了各种平台的几乎所有 IO 接口，如文件、内存、缓存、标准输入输出以及 Socket 等等</li>
+<li><code>Bn</code> 自定义 OpenSSL 实现大数管理的结构及其函数</li>
+<li><code>Buffer</code> 自定义 OpenSSL 自定义的缓冲区结构体</li>
+<li><code>Conf</code> 自定义 OpenSSL 自定义的管理配置结构和函数</li>
+<li><code>Dso</code> 自定义 OpenSSL 自定义的加载动态库的管理函数接口。如使用 Engine 机制就用到了这些函数提供的功能</li>
+<li><code>Engine</code> 自定义 OpenSSL 自定义的 Engine 机制源代码。Engine 机制运行 OpenSSL 使用第三方提供的软件密码算法库或者硬件加密设备进行数据加密等运算。相当于 Windows 平台的 CSP 机制</li>
+</ul>
+<h4 id="Err-自定义-OpenSSL-自定义的错误信息处理机制"><a href="#Err-自定义-OpenSSL-自定义的错误信息处理机制" class="headerlink" title="Err 自定义 OpenSSL 自定义的错误信息处理机制"></a>Err 自定义 OpenSSL 自定义的错误信息处理机制</h4><ul>
+<li><code>Evp</code> 自定义 OpenSSL 定义的一组高层算法封装函数，包括了对称加密算法封装、非对称加密算法封装、签名验证算法封装以及信息摘要算法封装，类似</li>
+</ul>
+<h4 id="PKCS-11-提供的接口标准"><a href="#PKCS-11-提供的接口标准" class="headerlink" title="PKCS#11 提供的接口标准"></a>PKCS#11 提供的接口标准</h4><ul>
+<li><code>Objects</code> 自定义 OpenSSL 管理各种数据对象的定义和函数。事实上，Objects 的 OID 是根据 ASN.1 的标准进行命名的，不完全是 OpenSSL 自定义的结构</li>
+</ul>
+<h4 id="Rand-自定义-OpenSSL-的安全随机数产生函数和管理函数"><a href="#Rand-自定义-OpenSSL-的安全随机数产生函数和管理函数" class="headerlink" title="Rand 自定义 OpenSSL 的安全随机数产生函数和管理函数"></a>Rand 自定义 OpenSSL 的安全随机数产生函数和管理函数</h4><ul>
+<li><code>Stack</code> 自定义定义了 OpenSSL 中 STACK 结构和相关管理函数</li>
+<li><code>Threads</code> 自定义 OpenSSL 处理线程的一些机制</li>
+<li><code>Txt_db</code> 自定义 OpenSSL 提供的文本证书库的管理机制</li>
+<li><code>Ui</code> 自定义 OpenSSL 定义的一下用户接口交换函数</li>
+<li><code>Perlasm</code> 自定义编译的时候需要用到的一些 Perl 辅助配置文件</li>
+</ul>
+<h2 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h2><p>转载 <a href="https://zhuanlan.zhihu.com/p/37739171" target="_blank" rel="noopener">OpenSSL 的编译系统</a>，主要内容</p>
+<p>Make 命令是几乎大部分 Linux 下软件的编译基石，它输入的配置文件是 Makefile。但是很多开源软件为了适应各种不同的客户机配置，通常会在 Makefile 之前添加一个 automake 的过程，就是通过对机器硬件和机器上安装的库的检测来动态的确定编译的行为。</p>
+<p>OpenSSL 的编译系统自成一派。虽然最后也是依赖 Makefile 文件的 make 系统，但是并不是使用 automake 的通用做法。一般的 automake 是首先执行一个叫 configure 的文件，这个文件的执行后就会生成一个 Makefile 文件，之后再调用 make 命令即可。但是 OpenSSL 调用的命令文件是 config，里面虽然的目的和 configure.sh 一致，但是实际使用的系统是差别很大的。config 这个 Shell 脚本文件里面实际是调用的 Perl 脚本。</p>
+<p>实际的编译程序仍然是一个叫<code>Configure</code>的文件。这个文件支持的命令行参数远比<code>config</code>要多很多：</p>
+<pre><code>./Configure -h
+Configuring OpenSSL version 1.1.1-pre7-dev (0x10101007L) for
+Using os-specific seed configuration
+Warning! target  doesn&#39;t exist!
+Usage: Configure [no-&lt;cipher&gt; ...] [enable-&lt;cipher&gt; ...] [-Dxxx] [-lxxx] [-Lxxx] [-fxxx] [-Kxxx] [no-hw-xxx|no-hw] [[no-]threads] [[no-]shared] [[no-]zlib|zlib-dynamic] [no-asm] [no-dso] [no-egd] [sctp] [386] [--prefix=DIR] [--openssldir=OPENSSLDIR] [--with-xxx[=vvv]] [--config=FILE] os/compiler[:flags]</code></pre><p>整个<code>config</code>文件都在为<code>Configure</code>文件自动的生成这些命令行参数。所以我们在一台机器上编译过之后，可以手动的拿到这些命令行参数，然后后续只直接调用<code>Configure</code>文件即可。这样就可以手动的对一些参数进行修改了。</p>
+<ol>
+<li><a href="https://blog.csdn.net/zqj6893/article/details/8778237" target="_blank" rel="noopener">Linux 环境下 openssl 交叉编译、安装和裁剪</a></li>
+<li><a href="https://www.cnblogs.com/wangliangblog/p/7772381.html" target="_blank" rel="noopener">openssl 编译参数选项</a></li>
+<li><a href="https://gist.github.com/steakknife/8247726" target="_blank" rel="noopener"><strong>openssl_configure.md</strong></a></li>
+<li><a href="https://www.jianshu.com/p/74f547849255" target="_blank" rel="noopener">交叉编译 openssl、gmssl 的正确方式</a></li>
+<li><a href="https://blog.csdn.net/adrian169/article/details/9245303" target="_blank" rel="noopener">openssl 在 arm 下的交叉编译</a></li>
+<li><a href="https://mowblog.com/%E4%BD%BF%E7%94%A8arm-gcc%E7%BC%96%E8%AF%91openssl/" target="_blank" rel="noopener">使用 ARM GCC 编译 openssl</a></li>
+<li><a href="https://www.oschina.net/question/234345_47942" target="_blank" rel="noopener">openssl 简易文档</a></li>
+</ol>
+<p>交叉编译时，需要关注的参数</p>
+<ul>
+<li>CC</li>
+<li>–prefix</li>
+<li>–cross-compile</li>
+<li>no-shared</li>
+<li>no-asm</li>
+</ul>
+<p>例如如下命令</p>
+<pre><code class="shell">./Configure --prefix=/opt/openssl --cross-compile-prefix=arm-linux-gnueabihf- no-asm shared linux-armv4
+make
+make install</code></pre>
+<p>嵌入式裁剪</p>
+<pre><code class="shell">./config --prefix=/home/zqjun/openssl5350 no-shared no-zlib no-asm no-threads no-sse2no-compno-dso no-gmp no-rfc3779 no-krb5 no-rc5 no-zlib-dynamic no-hw no-cipherno-md2 no-md4 no-mdc2 no-rc2 no-idea no-camellia no-ec no-ecdsa no-ecdhno-store no-ripemd no-des no-rc4 no-bf no-cast no-dsa no-dh no-ssl no-ssl2no-ssl3 no-tls no-perlasm
+---------------------
+./config --prefic=/home/zqjun/openssl5350 shared no-zlib no-asm no-threads no-sse2 no-compno-gmp no-rfc3779 no-krb5 no-rc5 no-zlib-dynamic no-hw no-cipher no-md2 no-md4 no-mdc2no-rc2 no-idea no-camellia no-ec no-ecdsa no-ecdh no-store no-ripemd no-des no-rc4no-bf no-cast no-dsa no-dh no-ssl no-ssl2 no-ssl3 no-tls no-perlasm</code></pre>
+<h2 id="Makefile"><a href="#Makefile" class="headerlink" title="Makefile"></a>Makefile</h2><p>注意事项：</p>
+<ol>
+<li>生成<code>libssl.a</code>和<code>libcrypto.a</code>，注意引用库的顺序为：<code>-lssl -lcrypto</code>，如果为<code>-lcrypto –lssl</code>，编译时会出现错误</li>
+<li>动态编译时不能出现 no-dso 参数，因为编译过程中有些函数需要链接相应动态库</li>
+<li>编译完成后使用 XXX-strip 把相应的符号去掉，安装后的库会更小一些</li>
+</ol>
+<p>执行配置之后会有如下输出</p>
+<pre><code class="shell">./config --prefix=`pwd`/prefix no-shared no-asm no-zlib no-async
+Operating system: x86_64-whatever-linux2
+Configuring OpenSSL version 1.1.1-pre7-dev (0x10101007L) for linux-x86_64
+Using os-specific seed configuration
+Creating configdata.pm
+Creating Makefile
+
+**********************************************************************
+***                                                                ***
+***   If you want to report a building issue, please include the   ***
+***   output from this command:                                    ***
+***                                                                ***
+***     perl configdata.pm --dump                                  ***
+***                                                                ***
+**********************************************************************</code></pre>
+<p>生成的<code>Makefile</code>中</p>
+<pre><code class="makefile">LIBS=apps/libapps.a libcrypto.a libssl.a test/libtestutil.a
+INSTALL_LIBS=libcrypto.a libssl.a
+libssl.a: ssl/bio_ssl.o ssl/d1_lib.o ssl/d1_msg.o ssl/d1_srtp.o ssl/methods.o ssl/packet.o ssl/pqueue.o ...
+libcrypto.a: crypto/aes/aes_cbc.o crypto/aes/aes_cfb.o crypto/aes/aes_core.o crypto/aes/aes_ecb.o ... engines/e_afalg.o engines/e_capi.o engines/e_padlock.o</code></pre>
+<ul>
+<li><code>libssl.a</code>为目录<code>ssl</code>集合</li>
+<li><code>libcrypto.a</code>为目录<code>crypto</code>和<code>engines</code>集合</li>
+</ul>
+<h1 id="wolfssl"><a href="#wolfssl" class="headerlink" title="wolfssl"></a>wolfssl</h1><h2 id="介绍-1"><a href="#介绍-1" class="headerlink" title="介绍"></a>介绍</h2><p><a href="https://zh.wikipedia.org/wiki/WolfSSL" target="_blank" rel="noopener">wolfSSL</a></p>
+<p><strong>wolfSSL</strong> （原名 <strong>CyaSSL</strong> 或 <strong>yet another SSL</strong>)，是一个提供<a href="https://zh.wikipedia.org/wiki/%E5%82%B3%E8%BC%B8%E5%B1%A4%E5%AE%89%E5%85%A8%E5%8D%94%E8%AD%B0" target="_blank" rel="noopener">传输层安全协议</a>（SSL/TLS）功能的<a href="https://zh.wikipedia.org/wiki/%E8%BD%AF%E4%BB%B6%E5%BA%93" target="_blank" rel="noopener">软件库</a>，主要针对<a href="https://zh.wikipedia.org/wiki/%E5%B5%8C%E5%85%A5%E5%BC%8F%E7%B3%BB%E7%BB%9F" target="_blank" rel="noopener">嵌入式系系统</a> 发展。以开放原始码及商用许可两种方式释出，提供 SSL/TLS 功能（SSL 3.0， TLS 1.0/1.1/ 1.2，DTLS 1.0/1.2），以 <a href="https://zh.wikipedia.org/wiki/C%E8%AA%9E%E8%A8%80" target="_blank" rel="noopener">C 语言</a> 写成。提供了与 <a href="https://zh.wikipedia.org/wiki/OpenSSL" target="_blank" rel="noopener">OpenSSL</a> 兼容的 API 界面，让原有使用 OpenSSL 的软件可以容易的移植过来。</p>
+<h2 id="交叉编译移植"><a href="#交叉编译移植" class="headerlink" title="交叉编译移植"></a>交叉编译移植</h2><ol>
+<li><a href="https://www.jarviswang.me/?p=599" target="_blank" rel="noopener">ESP32 移植 wolfssl 方法</a></li>
+<li><a href="https://blog.csdn.net/u014530704/article/details/79919876" target="_blank" rel="noopener">wolfssl 移植替换 openssl</a></li>
+<li><a href="https://www.wolfssl.com/docs/wolfssl-manual/ch2/" target="_blank" rel="noopener"><strong>CHAPTER 2:  BUILDING WOLFSSL</strong></a></li>
+<li><a href="https://www.wolfssl.com/docs/wolfssl-manual/ch2/" target="_blank" rel="noopener"><strong>BUILD OPTIONS (**</strong>./CONFIGURE** <strong>OPTIONS)</strong></a></li>
+</ol>
+<p>使用<code>configure</code>完成交叉编译配置，首先修改<code>config.sub</code>添加需要移植的<code>host</code>，然后</p>
+<pre><code class="shell">./configure --prefix=`pwd`/prefix --host=csky-linux --enable-sslv3 --enable-ecc --enable-tlsx --enable-stunnel --enable-opensslextra --disable-examples --enable-static
+
+---
+Configuration summary for wolfssl version 3.11.0
+
+   * Installation prefix:        /data/OpenSourceCode/thirdparty/wolfssl/prefix
+   * System type:                unknown-linux-gnu
+   * Host CPU:                   csky
+   * C Compiler:                 csky-linux-gcc
+   * C Flags:                     -Werror -Wno-pragmas -Wall -Wno-strict-aliasing -Wextra -Wunknown-pragmas --param=ssp-buffer-size=1 -Waddress -Warray-bounds -Wbad-function-cast -Wchar-subscripts -Wcomment -Wfloat-equal -Wformat-security -Wformat=2 -Wmissing-field-initializers -Wmissing-noreturn -Wmissing-prototypes -Wnested-externs -Wnormalized=id -Woverride-init -Wpointer-arith -Wpointer-sign -Wredundant-decls -Wshadow -Wsign-compare -Wstrict-overflow=1 -Wswitch-enum -Wundef -Wunused -Wunused-result -Wunused-variable -Wwrite-strings -fwrapv
+   * C++ Compiler:               csky-linux-g++
+   * C++ Flags:                  -g -O2
+   * CPP Flags:                   -fvisibility=hidden
+   * CCAS Flags:
+   * LIB Flags:                   -pie -z relro -z now -Werror
+   * Debug enabled:              no
+   * Warnings as failure:        yes
+   * make -j:                    5
+   * VCS checkout:               yes
+
+   Features
+   * Single threaded:            no
+   * Filesystem:                 yes
+   * OpenSSH Build:              no
+   * OpenSSL Extra API:          yes
+   * Max Strength Build:         no
+   * Distro Build:               no
+   * fastmath:                   no
+   * sniffer:                    no
+   * snifftest:                  no
+   * ARC4:                       no
+   * AES:                        yes
+   * AES-NI:                     no
+   * AES-GCM:                    yes
+   * AES-CCM:                    no
+   * AES-CTR:                    no
+   * DES3:                       yes
+   * IDEA:                       no
+   * Camellia:                   no
+   * NULL Cipher:                no
+   * MD5:                        yes
+   * RIPEMD:                     no
+   * SHA:                        yes
+   * SHA-224:                    no
+   * SHA-512:                    no
+   * BLAKE2:                     no
+   * CMAC:                       no
+   * keygen:                     no
+   * certgen:                    no
+   * certreq:                    no
+   * certext:                    no
+   * HC-128:                     no
+   * RABBIT:                     no
+   * CHACHA:                     yes
+   * Hash DRBG:                  yes
+   * PWDBASED:                   yes
+   * scrypt:                     no
+   * wolfCrypt Only:             no
+   * HKDF:                       no
+   * X9.63 KDF:                  no
+   * MD4:                        yes
+   * PSK:                        yes
+   * Poly1305:                   yes
+   * LEANPSK:                    no
+   * LEANTLS:                    no
+   * RSA:                        yes
+   * DSA:                        no
+   * DH:                         yes
+   * ECC:                        yes
+   * CURVE25519:                 no
+   * ED25519:                    no
+   * FPECC:                      no
+   * ECC_ENCRYPT:                no
+   * ASN:                        yes
+   * Anonymous cipher:           no
+   * CODING:                     yes
+   * MEMORY:                     yes
+   * I/O POOL:                   no
+   * LIGHTY:                     no
+   * HAPROXY:                    no
+   * STUNNEL:                    yes
+   * NGINX:                      no
+   * ERROR_STRINGS:              yes
+   * DTLS:                       no
+   * SCTP:                       no
+   * Old TLS Versions:           yes
+   * SSL version 3.0:            yes
+   * OCSP:                       yes
+   * OCSP Stapling:              no
+   * OCSP Stapling v2:           no
+   * CRL:                        yes
+   * CRL-MONITOR:                no
+   * Persistent session cache:   no
+   * Persistent cert    cache:   no
+   * Atomic User Record Layer:   no
+   * Public Key Callbacks:       no
+   * NTRU:                       no
+   * Whitewood netRandom:        no
+   * Server Name Indication:     yes
+   * ALPN:                       yes
+   * Maximum Fragment Length:    yes
+   * Truncated HMAC:             yes
+   * Supported Elliptic Curves:  yes
+   * Session Ticket:             no
+   * Extended Master Secret:     yes
+   * Renegotiation Indication:   no
+   * Secure Renegotiation:       no
+   * All TLS Extensions:         yes
+   * PKCS#7                      no
+   * wolfSCEP                    no
+   * Secure Remote Password      no
+   * Small Stack:                no
+   * valgrind unit tests:        no
+   * LIBZ:                       no
+   * Examples:                   no
+   * User Crypto:                no
+   * Fast RSA:                   no
+   * Async Crypto:               no
+   * Cavium:                     no
+   * ARM ASM:                    no
+   * AES Key Wrap:               no
+   * Write duplicate:            no
+   * Intel Quick Assist:         no
+
+---
+
+$ tree -L 2
+.
+├── bin
+│   └── wolfssl-config
+├── include
+│   ├── cyassl
+│   └── wolfssl
+├── lib
+│   ├── libwolfssl.a
+│   ├── libwolfssl.la
+│   ├── libwolfssl.so -&gt; libwolfssl.so.12.0.0
+│   ├── libwolfssl.so.12 -&gt; libwolfssl.so.12.0.0
+│   ├── libwolfssl.so.12.0.0
+│   └── pkgconfig
+└── share
+    └── doc
+
+# 如果不添加`--enable-static`，结果如下，只有动态库
+$ tree -L 2
+.
+├── bin
+│   └── wolfssl-config
+├── include
+│   ├── cyassl
+│   └── wolfssl
+├── lib
+│   ├── libwolfssl.la
+│   ├── libwolfssl.so -&gt; libwolfssl.so.12.0.0
+│   ├── libwolfssl.so.12 -&gt; libwolfssl.so.12.0.0
+│   ├── libwolfssl.so.12.0.0
+│   └── pkgconfig
+└── share
+    └── doc
+
+# 可以使用`--dis-shared`不编译动态库
+$ tree -L 2
+.
+├── bin
+│   └── wolfssl-config
+├── include
+│   ├── cyassl
+│   └── wolfssl
+├── lib
+│   ├── libwolfssl.a
+│   ├── libwolfssl.la
+│   └── pkgconfig
+└── share
+    └── doc
+</code></pre>
+<p><code>configure</code>之后生成的文件，需要注意<code>config.h</code>、<code>Makefile</code>、<code>options.h</code>和<code>setting.h</code></p>
+<p>其中<code>Makefile</code>为编译流程控制，各个选项均可以修改以达到目的。<code>config.h</code>为<code>wolfssl</code>的配置文件，包括各种宏定义。分析<code>Makefile</code>可以得到</p>
+<ul>
+<li>./wolfssl — 这个文件夹是 wolfssl 的所有头文件</li>
+<li>./src — 这个是 wolfssl 功能代码</li>
+<li>./wolfcrypt/src — 这个是 wolfssl 的所有加密算法源码实现</li>
+<li>与<code>openssl</code>不同，只存在一个库<code>libwolfssl.a</code></li>
+</ul>
+<h2 id="Prefix"><a href="#Prefix" class="headerlink" title="Prefix"></a>Prefix</h2><p><code>prefix</code>目录如下</p>
+<pre><code class="shell">$ tree -L 3
+.
+├── bin
+│   └── wolfssl-config
+├── include
+│   ├── cyassl
+│   │   ├── callbacks.h
+│   │   ├── certs_test.h
+│   │   ├── crl.h
+│   │   ├── ctaocrypt
+│   │   ├── error-ssl.h
+│   │   ├── ocsp.h
+│   │   ├── openssl
+│   │   ├── options.h
+│   │   ├── sniffer_error.h
+│   │   ├── sniffer.h
+│   │   ├── ssl.h
+│   │   ├── test.h
+│   │   └── version.h
+│   └── wolfssl
+│       ├── callbacks.h
+│       ├── certs_test.h
+│       ├── crl.h
+│       ├── error-ssl.h
+│       ├── io.h
+│       ├── ocsp.h
+│       ├── openssl
+│       ├── options.h
+│       ├── sniffer_error.h
+│       ├── sniffer.h
+│       ├── ssl.h
+│       ├── test.h
+│       ├── version.h
+│       └── wolfcrypt
+├── lib
+│   ├── libwolfssl.a
+│   ├── libwolfssl.la
+│   ├── libwolfssl.so -&gt; libwolfssl.so.12.0.0
+│   ├── libwolfssl.so.12 -&gt; libwolfssl.so.12.0.0
+│   ├── libwolfssl.so.12.0.0
+│   └── pkgconfig
+│       └── wolfssl.pc
+└── share
+    └── doc
+        └── wolfssl</code></pre>
+<p>其中<code>include</code>存在<code>cyassl</code>和<code>wolfssl</code>是为了保证与之前的版本<code>cyassl</code>兼容，同时存在<code>openssl</code>兼容性头文件</p>
+<h1 id="使用-wolfssl-替换-openssl"><a href="#使用-wolfssl-替换-openssl" class="headerlink" title="使用 wolfssl 替换 openssl"></a>使用 wolfssl 替换 openssl</h1><ol>
+<li><a href="https://www.wolfssl.com/docs/wolfssl-openssl/" target="_blank" rel="noopener">WOLFSSL VERSUS OPENSSL</a></li>
+<li><a href="https://www.wolfssl.com/docs/wolfssl-manual/ch13/" target="_blank" rel="noopener">CHAPTER 13: OPENSSL COMPATIBILITY</a></li>
+<li><a href="https://blog.csdn.net/u014530704/article/details/79919876" target="_blank" rel="noopener">wolfssl 移植替换 openssl</a></li>
+<li><a href="https://www.jianshu.com/p/4ef363a60668" target="_blank" rel="noopener">换用 CyaSSL 库</a></li>
+</ol>
+<h2 id="对比"><a href="#对比" class="headerlink" title="对比"></a>对比</h2><ol>
+<li><p>wolfssl 比较小，适合嵌入式环境</p>
+<blockquote>
+<p>wolfssl 在满足基本需求的同时，又能大大减小固件的大小</p>
+</blockquote>
+</li>
+<li><p>wolfssl 性能相对优秀</p>
+<blockquote>
+<p>和 openssl 对比，wolfssl 的性能更加优秀，关于 openssl 和 wolfssl 的对比，可从 wolfssl 官网得到详尽的答案：<a href="https://www.wolfssl.com/docs/wolfssl-openssl/" target="_blank" rel="noopener">openssl 和 wolfssl 的特点对比</a></p>
+</blockquote>
+</li>
+<li><p>wolfssl 方便移植</p>
+<blockquote>
+<p>wolfssl 除了本地 API 之外，wolfssl 还提供了一个 openssl 兼容性头文件 wolfssl/openssl/ssl.h ，以简化转换为使用 wolfssl 或帮助将现有的 openssl 应用程序移植到 wolfssl。openssl 兼容层将最常用的 openssl 命令的子集映射到 wolfssl 的本地 API 函数。</p>
+</blockquote>
+</li>
+</ol>
+<h2 id="编译-1"><a href="#编译-1" class="headerlink" title="编译"></a>编译</h2><p><a href="https://www.wolfssl.com/docs/wolfssl-manual/ch2/" target="_blank" rel="noopener">configure –help 说明链接</a></p>
+<p>交叉编译时需要注意</p>
+<ol>
+<li>使用<code>prefix</code>安装库</li>
+<li>使用库地方<code>export prefix/lib/pkgconfig</code></li>
+<li>或者使用<code>-L -I</code>指定路径</li>
+</ol>
+<h2 id="示例代码"><a href="#示例代码" class="headerlink" title="示例代码"></a>示例代码</h2><ol>
+<li><a href="https://github.com/breezetemple/Breeze-Vim/blob/master/example/ssl/server_echo.c" target="_blank" rel="noopener">server</a></li>
+<li><a href="https://github.com/breezetemple/Breeze-Vim/blob/master/example/ssl/client_echo.c" target="_blank" rel="noopener">client</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/openssl/" rel="tag"># openssl</a>
+              <a href="/tags/wolfssl/" rel="tag"># wolfssl</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/03/28/dlna-sat2ip-and-upnp/" rel="next" title="DLNA SAT2IP 以及 UPnP 总结">
+                  <i class="fa fa-chevron-left"></i> DLNA SAT2IP 以及 UPnP 总结
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/04/08/setup-your-own-CA-with-OpenSSL/" rel="prev" title="使用 OpenSSL 生成私钥和签名并自己做 CA 签名">
+                  使用 OpenSSL 生成私钥和签名并自己做 CA 签名 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#openssl"><span class="nav-number">1.</span> <span class="nav-text">openssl</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#介绍"><span class="nav-number">1.1.</span> <span class="nav-text">介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#对称加密算法"><span class="nav-number">1.1.1.</span> <span class="nav-text">对称加密算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#非对称加密算法"><span class="nav-number">1.1.2.</span> <span class="nav-text">非对称加密算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#信息摘要算法"><span class="nav-number">1.1.3.</span> <span class="nav-text">信息摘要算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#密钥和证书管理"><span class="nav-number">1.1.4.</span> <span class="nav-text">密钥和证书管理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Engine-机制"><span class="nav-number">1.1.5.</span> <span class="nav-text">Engine 机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BIO-机制"><span class="nav-number">1.1.6.</span> <span class="nav-text">BIO 机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OpenSSL-目录及功能描述"><span class="nav-number">1.1.7.</span> <span class="nav-text">OpenSSL 目录及功能描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OpenSSL-算法目录"><span class="nav-number">1.1.8.</span> <span class="nav-text">OpenSSL 算法目录</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Crypto-子目录列表"><span class="nav-number">1.1.8.1.</span> <span class="nav-text">Crypto 子目录列表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Err-自定义-OpenSSL-自定义的错误信息处理机制"><span class="nav-number">1.1.8.2.</span> <span class="nav-text">Err 自定义 OpenSSL 自定义的错误信息处理机制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#PKCS-11-提供的接口标准"><span class="nav-number">1.1.8.3.</span> <span class="nav-text">PKCS#11 提供的接口标准</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Rand-自定义-OpenSSL-的安全随机数产生函数和管理函数"><span class="nav-number">1.1.8.4.</span> <span class="nav-text">Rand 自定义 OpenSSL 的安全随机数产生函数和管理函数</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#编译"><span class="nav-number">1.2.</span> <span class="nav-text">编译</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Makefile"><span class="nav-number">1.3.</span> <span class="nav-text">Makefile</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#wolfssl"><span class="nav-number">2.</span> <span class="nav-text">wolfssl</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#介绍-1"><span class="nav-number">2.1.</span> <span class="nav-text">介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#交叉编译移植"><span class="nav-number">2.2.</span> <span class="nav-text">交叉编译移植</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Prefix"><span class="nav-number">2.3.</span> <span class="nav-text">Prefix</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#使用-wolfssl-替换-openssl"><span class="nav-number">3.</span> <span class="nav-text">使用 wolfssl 替换 openssl</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#对比"><span class="nav-number">3.1.</span> <span class="nav-text">对比</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#编译-1"><span class="nav-number">3.2.</span> <span class="nav-text">编译</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#示例代码"><span class="nav-number">3.3.</span> <span class="nav-text">示例代码</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

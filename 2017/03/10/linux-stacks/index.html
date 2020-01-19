@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="转载自(http:&#x2F;&#x2F;kyang.cc&#x2F;)[http:&#x2F;&#x2F;kyang.cc&#x2F;] Linux 中有各种栈，进程栈、线程栈、内核栈、中断栈，讲述这几种栈的作用及位置 进程栈的初始化大小是由编译器和链接器计算出来的，但是栈的实时大小并不是固定的，Linux 内核会根据入栈情况对栈区进行动态增长（其实也就是添加新的页表）。但是并不是说栈区可以无限增长，它也有最大限制 RLIMIT_STACK (一般为 8">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 中的各种栈：进程栈 线程栈 内核栈 中断栈">
+<meta property="og:url" content="http://yoursite.com/2017/03/10/linux-stacks/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="转载自(http:&#x2F;&#x2F;kyang.cc&#x2F;)[http:&#x2F;&#x2F;kyang.cc&#x2F;] Linux 中有各种栈，进程栈、线程栈、内核栈、中断栈，讲述这几种栈的作用及位置 进程栈的初始化大小是由编译器和链接器计算出来的，但是栈的实时大小并不是固定的，Linux 内核会根据入栈情况对栈区进行动态增长（其实也就是添加新的页表）。但是并不是说栈区可以无限增长，它也有最大限制 RLIMIT_STACK (一般为 8">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/linux/stack-frame.jpg">
+<meta property="og:image" content="http://yoursite.com/images/linux/virtual-addr-space.jpg">
+<meta property="og:image" content="http://yoursite.com/images/linux/spaces.jpg">
+<meta property="og:image" content="http://yoursite.com/images/linux/mm_struct.jpg">
+<meta property="og:image" content="http://yoursite.com/images/linux/20160901215111055">
+<meta property="og:image" content="http://yoursite.com/images/linux/20160901215126528">
+<meta property="article:published_time" content="2017-03-10T09:39:51.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.666Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="gcc">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="stack">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/linux/stack-frame.jpg">
+
+<link rel="canonical" href="http://yoursite.com/2017/03/10/linux-stacks/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linux 中的各种栈：进程栈 线程栈 内核栈 中断栈 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/03/10/linux-stacks/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 中的各种栈：进程栈 线程栈 内核栈 中断栈
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2017-03-10 17:39:51" itemprop="dateCreated datePublished" datetime="2017-03-10T17:39:51+08:00">2017-03-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>6.9k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>6 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>转载自(<a href="http://kyang.cc/)[http://kyang.cc/]" target="_blank" rel="noopener">http://kyang.cc/)[http://kyang.cc/]</a></p>
+<p><code>Linux</code> 中有各种栈，进程栈、线程栈、内核栈、中断栈，讲述这几种栈的作用及位置</p>
+<p>进程栈的初始化大小是由编译器和链接器计算出来的，但是栈的实时大小并不是固定的，Linux 内核会根据入栈情况对栈区进行动态增长（其实也就是添加新的页表）。但是并不是说栈区可以无限增长，它也有最大限制 <code>RLIMIT_STACK</code> (一般为 8M)，我们可以通过 <code>ulimit</code> 来查看或更改 <code>RLIMIT_STACK</code> 的值。</p>
+<a id="more"></a>
+
+<h1 id="栈是什么？栈有什么作用？"><a href="#栈是什么？栈有什么作用？" class="headerlink" title="栈是什么？栈有什么作用？"></a>栈是什么？栈有什么作用？</h1><p>首先，栈 (stack) 是一种串列形式的 数据结构。这种数据结构的特点是 后入先出 (LIFO, Last In First Out)，数据只能在串列的一端 (称为：栈顶 top) 进行 推入 (push) 和 弹出 (pop) 操作。根据栈的特点，很容易的想到可以利用数组，来实现这种数据结构。但是本文要讨论的并不是软件层面的栈，而是硬件层面的栈。</p>
+<p>大多数的处理器架构，都有实现硬件栈。有专门的栈指针寄存器，以及特定的硬件指令来完成 入栈/出栈 的操作。例如在 ARM 架构上，R13 (SP) 指针是堆栈指针寄存器，而 PUSH 是用于压栈的汇编指令，POP 则是出栈的汇编指令。</p>
+<p>栈作用可以从两个方面体现：<strong>函数调用</strong> 和 <strong>多任务支持</strong></p>
+<h2 id="函数调用"><a href="#函数调用" class="headerlink" title="函数调用"></a>函数调用</h2><p>我们知道一个函数调用有以下三个基本过程：</p>
+<ul>
+<li>调用参数的传入</li>
+<li>局部变量的空间管理</li>
+<li>函数返回</li>
+</ul>
+<p>函数的调用必须是高效的，而数据存放在 <code>CPU通用寄存器</code> 或者 <code>RAM 内存</code> 中无疑是最好的选择。以传递调用参数为例，我们可以选择使用 CPU通用寄存器 来存放参数。但是通用寄存器的数目都是有限的，当出现函数嵌套调用时，子函数再次使用原有的通用寄存器必然会导致冲突。因此如果想用它来传递参数，那在调用子函数前，就必须先 <code>保存原有寄存器的值</code>，然后当子函数退出的时候再 <code>恢复原有寄存器的值</code>。</p>
+<p>函数的调用参数数目一般都相对少，因此通用寄存器是可以满足一定需求的。但是局部变量的数目和占用空间都是比较大的，再依赖有限的通用寄存器未免强人所难，因此我们可以采用某些 RAM 内存区域来存储局部变量。但是存储在哪里合适？既不能让函数嵌套调用的时候有冲突，又要注重效率。</p>
+<p>这种情况下，栈无疑提供很好的解决办法：</p>
+<ol>
+<li>对于通用寄存器传参的冲突，我们可以再调用子函数前，将通用寄存器临时压入栈中；在子函数调用完毕后，在将已保存的寄存器再弹出恢复回来</li>
+<li>而局部变量的空间申请，也只需要向下移动下栈顶指针；将栈顶指针向回移动，即可就可完成局部变量的空间释放</li>
+<li>对于函数的返回，也只需要在调用子函数前，将返回地址压入栈中，待子函数调用结束后，将函数返回地址弹出给 PC 指针，即完成了函数调用的返回</li>
+</ol>
+<p>于是上述函数调用的三个基本过程，就演变记录一个栈指针的过程。每次函数调用的时候，都配套一个栈指针。即使循环嵌套调用函数，只要对应函数栈指针是不同的，也不会出现冲突。</p>
+<p>典型函数栈帧：</p>
+<p><img src="/images/linux/stack-frame.jpg" alt="Stack Frame"></p>
+<h2 id="多任务支持"><a href="#多任务支持" class="headerlink" title="多任务支持"></a>多任务支持</h2><p>栈的意义还不只是函数调用，有了它的存在，才能构建出操作系统的多任务模式。</p>
+<h1 id="Linux-中有几种栈？各种栈的内存位置？"><a href="#Linux-中有几种栈？各种栈的内存位置？" class="headerlink" title="Linux 中有几种栈？各种栈的内存位置？"></a>Linux 中有几种栈？各种栈的内存位置？</h1><p>内核将栈分成四种：</p>
+<ul>
+<li>进程栈</li>
+<li>线程栈</li>
+<li>内核栈</li>
+<li>中断栈</li>
+</ul>
+<h2 id="进程栈"><a href="#进程栈" class="headerlink" title="进程栈"></a>进程栈</h2><p>进程栈是属于用户态栈，和进程 <strong>虚拟地址空间 (Virtual Address Space)</strong> 密切相关。那我们先了解下什么是虚拟地址空间：在 32 位机器下，虚拟地址空间大小为 4G。这些虚拟地址通过页表 (Page Table) 映射到物理内存，页表由操作系统维护，并被处理器的内存管理单元 (MMU) 硬件引用。<strong>每个进程都拥有一套属于它自己的页表，因此对于每个进程而言都好像独享了整个虚拟地址空间</strong>。</p>
+<p>Linux 内核将这 4G 字节的空间分为两部分，将最高的 1G 字节（0xC0000000-0xFFFFFFFF）供内核使用，称为 <strong>内核空间</strong>。而将较低的3G字节（0x00000000-0xBFFFFFFF）供各个进程使用，称为 <strong>用户空间</strong>。每个进程可以通过系统调用陷入内核态，因此内核空间是由所有进程共享的。虽然说内核和用户态进程占用了这么大地址空间，但是并不意味它们使用了这么多物理内存，仅表示它可以支配这么大的地址空间。它们是根据需要，将物理内存映射到虚拟地址空间中使用。</p>
+<p><img src="/images/linux/virtual-addr-space.jpg" alt="Virtual Address Space"></p>
+<p>Linux 对进程地址空间有个标准布局，地址空间中由各个不同的内存段组成 (Memory Segment)，主要的内存段如下：</p>
+<ul>
+<li>程序段 (Text Segment)：可执行文件代码的内存映射</li>
+<li>数据段 (Data Segment)：可执行文件的已初始化全局变量的内存映射</li>
+<li>BSS段 (BSS Segment)：未初始化的全局变量或者静态变量（用零页初始化）</li>
+<li>堆区 (Heap) : 存储动态内存分配，匿名的内存映射</li>
+<li>栈区 (Stack) : 进程用户空间栈，由编译器自动分配释放，存放函数的参数值、局部变量的值等</li>
+<li>映射段(Memory Mapping Segment)：任何内存映射文件</li>
+</ul>
+<p><img src="/images/linux/spaces.jpg" alt="Virtual Address Space"></p>
+<p><strong>而上面进程虚拟地址空间中的栈区，正指的是我们所说的进程栈</strong>。进程栈的初始化大小是由编译器和链接器计算出来的，但是栈的实时大小并不是固定的，Linux 内核会根据入栈情况对栈区进行动态增长（其实也就是添加新的页表）。但是并不是说栈区可以无限增长，它也有最大限制 RLIMIT_STACK (一般为 8M)，我们可以通过 ulimit 来查看或更改 RLIMIT_STACK 的值。</p>
+<h3 id="如何确定进程栈大小"><a href="#如何确定进程栈大小" class="headerlink" title="如何确定进程栈大小"></a>如何确定进程栈大小</h3><p>我们要知道栈的大小，那必须得知道<strong>栈的起始地址和结束地址</strong>。<strong>栈起始地址</strong> 获取很简单，只需要嵌入汇编指令获取栈指针 esp 地址即可。<strong>栈结束地址</strong> 的获取有点麻烦，我们需要先利用递归函数把栈搞溢出了，然后再 GDB 中把栈溢出的时候把栈指针 esp 打印出来即可。代码如下：</p>
+<pre><code class="c">/* file name: stacksize.c */
+
+void *orig_stack_pointer;
+
+void blow_stack() {
+    blow_stack();
+}
+
+int main() {
+    __asm__(&quot;movl %esp, orig_stack_pointer&quot;);
+
+    blow_stack();
+    return 0;
+}</code></pre>
+<pre><code class="gdb">$ g++ -g stacksize.c -o ./stacksize
+$ gdb ./stacksize
+(gdb) r
+Starting program: /home/home/misc-code/setrlimit
+
+Program received signal SIGSEGV, Segmentation fault.
+blow_stack () at setrlimit.c:4
+4       blow_stack();
+(gdb) print (void *)$esp
+$1 = (void *) 0xffffffffff7ff000
+(gdb) print (void *)orig_stack_pointer
+$2 = (void *) 0xffffc800
+(gdb) print 0xffffc800-0xff7ff000
+$3 = 8378368    // Current Process Stack Size is 8M</code></pre>
+<h3 id="Linux内核内存布局"><a href="#Linux内核内存布局" class="headerlink" title="Linux内核内存布局"></a>Linux内核内存布局</h3><p>内核使用内存描述符来表示进程的地址空间，该描述符表示着进程所有地址空间的信息。内存描述符由 <code>mm_struct</code> 结构体表示，下面给出内存描述符结构中各个域的描述，请大家结合前面的进程内存段布局图一起看：</p>
+<p><code>include/linux/mm_types.h</code></p>
+<pre><code class="c">struct mm_struct {
+    struct vm_area_struct *mmap;           /* 内存区域链表 */
+    struct rb_root mm_rb;                  /* VMA 形成的红黑树 */
+    ...
+    unsigned long mmap_base;               /* memory mapping段的起始地址 */
+    ...
+    struct list_head mmlist;               /* 所有 mm_struct 形成的链表 */
+    ...
+    unsigned long total_vm;                /* 全部页面数目 */
+    unsigned long locked_vm;               /* 上锁的页面数据 */
+    unsigned long shared_vm;               /* 共享页面数目 Shared pages (files) */
+    unsigned long exec_vm;                 /* 可执行页面数目 VM_EXEC &amp; ~VM_WRITE */
+    unsigned long stack_vm;                /* 栈区页面数目 VM_GROWSUP/DOWN */
+    unsigned long def_flags;
+    unsigned long start_code, end_code, start_data, end_data;    /* 代码段、数据段 起始地址和结束地址 */
+    unsigned long start_brk, brk, start_stack;                   /* 栈区 的起始地址，堆区 起始地址和结束地址 */
+    unsigned long arg_start, arg_end, env_start, env_end;        /* 命令行参数 和 环境变量的 起始地址和结束地址 */
+    ...
+    /* Architecture-specific MM context */
+    mm_context_t context;                  /* 体系结构特殊数据 */
+
+    /* Must use atomic bitops to access the bits */
+    unsigned long flags;                   /* 状态标志位 */
+    ...
+    /* Coredumping and NUMA and HugePage 相关结构体 */
+};</code></pre>
+<p><img src="/images/linux/mm_struct.jpg" alt="进程-内存描述符"></p>
+<h3 id="进程栈的动态生长"><a href="#进程栈的动态生长" class="headerlink" title="进程栈的动态生长"></a>进程栈的动态生长</h3><p>进程在运行的过程中，通过不断向栈区压入数据，当超出栈区容量时，就会耗尽栈所对应的内存区域，这将触发一个 <strong>缺页异常 (page fault)</strong>。通过异常陷入内核态后，异常会被内核的 <code>expand_stack()</code> 函数处理，进而调用 <code>acct_stack_growth()</code> 来检查是否还有合适的地方用于栈的增长。</p>
+<p>如果栈的大小低于 <code>RLIMIT_STACK</code>，那么一般情况下栈会被加长，程序继续执行，感觉不到发生了什么事情，这是一种将栈扩展到所需大小的常规机制。然而，如果达到了最大栈空间的大小，就会发生 <strong>栈溢出（stack overflow）</strong>，进程将会收到内核发出的 <strong>段错误（segmentation fault）</strong> 信号。</p>
+<p>动态栈增长是唯一一种访问未映射内存区域而被允许的情形，其他任何对未映射内存区域的访问都会触发页错误，从而导致段错误。一些被映射的区域是只读的，因此企图写这些区域也会导致段错误。</p>
+<h2 id="线程栈"><a href="#线程栈" class="headerlink" title="线程栈"></a>线程栈</h2><p>从 Linux 内核的角度来说，其实它并没有线程的概念。Linux 把所有线程都当做进程来实现，它将线程和进程不加区分的统一到了 task_struct 中。<strong>线程仅仅被视为一个与其他进程共享某些资源的进程，而是否共享地址空间几乎是进程和 Linux 中所谓线程的唯一区别</strong>。线程创建的时候，加上了 <code>CLONE_VM</code> 标记，这样 <strong>线程的内存描述符 将直接指向 父进程的内存描述符</strong>。</p>
+<p>最初的进程定义都包含程序、资源及其执行三部分，其中程序通常指代码，资源在操作系统层面上通常包括内存资源、IO资源、信号处理等部分，而程序的执行通常理解为执行上下文，包括对cpu的占用，后来发展为线程。</p>
+<p>在线程概念出现以前，为了减小进程切换的开销，操作系统设计者逐渐修正进程的概念，逐渐允许将进程所占有的资源从其主体剥离出来，允许某些进程共享一部分资源，例如文件、信号，数据内存，甚至代码，这就发展出轻量进程的概念。</p>
+<p>在 <code>do_fork()</code> 中，不同的 <code>clone_flags</code> 将导致不同的行为，对于<code>LinuxThreads</code>，<code>glibc</code>使用如下参数来调用<code>clone()</code>创建”线程”</p>
+<pre><code class="c">int clone_flags = (CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGNAL
+             | CLONE_SETTLS | CLONE_PARENT_SETTID
+             | CLONE_CHILD_CLEARTID | CLONE_SYSVSEM
+#if __ASSUME_NO_CLONE_DETACHED == 0
+             | CLONE_DETACHED
+#endif
+             | 0);</code></pre>
+<p>Linux内核在2.0.x版本就已经实现了轻量进程，应用程序可以通过一个统一的<code>clone()</code>系统调用接口，<strong>用不同的参数指定创建轻量进程还是普通进程</strong>。在内核中，<code>clone()</code>调用经过参数传递和解释后会调用<code>do_fork()</code>，这个核内函数同时也是<code>fork()</code>、<code>vfork()</code>系统调用的最终实现：</p>
+<p><code>kernel/fork.c</code></p>
+<pre><code class="c">do_fork(unsigned long clone_flags,
+          unsigned long stack_start,
+          struct pt_regs *regs,
+          unsigned long stack_size,
+          int __user *parent_tidptr,
+          int __user *child_tidptr)</code></pre>
+<pre><code class="c">static int copy_mm(unsigned long clone_flags, struct task_struct * tsk)
+{
+    ...
+    if (clone_flags &amp; CLONE_VM) {
+        atomic_inc(&amp;oldmm-&gt;mm_users);
+        mm = oldmm;
+        goto good_mm;
+    }
+    ...
+}</code></pre>
+<p>虽然线程的地址空间和进程一样，但是对待其地址空间的 stack 还是有些区别的。对于 <strong>Linux 进程或者说主线程，其 stack 是在 fork 的时候生成的，实际上就是复制了父亲的 stack 空间地址，然后写时拷贝 (cow) 以及动态增长</strong>。</p>
+<p>然而对于主线程生成的子线程而言，其 stack 将不再是这样的了，<strong>而是事先固定下来的，使用 mmap 系统调用</strong>，它不带有 <code>VM_STACK_FLAGS</code> 标记。这个可以从 <code>glibc 的nptl/allocatestack.c</code> 中的 <code>allocate_stack()</code> 函数中看到：</p>
+<pre><code class="c">mem = mmap (NULL, size, prot,                                                                                                                                                  
+        MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);</code></pre>
+<p><strong>线程栈不能动态增长，一旦用尽就没了，这是和生成进程的 fork 不同的地方</strong>。由于线程栈是从进程的地址空间中 map 出来的一块内存区域，原则上是线程私有的。但是同一个进程的所有线程生成的时候浅拷贝生成者的 task_struct 的很多字段，其中包括所有的 vma，如果愿意，其它线程也还是可以访问到的，于是一定要注意。</p>
+<h2 id="内核栈"><a href="#内核栈" class="headerlink" title="内核栈"></a>内核栈</h2><p>在每一个进程的生命周期中，必然会通过到系统调用陷入内核。在执行系统调用陷入内核之后，这些内核代码所使用的栈并不是原先进程用户空间中的栈，而是一个单独内核空间的栈，这个称作<strong>进程内核栈</strong>。</p>
+<pre><code class="c">union thread_union {
+    struct thread_info thread_info;
+    unsigned long stack[THREAD_SIZE/sizeof(long)];
+};</code></pre>
+<p><code>thread_union</code> 进程内核栈 和 <code>task_struct</code> 进程描述符有着紧密的联系。由于内核经常要访问 <code>task_struct</code>，高效获取当前进程的描述符是一件非常重要的事情。因此内核将进程内核栈的头部一段空间，用于存放 <code>thread_info</code> 结构体，而此结构体中则记录了对应进程的描述符，两者关系如下图（对应内核函数为 <code>dup_task_struct()</code>）：</p>
+<p><img src="/images/linux/20160901215111055" alt="dup_task_struct"></p>
+<h2 id="中断栈"><a href="#中断栈" class="headerlink" title="中断栈"></a>中断栈</h2><p>进程陷入内核态的时候，需要内核栈来支持内核函数调用。中断也是如此，<strong>当系统收到中断事件后，进行中断处理的时候，也需要中断栈来支持函数调用</strong>。由于系统中断的时候，系统当然是处于内核态的，所以中断栈是可以和内核栈共享的。但是具体是否共享，这和具体处理架构密切相关。</p>
+<p>X86 上中断栈就是独立于内核栈的；独立的中断栈所在内存空间的分配发生在 <code>arch/x86/kernel/irq_32.c</code> 的 <code>irq_ctx_init()</code> 函数中(如果是多处理器系统，那么每个处理器都会有一个独立的中断栈)，函数使用 <code>__alloc_pages</code> 在低端内存区分配 2个物理页面，也就是8KB大小的空间。有趣的是，这个函数还会为 <code>softirq</code> 分配一个同样大小的独立堆栈。如此说来，<code>softirq</code> 将不会在 <code>hardirq</code> 的中断栈上执行，而是在自己的上下文中执行。</p>
+<p><img src="/images/linux/20160901215126528" alt="中断栈"></p>
+<p>而 ARM 上中断栈和内核栈则是共享的；中断栈和内核栈共享有一个负面因素，如果中断发生嵌套，可能会造成栈溢出，从而可能会破坏到内核栈的一些重要数据，所以栈空间有时候难免会捉襟见肘。</p>
+<h1 id="Linux-为什么需要区分这些栈？"><a href="#Linux-为什么需要区分这些栈？" class="headerlink" title="Linux 为什么需要区分这些栈？"></a>Linux 为什么需要区分这些栈？</h1><p>为什么需要区分这些栈，其实都是设计上的问题。</p>
+<h2 id="为什么需要单独的进程内核栈？"><a href="#为什么需要单独的进程内核栈？" class="headerlink" title="为什么需要单独的进程内核栈？"></a>为什么需要单独的进程内核栈？</h2><p>所有进程运行的时候，都可能通过系统调用陷入内核态继续执行。假设第一个进程 A 陷入内核态执行的时候，需要等待读取网卡的数据，主动调用 <code>schedule()</code> 让出 CPU；此时调度器唤醒了另一个进程 B，碰巧进程 B 也需要系统调用进入内核态。那问题就来了，如果内核栈只有一个，那进程 B 进入内核态的时候产生的压栈操作，必然会破坏掉进程 A 已有的内核栈数据；一但进程 A 的内核栈数据被破坏，很可能导致进程 A 的内核态无法正确返回到对应的用户态了</p>
+<h2 id="为什么需要单独的线程栈？"><a href="#为什么需要单独的线程栈？" class="headerlink" title="为什么需要单独的线程栈？"></a>为什么需要单独的线程栈？</h2><p>Linux 调度程序中并没有区分线程和进程，当调度程序需要唤醒”进程”的时候，必然需要恢复进程的上下文环境，也就是进程栈；但是线程和父进程完全共享一份地址空间，如果栈也用同一个那就会遇到问题</p>
+<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
+<li><a href="https://blog.csdn.net/yangkuanqaz85988/article/details/52403726" target="_blank" rel="noopener">Linux 中的各种栈：进程栈 线程栈 内核栈 中断栈</a></li>
+<li><a href="https://www.ibm.com/developerworks/cn/linux/kernel/l-thread/index.html" target="_blank" rel="noopener">Linux 线程实现机制分析</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/gcc/" rel="tag"># gcc</a>
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/stack/" rel="tag"># stack</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2017/03/07/linux-c-overflow/" rel="next" title="Linux C语言内存越界问题">
+                  <i class="fa fa-chevron-left"></i> Linux C语言内存越界问题
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2017/03/15/svn-migrate-with-git-svn/" rel="prev" title="使用 git-svn 和 git-filter-branch 整理svn版本库">
+                  使用 git-svn 和 git-filter-branch 整理svn版本库 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#栈是什么？栈有什么作用？"><span class="nav-number">1.</span> <span class="nav-text">栈是什么？栈有什么作用？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#函数调用"><span class="nav-number">1.1.</span> <span class="nav-text">函数调用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#多任务支持"><span class="nav-number">1.2.</span> <span class="nav-text">多任务支持</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Linux-中有几种栈？各种栈的内存位置？"><span class="nav-number">2.</span> <span class="nav-text">Linux 中有几种栈？各种栈的内存位置？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#进程栈"><span class="nav-number">2.1.</span> <span class="nav-text">进程栈</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#如何确定进程栈大小"><span class="nav-number">2.1.1.</span> <span class="nav-text">如何确定进程栈大小</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Linux内核内存布局"><span class="nav-number">2.1.2.</span> <span class="nav-text">Linux内核内存布局</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#进程栈的动态生长"><span class="nav-number">2.1.3.</span> <span class="nav-text">进程栈的动态生长</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#线程栈"><span class="nav-number">2.2.</span> <span class="nav-text">线程栈</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内核栈"><span class="nav-number">2.3.</span> <span class="nav-text">内核栈</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#中断栈"><span class="nav-number">2.4.</span> <span class="nav-text">中断栈</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Linux-为什么需要区分这些栈？"><span class="nav-number">3.</span> <span class="nav-text">Linux 为什么需要区分这些栈？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#为什么需要单独的进程内核栈？"><span class="nav-number">3.1.</span> <span class="nav-text">为什么需要单独的进程内核栈？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#为什么需要单独的线程栈？"><span class="nav-number">3.2.</span> <span class="nav-text">为什么需要单独的线程栈？</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Ref"><span class="nav-number">4.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

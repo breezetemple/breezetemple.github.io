@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="Linux 内核中 DMA 及 Cache 分析，涉及以下函数  dma_alloc_coherent dma_map_single dma_alloc_writecombine pgprot_noncached remap_pfn_range">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DMA 相关概念以及 arm 实现">
+<meta property="og:url" content="http://yoursite.com/2018/12/19/linux-kernel-dma-cache-coherence/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="Linux 内核中 DMA 及 Cache 分析，涉及以下函数  dma_alloc_coherent dma_map_single dma_alloc_writecombine pgprot_noncached remap_pfn_range">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2018-12-19T08:16:59.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.678Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="dma">
+<meta property="article:tag" content="cache">
+<meta property="article:tag" content="arm">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2018/12/19/linux-kernel-dma-cache-coherence/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>DMA 相关概念以及 arm 实现 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/19/linux-kernel-dma-cache-coherence/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DMA 相关概念以及 arm 实现
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-12-19 16:16:59" itemprop="dateCreated datePublished" datetime="2018-12-19T16:16:59+08:00">2018-12-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>6.2k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>6 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><code>Linux</code> 内核中 <code>DMA</code> 及 <code>Cache</code> 分析，涉及以下函数</p>
+<ul>
+<li><code>dma_alloc_coherent</code></li>
+<li><code>dma_map_single</code></li>
+<li><code>dma_alloc_writecombine</code></li>
+<li><code>pgprot_noncached</code></li>
+<li><code>remap_pfn_range</code></li>
+</ul>
+<a id="more"></a>
+
+<ul>
+<li>Linux Kernel: 4.9.22</li>
+<li>Arch: arm</li>
+</ul>
+<h2 id="arm"><a href="#arm" class="headerlink" title="arm"></a>arm</h2><p><code>arch/arm/mm/dma-mapping.c</code><br><code>include/linux/dma-mapping.h</code></p>
+<p>几个关键变量和函数</p>
+<ul>
+<li><code>atomic_pool_init</code> 和 <code>DEFAULT_DMA_COHERENT_POOL_SIZE</code></li>
+<li><code>dma zone</code>、 <code>dma pool</code>、 <code>setup_dma_zone</code> 和 <code>CONFIG_ZONE_DMA</code></li>
+<li><code>coherent_dma_mask</code> 和 <code>dma_zone_size</code></li>
+</ul>
+<h2 id="DMA-ZONE"><a href="#DMA-ZONE" class="headerlink" title="DMA ZONE"></a>DMA ZONE</h2><p>存在 <code>DMA ZONE</code> 的原因是某些硬件的 <code>DMA 引擎</code> 不能访问到所有的内存区域，因此，加上一个 <code>DMA ZONE</code>，当使用 <code>GFP_DMA</code> 方式申请内存时，获得的内存限制在 <code>DMA ZONE</code> 的范围内，这些特定的硬件需要使用 <code>GFP_DMA</code> 方式获得可以做 <code>DMA</code> 的内存；<br>如果系统中所有的设备都可选址所有的内存，那么 <code>DMA ZONE</code> 覆盖所有内存。<br><code>DMA ZONE</code> 的大小，以及 <code>DMA ZONE</code> 要不要存在，都取决于你实际的硬件是什么。<br>由于设计及硬件的使用模式， <code>DMA ZONE</code> 可以不存在</p>
+<blockquote>
+<p>由于现如今绝大多少的 <code>SoC</code> 都很牛逼，似乎 <code>DMA</code> 都没有什么缺陷了，根本就不太可能给我们机会指定 <code>DMA ZONE</code> 大小装逼了，那个这个 <code>ZONE</code> 就不太需要存在了。反正任何 <code>DMA</code> 在任何地方申请的内存，这个 <code>DMA</code> 都可以存取到。</p>
+</blockquote>
+<h2 id="DMA-ZONE-的内存只能做-DMA-吗？"><a href="#DMA-ZONE-的内存只能做-DMA-吗？" class="headerlink" title="DMA ZONE 的内存只能做 DMA 吗？"></a>DMA ZONE 的内存只能做 DMA 吗？</h2><p><code>DMA ZONE</code> 的内存做什么都可以。 <code>DMA ZONE</code> 的作用是让有缺陷的 <code>DMA</code> 对应的外设驱动申请 <code>DMA buffer</code> 的时候从这个区域申请而已，但是它不是专有的。其他所有人的内存（包括应用程序和内核）也可以来自这个区域。</p>
+<h2 id="dma-mask-与-coherent-dma-mask-的定义"><a href="#dma-mask-与-coherent-dma-mask-的定义" class="headerlink" title="dma_mask 与 coherent_dma_mask 的定义"></a>dma_mask 与 coherent_dma_mask 的定义</h2><p><code>include/linux/device.h</code></p>
+<pre><code class="c">struct device {
+    ...
+    u64     *dma_mask;  /* dma mask (if dma&#39;able device) */
+    u64     coherent_dma_mask;/* Like dma_mask, but for
+                        alloc_coherent mappings as
+                        not all hardware supports
+                        64 bit addresses for consistent
+                        allocations such descriptors. */
+    unsigned long   dma_pfn_offset;
+
+    struct device_dma_parameters *dma_parms;
+
+    struct list_head    dma_pools;  /* dma pools (if dma&#39;ble) */
+
+    struct dma_coherent_mem *dma_mem; /* internal for coherent mem
+    ...
+};</code></pre>
+<p><code>dma_mask</code> 与 <code>coherent_dma_mask</code> 这两个参数表示它能寻址的物理地址的范围，内核通过这两个参数分配合适的物理内存给 <code>device</code>。 <code>dma_mask</code> 是 <code>设备 DMA</code> 能访问的内存范围， <code>coherent_dma_mask</code> 则作用于申请 <code>一致性 DMA 缓冲区</code>。因为不是所有的硬件都能够支持 <code>64bit</code> 的地址宽度。如果 <code>addr_phy</code> 是一个物理地址，且 <code>(u64)addr_phy &lt;= *dev-&gt;dma_mask</code>，那么该 <code>device</code> 就可以寻址该物理地址。如果 <code>device</code> 只能寻址 <code>32</code> 位地址，那么 <code>mask</code> 应为 <code>0xffffffff</code>。依此类推。</p>
+<p>例如内核代码 <code>arch/arm/mm/dma-mapping.c</code></p>
+<pre><code class="c">static void *__dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
+             gfp_t gfp, pgprot_t prot, bool is_coherent,
+             unsigned long attrs, const void *caller)
+{
+    u64 mask = get_coherent_dma_mask(dev);
+    struct page *page = NULL;
+    void *addr;
+    bool allowblock, cma;
+    struct arm_dma_buffer *buf;
+    struct arm_dma_alloc_args args = {
+        .dev = dev,
+        .size = PAGE_ALIGN(size),
+        .gfp = gfp,
+        .prot = prot,
+        .caller = caller,
+        .want_vaddr = ((attrs &amp; DMA_ATTR_NO_KERNEL_MAPPING) == 0),
+        .coherent_flag = is_coherent ? COHERENT : NORMAL,
+    };
+
+#ifdef CONFIG_DMA_API_DEBUG
+    u64 limit = (mask + 1) &amp; ~mask;
+    if (limit &amp;&amp; size &gt;= limit) {
+        dev_warn(dev, &quot;coherent allocation too big (requested %#x mask %#llx)\n&quot;,
+            size, mask);
+        return NULL;
+    }
+#endif
+...
+}</code></pre>
+<p><code>limit</code> 就是通过 <code>mask</code> 计算得到的设备最大寻址范围</p>
+<h2 id="dma-alloc-coherent-分配的内存一定在-DMA-ZONE-内吗？"><a href="#dma-alloc-coherent-分配的内存一定在-DMA-ZONE-内吗？" class="headerlink" title="dma_alloc_coherent 分配的内存一定在 DMA ZONE 内吗？"></a>dma_alloc_coherent 分配的内存一定在 DMA ZONE 内吗？</h2><p><code>dma_alloc_coherent()</code> 申请的内存来自于哪里，不是因为它的名字前面带了个 <code>dma_</code> 就来自 <code>DMA ZONE</code> 的，本质上取决于对应的 <code>DMA</code> 硬件是谁。应该说绝对多数情况下都不在 <code>DMA ZONE</code> 内，代码如下</p>
+<p><code>dma_alloc_coherent</code> -&gt; <code>dma_alloc_attrs</code></p>
+<pre><code class="c">static inline void *dma_alloc_attrs(struct device *dev, size_t size,
+                       dma_addr_t *dma_handle, gfp_t flag,
+                       unsigned long attrs)
+{
+    struct dma_map_ops *ops = get_dma_ops(dev);
+    void *cpu_addr;
+
+    BUG_ON(!ops);
+
+    if (dma_alloc_from_coherent(dev, size, dma_handle, &amp;cpu_addr))
+        return cpu_addr;
+
+    if (!arch_dma_alloc_attrs(&amp;dev, &amp;flag))
+        return NULL;
+    if (!ops-&gt;alloc)
+        return NULL;
+
+    cpu_addr = ops-&gt;alloc(dev, size, dma_handle, flag, attrs);
+    debug_dma_alloc_coherent(dev, size, *dma_handle, cpu_addr);
+    return cpu_addr;
+}</code></pre>
+<p>在 <code>dma_alloc_attrs</code> 首先通过 <code>dma_alloc_from_coherent</code> 从 <code>device</code> 自己的 <code>dma memory</code> 中申请，如果没有再通过 <code>ops-&gt;alloc</code> 申请， <code>arm</code> 如下</p>
+<pre><code class="c">static struct dma_map_ops *arm_get_dma_map_ops(bool coherent)
+{
+    return coherent ? &amp;arm_coherent_dma_ops : &amp;arm_dma_ops;
+}
+
+struct dma_map_ops arm_coherent_dma_ops = {
+    .alloc          = arm_coherent_dma_alloc,
+    .free           = arm_coherent_dma_free,
+    .mmap           = arm_coherent_dma_mmap,
+    .get_sgtable        = arm_dma_get_sgtable,
+    .map_page       = arm_coherent_dma_map_page,
+    .map_sg         = arm_dma_map_sg,
+};
+EXPORT_SYMBOL(arm_coherent_dma_ops);
+
+static void *arm_coherent_dma_alloc(struct device *dev, size_t size,
+    dma_addr_t *handle, gfp_t gfp, unsigned long attrs)
+{
+    return __dma_alloc(dev, size, handle, gfp, PAGE_KERNEL, true,
+               attrs, __builtin_return_address(0));
+}
+
+static void *__dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
+             gfp_t gfp, pgprot_t prot, bool is_coherent,
+             unsigned long attrs, const void *caller)
+{
+    u64 mask = get_coherent_dma_mask(dev);
+    struct page *page = NULL;
+    void *addr;
+    bool allowblock, cma;
+    struct arm_dma_buffer *buf;
+    struct arm_dma_alloc_args args = {
+        .dev = dev,
+        .size = PAGE_ALIGN(size),
+        .gfp = gfp,
+        .prot = prot,
+        .caller = caller,
+        .want_vaddr = ((attrs &amp; DMA_ATTR_NO_KERNEL_MAPPING) == 0),
+        .coherent_flag = is_coherent ? COHERENT : NORMAL,
+    };
+
+#ifdef CONFIG_DMA_API_DEBUG
+    u64 limit = (mask + 1) &amp; ~mask;
+    if (limit &amp;&amp; size &gt;= limit) {
+        dev_warn(dev, &quot;coherent allocation too big (requested %#x mask %#llx)\n&quot;,
+            size, mask);
+        return NULL;
+    }
+#endif
+
+    if (!mask)
+        return NULL;
+
+    buf = kzalloc(sizeof(*buf),
+              gfp &amp; ~(__GFP_DMA | __GFP_DMA32 | __GFP_HIGHMEM));
+    if (!buf)
+        return NULL;
+
+    if (mask &lt; 0xffffffffULL)
+        gfp |= GFP_DMA;
+
+    /*
+     * Following is a work-around (a.k.a. hack) to prevent pages
+     * with __GFP_COMP being passed to split_page() which cannot
+     * handle them.  The real problem is that this flag probably
+     * should be 0 on ARM as it is not supported on this
+     * platform; see CONFIG_HUGETLBFS.
+     */
+    gfp &amp;= ~(__GFP_COMP);
+    args.gfp = gfp;
+
+    *handle = DMA_ERROR_CODE;
+    allowblock = gfpflags_allow_blocking(gfp);
+    cma = allowblock ? dev_get_cma_area(dev) : false;
+
+    if (cma)
+        buf-&gt;allocator = &amp;cma_allocator;
+    else if (nommu() || is_coherent)
+        buf-&gt;allocator = &amp;simple_allocator;
+    else if (allowblock)
+        buf-&gt;allocator = &amp;remap_allocator;
+    else
+        buf-&gt;allocator = &amp;pool_allocator;
+
+    addr = buf-&gt;allocator-&gt;alloc(&amp;args, &amp;page);
+
+    if (page) {
+        unsigned long flags;
+
+        *handle = pfn_to_dma(dev, page_to_pfn(page));
+        buf-&gt;virt = args.want_vaddr ? addr : page;
+
+        spin_lock_irqsave(&amp;arm_dma_bufs_lock, flags);
+        list_add(&amp;buf-&gt;list, &amp;arm_dma_bufs);
+        spin_unlock_irqrestore(&amp;arm_dma_bufs_lock, flags);
+    } else {
+        kfree(buf);
+    }
+
+    return args.want_vaddr ? addr : page;
+}</code></pre>
+<p><code>&amp;pool_allocator</code> 从 <code>DMA POOL</code> 中分配，使用函数 <code>atomic_pool_init</code> 创建</p>
+<p>代码段</p>
+<pre><code class="c">    if (mask &lt; 0xffffffffULL)
+        gfp |= GFP_DMA;</code></pre>
+<p><code>GFP_DMA</code> 标记被设置，以指挥内核从 <code>DMA ZONE</code> 申请内存。但是 <code>mask</code> 覆盖了整个 4GB，调用 <code>dma_alloc_coherent()</code> 获得的内存就不需要一定是来自 <code>DMA ZONE</code></p>
+<h2 id="dma-alloc-coherent-申请的内存是非-cache-的吗？"><a href="#dma-alloc-coherent-申请的内存是非-cache-的吗？" class="headerlink" title="dma_alloc_coherent() 申请的内存是非 cache 的吗？"></a>dma_alloc_coherent() 申请的内存是非 cache 的吗？</h2><p>缺省情况下， <code>dma_alloc_coherent()</code> 申请的内存缺省是进行 <code>uncache</code> 配置的。但是现代 <code>SOC</code> 有可能会将内核的通用实现 <code>overwrite</code> 掉，变成 <code>dma_alloc_coherent()</code> 申请的内存也是可以带 <code>cache</code> 的。</p>
+<pre><code class="c">static struct dma_map_ops *arm_get_dma_map_ops(bool coherent)
+{
+    return coherent ? &amp;arm_coherent_dma_ops : &amp;arm_dma_ops;
+}
+
+struct dma_map_ops arm_coherent_dma_ops = {
+    .alloc          = arm_coherent_dma_alloc,
+    .free           = arm_coherent_dma_free,
+    .mmap           = arm_coherent_dma_mmap,
+    .get_sgtable        = arm_dma_get_sgtable,
+    .map_page       = arm_coherent_dma_map_page,
+    .map_sg         = arm_dma_map_sg,
+};
+EXPORT_SYMBOL(arm_coherent_dma_ops);</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://blog.csdn.net/skyflying2012/article/details/48023447" target="_blank" rel="noopener">kernel 如何保证 cache 数据一致性</a></li>
+<li><a href="https://blog.csdn.net/21cnbao/article/details/79133658" target="_blank" rel="noopener">关于 DMA ZONE 和 dma_alloc_coherent 若干误解的澄清</a></li>
+<li><a href="https://blog.csdn.net/ganggexiongqi/article/details/6867034" target="_blank" rel="noopener">DMA 及 cache 一致性的学习心得</a></li>
+<li><a href="https://blog.csdn.net/waterhawk/article/details/50723677" target="_blank" rel="noopener">DMA 导致的 CACHE 一致性问题解决方案</a></li>
+<li><a href="https://blog.csdn.net/jasonchen_gbd/article/details/79462064" target="_blank" rel="noopener">Linux 内存管理 —— DMA 和一致性缓存</a></li>
+<li><a href="https://blog.csdn.net/dianhuiren/article/details/6896129" target="_blank" rel="noopener">cache 一致性问题</a></li>
+<li><a href="http://ju.outofmemory.cn/entry/243055" target="_blank" rel="noopener">简单粗暴有效的 mmap 与 remap_pfn_range</a></li>
+<li><a href="https://www.cnblogs.com/huxiao-tee/p/4660352.html" target="_blank" rel="noopener">认真分析 mmap：是什么 为什么 怎么用</a></li>
+<li><a href="https://www.jianshu.com/p/187eada7b900" target="_blank" rel="noopener">mmap 函数：原理与使用（含代码）</a></li>
+<li><a href="https://blog.csdn.net/DLUTBruceZhang/article/details/9080173" target="_blank" rel="noopener">Linux 内存映射函数 mmap（）函数详解</a></li>
+<li><a href="http://www.eeworld.com.cn/mp/ymc/a52767.jspx" target="_blank" rel="noopener">宋宝华： 关于 DMA ZONE 和 dma alloc coherent 若干误解的彻底澄清</a></li>
+<li><a href="http://huhb.github.io/blog/2012/12/05/dma/" target="_blank" rel="noopener">Loongson3A 的 DMA 传输</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/dma/" rel="tag"># dma</a>
+              <a href="/tags/cache/" rel="tag"># cache</a>
+              <a href="/tags/arm/" rel="tag"># arm</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/12/19/Cache-incoherence-due-to-DMA/" rel="next" title="嵌入式系统中 DMA 和 cache 一致性问题">
+                  <i class="fa fa-chevron-left"></i> 嵌入式系统中 DMA 和 cache 一致性问题
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/12/27/detect-3g-device-by-mdev/" rel="prev" title="使用 mdev 检测 3g 设备并自动连接">
+                  使用 mdev 检测 3g 设备并自动连接 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#arm"><span class="nav-number">1.</span> <span class="nav-text">arm</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DMA-ZONE"><span class="nav-number">2.</span> <span class="nav-text">DMA ZONE</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DMA-ZONE-的内存只能做-DMA-吗？"><span class="nav-number">3.</span> <span class="nav-text">DMA ZONE 的内存只能做 DMA 吗？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#dma-mask-与-coherent-dma-mask-的定义"><span class="nav-number">4.</span> <span class="nav-text">dma_mask 与 coherent_dma_mask 的定义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#dma-alloc-coherent-分配的内存一定在-DMA-ZONE-内吗？"><span class="nav-number">5.</span> <span class="nav-text">dma_alloc_coherent 分配的内存一定在 DMA ZONE 内吗？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#dma-alloc-coherent-申请的内存是非-cache-的吗？"><span class="nav-number">6.</span> <span class="nav-text">dma_alloc_coherent() 申请的内存是非 cache 的吗？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">7.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

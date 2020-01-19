@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="GitHub 集成 Travis CI 用于自动部署 GitHub Pages">
+<meta property="og:type" content="article">
+<meta property="og:title" content="GitHub MarketPlace 安装 TravisCI 自动部署 gitbook">
+<meta property="og:url" content="http://yoursite.com/2019/10/03/GitHub-MarketPlace-and-TravisCI/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="GitHub 集成 Travis CI 用于自动部署 GitHub Pages">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-10-03T07:39:53.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.682Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="github">
+<meta property="article:tag" content="ci">
+<meta property="article:tag" content="gitbook">
+<meta property="article:tag" content="travis ci">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2019/10/03/GitHub-MarketPlace-and-TravisCI/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>GitHub MarketPlace 安装 TravisCI 自动部署 gitbook | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/03/GitHub-MarketPlace-and-TravisCI/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          GitHub MarketPlace 安装 TravisCI 自动部署 gitbook
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-10-03 15:39:53" itemprop="dateCreated datePublished" datetime="2019-10-03T15:39:53+08:00">2019-10-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/GitHub/" itemprop="url" rel="index">
+                    <span itemprop="name">GitHub</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/CI/" itemprop="url" rel="index">
+                    <span itemprop="name">CI</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>4k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><code>GitHub</code> 集成 <code>Travis CI</code> 用于自动部署 <code>GitHub Pages</code></p>
+<a id="more"></a>
+
+<h2 id="GitHub-Market-Place"><a href="#GitHub-Market-Place" class="headerlink" title="GitHub Market Place"></a>GitHub Market Place</h2><p><a href="https://github.com/marketplace" target="_blank" rel="noopener">GitHub Market Place</a> 选择 <code>Travis CI</code> 进行安装，<code>Open Source</code> 工程是免费的。</p>
+<p>输入密码完成安装</p>
+<h2 id="Environment-Variables"><a href="#Environment-Variables" class="headerlink" title="Environment Variables"></a>Environment Variables</h2><p><a href="https://docs.travis-ci.com/user/environment-variables" target="_blank" rel="noopener">Environment Variables</a></p>
+<p>在 <code>Travis CI</code> 中定义环境变量有如下几种方式</p>
+<ul>
+<li>Defining Public Variables in <code>.travis.yml</code></li>
+<li>Defining encrypted variables in <code>.travis.yml</code></li>
+<li>Defining Variables in Repository Settings</li>
+<li>Convenience Variables</li>
+</ul>
+<h2 id="GitHub-Token"><a href="#GitHub-Token" class="headerlink" title="GitHub Token"></a>GitHub Token</h2><p><code>Repository</code> -&gt; <code>Settings</code> -&gt; <code>Developer settings</code> -&gt; <code>Personal access tokens</code></p>
+<p>Make sure to copy your new personal access token now. You won’t be able to see it again!</p>
+<ul>
+<li><code>https://travis-ci.com/</code> – <code>travis login --pro</code> – 付费版 – <code>GitHub</code></li>
+<li><code>https://travis-ci.org/</code> – <code>travis login --org</code> – 免费版</li>
+</ul>
+<h3 id="在-Travis-CI-中添加环境变量"><a href="#在-Travis-CI-中添加环境变量" class="headerlink" title="在 Travis CI 中添加环境变量"></a>在 Travis CI 中添加环境变量</h3><p><a href="https://docs.travis-ci.com/user/environment-variables" target="_blank" rel="noopener">官方文档在这里</a></p>
+<p>每个仓库的设置页面里，有一个 <code>Environment Variables</code> 的配置项，给我们的 <code>Token</code> 起一个名字 <code>GITHUB_TOKEN</code> 添加进去。这样以来，脚本内部就可以使用这个环境变量了。</p>
+<pre><code class="shell">git push -f &quot;https://${GITHUB_TOKEN}@${GH_REF}&quot; gh-pages:gh-pages</code></pre>
+<blockquote>
+<p>By default, the value of these new environment variables is hidden from the export line in the logs. This corresponds to the behavior of encrypted variables in your .travis.yml. The variables are stored encrypted in our systems, and get decrypted when the build script is generated.</p>
+</blockquote>
+<h3 id="加密-Token"><a href="#加密-Token" class="headerlink" title="加密 Token"></a>加密 Token</h3><p><a href="https://docs.travis-ci.com/user/encryption-keys#usage" target="_blank" rel="noopener">https://travis-ci.com, see Encryption keys – Usage.</a></p>
+<pre><code class="shell">$ sudo apt install ruby
+$ sudo apt install gem
+$ sudo apt install ruby-all-dev
+$ sudo gem install travis</code></pre>
+<p>输入 <code>GitHub</code> 用户名和密码？</p>
+<pre><code class="shell">$ travis login --pro --github-token xxxxxxxxx
+$ travis login --pro
+We need your GitHub login to identify you.
+This information will not be sent to Travis CI, only to api.github.com.
+The password will not be displayed.
+
+Try running with --github-token or --auto if you don&#39;t want to enter your password anyway.
+
+Username: xxxxxxxx
+Password for xxxxxxxx: **********
+Successfully logged in as xxxxxxxxx!
+</code></pre>
+<pre><code class="shell">$ travis encrypt --pro GITHUB_TOKEN=&lt;YOUR_GITHUB_TOKEN&gt; --add</code></pre>
+<blockquote>
+<p><strong><code>GitHub</code> 使用 <code>https://travis-ci.org/</code>，加密时使用 <code>--pro</code> 保证正确</strong></p>
+</blockquote>
+<h3 id="CI-Log"><a href="#CI-Log" class="headerlink" title="CI Log"></a>CI Log</h3><p>从 <code>Settings</code> 中获取</p>
+<pre><code>Setting environment variables from repository settings
+$ export GITHUB_TOKEN=[secure]
+Setting environment variables from .travis.yml
+$ export GH_REF=github.com/breezetemple/how-to-use-gitbook.git</code></pre><p>从 <code>.travis.yml</code> 加密字符串中获取</p>
+<pre><code>Setting environment variables from .travis.yml
+$ export GH_REF=github.com/breezetemple/how-to-use-gitbook.git
+$ export GITHUB_TOKEN=[secure]</code></pre><h2 id="Travis-CI"><a href="#Travis-CI" class="headerlink" title="Travis CI"></a>Travis CI</h2><p><code>Repository</code> -&gt; <code>Settings</code> -&gt; <code>Applications</code> -&gt; <code>Travis CI</code> -&gt; <code>Configure</code> -&gt; <code>Only select repositories</code></p>
+<p>需要如下权限</p>
+<ul>
+<li>Read access to code</li>
+<li>Read access to metadata and pull requests</li>
+<li>Read and write access to checks, commit statuses, deployments, and repository hooks</li>
+</ul>
+<p><a href="https://travis-ci.com" target="_blank" rel="noopener">website</a></p>
+<h3 id="使用部署"><a href="#使用部署" class="headerlink" title="使用部署"></a>使用部署</h3><p><a href="https://docs.travis-ci.com/user/deployment/pages/" target="_blank" rel="noopener">GitHub Pages Deployment</a></p>
+<pre><code class="yaml">language: generic
+before_install:
+- npm install -g gitbook-cli
+install:
+- gitbook install
+- gitbook build
+deploy:
+  provider: pages
+  local_dir: _book
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN  # Set in the settings page of your repository, as a secure variable
+  keep_history: true
+  on:
+    branch: master
+env:
+  global:
+  - GH_REF: github.com/breezetemple/how-to-use-gitbook.git</code></pre>
+<p>日志</p>
+<pre><code>Installing deploy dependencies
+Logged in as @breezetemple ()
+dpl.2
+Preparing deploy
+dpl.3
+Deploying application
+cd /tmp/d20191005-4465-c01j28/work
+commit f8ff418258f8f1f8dd5320c2db79c46ce628d742
+Author: Deployment Bot (from Travis CI) &lt;deploy@travis-ci.org&gt;
+Date:   Sat Oct 5 04:04:35 2019 +0000
+    Deploy breezetemple/how-to-use-gitbook to github.com/breezetemple/how-to-use-gitbook.git:gh-pages
+ .travis.yml                                   |   1 +
+ README.md                                     |   5 --
+ SUMMARY.md                                    |  18 ----
+ _book/.gitignore                              |  16 ----
+ _book/.travis.yml                             |  16 ----
+ basic-usage/README.md                         | 122 --------------------------
+ {_book/basic-usage =&gt; basic-usage}/index.html |   2 +-
+ book.json                                     |  50 -----------
+ customize/README.md                           |   4 -
+ {_book/customize =&gt; customize}/book.json.html |   2 +-
+ ...
+ 4759 files changed, 13 insertions(+), 610832 deletions(-)
+cd -</code></pre><h3 id="使用脚本"><a href="#使用脚本" class="headerlink" title="使用脚本"></a>使用脚本</h3><pre><code class="yaml">language: generic
+before_install:
+- npm install -g gitbook-cli
+- rm -rf _build
+install:
+- gitbook install
+- gitbook build
+script:
+- git checkout --orphan gh-pages
+- git rm --cached -r .
+- git clean -df
+- rm -rf *~
+- echo &quot;*~&quot; &gt; .gitignore
+- echo &quot;_book&quot; &gt;&gt; .gitignore
+- echo &quot;node_modules&quot; &gt;&gt; .gitignore
+- git add .gitignore
+- git commit -m &quot;Ignore some files&quot;
+- cp -r _book/* .
+- git add .
+- git commit -m &quot;Publish book&quot;
+- git push --force --quiet &quot;https://${GITHUB_TOKEN}@${GH_REF}&quot; gh-pages:gh-pages
+branches:
+  only:
+  - master
+env:
+  global:
+  - GH_REF: github.com/breezetemple/how-to-use-gitbook.git
+  - secure: encrypted data</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://neveryu.github.io/2019/02/05/travis-ci/" target="_blank" rel="noopener">使用 Travis CI 自动更新 GitHub Pages</a></li>
+<li><a href="https://www.karlzhou.com/2016/05/28/travis-ci-deploy-blog/" target="_blank" rel="noopener">用 Travis CI 自动部署 Hexo 博客</a></li>
+<li><a href="https://github.com/nukc/how-to-use-travis-ci" target="_blank" rel="noopener">如何简单入门使用 Travis-CI 持续集成</a></li>
+<li><a href="https://notes.iissnan.com/2016/publishing-github-pages-with-travis-ci/" target="_blank" rel="noopener">使用 Travis CI 自动更新 GitHub Pages</a></li>
+<li><a href="https://segmentfault.com/a/1190000019067492" target="_blank" rel="noopener">用 Travis CI 自动部署 Github Pages</a></li>
+<li><a href="http://blog.code4hire.com/2016/06/adding-github-token-to-travis-ci-configuration/" target="_blank" rel="noopener">Adding GitHub token to Travis CI configuration</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/github/" rel="tag"># github</a>
+              <a href="/tags/ci/" rel="tag"># ci</a>
+              <a href="/tags/gitbook/" rel="tag"># gitbook</a>
+              <a href="/tags/travis-ci/" rel="tag"># travis ci</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/10/03/how-to-use-gitbook/" rel="next" title="GitBook 指南">
+                  <i class="fa fa-chevron-left"></i> GitBook 指南
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/10/08/acme/" rel="prev" title="Let's Encrypt 申请 SSL 证书">
+                  Let's Encrypt 申请 SSL 证书 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#GitHub-Market-Place"><span class="nav-number">1.</span> <span class="nav-text">GitHub Market Place</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Environment-Variables"><span class="nav-number">2.</span> <span class="nav-text">Environment Variables</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#GitHub-Token"><span class="nav-number">3.</span> <span class="nav-text">GitHub Token</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#在-Travis-CI-中添加环境变量"><span class="nav-number">3.1.</span> <span class="nav-text">在 Travis CI 中添加环境变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#加密-Token"><span class="nav-number">3.2.</span> <span class="nav-text">加密 Token</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CI-Log"><span class="nav-number">3.3.</span> <span class="nav-text">CI Log</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Travis-CI"><span class="nav-number">4.</span> <span class="nav-text">Travis CI</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#使用部署"><span class="nav-number">4.1.</span> <span class="nav-text">使用部署</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用脚本"><span class="nav-number">4.2.</span> <span class="nav-text">使用脚本</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">5.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

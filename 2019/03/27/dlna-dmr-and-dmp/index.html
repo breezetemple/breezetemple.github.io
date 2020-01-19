@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="使用wireshark抓包分析DMR和DMP实现，包括设备发现、控制、播放等过程">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DLNA DMR 和 DMP 分析">
+<meta property="og:url" content="http://yoursite.com/2019/03/27/dlna-dmr-and-dmp/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="使用wireshark抓包分析DMR和DMP实现，包括设备发现、控制、播放等过程">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/dlna/1553563823157.png">
+<meta property="og:image" content="http://yoursite.com/images/dlna/1553563848007.png">
+<meta property="og:image" content="http://yoursite.com/images/dlna/1553563870264.png">
+<meta property="og:image" content="http://yoursite.com/images/dlna/1553565538242.png">
+<meta property="og:image" content="http://yoursite.com/images/dlna/1553565566078.png">
+<meta property="og:image" content="http://yoursite.com/images/dlna/1553566959878.png">
+<meta property="article:published_time" content="2019-03-27T12:16:21.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.678Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="upnp">
+<meta property="article:tag" content="dlna">
+<meta property="article:tag" content="ssdp">
+<meta property="article:tag" content="soap">
+<meta property="article:tag" content="dmr">
+<meta property="article:tag" content="dmp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/dlna/1553563823157.png">
+
+<link rel="canonical" href="http://yoursite.com/2019/03/27/dlna-dmr-and-dmp/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>DLNA DMR 和 DMP 分析 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/27/dlna-dmr-and-dmp/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DLNA DMR 和 DMP 分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-03-27 20:16:21" itemprop="dateCreated datePublished" datetime="2019-03-27T20:16:21+08:00">2019-03-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/UPnP/" itemprop="url" rel="index">
+                    <span itemprop="name">UPnP</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>30k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>27 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>使用<code>wireshark</code>抓包分析<code>DMR</code>和<code>DMP</code>实现，包括设备发现、控制、播放等过程</p>
+<a id="more"></a>
+
+<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><ul>
+<li>DMS: <a href="https://help.ubuntu.com/community/MiniDLNA" target="_blank" rel="noopener">minidlna</a></li>
+<li>DMR: <a href="https://github.com/hzeller/gmrender-resurrect.git" target="_blank" rel="noopener">gmrender-resurrect</a></li>
+<li>DMP: <a href="https://github.com/videolan/vlc" target="_blank" rel="noopener">VLC</a></li>
+<li>抓包数据 <a href="https://github.com/breezetemple/Breeze-Vim/blob/master/data/dlna/DLNA-Render.pcapng" target="_blank" rel="noopener">DMR-Wireshark</a></li>
+<li>抓包数据 <a href="https://github.com/breezetemple/Breeze-Vim/blob/master/data/dlna/DLNA-DMP.pcapng" target="_blank" rel="noopener">DMP-Wireshark</a></li>
+</ul>
+<h2 id="DMR-流程"><a href="#DMR-流程" class="headerlink" title="DMR 流程"></a>DMR 流程</h2><p><code>Notify</code>或应答<code>M-SEARCH</code>-&gt;应答<code>GET XML/SCPD</code>-&gt;<code>SOAP ACTION</code>-&gt;<code>GET DATA</code>-&gt;<code>PLAY</code></p>
+<h3 id="DMR-设备入网广播"><a href="#DMR-设备入网广播" class="headerlink" title="DMR 设备入网广播"></a>DMR 设备入网广播</h3><p>使用<code>ssdp:alive</code>通知消息，协议<code>upnpv2.0 1.2</code>，包含三种数据包</p>
+<ol>
+<li>Three discovery messages for the root device.</li>
+<li>Two discovery messages for each embedded device. 可选项，在本次抓包中不存在</li>
+<li>Once for each service type in each device.</li>
+</ol>
+<p>结构如下：</p>
+<p><img src="/images/dlna/1553563823157.png" alt="1553563823157"></p>
+<p><img src="/images/dlna/1553563848007.png" alt="1553563848007"></p>
+<p><img src="/images/dlna/1553563870264.png" alt="1553563870264"></p>
+<p><code>Frame 33-35</code>为表 1 数据，<code>Frame 36-38</code>为表 3 数据，分别为三种<code>service</code></p>
+<ol>
+<li><code>NT: urn:schemas-upnp-org:service:AVTransport:1\r\n</code></li>
+<li><code>NT: urn:schemas-upnp-org:service:ConnectionManager:1\r\n</code></li>
+<li><code>NT: urn:schemas-upnp-org:service:RenderingControl:1\r\n</code></li>
+</ol>
+<p>相关代码：</p>
+<p><code>33-35</code>为<code>libupnp:UpnpSendAdvertisement</code></p>
+<p><code>36-38</code>为<code>libupnp:</code></p>
+<h3 id="DMC-入网搜索设备"><a href="#DMC-入网搜索设备" class="headerlink" title="DMC 入网搜索设备"></a>DMC 入网搜索设备</h3><p>发送<code>M-SEARCH ssdp:discover</code>发现设备，协议<code>upnpv2.0: 1.3</code></p>
+<p><img src="/images/dlna/1553565538242.png" alt="1553565538242"></p>
+<p>应答格式</p>
+<p><img src="/images/dlna/1553565566078.png" alt="1553565566078"></p>
+<p>对应帧为<code>243-253</code>，对应两种<code>ST search target</code></p>
+<ol>
+<li><code>upnp:rootdevice</code>，Search for root devices only.</li>
+<li><code>urn:schemas-upnp-org:device:deviceType:ver</code>，Search for any device of this type where <code>deviceType</code> and<code>ver</code> are defined by the UPnP Forum working committee.<ul>
+<li><code>ST: urn:schemas-upnp-org:device:MediaServer:1\r\n</code></li>
+<li><code>ST: urn:schemas-upnp-org:device:MediaRenderer:1\r\n</code></li>
+</ul>
+</li>
+</ol>
+<p>应答帧<code>Frame 251</code>，信息如下</p>
+<pre><code class="xml">HTTP/1.1 200 OK
+CACHE-CONTROL: max-age=100
+DATE: Tue, 26 Mar 2019 00:57:36 GMT
+EXT:
+LOCATION: http://192.168.199.183:49494/description.xml
+OPT: &quot;http://schemas.upnp.org/upnp/1/0/&quot;; ns=01
+01-NLS: 066fa5e8-4f62-11e9-9d14-bbebc675453c
+SERVER: Linux/4.13.0-45-generic, UPnP/1.0, Portable SDK for UPnP devices/1.6.22
+X-User-Agent: redsonic
+ST: urn:schemas-upnp-org:device:MediaRenderer:1
+USN: uuid:GMediaRender-1_0-000-000-002::urn:schemas-upnp-org:device:MediaRenderer:1</code></pre>
+<h3 id="DMC-获取描述文件"><a href="#DMC-获取描述文件" class="headerlink" title="DMC 获取描述文件"></a>DMC 获取描述文件</h3><p>通过<code>HTTP GET/POST</code>来完成，协议<code>upnp: 2</code></p>
+<p><img src="/images/dlna/1553566959878.png" alt="1553566959878"></p>
+<p><code>Frame 257</code></p>
+<pre><code>GET /description.xml HTTP/1.1
+HOST: 192.168.199.183:49494
+DATE: Tue, 26 Mar 2019 00:57:35 GMT
+CONNECTION: close
+USER-AGENT: Linux/4.4.23+ UPnP/1.0 HUAWEI_iCOS/iCOS V1R1C00 DLNADOC/1.50</code></pre><p>应答帧<code>258-261</code>使用<code>TCP</code>发送数据</p>
+<pre><code>HTTP/1.1 200 OK
+CONTENT-LENGTH: 2073
+CONTENT-TYPE: text/xml
+DATE: Tue, 26 Mar 2019 00:57:36 GMT
+LAST-MODIFIED: Tue, 26 Mar 2019 00:56:44 GMT
+SERVER: Linux/4.13.0-45-generic, UPnP/1.0, Portable SDK for UPnP devices/1.6.22
+X-User-Agent: redsonic
+CONNECTION: close</code></pre><p><code>description.xml</code>如下</p>
+<pre><code class="xml">&lt;root xmlns=&quot;urn:schemas-upnp-org:device-1-0&quot;&gt;
+&lt;specVersion&gt;
+&lt;major&gt;1&lt;/major&gt;
+&lt;minor&gt;0&lt;/minor&gt;
+&lt;/specVersion&gt;
+&lt;device&gt;
+&lt;deviceType&gt;urn:schemas-upnp-org:device:MediaRenderer:1&lt;/deviceType&gt;
+&lt;presentationURL/&gt;
+&lt;friendlyName&gt;My Renderer&lt;/friendlyName&gt;
+&lt;manufacturer&gt;Ivo Clarysse, Henner Zeller&lt;/manufacturer&gt;
+&lt;manufacturerURL&gt;http://github.com/hzeller/gmrender-resurrect&lt;/manufacturerURL&gt;
+&lt;modelDescription&gt;gmediarender 0.0.7-git&lt;/modelDescription&gt;
+&lt;modelName&gt;gmediarender&lt;/modelName&gt;
+&lt;modelNumber&gt;2018-08-18_a7b0b1b&lt;/modelNumber&gt;
+&lt;modelURL&gt;http://github.com/hzeller/gmrender-resurrect&lt;/modelURL&gt;
+&lt;UDN&gt;uuid:GMediaRender-1_0-000-000-002&lt;/UDN&gt;
+&lt;iconList&gt;
+&lt;icon&gt;
+&lt;mimetype&gt;image/png&lt;/mimetype&gt;
+&lt;width&gt;64&lt;/width&gt;
+&lt;height&gt;64&lt;/height&gt;
+&lt;depth&gt;24&lt;/depth&gt;
+&lt;url&gt;/upnp/grender-64x64.png&lt;/url&gt;
+&lt;/icon&gt;
+&lt;icon&gt;
+&lt;mimetype&gt;image/png&lt;/mimetype&gt;
+&lt;width&gt;128&lt;/width&gt;
+&lt;height&gt;128&lt;/height&gt;
+&lt;depth&gt;24&lt;/depth&gt;
+&lt;url&gt;/upnp/grender-128x128.png&lt;/url&gt;
+&lt;/icon&gt;
+&lt;/iconList&gt;
+&lt;serviceList&gt;
+&lt;service&gt;
+&lt;serviceType&gt;urn:schemas-upnp-org:service:AVTransport:1&lt;/serviceType&gt;
+&lt;serviceId&gt;urn:upnp-org:serviceId:AVTransport&lt;/serviceId&gt;
+&lt;SCPDURL&gt;/upnp/rendertransportSCPD.xml&lt;/SCPDURL&gt;
+&lt;controlURL&gt;/upnp/control/rendertransport1&lt;/controlURL&gt;
+&lt;eventSubURL&gt;/upnp/event/rendertransport1&lt;/eventSubURL&gt;
+&lt;/service&gt;
+&lt;service&gt;
+&lt;serviceType&gt;urn:schemas-upnp-org:service:ConnectionManager:1&lt;/serviceType&gt;
+&lt;serviceId&gt;urn:upnp-org:serviceId:ConnectionManager&lt;/serviceId&gt;
+&lt;SCPDURL&gt;/upnp/renderconnmgrSCPD.xml&lt;/SCPDURL&gt;
+&lt;controlURL&gt;/upnp/control/renderconnmgr1&lt;/controlURL&gt;
+&lt;eventSubURL&gt;/upnp/event/renderconnmgr1&lt;/eventSubURL&gt;
+&lt;/service&gt;
+&lt;service&gt;
+&lt;serviceType&gt;urn:schemas-upnp-org:service:RenderingControl:1&lt;/serviceType&gt;
+&lt;serviceId&gt;urn:upnp-org:serviceId:RenderingControl&lt;/serviceId&gt;
+&lt;SCPDURL&gt;/upnp/rendercontrolSCPD.xml&lt;/SCPDURL&gt;
+&lt;controlURL&gt;/upnp/control/rendercontrol1&lt;/controlURL&gt;
+&lt;eventSubURL&gt;/upnp/event/rendercontrol1&lt;/eventSubURL&gt;
+&lt;/service&gt;
+&lt;/serviceList&gt;
+&lt;/device&gt;
+&lt;URLBase&gt;http://192.168.199.183:49494/&lt;/URLBase&gt;
+&lt;/root&gt;</code></pre>
+<p><code>service</code>分析</p>
+<pre><code>&lt;service&gt;
+&lt;serviceType&gt;urn:schemas-upnp-org:service:RenderingControl:1&lt;/serviceType&gt;
+&lt;serviceId&gt;urn:upnp-org:serviceId:RenderingControl&lt;/serviceId&gt;
+&lt;SCPDURL&gt;/upnp/rendercontrolSCPD.xml&lt;/SCPDURL&gt;
+&lt;controlURL&gt;/upnp/control/rendercontrol1&lt;/controlURL&gt;
+&lt;eventSubURL&gt;/upnp/event/rendercontrol1&lt;/eventSubURL&gt;
+&lt;/service&gt;</code></pre><ul>
+<li><code>serviceType</code>: UPnP service type</li>
+<li><code>serviceId</code>: Service identifier</li>
+<li><code>SCPDURL</code>: URL for service description clause 2.5</li>
+<li><code>controlURL</code>: URL for control clause 3</li>
+<li><code>eventSubURL</code>: URL for eventing clause 4</li>
+</ul>
+<p>数据包分析</p>
+<ol>
+<li><code>Frame 282-298</code>获取<code>/upnp/rendertransportSCPD.xml</code></li>
+<li><code>Frame 309-315</code>获取<code>/upnp/renderconnmgrSCPD.xml</code></li>
+<li><code>Frame 325-337</code>获取<code>/upnp/rendercontrolSCPD.xml</code></li>
+</ol>
+<ul>
+<li><a href="https://github.com/breezetemple/Breeze-Vim/blob/master/data/dlna/rendertransportSCPD.xml" target="_blank" rel="noopener">rendertransportSCPD.xml</a></li>
+<li><a href="https://github.com/breezetemple/Breeze-Vim/blob/master/data/dlna/renderconnmgrSCPD.xml" target="_blank" rel="noopener">renderconnmgrSCPD.xml</a></li>
+<li><a href="https://github.com/breezetemple/Breeze-Vim/blob/master/data/dlna/rendercontrolSCPD.xml" target="_blank" rel="noopener">rendercontrolSCPD.xml</a></li>
+</ul>
+<p><code>353</code>订阅消息，<code>upnp2.0： 4.1</code></p>
+<pre><code>SUBSCRIBE /upnp/event/rendertransport1 HTTP/1.1
+HOST: 192.168.199.183:49494
+CALLBACK: &lt;http://192.168.199.114:49153/&gt;
+NT: upnp:event
+TIMEOUT: Second-300
+CONNECTION: close</code></pre><p><code>355</code>为应答</p>
+<pre><code>HTTP/1.1 200 OK
+DATE: Tue, 26 Mar 2019 00:57:37 GMT
+SERVER: Linux/4.13.0-45-generic, UPnP/1.0, Portable SDK for UPnP devices/1.6.22
+CONTENT-LENGTH: 0
+X-User-Agent: redsonic
+SID: uuid:263cbdde-4f62-11e9-9d14-bbebc675453c
+TIMEOUT: Second-300</code></pre><p><code>366</code>发送消息<code>NOTIFY</code>，<code>upnp2.0 4.3.2 Unicast eventing: Event messages: NOTIFY</code></p>
+<pre><code>NOTIFY / HTTP/1.1
+HOST: 192.168.199.114:49153
+CONTENT-TYPE: text/xml; charset=&quot;utf-8&quot;
+CONTENT-LENGTH: 2168
+NT: upnp:event
+NTS: upnp:propchange
+SID: uuid:263cbdde-4f62-11e9-9d14-bbebc675453c
+SEQ: 0
+
+&lt;e:propertyset xmlns:e=&quot;urn:schemas-upnp-org:event-1-0&quot;&gt;
+&lt;e:property&gt;
+&lt;LastChange&gt;&amp;lt;?xml version=&quot;1.0&quot;?&amp;gt;
+&amp;lt;Event xmlns=&quot;urn:schemas-upnp-org:metadata-1-0/AVT/&quot;&amp;gt;
+&amp;lt;InstanceID val=&quot;0&quot;&amp;gt;
+&amp;lt;TransportStatus val=&quot;OK&quot;&amp;gt;&amp;lt;/TransportStatus&amp;gt;
+&amp;lt;NextAVTransportURI val=&quot;&quot;&amp;gt;&amp;lt;/NextAVTransportURI&amp;gt;
+&amp;lt;NextAVTransportURIMetaData val=&quot;&quot;&amp;gt;&amp;lt;/NextAVTransportURIMetaData&amp;gt;
+&amp;lt;CurrentTrackMetaData val=&quot;&quot;&amp;gt;&amp;lt;/CurrentTrackMetaData&amp;gt;
+&amp;lt;RelativeCounterPosition val=&quot;2147483647&quot;&amp;gt;&amp;lt;/RelativeCounterPosition&amp;gt;
+&amp;lt;PlaybackStorageMedium val=&quot;UNKNOWN&quot;&amp;gt;&amp;lt;/PlaybackStorageMedium&amp;gt;
+&amp;lt;RelativeTimePosition val=&quot;0:00:00&quot;&amp;gt;&amp;lt;/RelativeTimePosition&amp;gt;
+&amp;lt;PossibleRecordStorageMedia val=&quot;NOT_IMPLEMENTED&quot;&amp;gt;&amp;lt;/PossibleRecordStorageMedia&amp;gt;
+&amp;lt;CurrentPlayMode val=&quot;NORMAL&quot;&amp;gt;&amp;lt;/CurrentPlayMode&amp;gt;
+&amp;lt;TransportPlaySpeed val=&quot;1&quot;&amp;gt;&amp;lt;/TransportPlaySpeed&amp;gt;
+&amp;lt;PossiblePlaybackStorageMedia val=&quot;NETWORK,UNKNOWN&quot;&amp;gt;&amp;lt;/PossiblePlaybackStorageMedia&amp;gt;
+&amp;lt;AbsoluteTimePosition val=&quot;NOT_IMPLEMENTED&quot;&amp;gt;&amp;lt;/AbsoluteTimePosition&amp;gt;
+&amp;lt;CurrentTrack val=&quot;0&quot;&amp;gt;&amp;lt;/CurrentTrack&amp;gt;
+&amp;lt;CurrentTrackURI val=&quot;&quot;&amp;gt;&amp;lt;/CurrentTrackURI&amp;gt;
+&amp;lt;CurrentTransportActions val=&quot;PLAY&quot;&amp;gt;&amp;lt;/CurrentTransportActions&amp;gt;
+&amp;lt;NumberOfTracks val=&quot;0&quot;&amp;gt;&amp;lt;/NumberOfTracks&amp;gt;
+&amp;lt;AVTransportURI val=&quot;&quot;&amp;gt;&amp;lt;/AVTransportURI&amp;gt;
+&amp;lt;AbsoluteCounterPosition val=&quot;2147483647&quot;&amp;gt;&amp;lt;/AbsoluteCounterPosition&amp;gt;
+&amp;lt;CurrentRecordQualityMode val=&quot;NOT_IMPLEMENTED&quot;&amp;gt;&amp;lt;/CurrentRecordQualityMode&amp;gt;
+&amp;lt;CurrentMediaDuration val=&quot;&quot;&amp;gt;&amp;lt;/CurrentMediaDuration&amp;gt;
+&amp;lt;AVTransportURIMetaData val=&quot;&quot;&amp;gt;&amp;lt;/AVTransportURIMetaData&amp;gt;
+&amp;lt;RecordStorageMedium val=&quot;NOT_IMPLEMENTED&quot;&amp;gt;&amp;lt;/RecordStorageMedium&amp;gt;
+&amp;lt;RecordMediumWriteStatus val=&quot;NOT_IMPLEMENTED&quot;&amp;gt;&amp;lt;/RecordMediumWriteStatus&amp;gt;
+&amp;lt;CurrentTrackDuration val=&quot;0:00:00&quot;&amp;gt;&amp;lt;/CurrentTrackDuration&amp;gt;
+&amp;lt;TransportState val=&quot;STOPPED&quot;&amp;gt;&amp;lt;/TransportState&amp;gt;
+&amp;lt;PossibleRecordQualityModes val=&quot;NOT_IMPLEMENTED&quot;&amp;gt;&amp;lt;/PossibleRecordQualityModes&amp;gt;
+&amp;lt;/InstanceID&amp;gt;
+&amp;lt;/Event&amp;gt;
+&lt;/LastChange&gt;
+&lt;/e:property&gt;
+&lt;/e:propertyset&gt;</code></pre><p><code>511</code>发送<code>SOAPACTION</code></p>
+<pre><code>POST /upnp/control/rendertransport1 HTTP/1.1
+HOST: 192.168.199.183:49494
+Content-Length: 264
+CONTENT-TYPE: text/xml; charset=&quot;utf-8&quot;
+SOAPACTION: &quot;urn:schemas-upnp-org:service:AVTransport:1#Stop&quot;
+USER-AGENT: Linux/4.4.23+ UPnP/1.0 HUAWEI_iCOS/iCOS V1R1C00 DLNADOC/1.50
+CONNECTION: close
+
+&lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;
+&lt;s:Body&gt;&lt;u:Stop xmlns:u=&quot;urn:schemas-upnp-org:service:AVTransport:1&quot;&gt;
+&lt;InstanceID&gt;0&lt;/InstanceID&gt;
+&lt;/u:Stop&gt;
+&lt;/s:Body&gt;
+&lt;/s:Envelope&gt;</code></pre><p><code>521</code></p>
+<pre><code>POST /upnp/control/rendertransport1 HTTP/1.1
+HOST: 192.168.199.183:49494
+Content-Length: 1168
+CONTENT-TYPE: text/xml; charset=&quot;utf-8&quot;
+SOAPACTION: &quot;urn:schemas-upnp-org:service:AVTransport:1#SetAVTransportURI&quot;
+USER-AGENT: Linux/4.4.23+ UPnP/1.0 HUAWEI_iCOS/iCOS V1R1C00 DLNADOC/1.50
+CONNECTION: close
+
+&lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;
+&lt;s:Body&gt;&lt;u:SetAVTransportURI xmlns:u=&quot;urn:schemas-upnp-org:service:AVTransport:1&quot;&gt;
+&lt;InstanceID&gt;0&lt;/InstanceID&gt;
+&lt;CurrentURI&gt;http://192.168.199.114:49152/upnp/service/local/98070551/0/0.jpg&lt;/CurrentURI&gt;
+&lt;CurrentURIMetaData&gt;&amp;lt;DIDL-Lite xmlns=&amp;quot;urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/&amp;quot; xmlns:dc=&amp;quot;http://purl.org/dc/elements/1.1/&amp;quot; xmlns:upnp=&amp;quot;urn:schemas-upnp-org:metadata-1-0/upnp/&amp;quot; xmlns:dlna=&amp;quot;urn:schemas-dlna-org:metadata-1-0/&amp;quot; xmlns:huawei=&amp;quot;urn:schemas-upnp-org:metadata-1-0/upnp/huawei/&amp;quot;&amp;gt;&amp;lt;item id=&amp;quot;0&amp;quot; parentID=&amp;quot;-1&amp;quot; restricted=&amp;quot;1&amp;quot;&amp;gt;&amp;lt;dc:title&amp;gt;dlna_default_image&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res protocolInfo=&amp;quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_OP=01&amp;quot; size=&amp;quot;501872&amp;quot;&amp;gt;http://192.168.199.114:49152/upnp/service/local/98070551/0/0.jpg&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;/DIDL-Lite&amp;gt;&lt;/CurrentURIMetaData&gt;
+&lt;/u:SetAVTransportURI&gt;
+&lt;/s:Body&gt;
+&lt;/s:Envelope&gt;</code></pre><p><code>533 EVENT NOTIFY</code></p>
+<p><code>541 PLAY</code></p>
+<pre><code>POST /upnp/control/rendertransport1 HTTP/1.1
+HOST: 192.168.199.183:49494
+Content-Length: 282
+CONTENT-TYPE: text/xml; charset=&quot;utf-8&quot;
+SOAPACTION: &quot;urn:schemas-upnp-org:service:AVTransport:1#Play&quot;
+USER-AGENT: Linux/4.4.23+ UPnP/1.0 HUAWEI_iCOS/iCOS V1R1C00 DLNADOC/1.50
+CONNECTION: close
+
+&lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;
+&lt;s:Body&gt;&lt;u:Play xmlns:u=&quot;urn:schemas-upnp-org:service:AVTransport:1&quot;&gt;
+&lt;InstanceID&gt;0&lt;/InstanceID&gt;
+&lt;Speed&gt;1&lt;/Speed&gt;
+&lt;/u:Play&gt;
+&lt;/s:Body&gt;
+&lt;/s:Envelope&gt;</code></pre><p><code>565 DMR 获取图片数据</code></p>
+<pre><code>GET /upnp/service/local/98070551/0/0.jpg HTTP/1.1
+Host: 192.168.199.114:49152
+Connection: close
+icy-metadata: 1
+User-Agent: GStreamer souphttpsrc 1.12.3 libsoup/2.60.1</code></pre><h3 id="切换节目"><a href="#切换节目" class="headerlink" title="切换节目"></a>切换节目</h3><p><code>1514：STOP</code></p>
+<p><code>1524：SOAPACTION: &quot;urn:schemas-upnp-org:service:AVTransport:1#SetAVTransportURI&quot;\r\n</code></p>
+<p><code>1544：SOAPACTION: &quot;urn:schemas-upnp-org:service:AVTransport:1#Play&quot;\r\n</code></p>
+<p><code>1563 GET Video</code></p>
+<h2 id="DMP-抓包分析"><a href="#DMP-抓包分析" class="headerlink" title="DMP 抓包分析"></a>DMP 抓包分析</h2><p>大致流程<code>discover</code>-&gt;<code>description</code>-&gt;<code>post soapaction</code>-&gt;<code>get Data</code>-&gt;<code>Play</code></p>
+<h3 id="Discover"><a href="#Discover" class="headerlink" title="Discover"></a>Discover</h3><p><code>DMP</code>即<code>client</code>发送<code>M-SEARCH ssdp:discover</code>来发现<code>server</code>，<code>Frame270</code></p>
+<pre><code>M-SEARCH * HTTP/1.1
+HOST: 239.255.255.250:1900
+MAN: &quot;ssdp:discover&quot;
+MX: 5
+ST: urn:schemas-upnp-org:device:MediaServer:1</code></pre><p>相关代码<code>libupnp:UpnpSearchAsync</code>，<code>vlc</code>有相关实现，应答如下，<code>Frame271</code></p>
+<pre><code>HTTP/1.1 200 OK
+CACHE-CONTROL: max-age=1810
+DATE: Tue, 26 Mar 2019 03:25:52 GMT
+ST: urn:schemas-upnp-org:device:MediaServer:1
+USN: uuid:4d696e69-444c-164e-9d41-28d2446289b1::urn:schemas-upnp-org:device:MediaServer:1
+EXT:
+SERVER: 4.13.0-37-generic DLNADOC/1.50 UPnP/1.0 MiniDLNA/1.2.1
+LOCATION: http://192.168.199.183:8200/rootDesc.xml
+Content-Length: 0</code></pre><h3 id="Description"><a href="#Description" class="headerlink" title="Description"></a>Description</h3><p>根据<code>LOACTION</code>获取描述文件，请求如下，<code>Frame275</code></p>
+<pre><code>GET /rootDesc.xml HTTP/1.1
+HOST: 192.168.199.183:8200
+DATE: Tue, 26 Mar 2019 03:25:51 GMT
+CONNECTION: close
+USER-AGENT: Linux/4.4.23+, UPnP/1.0, Portable SDK for UPnP devices/1.6.19</code></pre><p>应答中传输描述文件，如下</p>
+<pre><code class="xml">&lt;root xmlns=&quot;urn:schemas-upnp-org:device-1-0&quot;&gt;
+&lt;specVersion&gt;
+&lt;major&gt;1&lt;/major&gt;
+&lt;minor&gt;0&lt;/minor&gt;
+&lt;/specVersion&gt;
+&lt;device&gt;
+&lt;deviceType&gt;urn:schemas-upnp-org:device:MediaServer:1&lt;/deviceType&gt;
+&lt;friendlyName&gt;My DLNA XXX&lt;/friendlyName&gt;
+&lt;manufacturer&gt;Justin Maggard&lt;/manufacturer&gt;
+&lt;manufacturerURL&gt;http://www.netgear.com/&lt;/manufacturerURL&gt;
+&lt;modelDescription&gt;MiniDLNA on Linux&lt;/modelDescription&gt;
+&lt;modelName&gt;Windows Media Connect compatible (MiniDLNA)&lt;/modelName&gt;
+&lt;modelNumber&gt;1&lt;/modelNumber&gt;
+&lt;modelURL&gt;http://www.netgear.com&lt;/modelURL&gt;
+&lt;serialNumber&gt;12345678&lt;/serialNumber&gt;
+&lt;UDN&gt;uuid:4d696e69-444c-164e-9d41-28d2446289b1&lt;/UDN&gt;
+&lt;dlna:X_DLNADOC xmlns:dlna=&quot;urn:schemas-dlna-org:device-1-0&quot;&gt;DMS-1.50&lt;/dlna:X_DLNADOC&gt;
+&lt;presentationURL&gt;/&lt;/presentationURL&gt;
+&lt;iconList&gt;
+&lt;icon&gt;
+&lt;mimetype&gt;image/png&lt;/mimetype&gt;
+&lt;width&gt;48&lt;/width&gt;
+&lt;height&gt;48&lt;/height&gt;
+&lt;depth&gt;24&lt;/depth&gt;
+&lt;url&gt;/icons/sm.png&lt;/url&gt;
+&lt;/icon&gt;
+&lt;icon&gt;
+&lt;mimetype&gt;image/png&lt;/mimetype&gt;
+&lt;width&gt;120&lt;/width&gt;
+&lt;height&gt;120&lt;/height&gt;
+&lt;depth&gt;24&lt;/depth&gt;
+&lt;url&gt;/icons/lrg.png&lt;/url&gt;
+&lt;/icon&gt;
+&lt;icon&gt;
+&lt;mimetype&gt;image/jpeg&lt;/mimetype&gt;
+&lt;width&gt;48&lt;/width&gt;
+&lt;height&gt;48&lt;/height&gt;
+&lt;depth&gt;24&lt;/depth&gt;
+&lt;url&gt;/icons/sm.jpg&lt;/url&gt;
+&lt;/icon&gt;
+&lt;icon&gt;
+&lt;mimetype&gt;image/jpeg&lt;/mimetype&gt;
+&lt;width&gt;120&lt;/width&gt;
+&lt;height&gt;120&lt;/height&gt;
+&lt;depth&gt;24&lt;/depth&gt;
+&lt;url&gt;/icons/lrg.jpg&lt;/url&gt;
+&lt;/icon&gt;
+&lt;/iconList&gt;
+&lt;serviceList&gt;
+&lt;service&gt;
+&lt;serviceType&gt;urn:schemas-upnp-org:service:ContentDirectory:1&lt;/serviceType&gt;
+&lt;serviceId&gt;urn:upnp-org:serviceId:ContentDirectory&lt;/serviceId&gt;
+&lt;controlURL&gt;/ctl/ContentDir&lt;/controlURL&gt;
+&lt;eventSubURL&gt;/evt/ContentDir&lt;/eventSubURL&gt;
+&lt;SCPDURL&gt;/ContentDir.xml&lt;/SCPDURL&gt;
+&lt;/service&gt;
+&lt;service&gt;
+&lt;serviceType&gt;urn:schemas-upnp-org:service:ConnectionManager:1&lt;/serviceType&gt;
+&lt;serviceId&gt;urn:upnp-org:serviceId:ConnectionManager&lt;/serviceId&gt;
+&lt;controlURL&gt;/ctl/ConnectionMgr&lt;/controlURL&gt;
+&lt;eventSubURL&gt;/evt/ConnectionMgr&lt;/eventSubURL&gt;
+&lt;SCPDURL&gt;/ConnectionMgr.xml&lt;/SCPDURL&gt;
+&lt;/service&gt;
+&lt;service&gt;
+&lt;serviceType&gt;
+urn:microsoft.com:service:X_MS_MediaReceiverRegistrar:1
+&lt;/serviceType&gt;
+&lt;serviceId&gt;
+urn:microsoft.com:serviceId:X_MS_MediaReceiverRegistrar
+&lt;/serviceId&gt;
+&lt;controlURL&gt;/ctl/X_MS_MediaReceiverRegistrar&lt;/controlURL&gt;
+&lt;eventSubURL&gt;/evt/X_MS_MediaReceiverRegistrar&lt;/eventSubURL&gt;
+&lt;SCPDURL&gt;/X_MS_MediaReceiverRegistrar.xml&lt;/SCPDURL&gt;
+&lt;/service&gt;
+&lt;/serviceList&gt;
+&lt;/device&gt;
+&lt;/root&gt;</code></pre>
+<h3 id="POST-SOAPACTION"><a href="#POST-SOAPACTION" class="headerlink" title="POST SOAPACTION"></a>POST SOAPACTION</h3><p>根据<code>xml</code>中描述的<code>service</code>选择相关操作，例如操作文件夹请求如下，<code>Frame335</code></p>
+<pre><code>POST /ctl/ContentDir HTTP/1.1
+HOST: 192.168.199.183:8200
+CONTENT-LENGTH: 440
+CONTENT-TYPE: text/xml; charset=&quot;utf-8&quot;
+SOAPACTION: &quot;urn:schemas-upnp-org:service:ContentDirectory:1#Browse&quot;
+USER-AGENT: Linux/4.4.23+, UPnP/1.0, Portable SDK for UPnP devices/1.6.19
+
+&lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;
+&lt;s:Body&gt;&lt;u:Browse xmlns:u=&quot;urn:schemas-upnp-org:service:ContentDirectory:1&quot;&gt;
+&lt;ObjectID&gt;0&lt;/ObjectID&gt;
+&lt;BrowseFlag&gt;BrowseDirectChildren&lt;/BrowseFlag&gt;
+&lt;Filter&gt;*&lt;/Filter&gt;
+&lt;StartingIndex&gt;0&lt;/StartingIndex&gt;
+&lt;RequestedCount&gt;5000&lt;/RequestedCount&gt;
+&lt;SortCriteria&gt;&lt;/SortCriteria&gt;
+&lt;/u:Browse&gt;
+&lt;/s:Body&gt;
+&lt;/s:Envelope&gt;</code></pre><p><code>Frame 442-569</code>为翻到文件夹最底层，会传输大量图片数据上来</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;&lt;s:Body&gt;&lt;u:BrowseResponse xmlns:u=&quot;urn:schemas-upnp-org:service:ContentDirectory:1&quot;&gt;&lt;Result&gt;&amp;lt;DIDL-Lite xmlns:dc=&quot;http://purl.org/dc/elements/1.1/&quot; xmlns:upnp=&quot;urn:schemas-upnp-org:metadata-1-0/upnp/&quot; xmlns=&quot;urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/&quot; xmlns:dlna=&quot;urn:schemas-dlna-org:metadata-1-0/&quot;&amp;gt;
+&amp;lt;item id=&quot;3$FF0$64$13$B&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$B&quot;&amp;gt;&amp;lt;dc:title&amp;gt;543161&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;532088&quot; resolution=&quot;2048x1345&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25615.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x575&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25615.jpg?width=1024,height=575&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x359&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25615.jpg?width=640,height=359&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x89&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25615.jpg?width=160,height=89&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$2B&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$2B&quot;&amp;gt;&amp;lt;dc:title&amp;gt;543159&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;461737&quot; resolution=&quot;1920x1260&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25616.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x671&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25616.jpg?width=1024,height=671&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x419&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25616.jpg?width=640,height=419&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x104&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25616.jpg?width=160,height=104&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$2D&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$2D&quot;&amp;gt;&amp;lt;dc:title&amp;gt;543117&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;674720&quot; resolution=&quot;2880x1800&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25618.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x639&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25618.jpg?width=1024,height=639&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x399&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25618.jpg?width=640,height=399&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x98&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25618.jpg?width=160,height=98&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$2F&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$2F&quot;&amp;gt;&amp;lt;dc:title&amp;gt;543019&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;753825&quot; resolution=&quot;1920x1200&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25620.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x639&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25620.jpg?width=1024,height=639&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x399&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25620.jpg?width=640,height=399&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x99&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25620.jpg?width=160,height=99&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$31&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$31&quot;&amp;gt;&amp;lt;dc:title&amp;gt;543128&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;836038&quot; resolution=&quot;2048x1325&quot;  protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25603.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x681&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25603.jpg?width=1024,height=681&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x426&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25603.jpg?width=640,height=426&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x106&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25603.jpg?width=160,height=106&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$21&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$21&quot;&amp;gt;&amp;lt;dc:title&amp;gt;542965&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;1726194&quot; resolution=&quot;1920x1200&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25606.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x639&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25606.jpg?width=1024,height=639&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x399&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25606.jpg?width=640,height=399&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x99&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25606.jpg?width=160,height=99&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$23&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$23&quot;&amp;gt;&amp;lt;dc:title&amp;gt;542998&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;2904437&quot; resolution=&quot;1920x1200&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25608.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x639&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25608.jpg?width=1024,height=639&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x399&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25608.jpg?width=640,height=399&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x99&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25608.jpg?width=160,height=99&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$2C&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$2C&quot;&amp;gt;&amp;lt;dc:title&amp;gt;542934&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;1098202&quot; resolution=&quot;2048x1360&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25617.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x680&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25617.jpg?width=1024,height=680&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x425&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25617.jpg?width=640,height=425&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x106&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25617.jpg?width=160,height=106&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$2E&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$2E&quot;&amp;gt;&amp;lt;dc:title&amp;gt;542994&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;970686&quot; resolution=&quot;1920x1200&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25619.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x639&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25619.jpg?width=1024,height=639&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x399&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25619.jpg?width=640,height=399&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x99&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25619.jpg?width=160,height=99&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;/DIDL-Lite&amp;gt;&lt;/Result&gt;
+&lt;NumberReturned&gt;50&lt;/NumberReturned&gt;
+&lt;TotalMatches&gt;50&lt;/TotalMatches&gt;
+&lt;UpdateID&gt;1&lt;/UpdateID&gt;&lt;/u:BrowseResponse&gt;&lt;/s:Body&gt;&lt;/s:Envelope&gt;</code></pre>
+<p>播放某个具体图片请求，<code>Frame 755</code></p>
+<pre><code>GET /MediaItems/25602.jpg HTTP/1.1
+Host: 192.168.199.183:8200
+Accept: */*
+Accept-Language: en_US
+User-Agent: VLC/3.0.4 LibVLC/3.0.4
+Range: bytes=0-</code></pre>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/upnp/" rel="tag"># upnp</a>
+              <a href="/tags/dlna/" rel="tag"># dlna</a>
+              <a href="/tags/ssdp/" rel="tag"># ssdp</a>
+              <a href="/tags/soap/" rel="tag"># soap</a>
+              <a href="/tags/dmr/" rel="tag"># dmr</a>
+              <a href="/tags/dmp/" rel="tag"># dmp</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/03/20/wireshark-tcp-retransmission/" rel="next" title="wireshark-tcp-retransmission">
+                  <i class="fa fa-chevron-left"></i> wireshark-tcp-retransmission
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/03/28/dlna-sat2ip-and-upnp/" rel="prev" title="DLNA SAT2IP 以及 UPnP 总结">
+                  DLNA SAT2IP 以及 UPnP 总结 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#环境"><span class="nav-number">1.</span> <span class="nav-text">环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DMR-流程"><span class="nav-number">2.</span> <span class="nav-text">DMR 流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#DMR-设备入网广播"><span class="nav-number">2.1.</span> <span class="nav-text">DMR 设备入网广播</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DMC-入网搜索设备"><span class="nav-number">2.2.</span> <span class="nav-text">DMC 入网搜索设备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DMC-获取描述文件"><span class="nav-number">2.3.</span> <span class="nav-text">DMC 获取描述文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#切换节目"><span class="nav-number">2.4.</span> <span class="nav-text">切换节目</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DMP-抓包分析"><span class="nav-number">3.</span> <span class="nav-text">DMP 抓包分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Discover"><span class="nav-number">3.1.</span> <span class="nav-text">Discover</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Description"><span class="nav-number">3.2.</span> <span class="nav-text">Description</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#POST-SOAPACTION"><span class="nav-number">3.3.</span> <span class="nav-text">POST SOAPACTION</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

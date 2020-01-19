@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="toc{:toc}   专注于用户空间的系统级编程–即内核之上的所有内容。 获得文件metadata的Stat家族#include &lt;sys&#x2F;types.h&gt;   #include &lt;sys&#x2F;stat.h&gt;   #include &lt;unistd.h&gt;    struct stat{       dev_t st_dev; &#x2F;*包含文件的设备号*&#x2F;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux系统编程-文件和目录管理">
+<meta property="og:url" content="http://yoursite.com/2014/11/11/Linux-system-programming-File-and-Directory-Management/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="toc{:toc}   专注于用户空间的系统级编程–即内核之上的所有内容。 获得文件metadata的Stat家族#include &lt;sys&#x2F;types.h&gt;   #include &lt;sys&#x2F;stat.h&gt;   #include &lt;unistd.h&gt;    struct stat{       dev_t st_dev; &#x2F;*包含文件的设备号*&#x2F;">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2014-11-11T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.658Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2014/11/11/Linux-system-programming-File-and-Directory-Management/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linux系统编程-文件和目录管理 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/11/Linux-system-programming-File-and-Directory-Management/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux系统编程-文件和目录管理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-11-12 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-12T00:00:00+08:00">2014-11-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux System Programming</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <ul>
+<li>toc<br>{:toc}</li>
+</ul>
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<h2 id="获得文件metadata的Stat家族"><a href="#获得文件metadata的Stat家族" class="headerlink" title="获得文件metadata的Stat家族"></a>获得文件metadata的Stat家族</h2><pre><code>#include &lt;sys/types.h&gt;  
+#include &lt;sys/stat.h&gt;  
+#include &lt;unistd.h&gt;  
+
+struct stat{  
+    dev_t st_dev; /*包含文件的设备号*/  
+    ino_t st_ino; /*文件inode序列号 */  
+    mode_t st_mode;/*文件的mode*/  
+    nlink_t st_nlink; /*硬链接的数量*/  
+    uid_t st_uid; /*文件的用户id*/  
+    gid_t st_gid; /*文件的goup id*/  
+    off_t st_size;/*文件大小*/  
+
+    time_t st_atime;/*最后一次访问时间*/  
+    time_t st_mtime;/*最后一次修改时间*/  
+    time_t st_ctime;/*最后一次状态改变时间*/  
+}  
+
+int lstat(const char * restrict path, struct stat * restrict buf);  
+int stat(const char *restrict path, struct stat * restrict buf);  
+int fstat(int fd,struct stat *buf);  </code></pre><p>对于软链来说： </p>
+<ul>
+<li>lstat返回软链本身的状态 </li>
+<li>stat返回软链所指文件的状态 </li>
+</ul>
+<p>例子： </p>
+<pre><code>#include &lt;stdio.h&gt;  
+#include &lt;time.h&gt;  
+#include &lt;sys/stat.h&gt;  
+
+int isdirectory(char *path) {  
+    struct stat statbuf;  
+
+    if (stat(path, &amp;statbuf) == -1)  
+        return 0;  
+    else  
+        return S_ISDIR(statbuf.st_mode);  
+}  </code></pre><h2 id="文件权限"><a href="#文件权限" class="headerlink" title="文件权限"></a>文件权限</h2><p>设置文件权限的系统调用： </p>
+<pre><code>#include &lt;sys/types.h&gt;  
+#include &lt;sys/stat.h&gt;  
+
+int chmod(const char *path, mode_t mode);  
+int fchmod(int fd,mode_t mode);  </code></pre><p>成功返回0，失败返回-1，并设置errno： </p>
+<ul>
+<li>EACCESS：没有搜索path的权限 </li>
+<li>EBADF：fd不合法的文件描述符（仅fchmod) </li>
+<li>EFAULT:path不合法的指针（仅chmod) </li>
+<li>EIO：文件系统内部I/O错误 </li>
+<li>ELOOP：由于symbolic link导致解析path死循环 </li>
+<li>ENAMETOOLONG：path太长（仅chmod) </li>
+<li>ENOENT：path不存在 </li>
+<li>ENOME：内存不足 </li>
+<li>ENOTDIR：不是一个目录（仅chmod) </li>
+<li>EPERM:进程不是文件的owner或者缺少CAP_FOWNER能力。 </li>
+<li>EROFS：文件在只读文件系统中。 </li>
+</ul>
+<h2 id="文件的所有者"><a href="#文件的所有者" class="headerlink" title="文件的所有者"></a>文件的所有者</h2><p>stat结构中st_uid和st_gid提供了文件的所有者和group，以下系统调用可以改变所有者： </p>
+<pre><code>#include &lt;sys/types.h&gt;  
+#include &lt;unistd.h&gt;  
+
+int chown(const char *path, uid_t owner, gid_t group);  
+int lchown(const char *path, uid_t owner, gid_t group);  
+int fchown(int fd, uid_t owner, gid_t group);  </code></pre><p>chown和lchown区别：chown会follow simbolic link，改变link的目标文件，lchmod改变符号链接本身。<br>成功过返回0，失败返回-1，并设置errno。 </p>
+<pre><code>struct group *gr;  
+int ret;  
+
+gr = getgrnam(&quot;officers&quot;);  
+if(! gr){  
+    perror(&quot;getgrnam&quot;);  
+    return 1;  
+}  
+
+ret = chmod(&quot;manifest.txt&quot;,-1,gr-&gt;gr_gid);  
+if(ret){  
+    perror(&quot;chmod&quot;);  
+    return 1;  
+}  </code></pre><p>设置为root拥有者： </p>
+<pre><code>int make_root_owner(int fd){  
+    int ret;  
+
+    ret = fchown(fd,0,0);  
+    if(ret)  
+        perror(&quot;fchown&quot;);  
+    return ret;  
+}  </code></pre><p>进程需要有CAP_CHOWN能力，也就是必须是root为所有。 </p>
+<h2 id="文件系统Navigation"><a href="#文件系统Navigation" class="headerlink" title="文件系统Navigation"></a>文件系统Navigation</h2><h3 id="改变当前的工作目录"><a href="#改变当前的工作目录" class="headerlink" title="改变当前的工作目录"></a>改变当前的工作目录</h3><pre><code>#include &lt;unistd.h&gt;  
+
+int chdir(const char *path);  
+int fchdir(int fd);  </code></pre><p>将当前的工作目录指定为path：</p>
+<pre><code>char *dir = &quot;/tmp&quot;;  
+if(chdir(dir) == -1)  
+    perror(&quot;Failed to change current working directory to /tmp&quot;);  </code></pre><h3 id="获得当前工作目录"><a href="#获得当前工作目录" class="headerlink" title="获得当前工作目录"></a>获得当前工作目录</h3><pre><code>#include &lt;unistd.h&gt;  
+
+char *getcwd(char *buf, size_t size);  
+
+例子： 
+
+#include &lt;limits.h&gt;  
+#include &lt;stdio.h&gt;  
+#include &lt;unistd.h&gt;  
+#ifndef PATH_MAX  
+#define PATH_MAX 255  
+#endif  
+
+int main(void)
+{  
+    char mycwd[PATH_MAX];  
+    if(getcwd(mycwd,PATH_MAX) == NULL){  
+        perror(&quot;Failed to get current working directory&quot;);  
+        return 1;  
+    }  
+    printf(&quot;Current working directory: %s\n&quot;,mycwd);  
+    return 0;  
+}  </code></pre><h3 id="path-conf"><a href="#path-conf" class="headerlink" title="path conf"></a>path conf</h3><pre><code>#include &lt;unistd.h&gt;  
+
+long fpathconf(int fd, int name);  
+long pathconf(const char *path,int name);  
+sysconf(int name);  </code></pre><h2 id="创建目录"><a href="#创建目录" class="headerlink" title="创建目录"></a>创建目录</h2><pre><code>#include &lt;sys/stat.h&gt;  
+#include &lt;sys/types.h&gt;  
+
+int mkdir(const char *path, mode_t mode);  </code></pre><p>成功返回0，失败返回-1，并设置好errno。没有可以递归删除与rm -r等价的系统调用。<br>如果目录非空，失败设置errno为ENOTEMPTY。 </p>
+<pre><code>int ret;  
+
+ret = rmdir(&quot;/home/fuliang/test&quot;);  
+if(ret)  
+    perror(&quot;rmdir&quot;);  </code></pre><h2 id="删除目录"><a href="#删除目录" class="headerlink" title="删除目录"></a>删除目录</h2><pre><code>#include &lt;unistd.h&gt;  
+
+int rmdir(const char *path);  
+
+成功返回0，失败返回-1 </code></pre><h2 id="文件夹访问"><a href="#文件夹访问" class="headerlink" title="文件夹访问"></a>文件夹访问</h2><h3 id="opendir-closedir-readdir"><a href="#opendir-closedir-readdir" class="headerlink" title="opendir closedir, readdir"></a>opendir closedir, readdir</h3><pre><code>#include &lt;dirent.h&gt;  
+DIR *opendir(const char *dirname);  
+struct dirent *readdir(DIR *dirp);  
+int closedir(DIR *dirp);  
+void rewinddir(DIR *dirp);  </code></pre><p>例子：显示pathname下的文件： </p>
+<pre><code>#include &lt;dirent.h&gt;  
+#include &lt;errno.h&gt;  
+#include &lt;stdio.h&gt;  
+
+int main(int argc, char *argv[])
+{  
+    struct dirent *direntp;  
+    DIR *dirp;  
+
+    if(argc != 2){  
+        fprintf(stderr,&quot;Usage %s directory_name\n&quot;, argv[0]);  
+    }  
+
+    if((dirp = opendir(argv[1])) == NULL){  
+        perror(&quot;Failed to open directory&quot;);  
+        return 1;  
+    }  
+
+    while((direntp = readdir(dirp)) != NULL)  
+        printf(&quot;%s\n&quot;, direntp-&gt;d_name);  
+    while((closedir(dirp) == -1) &amp;&amp; (errno == EINTR)) ;  
+    return 0;   
+}  </code></pre><p>dirent结构： </p>
+<pre><code>struct dirent{  
+    ino_t d_ino; /* inode number */  
+    off_t d_off; /* offset to the next dirent */  
+    unsigned short d_reclen; /* length of this record */  
+    unsigned char d_type; /* type of file */  
+    char d_name[256]; /*filename*/    
+};  </code></pre><p>POSIX仅需要d_name字段，其他的都是可选的或者是linux特有的。<br>可移植性的程序应该只访问d_name字段。 </p>
+<p>从Dir可以获得文件描述符： </p>
+<pre><code>#define _BSD_SOURCE  
+#include &lt;sys/types.h&gt;  
+#include &lt;dirent.h&gt;  
+
+int dirfd(DIR *dir);  </code></pre><p>这个是BSD的一个扩展，并不是POSIX标准。 </p>
+<h3 id="访问文件的状态信息"><a href="#访问文件的状态信息" class="headerlink" title="访问文件的状态信息"></a>访问文件的状态信息</h3><p>lstat、stat </p>
+<h2 id="硬链接和软链接"><a href="#硬链接和软链接" class="headerlink" title="硬链接和软链接"></a>硬链接和软链接</h2><p>硬链接：两个path指向同一个inode.<br>软链接：单独的一个文件，里面存储了链接文件的路径。 </p>
+<h3 id="创建和删除一个硬链接"><a href="#创建和删除一个硬链接" class="headerlink" title="创建和删除一个硬链接"></a>创建和删除一个硬链接</h3><pre><code>#include &lt;unistd.h&gt;  
+
+int link(const char *path1, const char *path2);  
+int unlink(const char *path);  </code></pre><p>为有path1指定的文件创建一个新的目录项。 </p>
+<pre><code>#include &lt;stdio.h&gt;  
+#include &lt;unistd.h&gt;  
+
+if (link(&quot;/dirA/name1&quot;,&quot;dirB/name2&quot;) == -1)  
+    perror(&quot;Failed to make a new link in /dirB&quot;);  </code></pre><h3 id="创建和删除一个硬链接-1"><a href="#创建和删除一个硬链接-1" class="headerlink" title="创建和删除一个硬链接"></a>创建和删除一个硬链接</h3><pre><code>#include &lt;unistd.h&gt;  
+
+int symlink(const char *path1, const char *path2);  </code></pre><h2 id="拷贝或者移动文件"><a href="#拷贝或者移动文件" class="headerlink" title="拷贝或者移动文件"></a>拷贝或者移动文件</h2><p>拷贝和移动文件时两个最基本的文件操作任务，可以使用shell命令cp和mv来完成。 </p>
+<h3 id="拷贝文件"><a href="#拷贝文件" class="headerlink" title="拷贝文件"></a>拷贝文件</h3><p>Unix没有提供此操作的系统调用或者库来完成拷贝文件和目录，但可以使用cp命令来手工执行这个任务。<br>拷贝一个文件src到目标dst，要执行的操作步骤： </p>
+<ol>
+<li>打开src </li>
+<li>打开dst，创建如果不存在，清空如果存在。 </li>
+<li>将src读取到内存 </li>
+<li>将从src读取到的内容写入dst </li>
+<li>继续指导所有内容从src写到dst </li>
+<li>关闭dst </li>
+<li>关闭src </li>
+</ol>
+<p>如果拷贝一个目录，递归拷贝目录本身及其子目录通过mkdir及其采用上面步骤拷贝文件。 </p>
+<h3 id="移动"><a href="#移动" class="headerlink" title="移动"></a>移动</h3><p>Unix提供了移动文件的系统调用。ANSI C使用这个调用来移动文件，POSIX标准将其用于文件和目录。 </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+int rename(const char *oldpath, const char *newpath);  </code></pre><p>将路径名称从oldpath改成newpath，内容和inode没有变化。newpath需要在同一文件系统中。<br>成功返回0，失败返回-1，并设置errno。 </p>
+<h2 id="创建临时文件"><a href="#创建临时文件" class="headerlink" title="创建临时文件"></a>创建临时文件</h2><p>ISO C标准定义了两个标准I/O函数来创建临时文件。 </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+char *tmpnam(char *ptr); /*返回执行路径的指针*/  
+FILE *tmpfile(void); /*返回文件指针，错误则为NULL*/  </code></pre><p>tmpnam每次产生一个不同的合法的路径名字。如果ptr是NULL，生成一个存储在静态区域的名字，<br>并返回指向它的指针，所以如果连续调用两次会覆盖前一次的tmpname。<br>如果指定了ptr，则它被假设指向一个数组，并且长度不小于L_tmpnam（&lt;stdio.h&gt;中定义）。<br>例子： </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+int main(void){  
+    char name[L_tmpnam],line[MAXLINE];  
+    FILE *fp;  
+
+    printf(&quot;%s\n&quot;,tmpnam(NULL));  
+    tmpname(name);  
+    printf(&quot;%s\n&quot;,name);  
+
+    if((fp = tmpfile()) == NULL){  
+        perror(&quot;tmpfile&quot;);  
+        return 1;  
+    }  
+
+    fputs(&quot;one line of output\n&quot;,fp);  
+    rewind(fp);  
+
+    if(fgets(line,sizeof(line),fp) == NULL){  
+        perror(&quot;fgets&quot;);  
+        return 1;  
+    }  
+    fputs(line,stdout);  
+
+    return 0;  
+}  </code></pre><p>XSI扩展定义了两个另外的方法来操作临时文件： </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+char *tempnam(const char *directory, const char *prefix);  
+int mkstemp(char *template);  </code></pre><p>tempnam和tmpnam一样，但是可以指定目录和前缀来生成临时文件名。 </p>
+<ol>
+<li>如果环境变量定义了TMPDIR，则使用它作为目录。 </li>
+<li>如果directory不为NULL，则使用它。 </li>
+<li>在&lt;stdio.h&gt;中的P_tmpdir作为目录。 </li>
+<li>本地的目录，通常/tmp被作为临时目录。 </li>
+</ol>
+<p>前缀prefix如果不为NULL，至少5个字节。<br>生成的名字是通过malloc动态申请的内存，所以要使用free释放。 </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+int main(int argc, char *argv[]){  
+    if(argc != 3){  
+        pintf(&quot;usage: %s &lt;directory&gt; &lt;prefix&gt;&quot;,argv[0]);  
+        return 1;  
+    }  
+
+    printf(&quot;%s\n&quot;,tempnam(argv[1][0] != &#39; &#39; ? argv[1] : NULL, argv[2][0] != &#39; &#39; ? argv[2] : NULL));  
+
+    return 0;  
+}  </code></pre><p>mkstemp和tmpfile类似，只是返回了文件描述符，并且mkstemp生成的临时文件不会自动清除。<br>path的后六个字符要设置为XXXXXX，通过替换它来生成不同的名字。 </p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2014/11/11/Linux-system-programming-pthread_cont/" rel="next" title="Linux系统编程-多线程同步条件变量">
+                  <i class="fa fa-chevron-left"></i> Linux系统编程-多线程同步条件变量
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2014/11/11/Linux-system-programming-Memory-Management/" rel="prev" title="Linux系统编程-内存管理">
+                  Linux系统编程-内存管理 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#获得文件metadata的Stat家族"><span class="nav-number">1.</span> <span class="nav-text">获得文件metadata的Stat家族</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#文件权限"><span class="nav-number">2.</span> <span class="nav-text">文件权限</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#文件的所有者"><span class="nav-number">3.</span> <span class="nav-text">文件的所有者</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#文件系统Navigation"><span class="nav-number">4.</span> <span class="nav-text">文件系统Navigation</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#改变当前的工作目录"><span class="nav-number">4.1.</span> <span class="nav-text">改变当前的工作目录</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获得当前工作目录"><span class="nav-number">4.2.</span> <span class="nav-text">获得当前工作目录</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#path-conf"><span class="nav-number">4.3.</span> <span class="nav-text">path conf</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#创建目录"><span class="nav-number">5.</span> <span class="nav-text">创建目录</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#删除目录"><span class="nav-number">6.</span> <span class="nav-text">删除目录</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#文件夹访问"><span class="nav-number">7.</span> <span class="nav-text">文件夹访问</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#opendir-closedir-readdir"><span class="nav-number">7.1.</span> <span class="nav-text">opendir closedir, readdir</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#访问文件的状态信息"><span class="nav-number">7.2.</span> <span class="nav-text">访问文件的状态信息</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#硬链接和软链接"><span class="nav-number">8.</span> <span class="nav-text">硬链接和软链接</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#创建和删除一个硬链接"><span class="nav-number">8.1.</span> <span class="nav-text">创建和删除一个硬链接</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#创建和删除一个硬链接-1"><span class="nav-number">8.2.</span> <span class="nav-text">创建和删除一个硬链接</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#拷贝或者移动文件"><span class="nav-number">9.</span> <span class="nav-text">拷贝或者移动文件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#拷贝文件"><span class="nav-number">9.1.</span> <span class="nav-text">拷贝文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#移动"><span class="nav-number">9.2.</span> <span class="nav-text">移动</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#创建临时文件"><span class="nav-number">10.</span> <span class="nav-text">创建临时文件</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

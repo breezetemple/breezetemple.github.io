@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="kernel panic 之后输出 backtrace 信息有助于调试问题，本文分析 backtrace 内核版本 v2.6，需要支持backtrace，并且需要打开配置kallsyms">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux内核崩溃信息分析">
+<meta property="og:url" content="http://yoursite.com/2017/12/08/linux-kernel-dumpstack/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="kernel panic 之后输出 backtrace 信息有助于调试问题，本文分析 backtrace 内核版本 v2.6，需要支持backtrace，并且需要打开配置kallsyms">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2017-12-08T07:22:12.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.670Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="dumpstack">
+<meta property="article:tag" content="panic">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2017/12/08/linux-kernel-dumpstack/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linux内核崩溃信息分析 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/12/08/linux-kernel-dumpstack/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux内核崩溃信息分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2017-12-08 15:22:12" itemprop="dateCreated datePublished" datetime="2017-12-08T15:22:12+08:00">2017-12-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.3k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><code>kernel panic</code> 之后输出 <code>backtrace</code> 信息有助于调试问题，本文分析 <code>backtrace</code></p>
+<p>内核版本 v2.6，需要支持<code>backtrace</code>，并且需要打开配置<code>kallsyms</code></p>
+<a id="more"></a>
+
+<h2 id=""><a href="#" class="headerlink" title=""></a></h2><p>使用的内核为<code>Linux2.6</code>，对当前的<code>arch</code>不支持<code>backtrace</code>，当内核崩溃时输出信息为：</p>
+<pre><code>Backtrace not supported!</code></pre><p><code>arch/xxx/kernel/traps.c</code>函数如下</p>
+<pre><code>void show_trace(void)                                                         
+{                                                                             
+    printk(&quot;Backtrace not supported!\n&quot;);                                     
+} </code></pre><p>从相应的<code>Linux3.0.8</code>中移植函数<code>show_trace</code></p>
+<pre><code>void show_trace(unsigned long *stack)                                         
+{                                                                             
+        unsigned long *endstack;                                                                                                   
+        unsigned long addr;                                                   
+        int i;                                                                
+
+        printk(&quot;Call Trace:&quot;);                                                
+        addr = (unsigned long)stack + THREAD_SIZE - 1;                        
+        endstack = (unsigned long *)(addr &amp; -THREAD_SIZE);                    
+        i = 0;                                                                
+        while (stack + 1 &lt;= endstack) {                                       
+                addr = *stack++;                                              
+                /*                                                            
+                 * If the address is either in the text segment of the        
+                 * kernel, or in the region which contains vmalloc&#39;ed         
+                 * memory, it *may* be the address of a calling               
+                 * routine; if so, print it so that someone tracing           
+                 * down the cause of the crash will be able to figure         
+                 * out the call path that was taken.                          
+                 */                                                           
+                if (__kernel_text_address(addr)) {                            
+#ifndef CONFIG_KALLSYMS                                                       
+                        if (i % 5 == 0)                                       
+                                printk(&quot;\n       &quot;);                          
+#endif                                                                        
+                        printk(&quot; [&lt;%08lx&gt;] %pS\n&quot;, addr, (void *)addr);       
+                        i++;                                                  
+                }                                                             
+        }                                                                     
+        printk(&quot;\n&quot;);                                                         
+}</code></pre><h2 id="kernel-panic之后输出"><a href="#kernel-panic之后输出" class="headerlink" title="kernel panic之后输出"></a>kernel panic之后输出</h2><p>具体输出信息定义在<code>traps.c</code>中，相关函数</p>
+<pre><code>void dump_stack(void)                                                                                                            
+{                                                                             
+    unsigned long stack;                                                      
+    _show_trace(&amp;stack);                                                      
+}                                                                             
+EXPORT_SYMBOL(dump_stack);   </code></pre><p>用于输出 <code>backtrace</code></p>
+<pre><code>/*                                                                            
+ *      Generic dumping code. Used for panic and debug.                       
+ */                                                                           
+void show_registers(struct pt_regs *fp)    </code></pre><h2 id="分析函数show-trace"><a href="#分析函数show-trace" class="headerlink" title="分析函数show_trace"></a>分析函数<code>show_trace</code></h2><p><code>/data/OpenSourceCode/smallprj/C/backtrace/show_pid_backtrace.c</code></p>
+<p>用法 </p>
+<pre><code>#echo pid &gt; /proc/show_stack 
+#cat /proc/show_stack</code></pre><p><code>printk(&quot;[&lt;%p&gt;] %pS/n&quot;, &amp;printk, &amp;printk)</code> <code>%pS</code> 参数将地址转换为函数名，需要<code>kallsyms</code>支持</p>
+<p>每次函数调用时候，都会将函数的返回地址(调用函数指令的下一句指令的地址)压入堆栈，已备函数返回时。<br>我们就可以靠这个返回地址来帮助打印函数执行流。<br>但是这个地址并不是一个函数的准确地址呀？<br><code>%pS</code> 需要的参数不一定是准确的函数地址，在函数内部任意指令地址都可以，这就解释了输出形式是 <code>&quot;printk+0x0/0x1c&quot;</code>，<code>0x0</code>表示参数地址相对于printk地址的偏移，<code>0x1c</code>表示printk函数大小。</p>
+<p>并且如果函数属于某个模块，还会在输出后面加上模块名称，类似：<code>[&lt;f8cd40a5&gt;] exit+0xd/0xf [hello]</code></p>
+<p>这里知道地址在堆栈里，那么怎么取堆栈呢?<br>其实很简单：<br>int stack_pointer;<br>我们只要取临时变量地址值 &amp;stack_pointer 就可以了(也可以用内联汇编取esp值)，然后只要循环遍历堆栈上所有值，然后判断该值是否在<br>内核代码段空间内，如果是那么就用%pS输出。</p>
+<p>那么堆栈的结束地址是什么呢？<br>就是当前进程的内核态堆栈段，不懂的话请google，一定要搞清除这个。<br>这里我们记堆栈底为:<br>bottom = (unsigned int)current_thread_info() + THREAD_SIZE;</p>
+<p>但是怎么判断地址值是否在内核代码段呢？<br>我们可以用kernel_text_address这个函数就可以了，但是很不幸的是此函数内核没有导出，我们不能使用，<br>那么我们就自己实现个kernel_text_address吧，但是更不幸的是此函数内部实现所依赖的变量_etext等也没有<br>被内核导出，其实我也没想到很好的方法，索性就用个笨办法:<br>手动找出此函数内核中的地址，</p>
+<h1 id="grep-kernel-text-address-proc-kallsyms"><a href="#grep-kernel-text-address-proc-kallsyms" class="headerlink" title="grep kernel_text_address /proc/kallsyms"></a>grep kernel_text_address /proc/kallsyms</h1><p>c044f107 T kernel_text_address<br>在代码中通过地址值调用kernel_text_address<br>int (<em>kernel_text_addressp)(unsigned int) = (int (</em>)(unsigned int))0xc044f107;</p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://blog.csdn.net/u011553162/article/details/11649869" target="_blank" rel="noopener">内核崩溃的日志</a></li>
+<li><a href="http://blog.csdn.net/williamwanglei/article/details/10399899" target="_blank" rel="noopener">linux内核栈与用户栈及调用栈观察方法</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/dumpstack/" rel="tag"># dumpstack</a>
+              <a href="/tags/panic/" rel="tag"># panic</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2017/12/08/linux-kallsyms/" rel="next" title="linux-kallsyms">
+                  <i class="fa fa-chevron-left"></i> linux-kallsyms
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2017/12/08/linux-user-backtrace/" rel="prev" title="linux-user-backtrace">
+                  linux-user-backtrace <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#null"><span class="nav-number">1.</span> <span class="nav-text"></span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#kernel-panic之后输出"><span class="nav-number">2.</span> <span class="nav-text">kernel panic之后输出</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析函数show-trace"><span class="nav-number">3.</span> <span class="nav-text">分析函数show_trace</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#grep-kernel-text-address-proc-kallsyms"><span class="nav-number"></span> <span class="nav-text">grep kernel_text_address &#x2F;proc&#x2F;kallsyms</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">1.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

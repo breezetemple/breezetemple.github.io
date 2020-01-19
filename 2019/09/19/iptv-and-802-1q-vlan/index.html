@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="不增加交换机前提下的 IPTV 单线复用，涉及  VLAN 路由 -Padavan 光猫 IPoE">
+<meta property="og:type" content="article">
+<meta property="og:title" content="电信 IPTV Vlan 及相关原理">
+<meta property="og:url" content="http://yoursite.com/2019/09/19/iptv-and-802-1q-vlan/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="不增加交换机前提下的 IPTV 单线复用，涉及  VLAN 路由 -Padavan 光猫 IPoE">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/router/2116010118.jpg">
+<meta property="article:published_time" content="2019-09-19T06:56:01.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.682Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="pppoe">
+<meta property="article:tag" content="k2p">
+<meta property="article:tag" content="padavan">
+<meta property="article:tag" content="iptv">
+<meta property="article:tag" content="ipoe">
+<meta property="article:tag" content="802.1q">
+<meta property="article:tag" content="vlan">
+<meta property="article:tag" content="switch">
+<meta property="article:tag" content="untagging">
+<meta property="article:tag" content="tagging">
+<meta property="article:tag" content="udpxy">
+<meta property="article:tag" content="iptv 分享">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/router/2116010118.jpg">
+
+<link rel="canonical" href="http://yoursite.com/2019/09/19/iptv-and-802-1q-vlan/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>电信 IPTV Vlan 及相关原理 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/09/19/iptv-and-802-1q-vlan/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          电信 IPTV Vlan 及相关原理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-09-19 14:56:01" itemprop="dateCreated datePublished" datetime="2019-09-19T14:56:01+08:00">2019-09-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Hacker/" itemprop="url" rel="index">
+                    <span itemprop="name">Hacker</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Hacker/K2P/" itemprop="url" rel="index">
+                    <span itemprop="name">K2P</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>672</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>不增加交换机前提下的 IPTV 单线复用，涉及</p>
+<ul>
+<li>VLAN</li>
+<li>路由 -Padavan</li>
+<li>光猫</li>
+<li>IPoE</li>
+</ul>
+<a id="more"></a>
+
+<p><code>K2P</code>刷<code>Merlin</code>固件未搞定，最终刷入<code>Padavan</code>固件搞定</p>
+<h2 id="光猫"><a href="#光猫" class="headerlink" title="光猫"></a>光猫</h2><h3 id="无线"><a href="#无线" class="headerlink" title="无线"></a>无线</h3><p>可以接受<code>IPTV</code>使用无线，未尝试</p>
+<p><a href="https://zhuanlan.zhihu.com/p/27008904" target="_blank" rel="noopener">改造“电信天翼 E 家”有线 IPTV 为无线 IPTV</a><br><a href="https://www.zhihu.com/question/22701366" target="_blank" rel="noopener">怎样实现无线上网和无线看 IPTV 并存？</a><br><a href="https://www.jianshu.com/p/e1a6cc637007" target="_blank" rel="noopener">IPTV 突破限制使用 Wi-Fi 连接</a></p>
+<h3 id="单线服用"><a href="#单线服用" class="headerlink" title="单线服用"></a>单线服用</h3><p><a href="https://koolshare.cn/thread-133393-1-1.html" target="_blank" rel="noopener">单线复用详细教程，完美解决弱电箱到电视墙一条网线的</a><br><a href="https://www.jianshu.com/p/52a5317744a1" target="_blank" rel="noopener">利用 VLAN 单线复用 Internet 与 IPTV</a></p>
+<ol>
+<li>修改<code>xx_Other_B_VID_xxx</code>, 取消<code>LAN 端口</code>绑定，记下<code>VlanID</code></li>
+<li>修改<code>xx_INTERNET_R_VID_XX</code>, 取消<code>LAN 端口</code>绑定， 记下<code>VlanID</code></li>
+<li>在<code>VLAN 绑定</code>中将上述两个绑定到<code>网口 1</code></li>
+</ol>
+<h2 id="路由设置"><a href="#路由设置" class="headerlink" title="路由设置"></a>路由设置</h2><h3 id="Merlin"><a href="#Merlin" class="headerlink" title="Merlin"></a>Merlin</h3><p>失败</p>
+<h3 id="Padavan"><a href="#Padavan" class="headerlink" title="Padavan"></a>Padavan</h3><ol>
+<li>启动<code>IGMP/MLD 侦听</code></li>
+<li><code>M2U- 以太网交换机</code>设置为<code>M2U</code></li>
+<li><code>无线 2.4G</code>和<code>无线 5G</code>设置为<code>禁用</code></li>
+<li><code>外部网络</code>中<code>端口隔离和 VLAN 过滤</code>设置如下</li>
+</ol>
+<p><img src="/images/router/2116010118.jpg" alt="setting"></p>
+<h2 id="高级方案"><a href="#高级方案" class="headerlink" title="高级方案"></a>高级方案</h2><p><a href="https://bbs.ui.com.cn/t/iptv/48689" target="_blank" rel="noopener">IPTV 终极组网方案（单线、无线、多终端）</a></p>
+<ul>
+<li>udpxy</li>
+<li>mac clone</li>
+</ul>
+<h2 id="switch"><a href="#switch" class="headerlink" title="switch"></a>switch</h2><p>交换机方案未使用</p>
+<p><a href="https://koolshare.cn/thread-147680-1-1.html" target="_blank" rel="noopener">GS108E/GS105E/GT-AC5300 单线复用教程</a><br><a href="https://www.right.com.cn/forum/thread-254465-1-1.html" target="_blank" rel="noopener">IPTV 的单线复用详细设置（天邑 tewa 系列）</a><br><a href="https://koolshare.cn/thread-147076-1-1.html" target="_blank" rel="noopener">梅林自启脚本实现 VLAN 单线复用 + 任意房间 web 管理</a></p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://www.zhihu.com/question/35749997" target="_blank" rel="noopener">IPOE 到底是什么？</a></li>
+<li><a href="https://blog.51cto.com/86484/154523" target="_blank" rel="noopener">IPoE 方式提供 IPTV 业务解决方案</a></li>
+<li><a href="https://www.jianshu.com/p/be829575b490" target="_blank" rel="noopener"><strong>VLAN 技术</strong></a></li>
+<li><a href="https://shaozhuangfeng.github.io/2017/02/13/IPTV%E6%9C%BA%E9%A1%B6%E7%9B%92%E5%AE%B6%E5%BA%AD%E7%BB%84%E7%BD%91%E6%9C%80%E4%BC%98%E6%96%B9%E6%A1%88%E9%80%89%E6%8B%A9/" target="_blank" rel="noopener">为何推荐 IPTV 机顶盒采用 PPPoE/IPoE 拨号方式观看视频</a></li>
+<li><a href="https://post.smzdm.com/p/471548/" target="_blank" rel="noopener">使用梅林路由，丢掉 IPTV 盒子，实现局域网内任意终端观看直播</a></li>
+<li><a href="https://blog.csdn.net/shanzhizi/article/details/8176992" target="_blank" rel="noopener">802.1Q Vlan 原理简介</a></li>
+<li><a href="https://blog.51cto.com/enchen/154173" target="_blank" rel="noopener">基于端口的 vlan 介绍</a></li>
+<li><a href="https://guihet.com/padavan-pppoe-lan-iptv.html" target="_blank" rel="noopener">Padavan 固件单线复用 PPPOE、LAN 局域网、IPTV 网络电视</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/pppoe/" rel="tag"># pppoe</a>
+              <a href="/tags/k2p/" rel="tag"># k2p</a>
+              <a href="/tags/padavan/" rel="tag"># padavan</a>
+              <a href="/tags/iptv/" rel="tag"># iptv</a>
+              <a href="/tags/ipoe/" rel="tag"># ipoe</a>
+              <a href="/tags/802-1q/" rel="tag"># 802.1q</a>
+              <a href="/tags/vlan/" rel="tag"># vlan</a>
+              <a href="/tags/switch/" rel="tag"># switch</a>
+              <a href="/tags/untagging/" rel="tag"># untagging</a>
+              <a href="/tags/tagging/" rel="tag"># tagging</a>
+              <a href="/tags/udpxy/" rel="tag"># udpxy</a>
+              <a href="/tags/iptv-%E5%88%86%E4%BA%AB/" rel="tag"># iptv 分享</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/09/18/remove-sshkey/" rel="next" title="移除 sshkey 记录">
+                  <i class="fa fa-chevron-left"></i> 移除 sshkey 记录
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/09/25/pyenv-and-pipenv/" rel="prev" title="pyenv 和 pipenv">
+                  pyenv 和 pipenv <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#光猫"><span class="nav-number">1.</span> <span class="nav-text">光猫</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#无线"><span class="nav-number">1.1.</span> <span class="nav-text">无线</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#单线服用"><span class="nav-number">1.2.</span> <span class="nav-text">单线服用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#路由设置"><span class="nav-number">2.</span> <span class="nav-text">路由设置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Merlin"><span class="nav-number">2.1.</span> <span class="nav-text">Merlin</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Padavan"><span class="nav-number">2.2.</span> <span class="nav-text">Padavan</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#高级方案"><span class="nav-number">3.</span> <span class="nav-text">高级方案</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#switch"><span class="nav-number">4.</span> <span class="nav-text">switch</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">5.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

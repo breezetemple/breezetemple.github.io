@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="嵌入式 ARM 平台 busybox 可以 ping ip，但是不能 ping domain name 本篇主要涉及  gcc v4.9 libnss 动态链接库 busybox 动态与静态编译 busybox 动态编译下使用域名解析 busybox 静态编译下使用域名解析">
+<meta property="og:type" content="article">
+<meta property="og:title" content="嵌入式 ARM 板子 Busybox 域名解析失败">
+<meta property="og:url" content="http://yoursite.com/2018/11/09/Busybox-nslookup-fails/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="嵌入式 ARM 平台 busybox 可以 ping ip，但是不能 ping domain name 本篇主要涉及  gcc v4.9 libnss 动态链接库 busybox 动态与静态编译 busybox 动态编译下使用域名解析 busybox 静态编译下使用域名解析">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2018-11-09T05:25:52.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.674Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="busybox">
+<meta property="article:tag" content="libnss">
+<meta property="article:tag" content="nslookup">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2018/11/09/Busybox-nslookup-fails/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>嵌入式 ARM 板子 Busybox 域名解析失败 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/09/Busybox-nslookup-fails/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          嵌入式 ARM 板子 Busybox 域名解析失败
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-11-09 13:25:52" itemprop="dateCreated datePublished" datetime="2018-11-09T13:25:52+08:00">2018-11-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>4.1k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>嵌入式 ARM 平台 <code>busybox</code> 可以 <code>ping ip</code>，但是不能 <code>ping domain name</code></p>
+<p>本篇主要涉及</p>
+<ul>
+<li>gcc v4.9</li>
+<li>libnss 动态链接库</li>
+<li>busybox 动态与静态编译</li>
+<li>busybox 动态编译下使用域名解析</li>
+<li>busybox 静态编译下使用域名解析</li>
+</ul>
+<a id="more"></a>
+
+<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><ul>
+<li>Linux v4.9.22</li>
+<li>Busybox v1.27.2</li>
+<li>Gcc v4.9</li>
+</ul>
+<h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><p><code>ping IP</code> 可以正常工作， <code>ping domain name</code> 时报错如下</p>
+<pre><code class="shell"># ping www.baidu.com
+ping: bad address &#39;www.baidu.com&#39;
+# nslookup www.baidu.com
+Server:    192.168.110.1
+Address 1: 192.168.110.1
+
+nslookup: can&#39;t resolve &#39;www.baidu.com&#39;</code></pre>
+<h2 id="确认环境设置"><a href="#确认环境设置" class="headerlink" title="确认环境设置"></a>确认环境设置</h2><p>需要确认路由表及 <code>nameserver</code>，如下：</p>
+<pre><code class="shell"># route
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+default         192.168.110.1   0.0.0.0         UG    0      0        0 eth0
+192.168.110.0   *               255.255.254.0   U     0      0        0 eth0
+
+# cat /etc/resolv.conf
+nameserver 192.168.110.1
+nameserver 114.114.114.114
+nameserver 202.101.172.35</code></pre>
+<p><strong>相同的配置在使用 <code>uclibc</code> 编译的开发板上工作正常</strong></p>
+<p>添加默认路由表命令如下</p>
+<pre><code class="shell">route add default gw 192.168.110.1 dev eth0</code></pre>
+<h2 id="相关信息"><a href="#相关信息" class="headerlink" title="相关信息"></a>相关信息</h2><ol>
+<li><a href="https://unix.stackexchange.com/questions/124283/busybox-ping-ip-works-but-hostname-nslookup-fails-with-bad-address" target="_blank" rel="noopener">Busybox ping IP works, but hostname nslookup fails with “bad address”</a></li>
+<li><a href="https://www.cnblogs.com/cute/archive/2012/05/17/2506332.html" target="_blank" rel="noopener">ping: bad address ‘www.baidu.com’</a></li>
+<li><a href="https://bugs.archlinux.org/task/41769" target="_blank" rel="noopener">FS#41769 - [busybox] DNS lookups don’t work</a></li>
+<li><a href="https://unix.stackexchange.com/questions/278864/name-resolution-in-busybox" target="_blank" rel="noopener">Name resolution in busybox</a></li>
+<li><a href="https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=757941" target="_blank" rel="noopener">libc6 version 2.19 breaks NSS loading for static binaries</a></li>
+<li><a href="https://blog.csdn.net/water_cow/article/details/6901981" target="_blank" rel="noopener">Linux 文件系统域名解析实现</a></li>
+<li><a href="https://blog.csdn.net/u013625451/article/details/79007441" target="_blank" rel="noopener">arm 开发板无法使用 dns 解析问题</a></li>
+</ol>
+<p>包括 <code>busybox</code> 下文档 <code>busybox_footer.pod</code> 下解释</p>
+<blockquote>
+<p>LIBC NSS</p>
+</blockquote>
+<blockquote>
+<p>GNU Libc (glibc) uses the Name Service Switch (NSS) to configure the behavior<br>of the C library for the local environment, and to configure how it reads<br>system data, such as passwords and group information.  This is implemented<br>using an /etc/nsswitch.conf configuration file, and using one or more of the<br>/lib/libnss_* libraries.  BusyBox tries to avoid using any libc calls that make<br>use of NSS.  Some applets however, such as login and su, will use libc functions<br>that require NSS.</p>
+</blockquote>
+<blockquote>
+<p>If you enable CONFIG_USE_BB_PWD_GRP, BusyBox will use internal functions to<br>directly access the /etc/passwd, /etc/group, and /etc/shadow files without<br>using NSS.  This may allow you to run your system without the need for<br>installing any of the NSS configuration files and libraries.</p>
+</blockquote>
+<blockquote>
+<p><strong>When used with glibc, the BusyBox ‘networking’ applets will similarly require<br>that you install at least some of the glibc NSS stuff (in particular,<br>/etc/nsswitch.conf, /lib/libnss_dns<em>, /lib/libnss_files</em>, and /lib/libresolv*).</strong></p>
+</blockquote>
+<blockquote>
+<p>Shameless Plug: As an alternative, one could use a C library such as uClibc.  In<br>addition to making your system significantly smaller, <strong>uClibc does not require the<br>use of any NSS support files or libraries.</strong></p>
+</blockquote>
+<p>从以上可以获知：</p>
+<ol>
+<li><code>libnss</code> 设计就是动态库，不建议静态编译。要静态编译，请先重新编译 <code>glibc</code>，把 <code>–enable-libnss-static</code> 放上</li>
+<li><code>glibc</code> 需要 <code>libnss</code> 库支持，编译工具链中直接包含了相关的文件，是动态库<pre><code class="shell">✔ ~/gcc-linaro-4.9.4-2017.01-i686_arm-linux-gnueabihf/arm-linux-gnueabihf/libc/lib &gt; ll libnss_dns*
+ libnss_dns-2.19-2014.08-1-git.so
+ libnss_dns.so.2 -&gt; libnss_dns-2.19-2014.08-1-git.so
+✔ ~/gcc-linaro-4.9.4-2017.01-i686_arm-linux-gnueabihf/arm-linux-gnueabihf/libc/lib &gt; ll libnss_files*
+ libnss_files-2.19-2014.08-1-git.so
+ libnss_files.so.2 -&gt; libnss_files-2.19-2014.08-1-git.so
+✔ ~/gcc-linaro-4.9.4-2017.01-i686_arm-linux-gnueabihf/arm-linux-gnueabihf/libc/lib &gt; ll libresolv*
+ libresolv-2.19-2014.08-1-git.so
+ libresolv.so.2 -&gt; libresolv-2.19-2014.08-1-git.so</code></pre>
+</li>
+<li><code>busybox</code> 需要动态编译来完成对 <code>libnss</code> 的使用</li>
+</ol>
+<h2 id="NSS-Name-Service-Switch-与-nsswitch-conf"><a href="#NSS-Name-Service-Switch-与-nsswitch-conf" class="headerlink" title="NSS(Name Service Switch 与 nsswitch.conf"></a>NSS(Name Service Switch 与 nsswitch.conf</h2><p><a href="https://en.wikipedia.org/wiki/Name_Service_Switch" target="_blank" rel="noopener">Name Service Switch</a></p>
+<p><code>NSS(Name Service Switch)</code> 是 <code>类 unix 操作系统</code> 中的一种工具，它为通用配置数据库和名称解析机制提供了各种来源。这些源文件包括本地操作系统文件（例如 <code>/etc/passwd</code>、 <code>/etc/group</code> 和 <code>/etc/hosts</code> )、 <code>域名系统 (DNS)</code>、 <code>网络信息服务 (NIS)</code> 和 <code>LDAP</code></p>
+<p><code>nsswitch.conf(name service switch configuration，名称服务切换配置）</code> 文件位于 <code>/etc</code> 目录下，<strong>由它规定通过哪些途径以及按照什么顺序以及通过这些途径来查找特定类型的信息，还可以指定某个方法奏效或失效时系统将采取什么动作</strong></p>
+<p>本篇文章中涉及到 <code>DNS 解析顺序</code></p>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><h3 id="动态编译"><a href="#动态编译" class="headerlink" title="动态编译"></a>动态编译</h3><p><code>busybox</code> 使用动态编译，然后将 <code>libnss</code> 相关文件拷贝到 <code>rootfs/lib</code> 下，并配置文件 <code>/etc/hosts, /etc/resolv.conf, /etc/nsswitch.conf</code></p>
+<h3 id="静态编译"><a href="#静态编译" class="headerlink" title="静态编译"></a>静态编译</h3><p>参考文章：<a href="https://blog.csdn.net/prog_6103/article/details/78569510" target="_blank" rel="noopener">nslookup 在静态编译的 busybox 上如何正常解析域名</a></p>
+<p>使用 <code>getaddrinfo</code> 进行域名解析。这个函数是 <code>libnss</code> 里的一个 <code>API</code> （可以在 <code>glibc</code> 源码中查看 <code>nss</code> 目录）。解决办法是绕过它，自己实现域名解析</p>
+<p>搜索 <code>busybox</code> 源文件</p>
+<pre><code class="shell">busybox-1.27.2 &gt; grep &quot;getaddrinfo&quot; * -Rn
+libbb/inet_common.c:160:    s = getaddrinfo(name, NULL, &amp;req, &amp;ai);
+libbb/inet_common.c:162:        bb_error_msg(&quot;getaddrinfo: %s: %d&quot;, name, s);
+libbb/xconnect.c:5: * Connect to host at port using address resolution from getaddrinfo
+libbb/xconnect.c:247:    /* Next two if blocks allow to skip getaddrinfo()
+libbb/xconnect.c:249:     * getaddrinfo() initializes DNS resolution machinery,
+libbb/xconnect.c:285:    rc = getaddrinfo(host, NULL, &amp;hint, &amp;result);
+networking/nslookup.c:90:    rc = getaddrinfo(hostname, NULL /*service*/, &amp;hint, &amp;result);
+networking/nslookup.c:200:    /* getaddrinfo and friends are free to request a resolver
+networking/nslookup.c:202:     * after getaddrinfo (in server_print). This reportedly helps</code></pre>
+<p><code>inet_common.c</code> 、 <code>xconnect.c</code> 以及 <code>nslookup.c</code> 这三个文件中的 <code>getaddrinfo</code> 使用 <a href="https://github.com/dna2github/dna2oslab/blob/master/linux/getaddrinfo.h" target="_blank" rel="noopener">getaddrinfo.h</a> 覆盖解决此问题</p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://ixyzero.com/blog/archives/4061.html" target="_blank" rel="noopener">LINUX 系统下的 NSS 服务和 /ETC/NSSWITCH.CONF 文件学习</a></li>
+<li><a href="http://www.firewall.cx/networking-topics/protocols/domain-name-system-dns/161-protocols-dns-response.html" target="_blank" rel="noopener">DNS RESPONSE MESSAGE FORMAT</a></li>
+<li><a href="https://www.binarytides.com/dns-query-code-in-c-with-linux-sockets/" target="_blank" rel="noopener">DNS Query Code in C with linux sockets</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/busybox/" rel="tag"># busybox</a>
+              <a href="/tags/libnss/" rel="tag"># libnss</a>
+              <a href="/tags/nslookup/" rel="tag"># nslookup</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/11/09/Linux-Kernel-cfg80211-wireless-extensions-compatibility/" rel="next" title="Linux 内核配置支持 MT7601U">
+                  <i class="fa fa-chevron-left"></i> Linux 内核配置支持 MT7601U
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/11/12/statically-linked-binary-that-uses-getaddrinfo/" rel="prev" title="静态编译使用 getaddrinfo 出现警告及动态静态混合使用">
+                  静态编译使用 getaddrinfo 出现警告及动态静态混合使用 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#环境"><span class="nav-number">1.</span> <span class="nav-text">环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#现象"><span class="nav-number">2.</span> <span class="nav-text">现象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#确认环境设置"><span class="nav-number">3.</span> <span class="nav-text">确认环境设置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#相关信息"><span class="nav-number">4.</span> <span class="nav-text">相关信息</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#NSS-Name-Service-Switch-与-nsswitch-conf"><span class="nav-number">5.</span> <span class="nav-text">NSS(Name Service Switch 与 nsswitch.conf</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#解决方案"><span class="nav-number">6.</span> <span class="nav-text">解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#动态编译"><span class="nav-number">6.1.</span> <span class="nav-text">动态编译</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#静态编译"><span class="nav-number">6.2.</span> <span class="nav-text">静态编译</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">7.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

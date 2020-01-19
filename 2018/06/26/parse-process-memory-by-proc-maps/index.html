@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="通过分析 &#x2F;proc&#x2F;PID&#x2F;maps 文件来了解程序运行时进程内存分布">
+<meta property="og:type" content="article">
+<meta property="og:title" content="通过 &#x2F;proc&#x2F;PID&#x2F;maps 分析进程内存分布">
+<meta property="og:url" content="http://yoursite.com/2018/06/26/parse-process-memory-by-proc-maps/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="通过分析 &#x2F;proc&#x2F;PID&#x2F;maps 文件来了解程序运行时进程内存分布">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2018-06-26T06:16:07.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.674Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="进程">
+<meta property="article:tag" content="线程">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2018/06/26/parse-process-memory-by-proc-maps/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>通过 /proc/PID/maps 分析进程内存分布 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/06/26/parse-process-memory-by-proc-maps/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          通过 /proc/PID/maps 分析进程内存分布
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-06-26 14:16:07" itemprop="dateCreated datePublished" datetime="2018-06-26T14:16:07+08:00">2018-06-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>8.9k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>8 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>通过分析 <code>/proc/PID/maps</code> 文件来了解程序运行时进程内存分布</p>
+<a id="more"></a>
+
+<h2 id="maps"><a href="#maps" class="headerlink" title="maps"></a>maps</h2><p>下面是进程 <code>/dvb/out.elf</code> 及相关 <code>maps</code> 文件的一个实例，其中 <code>898</code> 是主进程：</p>
+<pre><code>[root@ /proc]# ps -T
+PID   USER     TIME   COMMAND
+    1 root       0:00 init
+    2 root       0:00 [kthreadd]
+    3 root       0:00 [ksoftirqd/0]
+    4 root       0:00 [events/0]
+    5 root       0:00 [khelper]
+   57 root       0:00 [kblockd/0]
+   70 root       0:00 [khubd]
+   96 root       0:00 [pdflush]
+   97 root       0:00 [pdflush]
+   98 root       0:00 [kswapd0]
+   99 root       0:00 [aio/0]
+  100 root       0:00 [nfsiod]
+  101 root       0:00 [cifsoplockd]
+  102 root       0:00 [cifsdnotifyd]
+  739 root       0:00 [mtdblockd]
+  790 root       0:01 [rpciod/0]
+  822 root       0:00 [gx3211_hdmi_thr]
+  862 root       0:00 {exe} telnetd
+  868 root       7:56 gdbserver 192.168.110.55:1245 /dvb/out.elf
+  898 root       0:40 /dvb/out.elf
+  915 root       0:00 /dvb/out.elf
+  918 root       4:01 {pMonitor} /dvb/out.elf
+  919 root       0:00 {PlayerMsgSchedu} /dvb/out.elf
+  924 root       0:00 {NetworkMsgSched} /dvb/out.elf
+  925 root      10:12 {NetworkConsoleS} /dvb/out.elf
+  926 root       0:39 {parse read} /dvb/out.elf
+  927 root       0:00 {EpgMsgScheduler} /dvb/out.elf
+  928 root       6:09 {EpgConsoleSched} /dvb/out.elf
+  929 root       0:00 {SearchMsgSchedu} /dvb/out.elf
+  930 root       0:00 {SearchConsoleSc} /dvb/out.elf
+  931 root       0:00 {SiMsgScheduler} /dvb/out.elf
+  932 root      15:50 {SiConsoleSchedu} /dvb/out.elf
+  933 root       0:00 {BookMsgSchedule} /dvb/out.elf
+  934 root       0:23 {BookConsoleSche} /dvb/out.elf
+  935 root       0:00 {ExtraMsgSchedul} /dvb/out.elf
+  936 root       0:01 {ExtraConsoleSch} /dvb/out.elf
+  937 root       0:14 {GuiViewMsgSched} /dvb/out.elf
+  938 root       4:24 {GuiViewConsoleS} /dvb/out.elf
+  941 root       0:00 {FrontendMsgSche} /dvb/out.elf
+  942 root     668:52 {FrontendConsole} /dvb/out.elf
+  943 root       0:00 {HotPlugConsoleS} /dvb/out.elf
+  944 root       0:00 {update msg} /dvb/out.elf
+  945 root       0:05 {update console} /dvb/out.elf
+  946 root       0:05 {BlindSearchMsgS} /dvb/out.elf
+  947 root       0:14 {BlindSearchCons} /dvb/out.elf
+  948 root       0:00 {AppDeamonMsgSch} /dvb/out.elf
+  972 root       0:00 {app_ecm_proc} /dvb/out.elf
+  993 root       2:06 {apps_service} /dvb/out.elf
+  996 root       0:02 {VpnConsoleSched} /dvb/out.elf
+  997 root       0:00 {VpnMsgScheduler} /dvb/out.elf
+  998 root       0:00 {GuiViewConsoleS} /dvb/out.elf
+  999 root       0:00 {app_pmt_proc} /dvb/out.elf
+ 1000 root       0:00 {ttx_demux_threa} /dvb/out.elf
+ 1001 root       0:00 {ttx_parse_threa} /dvb/out.elf
+  913 root       0:00 -/bin/sh
+  914 root       0:00 [kpid-ts-out]
+  917 root       0:00 [gx3201_jpeg_thr]
+  939 root       0:08 [kdvb-fe-0]
+  940 root      12:19 [kdvb-fe-0]
+12626 root       0:00 {exe} ps -T
+
+# ls /proc/898/task/
+1000  915   924   927   930   933   936   941   944   947   993   998
+1001  918   925   928   931   934   937   942   945   948   996   999
+898   919   926   929   932   935   938   943   946   972   997
+
+# cat /proc/898/maps
+00008000-008ee000 r-xp 00000000 00:0b 261675     /dvb/out.elf
+008ee000-009ff000 rw-p 008e5000 00:0b 261675     /dvb/out.elf
+009ff000-00c7b000 rwxp 009ff000 00:00 0          [heap]
+2aaa8000-2aaa9000 r-xp 2aaa8000 00:00 0          [vdso]
+2aaaa000-2eaaa000 rw-s 94000000 00:0c 728        /dev/gxav0
+2eaaa000-2eaab000 ---p 2eaaa000 00:00 0
+2eaab000-2ebaa000 rw-p 2eaab000 00:00 0
+2ebaa000-2ebab000 ---p 2ebaa000 00:00 0
+2ebab000-2ecaa000 rw-p 2ebab000 00:00 0
+2ecaa000-2ecab000 ---p 2ecaa000 00:00 0
+2ecab000-2edaa000 rw-p 2ecab000 00:00 0
+2edaa000-2edab000 ---p 2edaa000 00:00 0
+2edab000-2eeaa000 rw-p 2edab000 00:00 0
+2eeaa000-2eeab000 ---p 2eeaa000 00:00 0
+2eeab000-2efaa000 rw-p 2eeab000 00:00 0
+2efaa000-2efab000 ---p 2efaa000 00:00 0
+2efab000-2f0aa000 rw-p 2efab000 00:00 0
+2f0aa000-2f0ab000 ---p 2f0aa000 00:00 0
+2f0ab000-2f1aa000 rw-p 2f0ab000 00:00 0
+2f1aa000-2f1ab000 ---p 2f1aa000 00:00 0
+2f1ab000-2f2aa000 rw-p 2f1ab000 00:00 0
+2f2aa000-2f2ab000 ---p 2f2aa000 00:00 0
+2f2ab000-2f3aa000 rw-p 2f2ab000 00:00 0
+2f3aa000-2f3ab000 ---p 2f3aa000 00:00 0
+2f3ab000-2f4aa000 rw-p 2f3ab000 00:00 0
+2f4aa000-2f4ab000 ---p 2f4aa000 00:00 0
+2f4ab000-2f60f000 rw-p 2f4ab000 00:00 0
+2f60f000-2f610000 ---p 2f60f000 00:00 0
+2f610000-2f70f000 rw-p 2f610000 00:00 0
+2f70f000-2f710000 ---p 2f70f000 00:00 0
+2f710000-2f80f000 rw-p 2f710000 00:00 0
+2f80f000-2f810000 ---p 2f80f000 00:00 0
+2f810000-2f90f000 rw-p 2f810000 00:00 0
+2f90f000-2f910000 ---p 2f90f000 00:00 0
+2f910000-2fa0f000 rw-p 2f910000 00:00 0
+2fa0f000-2fa10000 ---p 2fa0f000 00:00 0
+2fa10000-2fb0f000 rw-p 2fa10000 00:00 0
+2fb0f000-2fb10000 ---p 2fb0f000 00:00 0
+2fb10000-2fc0f000 rw-p 2fb10000 00:00 0
+2fc0f000-2fc10000 ---p 2fc0f000 00:00 0
+2fc10000-2fd0f000 rw-p 2fc10000 00:00 0
+2fd0f000-2fd10000 ---p 2fd0f000 00:00 0
+2fd10000-2fe0f000 rw-p 2fd10000 00:00 0
+2fe0f000-2fe10000 ---p 2fe0f000 00:00 0
+2fe10000-2ff0f000 rw-p 2fe10000 00:00 0
+2ff0f000-2ff10000 ---p 2ff0f000 00:00 0
+2ff10000-3000f000 rw-p 2ff10000 00:00 0
+3000f000-30010000 ---p 3000f000 00:00 0
+30010000-3010f000 rw-p 30010000 00:00 0
+3010f000-30110000 ---p 3010f000 00:00 0
+30110000-3020f000 rw-p 30110000 00:00 0
+3020f000-30210000 ---p 3020f000 00:00 0
+30210000-3030f000 rw-p 30210000 00:00 0
+3030f000-30310000 ---p 3030f000 00:00 0
+30310000-3040f000 rw-p 30310000 00:00 0
+3040f000-30410000 ---p 3040f000 00:00 0
+30410000-3050f000 rw-p 30410000 00:00 0
+3050f000-30510000 ---p 3050f000 00:00 0
+30510000-306ff000 rw-p 30510000 00:00 0
+306ff000-30700000 ---p 306ff000 00:00 0
+30700000-307ff000 rw-p 30700000 00:00 0
+307ff000-30800000 ---p 307ff000 00:00 0
+30800000-308ff000 rw-p 30800000 00:00 0
+308ff000-30900000 ---p 308ff000 00:00 0
+30900000-309ff000 rw-p 30900000 00:00 0
+309ff000-30a00000 ---p 309ff000 00:00 0
+30a00000-30aff000 rw-p 30a00000 00:00 0
+30aff000-30b00000 ---p 30aff000 00:00 0
+30b00000-31500000 rw-p 30b00000 00:00 0
+31500000-31501000 ---p 31500000 00:00 0
+31501000-31600000 rw-p 31501000 00:00 0
+31600000-31601000 ---p 31600000 00:00 0
+31601000-31700000 rw-p 31601000 00:00 0
+31700000-31701000 ---p 31700000 00:00 0
+31701000-31800000 rw-p 31701000 00:00 0
+7fddc000-7fdf1000 rwxp 7ffe2000 00:00 0          [stack]</code></pre><p>第一列的是一个段的起始地址和结束地址，第二列这个段的权限，第三列段的段内相对偏移量，第六列是这个段所存放的内容所对应的文件。</p>
+<p>对于第二列的权限， <code>r</code>：表示可读， <code>w</code>：表示可写， <code>x</code>：表示可执行， <code>p</code>：表示受保护（即只对本进程有效，不共享），与之相对的是 <code>s</code>，意是就是共享。</p>
+<p>进程空间从低到高依次是： <code>代码段 (r-xp)</code> , <code>可读写数据段 (rw-p)</code> , <code>堆</code> , <code>mmap 区（文件映射，匿名映射以及线程栈）</code> , <code>进程栈</code></p>
+<p>系统创建线程时执行如下代码：</p>
+<pre><code class="c">#define GX_PTHREAD_STACK_MIN 0x100000
+local_stack_size = stack_size &lt;= GX_PTHREAD_STACK_MIN ? GX_PTHREAD_STACK_MIN : stack_size;
+if (pthread_attr_setstacksize(&amp;custom_attr, (size_t)local_stack_size)) {
+    printf(&quot;pthread_attr_setstacksize error in GxCore_ThreadCreate, Pthread ID = %u\n&quot;, thread_rec-&gt;handle);
+    goto gxcore_err;
+}</code></pre>
+<p>而 <code>pthread</code> 库创建线程时会设置 <code>4k</code> 的 <code>guard</code> 区用于栈溢出检测，因此在 <code>进程 mmap 区</code> 中每两行就是一个 <code>线程栈</code></p>
+<pre><code>31500000-31501000 ---p 31500000 00:00 0     // guard size 0x1000
+31501000-31600000 rw-p 31501000 00:00 0     // thread size 0x100000
+31600000-31601000 ---p 31600000 00:00 0
+31601000-31700000 rw-p 31601000 00:00 0
+31700000-31701000 ---p 31700000 00:00 0
+31701000-31800000 rw-p 31701000 00:00 0</code></pre><p>同时可以计算出进程栈范围为 <code>7fddc000-7fdf1000</code>，大小为 <code>84K</code></p>
+<h2 id="out-elf"><a href="#out-elf" class="headerlink" title="out.elf"></a>out.elf</h2><p>分析可执行文件， <code>readelf -a out.elf</code>：</p>
+<pre><code>ELF Header:
+  Magic:   7f 45 4c 46 01 01 01 00 00 00 00 00 00 00 00 00
+  Class:                             ELF32
+  Data:                              2&#39;s complement, little endian
+  Version:                           1 (current)
+  OS/ABI:                            UNIX - System V
+  ABI Version:                       0
+  Type:                              EXEC (Executable file)
+  Machine:                           MCORE
+  Version:                           0x1
+  Entry point address:               0x80e0
+  Start of program headers:          52 (bytes into file)
+  Start of section headers:          20109200 (bytes into file)
+  Flags:                             0x10002002
+  Size of this header:               52 (bytes)
+  Size of program headers:           32 (bytes)
+  Number of program headers:         4
+  Size of section headers:           40 (bytes)
+  Number of section headers:         30
+  Section header string table index: 27
+
+Section Headers:
+  [Nr] Name              Type            Addr     Off    Size   ES Flg Lk Inf Al
+  [ 0]                   NULL            00000000 000000 000000 00      0   0  0
+  [ 1] .init             PROGBITS        000080b4 0000b4 000022 00  AX  0   0  4
+  [ 2] .text             PROGBITS        000080e0 0000e0 73407e 00  AX  0   0 16
+  [ 3] .fini             PROGBITS        0073c160 734160 000016 00  AX  0   0  4
+  [ 4] .rodata           PROGBITS        0073c180 734180 18d168 00   A  0   0 16
+  [ 5] .eh_frame         PROGBITS        008c92e8 8c12e8 024634 00   A  0   0  4
+  [ 6] .gcc_except_table PROGBITS        008ee91c 8e591c 00c780 00  WA  0   0  4
+  [ 7] .tdata            PROGBITS        008fb09c 8f209c 000004 00 WAT  0   0  4
+  [ 8] .tbss             NOBITS          008fb0a0 8f20a0 000010 00 WAT  0   0  4
+  [ 9] .ctors            PROGBITS        008fb0a0 8f20a0 0001d0 00  WA  0   0  4
+  [10] .dtors            PROGBITS        008fb270 8f2270 0000b8 00  WA  0   0  4
+  [11] .jcr              PROGBITS        008fb328 8f2328 000004 00  WA  0   0  4
+  [12] .data.rel.ro      PROGBITS        008fb330 8f2330 000ab8 00  WA  0   0  8
+  [13] .got              PROGBITS        008fbde8 8f2de8 0003c8 04  WA  0   0  4
+  [14] .data             PROGBITS        008fc1b0 8f31b0 102b24 00  WA  0   0 16
+  [15] .bss              NOBITS          009fecd8 9f5cd4 08fe78 00  WA  0   0  8
+  [16] .comment          PROGBITS        00000000 9f5cd4 0000c6 01  MS  0   0  1
+  [17] .debug_aranges    PROGBITS        00000000 9f5d9a 008db8 00      0   0  1
+  [18] .debug_pubnames   PROGBITS        00000000 9feb52 034b26 00      0   0  1
+  [19] .debug_info       PROGBITS        00000000 a33678 413c50 00      0   0  1
+  [20] .debug_abbrev     PROGBITS        00000000 e472c8 055324 00      0   0  1
+  [21] .debug_line       PROGBITS        00000000 e9c5ec 245862 00      0   0  1
+  [22] .debug_frame      PROGBITS        00000000 10e1e50 04f8e8 00      0   0  4
+  [23] .debug_str        PROGBITS        00000000 1131738 09eea4 01  MS  0   0  1
+  [24] .debug_loc        PROGBITS        00000000 11d05dc 0d25b7 00      0   0  1
+  [25] .debug_pubtypes   PROGBITS        00000000 12a2b93 0654e5 00      0   0  1
+  [26] .debug_ranges     PROGBITS        00000000 1308078 0255f8 00      0   0  1
+  [27] .shstrtab         STRTAB          00000000 132d670 00011d 00      0   0  1
+  [28] .symtab           SYMTAB          00000000 132dc40 09bb30 10     29 19497  4
+  [29] .strtab           STRTAB          00000000 13c9770 0cdb06 00      0   0  1
+Key to Flags:
+  W (write), A (alloc), X (execute), M (merge), S (strings), I (info),
+  L (link order), O (extra OS processing required), G (group), T (TLS),
+  C (compressed), x (unknown), o (OS specific), E (exclude),
+  p (processor specific)
+
+There are no section groups in this file.
+
+Program Headers:
+  Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align
+  LOAD           0x000000 0x00008000 0x00008000 0x8e591c 0x8e591c R E 0x1000
+  LOAD           0x8e591c 0x008ee91c 0x008ee91c 0x1103b8 0x1a0234 RW  0x1000
+  TLS            0x8f209c 0x008fb09c 0x008fb09c 0x00004 0x00014 R   0x4
+  GNU_STACK      0x000000 0x00000000 0x00000000 0x00000 0x00000 RWE 0x4
+
+ Section to Segment mapping:
+  Segment Sections...
+   00     .init .text .fini .rodata .eh_frame
+   01     .gcc_except_table .tdata .ctors .dtors .jcr .data.rel.ro .got .data .bss
+   02     .tdata .tbss
+   03</code></pre><p>可以看到：</p>
+<pre><code>Program Headers:
+  Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align
+  LOAD           0x000000 0x00008000 0x00008000 0x8e591c 0x8e591c R E 0x1000
+  LOAD           0x8e591c 0x008ee91c 0x008ee91c 0x1103b8 0x1a0234 RW  0x1000
+  TLS            0x8f209c 0x008fb09c 0x008fb09c 0x00004 0x00014 R   0x4
+  GNU_STACK      0x000000 0x00000000 0x00000000 0x00000 0x00000 RWE 0x4
+
+ Section to Segment mapping:
+  Segment Sections...
+   00     .init .text .fini .rodata .eh_frame
+   01     .gcc_except_table .tdata .ctors .dtors .jcr .data.rel.ro .got .data .bss
+   02     .tdata .tbss
+   03</code></pre><p>对应进程第一、第二段内容及大小， <code>只读数据段</code> 被合并到 <code>text</code> 段</p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://laoar.net/blogs/250/" target="_blank" rel="noopener">三言两语聊 kernel：线程栈</a></li>
+<li><a href="https://blog.csdn.net/ljianhui/article/details/21666327" target="_blank" rel="noopener">程序运行时的内存空间分布</a></li>
+<li><a href="https://blog.csdn.net/lijzheng/article/details/23618365" target="_blank" rel="noopener">linux proc maps 文件分析</a></li>
+<li><a href="http://andrew913.iteye.com/blog/426601" target="_blank" rel="noopener">proc 进程信息解析</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/%E8%BF%9B%E7%A8%8B/" rel="tag"># 进程</a>
+              <a href="/tags/%E7%BA%BF%E7%A8%8B/" rel="tag"># 线程</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/06/26/linux-process-stack-and-thread-stack/" rel="next" title="Linux 进程栈和线程栈的区别">
+                  <i class="fa fa-chevron-left"></i> Linux 进程栈和线程栈的区别
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/06/26/hexo-code-highlight/" rel="prev" title="hexo 代码高亮">
+                  hexo 代码高亮 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#maps"><span class="nav-number">1.</span> <span class="nav-text">maps</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#out-elf"><span class="nav-number">2.</span> <span class="nav-text">out.elf</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">3.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

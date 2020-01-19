@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="使用 pyenv 和 pyenv-virtualenv 来管理 python 版本 pyenv 是个 shell 脚本，能够轻松得实现各个不同版本 python 的相互间切换，而且各个版本的 python 切换不限于全局切换，甚至不同文件夹都可以拥有不同的 python 版本。 pyenv-virtualenv 是 pyenv 的插件，为 pyenv 设置的 python 版本提供隔离的虚拟环境，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="pyenv-and-pyenv-virtualenv">
+<meta property="og:url" content="http://yoursite.com/2018/10/08/pyenv-and-pyenv-virtualenv/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="使用 pyenv 和 pyenv-virtualenv 来管理 python 版本 pyenv 是个 shell 脚本，能够轻松得实现各个不同版本 python 的相互间切换，而且各个版本的 python 切换不限于全局切换，甚至不同文件夹都可以拥有不同的 python 版本。 pyenv-virtualenv 是 pyenv 的插件，为 pyenv 设置的 python 版本提供隔离的虚拟环境，">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2018-10-08T05:10:05.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.674Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="python">
+<meta property="article:tag" content="pyenv">
+<meta property="article:tag" content="pyenv-virtualenv">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2018/10/08/pyenv-and-pyenv-virtualenv/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>pyenv-and-pyenv-virtualenv | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/10/08/pyenv-and-pyenv-virtualenv/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          pyenv-and-pyenv-virtualenv
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-10-08 13:10:05" itemprop="dateCreated datePublished" datetime="2018-10-08T13:10:05+08:00">2018-10-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Python/" itemprop="url" rel="index">
+                    <span itemprop="name">Python</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>4.6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>使用 <code>pyenv</code> 和 <code>pyenv-virtualenv</code> 来管理 <code>python</code> 版本</p>
+<p><a href="https://github.com/pyenv/pyenv" target="_blank" rel="noopener">pyenv</a> 是个 <code>shell</code> 脚本，能够轻松得实现各个不同版本 <code>python</code> 的相互间切换，而且各个版本的 <code>python</code> 切换不限于全局切换，甚至不同文件夹都可以拥有不同的 <code>python</code> 版本。</p>
+<p><a href="https://github.com/pyenv/pyenv-virtualenv" target="_blank" rel="noopener">pyenv-virtualenv</a> 是 <code>pyenv</code> 的插件，为 <code>pyenv</code> 设置的 <code>python</code> 版本提供隔离的虚拟环境，设置虚拟环境后，在这个目录下面安装的第三方库及修改库搜索路径都不会影响其他环境，相当于一个沙盒环境，互相不影响。</p>
+<a id="more"></a>
+
+<h2 id="pyenv"><a href="#pyenv" class="headerlink" title="pyenv"></a>pyenv</h2><ul>
+<li>进行全局的 Python 版本切换</li>
+<li>为单个项目提供对应的 Python 版本</li>
+<li>只依赖 Python 本身</li>
+<li>能够进行 virtualenv 管理</li>
+<li>提供下载不同的 Python 版本和衍生版本</li>
+</ul>
+<p>使用 <code>pyenv --help</code> 查看具体命令</p>
+<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><ol>
+<li><p>确定你想把 <code>pyenv</code> 安装在哪。推荐安装在 <code>$HOME/.pyenv</code>，但你也可以安装在任意位置</p>
+<pre><code class="shell">$ git clone https://github.com/pyenv/pyenv.git ~/.pyenv</code></pre>
+</li>
+<li><p>定义你 <code>PYENV_ROOT</code> 的环境变量来指定你把 <code>pyenv</code> 仓库克隆到了哪，并把 <code>$PYENV_ROOT/bin</code> 添加到你的 <code>$PATH</code> 中，这样就能在命令行使用 <code>pyenv</code> 命令</p>
+<pre><code class="shell">$ echo &#39;export PYENV_ROOT=&quot;$HOME/.pyenv&quot;&#39; &gt;&gt; ~/.zshrc
+$ echo &#39;export PATH=&quot;$PYENV_ROOT/bin:$PATH&quot;&#39; &gt;&gt; ~/.zshrc</code></pre>
+</li>
+<li><p>设置启动 shell 时自动加载 <code>pyenv</code> 脚本。在 shell 配置文件的最后面加上 <code>eval &quot;$(pyenv init -)&quot;</code></p>
+<pre><code class="shell">$ echo &#39;eval &quot;$(pyenv init -)&quot;&#39; &gt;&gt; ~/.zshrc</code></pre>
+</li>
+<li><p>重启 shell，使脚本生效</p>
+<pre><code class="shell">$ exec &quot;$SHELL&quot;</code></pre>
+</li>
+<li><p>安装不同的 <code>python</code> 版本到 <code>$(pyenv root)/versions</code> 文件夹<br>在 <code>pyenv</code> 安装之前的所有 <code>python</code> 版本都归为 <code>system</code> 版本。可以用 <code>pyenv versions</code> 查看当前安装的 <code>python</code> 版本）。<br>在安装 <code>python</code> 之前，可以使用 <code>pyenv install -l</code> 查看当前可以安装哪些 <code>python</code> 版本。<br>然后使用 <code>pyenv install 选择的版本</code> 来安装你所选择的 <code>python</code> 版本。比如 <code>pyenv install 3.6.1</code> 安装 <code>python</code> 官网的版本。</p>
+</li>
+</ol>
+<h3 id="基本操作"><a href="#基本操作" class="headerlink" title="基本操作"></a>基本操作</h3><ul>
+<li><code>pyenv versions</code> 查看当前已安装的 python 版本</li>
+<li><code>pyenv install ...</code> 安装指定版本的 python</li>
+<li><code>pyenv global python 版本</code> 切换全局 python 版本</li>
+<li><code>pyenv local python 版本</code> 切换当前文件夹下的 python 版本</li>
+<li><code>pyenv shell python 版本</code> 切换当前 shell 中的 python 版本</li>
+<li><code>pyenv version</code> 查看当前使用的 python 版本</li>
+</ul>
+<h3 id="安装指定版本"><a href="#安装指定版本" class="headerlink" title="安装指定版本"></a>安装指定版本</h3><p><code>pyenv install</code> 命令在安装的时候是下载源代码到本地编译安装的，所以需要安装相关的开发库及依赖包</p>
+<p><a href="https://github.com/pyenv/pyenv/wiki" target="_blank" rel="noopener">pyenv wiki</a></p>
+<pre><code class="shell">$ sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev \
+libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
+xz-utils tk-dev libffi-dev liblzma-dev
+$ sudo apt install libedit-dev</code></pre>
+<p>安装指定版本</p>
+<pre><code class="shell">$ pyenv install 2.7.14
+Downloading Python-2.7.14.tar.xz...
+-&gt; https://www.python.org/ftp/python/2.7.14/Python-2.7.14.tar.xz
+error: failed to download Python-2.7.14.tar.xz
+
+BUILD FAILED (Ubuntu 17.10 using python-build 1.2.7-7-g21c75c19)</code></pre>
+<p>解决方法</p>
+<p><a href="https://github.com/pyenv/pyenv/issues/303" target="_blank" rel="noopener">pyenv install fails at download stage</a></p>
+<pre><code class="shell">$ cat /tmp/python-build.20181008151222.32112.log
+/tmp/python-build.20181008151222.32112 ~/.pyenv
+curl: (1) Protocol &quot;https&quot; not supported or disabled in libcurl
+
+$ wget https://curl.haxx.se/download/curl-7.61.1.tar.gz
+$ tar xf curl-7.61.1.tar.gz
+$ cd curl-7.61.1
+$ ./configure --with-ssl &amp; make &amp; sudo make install
+$ curl --version
+curl 7.61.1 (x86_64-pc-linux-gnu) libcurl/7.61.1 OpenSSL/1.0.2g zlib/1.2.11
+Release-Date: 2018-09-05
+Protocols: dict file ftp ftps gopher http https imap imaps pop3 pop3s rtsp smb smbs smtp smtps telnet tftp
+Features: AsynchDNS IPv6 Largefile NTLM NTLM_WB SSL libz TLS-SRP UnixSockets HTTPS-proxy</code></pre>
+<p>安装完成之后需要刷新数据库</p>
+<pre><code class="shell">pyenv rehash</code></pre>
+<p>安装 <code>python2</code> 和 <code>python3</code></p>
+<pre><code class="shell">$ pyenv install -l
+$ pyenv install 2.7.14
+$ pyenv install 3.6.6
+$ pyenv versions
+* system (set by /home/yanwzh/.pyenv/version)
+  2.7.14
+  3.6.6</code></pre>
+<h3 id="卸载指定版本"><a href="#卸载指定版本" class="headerlink" title="卸载指定版本"></a>卸载指定版本</h3><pre><code class="shell">pyenv uninstall x.x.x</code></pre>
+<h3 id="版本切换"><a href="#版本切换" class="headerlink" title="版本切换"></a>版本切换</h3><ul>
+<li>全局版本切换 <code>pyenv global 2.7.14</code></li>
+<li>局部版本切换 <code>pyenv local 3.6.6</code> #在某目录下执行，只在该目录下生效</li>
+<li>取消当前设置的版本使用 <code>pyenv local --unset</code></li>
+</ul>
+<p>例如设置指定文件夹为 <code>3.6.6</code></p>
+<pre><code class="shell">$ mkdir 3.6.6
+$ pyenv local
+pyenv: no local version configured for this directory
+$ pyenv local 3.6.6
+$ pyenv local
+3.6.6
+$ python
+Python 3.6.6 (default, Oct  8 2018, 15:46:38)
+[GCC 7.2.0] on linux
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt;
+$ cd ..
+$ python
+Python 2.7.14 (default, Sep 23 2017, 22:06:14)
+[GCC 7.2.0] on linux2
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt;
+$ cd -
+$ pyenv local --unset
+$ python
+Python 2.7.14 (default, Sep 23 2017, 22:06:14)
+[GCC 7.2.0] on linux2
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt;</code></pre>
+<h3 id="更新-pyenv"><a href="#更新-pyenv" class="headerlink" title="更新 pyenv"></a>更新 pyenv</h3><pre><code class="shell">$ cd $(pyenv root)
+$ git pull</code></pre>
+<h3 id="卸载-pyenv"><a href="#卸载-pyenv" class="headerlink" title="卸载 pyenv"></a>卸载 pyenv</h3><ol>
+<li>禁用 <code>pyenv</code> , 把 <code>pyenv init</code> 从 shell 的配置文件中移除，然后重启 shell （移除后 <code>pyenv</code> 命令仍然能使用，但是版本切换命令不会生效）</li>
+<li>卸载 <code>pyenv</code> , 执行上一步，然后把 <code>pyenv</code> 的根目录删除即可</li>
+</ol>
+<h2 id="pyenv-virtualenv"><a href="#pyenv-virtualenv" class="headerlink" title="pyenv-virtualenv"></a>pyenv-virtualenv</h2><h3 id="安装-1"><a href="#安装-1" class="headerlink" title="安装"></a>安装</h3><ol>
+<li>需要将 <code>pyenv-virtualenv</code> 克隆到 <code>pyenv</code> 的 <code>plugin</code> 文件夹下<pre><code class="shell">$ git clone https://github.com/pyenv/pyenv-virtualenv.git $(pyenv root)/plugins/pyenv-virtualenv</code></pre>
+</li>
+<li>(OPTIONAL) 添加 <code>pyenv virtualenv-init</code> 到你的 <code>shell</code> 配置文件中，这样进入指定文件夹自动进入虚拟环境，离开文件夹退出虚拟环境<pre><code class="shell">$ echo &#39;eval &quot;$(pyenv virtualenv-init -)&quot;&#39; &gt;&gt; ~/.zshrc</code></pre>
+</li>
+<li><code>exec &quot;$SHELL&quot;</code></li>
+</ol>
+<h3 id="创建虚拟环境"><a href="#创建虚拟环境" class="headerlink" title="创建虚拟环境"></a>创建虚拟环境</h3><ul>
+<li><code>pyenv virtualenv x.x.x name</code></li>
+</ul>
+<p>如果不指定版本 <code>x.x.x</code> , 则默认使用当前 <code>pyenv version</code> 的 python 版本</p>
+<p>创建的虚拟环境位于 <code>$(pyenv root)/versions/</code> 下的指定 python 版本的文件夹中 <code>envs/</code> 文件夹下</p>
+<h3 id="激活虚拟环境"><a href="#激活虚拟环境" class="headerlink" title="激活虚拟环境"></a>激活虚拟环境</h3><h4 id="自动激活"><a href="#自动激活" class="headerlink" title="自动激活"></a>自动激活</h4><ol>
+<li>在 <code>.zshrc</code> 添加 <code>eval &quot;$(pyenv virtualenv-init -)&quot;</code>，然后 <code>exec &quot;$SHELL&quot;</code> 重启 shell</li>
+<li>在想要激活虚拟环境的文件夹中新建 <code>.python-version</code> 文件，并写入虚拟环境的名字</li>
+<li>以后进入该的文件夹就会自动激活虚拟环境，离开该文件夹就会退出虚拟环境。</li>
+</ol>
+<h4 id="手动激活"><a href="#手动激活" class="headerlink" title="手动激活"></a>手动激活</h4><ul>
+<li><code>pyenv activate name</code> 激活虚拟环境。</li>
+<li><code>pyenv deactivate</code> 退出虚拟环境</li>
+</ul>
+<h3 id="删除虚拟环境"><a href="#删除虚拟环境" class="headerlink" title="删除虚拟环境"></a>删除虚拟环境</h3><ol>
+<li>删除 <code>$(pyenv root)/versions</code> 和 <code>$(pyenv root)/versions/{version}/envs</code> 的相关文件夹即可</li>
+<li>命令行运行 <code>pyenv uninstall name</code></li>
+</ol>
+<h3 id="列出现有-virtualenvs"><a href="#列出现有-virtualenvs" class="headerlink" title="列出现有 virtualenvs"></a>列出现有 virtualenvs</h3><pre><code class="shell">$ pyenv virtualenvs
+  3.6.6/envs/P-env-3.6.6 (created from ~/.pyenv/versions/3.6.6)
+* P-env-3.6.6 (created from ~/.pyenv/versions/3.6.6)</code></pre>
+<p>每个 <code>virtualenv</code> 有两个条目，较短的一个只是一个符号链接</p>
+<h3 id="Example"><a href="#Example" class="headerlink" title="Example"></a>Example</h3><pre><code class="shell">$ pyenv virtualenv 3.6.6 P-env-3.6.6
+$ mkdir 3.6.6
+$ cd 3.6.6
+$ touch .python-version
+$ echo P-env-3.6.6 &gt; .python-version
+$ pyenv local
+P-env-3.6.6</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://www.jianshu.com/p/5e00ca8a10d5" target="_blank" rel="noopener">pyenv 及 pyenv-virtualenv 安装</a></li>
+<li><a href="https://www.liaoxuefeng.com/wiki/0014316089557264a6b348958f449949df42a6d3a2e542c000/001432712108300322c61f256c74803b43bfd65c6f8d0d0000" target="_blank" rel="noopener">virtualenv</a></li>
+<li><a href="http://www.airghc.top/2017/01/17/haha/" target="_blank" rel="noopener">Linux 下多版本 python 共存</a></li>
+<li><a href="https://www.jianshu.com/p/526a9ff5a43d" target="_blank" rel="noopener">Python 版本控制神器</a></li>
+<li><a href="https://www.jianshu.com/p/60f361822a7e" target="_blank" rel="noopener">Python 版本管理</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/python/" rel="tag"># python</a>
+              <a href="/tags/pyenv/" rel="tag"># pyenv</a>
+              <a href="/tags/pyenv-virtualenv/" rel="tag"># pyenv-virtualenv</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/10/06/https-encrypt-and-ca/" rel="next" title="HTTPS 加密算法与 CA 证书签名算法">
+                  <i class="fa fa-chevron-left"></i> HTTPS 加密算法与 CA 证书签名算法
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/10/09/python-auto-generate-requirements/" rel="prev" title="自动生成和安装 requirements.txt 依赖">
+                  自动生成和安装 requirements.txt 依赖 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#pyenv"><span class="nav-number">1.</span> <span class="nav-text">pyenv</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#安装"><span class="nav-number">1.1.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#基本操作"><span class="nav-number">1.2.</span> <span class="nav-text">基本操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#安装指定版本"><span class="nav-number">1.3.</span> <span class="nav-text">安装指定版本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#卸载指定版本"><span class="nav-number">1.4.</span> <span class="nav-text">卸载指定版本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#版本切换"><span class="nav-number">1.5.</span> <span class="nav-text">版本切换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#更新-pyenv"><span class="nav-number">1.6.</span> <span class="nav-text">更新 pyenv</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#卸载-pyenv"><span class="nav-number">1.7.</span> <span class="nav-text">卸载 pyenv</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pyenv-virtualenv"><span class="nav-number">2.</span> <span class="nav-text">pyenv-virtualenv</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#安装-1"><span class="nav-number">2.1.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#创建虚拟环境"><span class="nav-number">2.2.</span> <span class="nav-text">创建虚拟环境</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#激活虚拟环境"><span class="nav-number">2.3.</span> <span class="nav-text">激活虚拟环境</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#自动激活"><span class="nav-number">2.3.1.</span> <span class="nav-text">自动激活</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#手动激活"><span class="nav-number">2.3.2.</span> <span class="nav-text">手动激活</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#删除虚拟环境"><span class="nav-number">2.4.</span> <span class="nav-text">删除虚拟环境</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#列出现有-virtualenvs"><span class="nav-number">2.5.</span> <span class="nav-text">列出现有 virtualenvs</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Example"><span class="nav-number">2.6.</span> <span class="nav-text">Example</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">3.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="Linux系统编程读书笔记1">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux系统编程-文件I&#x2F;O">
+<meta property="og:url" content="http://yoursite.com/2014/10/20/Linux-system-programming-02/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="Linux系统编程读书笔记1">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2014-10-20T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.658Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="I&#x2F;O">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2014/10/20/Linux-system-programming-02/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linux系统编程-文件I/O | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/10/20/Linux-system-programming-02/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux系统编程-文件I/O
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-10-21 00:00:00" itemprop="dateCreated datePublished" datetime="2014-10-21T00:00:00+08:00">2014-10-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux System Programming</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>4.4k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+            <div class="post-description">Linux系统编程读书笔记1</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<h2 id="open"><a href="#open" class="headerlink" title="open()"></a><strong>open()</strong></h2><p>函数头文件及原型：</p>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+
+int open(const char * pathname, int flags);
+int open(const char * pathname, int flags, mode_t mode);</code></pre><p>参数<code>pathname</code>指向欲打开的文件路径字符串。文件打开方式是根据参数<code>flags</code>值来确认的。</p>
+<ul>
+<li><strong>O_RDONLY</strong> 以只读方式打开文件</li>
+<li><strong>O_WRONLY</strong> 以只写方式打开文件</li>
+<li><strong>O_RDWR</strong> 以可读写方式打开文件</li>
+</ul>
+<p>上述三种旗标是互斥的, 也就是不可同时使用, 但可与下列的旗标利用OR(|)运算符组合.</p>
+<ul>
+<li><strong>O_CREAT</strong> 若欲打开的文件不存在则自动建立该文件.</li>
+<li><strong>O_EXCL</strong> 如果O_CREAT 也被设置, 此指令会去检查文件是否存在. 文件若不存在则建立该文件, 否则将导致打开文件错误. 此外, 若O_CREAT 与O_EXCL 同时设置, 并且欲打开的文件为符号连接, 则会打开文件失败.</li>
+<li><strong>O_NOCTTY</strong> 如果欲打开的文件为终端机设备时, 则不会将该终端机当成进程控制终端机.</li>
+<li><strong>O_TRUNC</strong> 若文件存在并且以可写的方式打开时, 此旗标会令文件长度清为0, 而原来存于该文件的资料也会消失.</li>
+<li><strong>O_APPEND</strong> 当读写文件时会从文件尾开始移动, 也就是所写入的数据会以附加的方式加入到文件后面.</li>
+<li><strong>O_NONBLOCK</strong> 以不可阻断的方式打开文件, 也就是无论有无数据读取或等待, 都会立即返回进程之中.</li>
+<li><strong>O_NDELAY</strong> 同O_NONBLOCK.</li>
+<li><strong>O_SYNC</strong> 以同步的方式打开文件.</li>
+<li><strong>O_NOFOLLOW</strong> 如果参数pathname 所指的文件为一符号连接, 则会令打开文件失败.</li>
+<li><strong>O_DIRECTORY</strong> 如果参数pathname 所指的文件并非为一目录, 则会令打开文件失败。</li>
+</ul>
+<p>参数<code>mode</code>则有下列数种组合, 只有在建立新文件时才会生效, 此外真正建文件时的权限会受到umask值所影响, 因此该文件权限应该为 (mode-umaks).</p>
+<ul>
+<li><strong>S_IRWXU00700</strong> 权限, 代表该文件所有者具有可读、可写及可执行的权限.</li>
+<li><strong>S_IRUSR</strong> 或<strong>S_IREAD</strong>, 00400 权限, 代表该文件所有者具有可读取的权限.</li>
+<li><strong>S_IWUSR</strong> 或<strong>S_IWRITE</strong>, 00200 权限, 代表该文件所有者具有可写入的权限.</li>
+<li><strong>S_IXUSR</strong> 或<strong>S_IEXEC</strong>, 00100 权限, 代表该文件所有者具有可执行的权限.</li>
+<li><strong>S_IRWXG</strong> 00070 权限, 代表该文件用户组具有可读、可写及可执行的权限.</li>
+<li><strong>S_IRGRP</strong> 00040 权限, 代表该文件用户组具有可读的权限.</li>
+<li><strong>S_IWGRP</strong> 00020 权限, 代表该文件用户组具有可写入的权限.</li>
+<li><strong>S_IXGRP</strong> 00010 权限, 代表该文件用户组具有可执行的权限.</li>
+<li><strong>S_IRWXO</strong> 00007 权限, 代表其他用户具有可读、可写及可执行的权限.</li>
+<li><strong>S_IROTH</strong> 00004 权限, 代表其他用户具有可读的权限</li>
+<li><strong>S_IWOTH</strong> 00002 权限, 代表其他用户具有可写入的权限.</li>
+<li><strong>S_IXOTH</strong> 00001 权限, 代表其他用户具有可执行的权限.</li>
+</ul>
+<p>例如：<strong>S_IWUSR|S_IRUSR|S_IWGRP|S_IRGRP|S_IROTH 等效于 0664</strong></p>
+<p>返回值：若所有欲核查的权限都通过了检查则返回0 值, 表示成功, 只要有一个权限被禁止则返回-1. 错误代码：</p>
+<ul>
+<li><strong>EEXIST</strong> 参数pathname 所指的文件已存在, 却使用了O_CREAT 和O_EXCL 旗标.</li>
+<li><strong>EACCESS</strong> 参数pathname 所指的文件不符合所要求测试的权限.</li>
+<li><strong>EROFS</strong> 欲测试写入权限的文件存在于只读文件系统内.</li>
+<li><strong>EFAULT</strong> 参数pathname 指针超出可存取内存空间.</li>
+<li><strong>EINVAL</strong> 参数mode 不正确.</li>
+<li><strong>ENAMETOOLONG</strong> 参数 pathname 太长.</li>
+<li><strong>ENOTDIR</strong> 参数pathname 不是目录.</li>
+<li><strong>ENOMEM</strong> 核心内存不足.</li>
+<li><strong>ELOOP</strong> 参数pathname 有过多符号连接问题.</li>
+<li><strong>EIO</strong> I/O 存取错误.</li>
+</ul>
+<h3 id="creat"><a href="#creat" class="headerlink" title="creat()"></a><strong>creat()</strong></h3><p>O_WRONLY | O_CREAT | O_TRUNC 的组合经常被使用，因此专门有个系统调用提供这个功能：</p>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+
+int creat(const char *name, mode_t mode);</code></pre><p>典型的creat()调用如下：</p>
+<pre><code>int fd;
+fd = creat(filename, 0664);</code></pre><p>等效于：</p>
+<pre><code>int fd;
+fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0664);</code></pre><h2 id="read"><a href="#read" class="headerlink" title="read()"></a><strong>read()</strong></h2><p>每次调用read()函数，会从fd指向的文件的当前偏移开始读取len字节到buf所指向的内存中。调用成功则返回写入buf中的字节数；<br>出错时，返回-1，并设置errno值。函数原型：</p>
+<pre><code>#include &lt;unistd.h&gt;
+ssize_t read(int fd, void *buf, size_t len);</code></pre><p>调用read()的返回值：</p>
+<ul>
+<li>返回值等于len，结果和预期一致</li>
+<li>返回值大于0，但小于len，有很多原因：读取过程中信号中断、出错、提前到达EOF等</li>
+<li>返回值为0，EOF，没有更多可读数据</li>
+<li>返回值为-1，errno为EINTR，表示读取任何字节之前接收到信号。调用可以重新执行</li>
+<li>返回值为-1，errno为EAGAIN，表示当前没有数据可用，读取操作会阻塞，请求应稍后重新执行</li>
+<li>返回值为-1，errno非EINTR或EAGAIN，表示更严重错误，重新执行也不会成功</li>
+</ul>
+<p>读取所有字节且处理了异常情况的示例：</p>
+<pre><code>ssize_t ret;
+while(len != 0 &amp;&amp; (ret = read(fd, buf, len)) != 0) {
+    if(ret == -1) {
+        if(errno == EINTR)
+            continue;
+        perror(&quot;read&quot;);
+        break;
+    }
+    len -= ret;
+    buf += ret;
+}</code></pre><h2 id="write"><a href="#write" class="headerlink" title="write()"></a><strong>write()</strong></h2><p>write()调用会从文件描述符fd指向的文件的当前位置开始，将buf中至多count个字节写入到文件中。<br>执行成功时返回写入的字节数，并更新文件位置。出错时，返回-1，并设置errno值。函数原型：</p>
+<pre><code>#include &lt;unistd.h&gt;
+ssize_t write(int fd, const void *buf, size_t count);</code></pre><h2 id="同步I-O"><a href="#同步I-O" class="headerlink" title="同步I/O"></a><strong>同步I/O</strong></h2><p>为了保证磁盘上实际文件系统与缓冲区高速缓存中内容的一致性，UNIX系统提供了系统调用sync()、fsync()和fdatasync()，函数原型：</p>
+<pre><code>#include &lt;unistd.h&gt;
+void sync(void);
+int fsync(int fd);
+int fdatasync(int fd);</code></pre><p>sync函数只是将所有修改过的块缓冲区排入写队列，然后就返回，它并不等待实际写磁盘操作结束。</p>
+<p>fsync函数只对由文件描述符fd指定的单一文件起作用，并且等待写磁盘操作结束，然后返回。<br>该效用会回写数据和元数据，如创建的时间戳以及索引节点中的其他属性。<br>因为文件的数据和metadata通常存在硬盘的不同地方，因此fsync至少需要两次IO写操作。</p>
+<p>fdatasync函数类似于fsync，区别在于fdatasync只会写入数据以及之后要访问文件所需要的元数据，<br>例如，会将文件大小回写，但是不保证所有非基础的元数据也写到磁盘上，比fsync函数执行更快。</p>
+<h2 id="关闭文件"><a href="#关闭文件" class="headerlink" title="关闭文件"></a><strong>关闭文件</strong></h2><p>当程序完成对某个文件的操作后，可以通过系统调用close()取消文件描述符到对应文件的映射：</p>
+<pre><code>#include &lt;unistd.h&gt;
+int close(int fd);</code></pre><p>调用之后，先前给定的文件描述符不再有效，内核可以重用它。</p>
+<h2 id="lseek"><a href="#lseek" class="headerlink" title="lseek()"></a><strong>lseek()</strong></h2><p>每一个已打开的文件都有一个读写位置, 当打开文件时通常其读写位置是指向文件开头,<br>若是以附加的方式打开文件(如O_APPEND), 则读写位置会指向文件尾.<br>当read()或write()时, 读写位置会随之增加,lseek()便是用来控制该文件的读写位置.<br>参数fd为已打开的文件描述词, 参数pos为根据参数origin来移动读写位置的位移数.</p>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;unistd.h&gt;
+off_t lseek(int fd, off_t pos, int origin);</code></pre><p>参数 <code>origin</code> 为下列其中一种:</p>
+<ul>
+<li><strong>SEEK_SET</strong> 参数pos即为新的读写位置.</li>
+<li><strong>SEEK_CUR</strong> 以目前的读写位置往后增加pos个位移量.</li>
+<li><strong>SEEK_END</strong> 将读写位置指向文件尾后再增加pos个位移量. 当origin值为SEEK_CUR 或SEEK_END 时, 参数pos允许负值的出现.</li>
+</ul>
+<p>示例：</p>
+<ul>
+<li>欲将读写位置移到文件开头时:lseek(int fd, 0, SEEK_SET);</li>
+<li>欲将读写位置移到文件尾时:lseek(int fd, 0, SEEK_END);</li>
+<li>想要取得目前文件位置时:lseek(int fd, 0, SEEK_CUR);</li>
+</ul>
+<p>返回值：当调用成功时则返回目前的读写位置, 也就是距离文件开头多少个字节. 若有错误则返回-1, errno 会存放错误代码.</p>
+<h2 id="文件截短"><a href="#文件截短" class="headerlink" title="文件截短"></a><strong>文件截短</strong></h2><p>Linux提供两个系统调用支持文件截短，原型如下：</p>
+<pre><code>#inclide &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+int ftruncate(int fd, off_t len);
+int truncate(const char *path, off_t len);</code></pre><p>这两个系统调用都将文件截短为参数len指定的长度。成功时返回0，出错时返回-1并设置相应errno值。<br>len小于原文件大小时，新文件长度变为len，介于之前len和原文件大小之间的数据被丢弃，不可再读。<br>len大于原文件大小时，新扩展出来的字节使用0来填充。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/I-O/" rel="tag"># I/O</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2014/10/20/Linux-system-programming/" rel="next" title="Linux系统编程-基本概念">
+                  <i class="fa fa-chevron-left"></i> Linux系统编程-基本概念
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2014/10/21/p2p-find/" rel="prev" title="P2P设备和Miracast设备发现过程">
+                  P2P设备和Miracast设备发现过程 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#open"><span class="nav-number">1.</span> <span class="nav-text">open()</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#creat"><span class="nav-number">1.1.</span> <span class="nav-text">creat()</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#read"><span class="nav-number">2.</span> <span class="nav-text">read()</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#write"><span class="nav-number">3.</span> <span class="nav-text">write()</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#同步I-O"><span class="nav-number">4.</span> <span class="nav-text">同步I&#x2F;O</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#关闭文件"><span class="nav-number">5.</span> <span class="nav-text">关闭文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#lseek"><span class="nav-number">6.</span> <span class="nav-text">lseek()</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#文件截短"><span class="nav-number">7.</span> <span class="nav-text">文件截短</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

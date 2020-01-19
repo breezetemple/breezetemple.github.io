@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="Docker 是什么 Docker 核心概念 Docker 怎么使用">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Docker 入门">
+<meta property="og:url" content="http://yoursite.com/2019/10/11/how-to-use-docker/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="Docker 是什么 Docker 核心概念 Docker 怎么使用">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/docker/docker.jpg">
+<meta property="og:image" content="http://yoursite.com/images/docker/three">
+<meta property="og:image" content="http://yoursite.com/images/docker/image.jpg">
+<meta property="og:image" content="http://yoursite.com/images/docker/container.jpg">
+<meta property="og:image" content="http://yoursite.com/images/docker/docker-diagram.jpg">
+<meta property="article:published_time" content="2019-10-11T02:52:03.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.682Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="docker">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/docker/docker.jpg">
+
+<link rel="canonical" href="http://yoursite.com/2019/10/11/how-to-use-docker/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Docker 入门 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/11/how-to-use-docker/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Docker 入门
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-10-11 10:52:03" itemprop="dateCreated datePublished" datetime="2019-10-11T10:52:03+08:00">2019-10-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/Docker/" itemprop="url" rel="index">
+                    <span itemprop="name">Docker</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.5k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <ul>
+<li><code>Docker</code> 是什么</li>
+<li><code>Docker</code> 核心概念</li>
+<li><code>Docker</code> 怎么使用</li>
+</ul>
+<a id="more"></a>
+
+<h2 id="Docker-是什么"><a href="#Docker-是什么" class="headerlink" title="Docker 是什么"></a>Docker 是什么</h2><ul>
+<li>Docker 是 Linux 容器的一种封装，提供简单易用的容器使用接口</li>
+<li>Docker 和传统虚拟化方式的不同之处在于容器是在操作系统层面上实现虚拟化，直接复用本地主机的操作系统，而传统方式则是在硬件层面实现</li>
+<li>相较于 VM 虚拟化方法，Docker 的好处是启动速度快，资源利用率高，性能开销小</li>
+</ul>
+<p><img src="/images/docker/docker.jpg" alt="Container vs VMs"></p>
+<h2 id="Docker-核心概念"><a href="#Docker-核心概念" class="headerlink" title="Docker 核心概念"></a>Docker 核心概念</h2><p>Docker 技术的三大核心概念，分别是：</p>
+<ul>
+<li>镜像（Image）</li>
+<li>容器（Container）</li>
+<li>仓库（Repository）</li>
+</ul>
+<p>docker 是一个 client-server 的结构！先看看官网给出的架构图：</p>
+<p><img src="/images/docker/three" alt="three"></p>
+<h3 id="联合文件系统-UnionFS"><a href="#联合文件系统-UnionFS" class="headerlink" title="联合文件系统 - UnionFS"></a>联合文件系统 - <code>UnionFS</code></h3><h3 id="镜像"><a href="#镜像" class="headerlink" title="镜像"></a>镜像</h3><p>Docker 镜像就是一个只读的模板。一个镜像可以包含一个完整的操作系统环境，里面仅安装了 Apache 或用户需要的其它应用程序。镜像可以用来创建 Docker 容器。Docker 提供了一个很简单的机制来创建镜像或者更新现有的镜像，用户甚至可以直接从其他人那里下载一个已经做好的镜像来直接使用。任何镜像的创建会基于其他的父镜像，也就是说镜像是一层套一层。<br>镜像不包含任何动态数据，其内容在构建之后也不会被改变。镜像（Image）就是一堆只读层（read-only layer）的统一视角：<br><img src="/images/docker/image.jpg" alt="Image"></p>
+<p>统一文件系统 (Union File System) 技术能够将不同的层整合成一个文件系统，为这些层提供了一个统一的视角。这样就隐藏了多层的存在，在用户的角度看来，只存在一个文件系统。</p>
+<h3 id="容器"><a href="#容器" class="headerlink" title="容器"></a>容器</h3><p>Docker 运行的最小单位。它是通过镜像实例化出来的一个可运行对象。容器的修改，可以提交反作用于镜像，更新这个容器的模板。Docker 利用容器来运行应用。容器是从镜像创建的运行实例。它可以被启动、开始、停止、删除。每个容器都是相互隔离的、保证安全的平台。<br>image 文件生成的容器实例，本身也是一个文件，称为容器文件。也就是说，一旦容器生成，就会同时存在两个文件：image 文件和容器文件。而且关闭容器并不会删除容器文件，只是容器停止运行而已。</p>
+<p>容器的最上面那一层是可读可写的。<br><img src="/images/docker/container.jpg" alt="Image"></p>
+<h3 id="容器数据卷"><a href="#容器数据卷" class="headerlink" title="容器数据卷"></a>容器数据卷</h3><p>容器数据卷的设计目的是做<strong>数据的持久化和容器间的数据共享</strong>，数据卷完全独立于容器的生命周期，也就是说就算容器关闭或者删除，数据也不会丢失。将宿主机的目录挂在到容器，应用在容器内的数据可以同步到宿主机磁盘上，这样容器内产生的数据就可以持久化了。</p>
+<h3 id="仓库"><a href="#仓库" class="headerlink" title="仓库"></a>仓库</h3><p>官方仓库 <a href="https://hub.docker.com/" target="_blank" rel="noopener">Docker Hub</a> 是最重要、最常用的 image 仓库。</p>
+<h3 id="Dockerfile"><a href="#Dockerfile" class="headerlink" title="Dockerfile"></a>Dockerfile</h3><p><code>Dockerfile</code> 是一个包含用户能够构建镜像的所有命令的文本文档，它有自己的语法以及命令，Docker 能够从 Dockerfile 中读取指令自动的构建镜像！ 可以将 Dockerfile 分为四个部分：</p>
+<ol>
+<li>基础镜像（父镜像）信息指令 <code>FROM</code></li>
+<li>维护者信息指令 <code>MAINTAINER</code></li>
+<li>镜像操作指令 <code>RUN</code>、 <code>EVN</code>、 <code>ADD</code> 和 <code>WORKDIR</code> 等</li>
+<li>容器启动指令 <code>CMD</code>、 <code>ENTRYPOINT</code> 和 <code>USER</code> 等</li>
+</ol>
+<p>常用命令：</p>
+<ul>
+<li><code>FROM</code> 指定基础镜像，当前镜像是基于哪个镜像创建的， <code>FROM</code> 指令必是 Dockerfile 文件中的首条命令</li>
+<li><code>ENV</code> 设置环境变量，设置的变量可供后面指令使用</li>
+<li><code>WORKDIR</code> 设置工作目录，在该指令后的 <code>RUN</code>、 <code>CMD</code>、 <code>ENTRYPOINT</code>、 <code>COPY</code>、 <code>ADD</code> 指令都会在该目录执行</li>
+<li><code>RUN</code> 在当前镜像的最上面创建一个新层，并且能执行任何的命令，然后对执行的结果进行提交。提交后的结果镜像在 Dockerfile 的后续步骤中可以使用</li>
+<li><code>ADD</code> 从宿主机拷贝文件或者文件夹到镜像，也可以复制一个网络文件！如果拷贝的文件是一个压缩包，会自动解压缩</li>
+<li><code>COPY</code> 从宿主机拷贝文件或者文件夹到镜像，不能复制网络文件也不会自动解压缩</li>
+<li><code>VOLUME</code> 用于创建挂载点，一般配合 <code>run</code> 命令的 <code>-v</code> 参数使用</li>
+<li><code>CMD</code> 指定容器启动时默认运行的命令，在一个 Dockerfile 文件中，如果有多个 <code>CMD</code> 命令，只有一个最后一个会生效</li>
+<li><code>ENTRYPOINT</code> 与 <code>CMD</code> 指令类似，都是指定启动容器时要运行的命令，如果指定了 <code>ENTRYPOINT</code>，则 <code>CMD</code> 指定的命令不会执行</li>
+<li><code>SHELL</code> 用于设置执行命令所使用的默认的 <code>shell</code> 类型</li>
+<li><code>EXPOSE</code> 允许外部连接这个端口</li>
+</ul>
+<p>Dockerfile 执行顺序是从上到下，顺序执行！每条指令都会创建一个新的镜像层，并对镜像进行提交。编写好 Dockerfile 文件后，就需要使用 <code>docker build</code> 命令对镜像进行构建。</p>
+<h2 id="Docker-怎么使用"><a href="#Docker-怎么使用" class="headerlink" title="Docker 怎么使用"></a>Docker 怎么使用</h2><p>命令图<br><img src="/images/docker/docker-diagram.jpg" alt=""></p>
+<h3 id="镜像基本操作"><a href="#镜像基本操作" class="headerlink" title="镜像基本操作"></a>镜像基本操作</h3><ul>
+<li>获取镜像<pre><code class="shell">$ docker search centos
+$ docker pull centos
+$ docker images
+$ docker rmi repository:tag</code></pre>
+</li>
+<li>将容器改动更新到镜像<pre><code class="shell">$ docker commit container_name/container_id [REPOSITORY[:TAG]]
+$ docker images</code></pre>
+</li>
+<li>使用 <code>Dockerfile</code> 构建镜像，使用 <code>commit</code> 生成的镜像也被称为黑箱镜像，不推荐使用<pre><code class="shell">$ docker build -t [REPOSITORY[:TAG]] .</code></pre>
+</li>
+<li>查看镜像详情 <code>docker inspect image_id</code></li>
+<li>查看镜像、容器、数据卷所占用的空间<pre><code class="shell">$ docker system df</code></pre>
+</li>
+<li>删除无主数据卷<pre><code class="shell">$ docker volume prune</code></pre>
+</li>
+</ul>
+<h3 id="容器基本操作"><a href="#容器基本操作" class="headerlink" title="容器基本操作"></a>容器基本操作</h3><ul>
+<li>创建容器 <code>docker run -t -i rangalo/debian /bin/bash</code></li>
+<li>查看容器 <code>docker ps -a</code></li>
+<li>启动、停止、重启容器 <code>docker start/stop/restart container_name/container_id</code></li>
+<li>登录后台容器 <code>docker attach container_name/container_id</code></li>
+<li>删除容器 <code>docker rm container_name/container_id</code></li>
+<li>停止所有容器 <code>docker stop $(docker ps -aq)</code></li>
+<li>删除所有容器 <code>docker rm $(docker ps -aq)</code></li>
+<li>查看容器详情 <code>docker inspect container_id</code></li>
+<li>查看容器日志 <code>docker logs container_id</code></li>
+</ul>
+<h3 id="仓库基本操作"><a href="#仓库基本操作" class="headerlink" title="仓库基本操作"></a>仓库基本操作</h3><p>仓库是集中存放镜像文件的场所。有时候会把仓库和仓库注册服务器（Registry）混为一谈，并不严格区分。实际上，仓库注册服务器上往往存放着多个仓库，每个仓库中又包含了多个镜像，每个镜像有不同的标签（tag）。仓库分为公开仓库（Public）和私有仓库（Private）两种形式。最大的公开仓库是 <code>Docker Hub</code>，存放了数量庞大的镜像供用户下载。当然，用户也可以在本地网络内创建一个私有仓库。</p>
+<h4 id="公共仓库"><a href="#公共仓库" class="headerlink" title="公共仓库"></a>公共仓库</h4><ul>
+<li>注册帐号 <code>https://hub.docker.com/</code></li>
+<li>登录 <code>docker login</code></li>
+<li>推出登录 <code>docker logout</code></li>
+<li>标记本地镜像 <code>docker tag image_id|repository:tag user_id/image_name:tag</code><blockquote>
+<p><code>docker tag fce289e99eb9 breezetemple/hello-world:test</code><br><code>docker tag hello-world:latest breezetemple/hello-world:latest</code></p>
+</blockquote>
+</li>
+<li>推送镜像 <code>docker pull [OPTIONS] NAME[:TAG|@DIGEST]</code><blockquote>
+<p><code>docker push breezetemple/hello-world:test</code></p>
+</blockquote>
+</li>
+<li>获取镜像 <code>docker push [OPTIONS] NAME[:TAG]</code></li>
+</ul>
+<h4 id="私有仓库"><a href="#私有仓库" class="headerlink" title="私有仓库"></a>私有仓库</h4><p><code>docker-registry</code> 是官方提供的工具，可以用于构建私有的镜像仓库。</p>
+<ul>
+<li>使用官方 <code>registry</code> 镜像<blockquote>
+<p><code>docker pull registry</code><br><code>docker run -d -p 5000:5000 -v /home/workspace/registry:/var/lib/registry registry</code><br><code>-v</code> / 宿主机：/ 容器内目录</p>
+</blockquote>
+</li>
+<li>查看镜像 <code>docker images</code></li>
+<li>标记本地镜像 <code>docker tag hello-world:latest 127.0.0.1:5000/hello-world:latest</code></li>
+<li>上传镜像 <code>docker push 127.0.0.1:5000/hello-world:latest</code></li>
+<li>检查结果 <code>curl 127.0.0.1:5000/v2/_catalog</code></li>
+<li>删除本地镜像 <code>docker image rm 127.0.0.1:5000/hello-world:latest</code></li>
+<li>获取私有仓库镜像 <code>docker pull 127.0.0.1:5000/hello-world:latest</code></li>
+</ul>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://zhuanlan.zhihu.com/p/52172321" target="_blank" rel="noopener">10 分钟带你从入门操作到实战上手</a></li>
+<li><a href="https://cloud.tencent.com/developer/article/1354393" target="_blank" rel="noopener">这可能是最为详细的 Docker 入门吐血总结</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/docker/" rel="tag"># docker</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/10/10/how-to-install-docker/" rel="next" title="Docker 安装">
+                  <i class="fa fa-chevron-left"></i> Docker 安装
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/10/11/chinese-copywriting-guidelines/" rel="prev" title="Markdown 中文排版指南">
+                  Markdown 中文排版指南 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Docker-是什么"><span class="nav-number">1.</span> <span class="nav-text">Docker 是什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Docker-核心概念"><span class="nav-number">2.</span> <span class="nav-text">Docker 核心概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#联合文件系统-UnionFS"><span class="nav-number">2.1.</span> <span class="nav-text">联合文件系统 - UnionFS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#镜像"><span class="nav-number">2.2.</span> <span class="nav-text">镜像</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#容器"><span class="nav-number">2.3.</span> <span class="nav-text">容器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#容器数据卷"><span class="nav-number">2.4.</span> <span class="nav-text">容器数据卷</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#仓库"><span class="nav-number">2.5.</span> <span class="nav-text">仓库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Dockerfile"><span class="nav-number">2.6.</span> <span class="nav-text">Dockerfile</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Docker-怎么使用"><span class="nav-number">3.</span> <span class="nav-text">Docker 怎么使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#镜像基本操作"><span class="nav-number">3.1.</span> <span class="nav-text">镜像基本操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#容器基本操作"><span class="nav-number">3.2.</span> <span class="nav-text">容器基本操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#仓库基本操作"><span class="nav-number">3.3.</span> <span class="nav-text">仓库基本操作</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#公共仓库"><span class="nav-number">3.3.1.</span> <span class="nav-text">公共仓库</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#私有仓库"><span class="nav-number">3.3.2.</span> <span class="nav-text">私有仓库</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">4.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

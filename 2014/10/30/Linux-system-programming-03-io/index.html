@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="Linux系统编程读书笔记1">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux系统编程-I&#x2F;O多路复用">
+<meta property="og:url" content="http://yoursite.com/2014/10/30/Linux-system-programming-03-io/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="Linux系统编程读书笔记1">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2014-10-30T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.658Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="I&#x2F;O">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2014/10/30/Linux-system-programming-03-io/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linux系统编程-I/O多路复用 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/10/30/Linux-system-programming-03-io/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux系统编程-I/O多路复用
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-10-31 00:00:00" itemprop="dateCreated datePublished" datetime="2014-10-31T00:00:00+08:00">2014-10-31</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux System Programming</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>5.9k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+            <div class="post-description">Linux系统编程读书笔记1</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<p>I/O多路复用支持应用同时在多个文件描述符上阻塞，并在其中某个可以读写使收到通知。<br>在设计上遵循以下原则：</p>
+<ul>
+<li>I/O多路复用：当任何一个文件描述符I/O就绪时进行通知</li>
+<li>都不可用？在有可用文件描述符之前一直处于睡眠状态</li>
+<li>唤醒：某个文件描述符可用？</li>
+<li>处理所有I/O就绪的文件描述符，没有阻塞</li>
+<li>返回1，重新开始</li>
+</ul>
+<p>Linux提供了三种I/O多路复用方案：select、poll和epoll。首先讨论前两种，<br>epoll是Linux内核为处理大批量文件描述符而作了改进的poll，<br>是Linux下多路复用IO接口select/poll的增强版本，<br>它能显著提高程序在大量并发连接中只有少量活跃的情况下的系统CPU利用率。</p>
+<h2 id="select"><a href="#select" class="headerlink" title="select"></a><strong>select</strong></h2><p>select()函数是4.2 BSD UNIX中引入的系统调用，其原型为:</p>
+<pre><code>int select(int numfds, 
+            fd_set *readfds, 
+            fd_set *writefds, 
+            fd_set *exceptfds, 
+            struct timeval *timeout);</code></pre><p>其中readfds/writefds/exceptfds分别是select()监听的读/写和异常处理的文件描述符集合，<br>numfds的值是需要检查的最大的文件描述符加1。<br>timeout参数是一个指向struct timeval类型的指针，<br>它可以使select()在等待timeout时间后若没有文件描述符准备好则返回。</p>
+<p>对于后四个参数来说如果不需要设置相关内容，传递NULL即可。</p>
+<p>内核提供了以下宏用于监听描述符集合的设置与检查</p>
+<pre><code>FD_ZERO(fd_set *fdset)          //清除文件描述符集合
+FD_SET(int fd, fd_set *fdset)   //将一个文件描述符添加到文件描述符集合中
+FD_CLR(int fd, fd_set *fdset)   //将一个文件描述符从文件描述符集合中移除
+FD_ISSET(int fd, fd_set *fdset) //判断文件描述符是否被置位</code></pre><p>当应用程序使用FD_ZERO/FD_SET/FD_CLR宏设置好要监听的文件描述符集合后，<br>调用select()函数执行监听，如果没有一个描述符准备好IO并且没有指定超时时间，<br>那么select()函数会一直等待下去不会返回。<br>如果没有一个描述符处于I/O就绪状态并且指定了超时时间，那么在超时时间之后，<br>select()函数会返回，<strong>返回时，在不同的UNIX系统中，该结构体是未定义的，<br>因此每次调用必须（和文件描述符集一起）重新初始化</strong>。</p>
+<p>当函数正常返回后，监听的文件描述符集合中没有准备好的文件描述符会被删除，<br>只剩下已经准备好的文件描述符，之后可以使用FD_ISSET(fd, set)宏来判断set集合中是否有fd文件描述符来判断fd是否准备好IO。</p>
+<p>示例代码：</p>
+<pre><code>#include&lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+#include&lt;string.h&gt;
+#include&lt;sys/types.h&gt;
+#include&lt;sys/socket.h&gt;
+#include&lt;netinet/in.h&gt;
+#include&lt;arpa/inet.h&gt;
+
+#define MAX_LISTEN 5
+#define PORT 1987
+#define IP &quot;127.0.0.1&quot;
+
+int main()
+{
+    int conn_fd;
+    int sock_fd = socket(AF_INET,SOCK_STREAM,0);
+    if (sock_fd &lt; 0) {
+        perror(&quot;create socket failed&quot;);
+        exit(1);
+    }
+
+    struct sockaddr_in addr_client;
+    int client_size = sizeof(struct sockaddr_in);
+
+    struct sockaddr_in addr_serv;
+    memset(&amp;addr_serv, 0, sizeof(addr_serv));
+    addr_serv.sin_family = AF_INET;
+    addr_serv.sin_port = htons(PORT);
+    addr_serv.sin_addr.s_addr = inet_addr(IP);
+
+    if (bind(sock_fd,(struct sockaddr *)&amp;addr_serv,sizeof(struct sockaddr_in)) &lt; 0) {
+        perror(&quot;bind error&quot;);
+        exit(1);
+    }
+
+    if (listen(sock_fd,MAX_LISTEN) &lt; 0) {
+        perror(&quot;listen failed&quot;);
+        exit(1);
+    }
+
+    int recv_num;
+    int send_num;
+    char recv_buf[100];
+    char send_buf[100]; 
+
+    //用一个数组记录描述符的状态
+    int i, ready, max_fd;
+    int client[FD_SETSIZE];
+    for (i = 0;i &lt; FD_SETSIZE;i ++) {
+        client[i] = -1;
+    }
+
+    fd_set readset;
+    max_fd = sock_fd;
+
+    //最大可用描述符的个数，一般受操作系统内核的设置影响，环境下这个值是1024
+    printf(&quot;max fd num %d\n&quot;,FD_SETSIZE);
+
+    while (1) {
+
+        //重置监听的描述符
+        FD_ZERO(&amp;readset);
+        FD_SET(sock_fd,&amp;readset);
+        for (i = 0;i &lt; FD_SETSIZE;i ++) {
+            if (client[i] == 1) {
+                FD_SET(i, &amp;readset);
+            }
+        }
+
+        //开始监听描述符，是异步的，不会阻塞
+        ready = select(max_fd+1, &amp;readset, NULL, NULL, NULL);
+
+        //可用描述符如果是创建连接描述符，则创建一个新的连接
+        if (FD_ISSET(sock_fd, &amp;readset)) {
+            conn_fd = accept(sock_fd, (struct sockaddr *)&amp;addr_client, &amp;client_size);
+            if (conn_fd &lt; 0) {
+                perror(&quot;accept failed&quot;);
+                exit(1);
+            }
+
+            FD_SET(conn_fd, &amp;readset);
+            FD_CLR(sock_fd, &amp;readset);
+
+            if (conn_fd &gt; max_fd) {
+                max_fd = conn_fd;
+            }
+            client[conn_fd] = 1;    
+        }
+
+        //检查所有的描述符，查看可读的是哪个，针对它进行IO读写
+        for (i = 0; i &lt; FD_SETSIZE; i ++) {
+            if (FD_ISSET(i, &amp;readset)) {
+
+                recv_num = recv(i, recv_buf, sizeof(recv_buf), 0);
+                if (recv_num &lt;= 0) {
+                    FD_CLR(i, &amp;readset);
+                    client[i] = -1;
+                }
+                recv_buf[recv_num] = &#39;\0&#39;;
+                memset(send_buf,0,sizeof(send_buf));
+                sprintf(send_buf, &quot;server proc got %d bytes\n&quot;, recv_num);
+                send_num = send(i, send_buf, strlen(send_buf), 0);
+                if (send_num &lt;= 0) {
+                    FD_CLR(i, &amp;readset);
+                    client[i] = -1;
+                }
+            }
+        }
+    }
+
+    close(sock_fd);
+    return 0;
+}</code></pre><h2 id="poll"><a href="#poll" class="headerlink" title="poll"></a><strong>poll</strong></h2><p>poll()函数是System V中引入的系统调用，其原型为:</p>
+<pre><code>int poll(struct pollfd *fds, unsigned int nfds, int timeout);</code></pre><p>select()使用了基于文件描述符的三位掩码的解决方案，效率不高；<br>poll()使用了有nfds个pollfd结构体构成的数组，fds指针指向该数组。<br>pollfd结构体定义如下:</p>
+<pre><code>sruct pollfd {
+    int fd;         //文件描述符
+    short events;   //等待的事件
+    short revents;  //实际发生了的事件
+};</code></pre><p>每一个pollfd结构体指定了一个被监视的文件描述符，<br>可以传递多个结构体，指示poll()监视多个文件描述符。<br>每个结构体的events域是监视该文件描述符的事件掩码，<br>由用户来设置这个域。<br>revents域是文件描述符的操作结果事件掩码，内核在调用返回时设置这个域。</p>
+<p>events域中请求的任何事件都可能在revents域中返回。合法的事件如下：</p>
+<pre><code>POLLIN        有数据可读。
+POLLRDNORM        有普通数据可读。
+POLLRDBAND        有优先数据可读。
+POLLPRI        有紧迫数据可读。
+POLLOUT        写数据不会导致阻塞。
+POLLWRNORM        写普通数据不会导致阻塞。
+POLLWRBAND        写优先数据不会导致阻塞。
+POLLMSGSIGPOLL        消息可用。</code></pre><p>此外，revents域中还可能返回下列事件：</p>
+<pre><code>POLLER        指定的文件描述符发生错误。
+POLLHUP        指定的文件描述符挂起事件。
+POLLNVAL        指定的文件描述符非法。</code></pre><p>这些事件在events域中无意义，因为它们在合适的时候总是会从revents中返回。<br>使用poll()和select()不一样，你不需要显式地请求异常情况报告。</p>
+<p>POLLIN | POLLPRI等价于select()的读事件，POLLOUT |POLLWRBAND等价于select()的写事件。<br>POLLIN等价于POLLRDNORM |POLLRDBAND，而POLLOUT则等价于POLLWRNORM。</p>
+<p>例如，要同时监视一个文件描述符是否可读和可写，<br>我们可以设置 events为POLLIN |POLLOUT。<br>在poll返回时，我们可以检查revents中的标志，<br>对应于文件描述符请求的events结构体。<br>如果POLLIN事件被设置，则文件描述符可以被读取而不阻塞。<br>如果POLLOUT被设置，则文件描述符可以写入而不导致阻塞。<br>这些标志并不是互斥的：它们可能被同时设置，<br>表示这个文件描述符的读取和写入操作都会正常返回而不阻塞。</p>
+<p>timeout参数指定等待的毫秒数，无论I/O是否准备好，poll都会返回。<br>timeout指定为负数值表示无限超时，使poll()一直挂起直到一个指定事件发生；<br>timeout为0指示poll调用立即返回并列出准备好I/O的文件描述符，<br>但并不等待其它的事件。这种情况下，poll()就像它的名字那样，一旦选举出来，立即返回。</p>
+<p><strong>返回值和错误代码</strong></p>
+<p>成功时，poll()返回结构体中revents域不为0的文件描述符个数；<br>如果在超时前没有任何事件发生，poll()返回0；<br>失败时，poll()返回-1，并设置errno为下列值之一：</p>
+<pre><code>EBADF　　       一个或多个结构体中指定的文件描述符无效。 
+EFAULTfds　　 指针指向的地址超出进程的地址空间。 
+EINTR　　　　  请求的事件之前产生一个信号，调用可以重新发起。 
+EINVALnfds　　参数超出PLIMIT_NOFILE值。 
+ENOMEM　　     可用内存不足，无法完成请求。</code></pre><p>示例代码：</p>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;poll.h&gt;
+
+#define TIMEOUT 5
+
+int main(void)
+{
+    struct pollfd fds[2];
+    int ret;
+
+    //watch stdin for input
+    fds[0].fd = STDIN_FILENO;
+    fds[0].events = POLLIN;
+
+    //watch stdout for ability to write
+    fds[1].fd = STDOUT_FILENO;
+    fds[1].events = POLLOUT;
+
+    ret = poll(fds, 2, TIMEOUT*1000);
+    if(-1 == ret) {
+        perror(&quot;poll&quot;);
+        return 1;
+    }
+
+    if(!ret) {
+        printf(&quot;%d seconds elapsed.\n&quot;, TIMEOUT);
+        return 0;
+    }
+
+    if(fds[0].revents &amp; POLLIN)
+        printf(&quot;stdin is readable\n&quot;);
+
+    if(fds[1].revents &amp; POLLOUT)
+        printf(&quot;stdout is writable\n&quot;);
+
+    return 0;
+}</code></pre><p>在实际应用中，不需要在每次调用时都重新构建pollfd结构体。<br>该结构体会被重复传递多次，内核会在必要时把revents清空。</p>
+<h2 id="poll-和select-区别"><a href="#poll-和select-区别" class="headerlink" title="poll()和select()区别"></a><strong>poll()和select()区别</strong></h2><p>select()和poll()函数本质上没有多大差别，<br>管理多个描述符也是进行轮询，根据描述符的状态进行处理，<br>但是poll没有最大文件描述符数量的限制。<br>并且select()返回后，之前没有准备好的文件描述符会从集合当中删除，<br>这样如果下次需要再次添加所有文件描述符或者使用两个相同的文件描述符集合，<br>一个用于备份，一个用于监听，比较复杂。poll不需要这个复杂的操作，不需要重新构建pollfd结构体。<br>poll和select同样存在一个缺点就是包含大量文件描述符的数组被整体复制于用户态和内核的地址空间之间，<br>而无论这些文件描述符是否就绪。<br>它的开销随着文件描述符数量的增加而线性增加。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/I-O/" rel="tag"># I/O</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2014/10/21/p2p-find/" rel="next" title="P2P设备和Miracast设备发现过程">
+                  <i class="fa fa-chevron-left"></i> P2P设备和Miracast设备发现过程
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2014/11/02/Linux-system-programming-03-buffer-io/" rel="prev" title="Linux系统编程-缓冲I/O">
+                  Linux系统编程-缓冲I/O <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#select"><span class="nav-number">1.</span> <span class="nav-text">select</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#poll"><span class="nav-number">2.</span> <span class="nav-text">poll</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#poll-和select-区别"><span class="nav-number">3.</span> <span class="nav-text">poll()和select()区别</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

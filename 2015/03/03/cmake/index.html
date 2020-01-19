@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="CMake意为cross-platform make，可用于管理c&#x2F;c++工程。CMake解析配置文件CMakeLists.txt生成Makefile，相比直接用Makefile管理工程，CMake更灵活和简单。 结构Cmake的输入是源码目录下的 ‘CMakeLists.txt’ 文件，或者后缀为’.cmake’。这个文件可以用 ‘include’ 或者 ‘add_subdirectory’ 命">
+<meta property="og:type" content="article">
+<meta property="og:title" content="cmake语法简介">
+<meta property="og:url" content="http://yoursite.com/2015/03/03/cmake/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="CMake意为cross-platform make，可用于管理c&#x2F;c++工程。CMake解析配置文件CMakeLists.txt生成Makefile，相比直接用Makefile管理工程，CMake更灵活和简单。 结构Cmake的输入是源码目录下的 ‘CMakeLists.txt’ 文件，或者后缀为’.cmake’。这个文件可以用 ‘include’ 或者 ‘add_subdirectory’ 命">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2015-03-03T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.658Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="cmake">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2015/03/03/cmake/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>cmake语法简介 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/03/03/cmake/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          cmake语法简介
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-03-04 00:00:00" itemprop="dateCreated datePublished" datetime="2015-03-04T00:00:00+08:00">2015-03-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>4.5k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>CMake意为cross-platform make，可用于管理c/c++工程。<br>CMake解析配置文件CMakeLists.txt生成Makefile，相比直接用Makefile管理工程，CMake更灵活和简单。</p>
+<h2 id="结构"><a href="#结构" class="headerlink" title="结构"></a>结构</h2><p>Cmake的输入是源码目录下的 ‘CMakeLists.txt’ 文件，或者后缀为’.cmake’。<br>这个文件可以用 ‘include’ 或者 ‘add_subdirectory’ 命令增加入其它的输入文件。组织结构有以下几部分组成：</p>
+<ul>
+<li><strong>Directories (CMakeLists.txt)</strong></li>
+<li><strong>Scripts (&lt;script&gt;.cmake)</strong></li>
+<li><strong>Modules (&lt;module&gt;.cmake)</strong></li>
+</ul>
+<h3 id="Directories"><a href="#Directories" class="headerlink" title="Directories"></a>Directories</h3><p>顶层目录下的 ‘CMakeLists.txt’ 文件可以使用命令 ‘add_subdirectory’ 来添加子目录，<br>此子目录下必须存在 ‘CMakeLists.txt’ 文件</p>
+<pre><code>add_subdirectory(source_dir [binary_dir] [EXCLUDE_FROM_ALL])</code></pre><h3 id="Scripts"><a href="#Scripts" class="headerlink" title="Scripts"></a>Scripts</h3><p>脚本模式可以使用以下命令运行给定的CMake源文件中的命令，但是不会构建系统。</p>
+<pre><code>cmake [&lt;options&gt;] (&lt;path-to-source&gt; | &lt;path-to-existing-build&gt;)
+cmake [(-D&lt;var&gt;=&lt;value&gt;)...] -P &lt;cmake-script-file&gt;
+cmake --build &lt;dir&gt; [&lt;options&gt;] [-- &lt;build-tool-options&gt;...]
+cmake -E &lt;command&gt; [&lt;options&gt;]
+cmake --find-package &lt;options&gt;...</code></pre><h3 id="Modeles"><a href="#Modeles" class="headerlink" title="Modeles"></a>Modeles</h3><p>使用命令 ‘include’ 来导入 ‘<module>.cmake’ 源文件</p>
+<pre><code>include(&lt;file|module&gt; [OPTIONAL] [RESULT_VARIABLE &lt;VAR&gt;] [NO_POLICY_SCOPE])</code></pre><h2 id="语法"><a href="#语法" class="headerlink" title="语法"></a>语法</h2><h3 id="编码"><a href="#编码" class="headerlink" title="编码"></a>编码</h3><p>使用7-bit ASCII进行编码，新行可使用 ‘\n’ 或 ‘\r\n’，将被转换为 ‘\n’ 做为输入文件读取</p>
+<h3 id="源文件"><a href="#源文件" class="headerlink" title="源文件"></a>源文件</h3><p>CMakeList.txt文件是由注释、命令和空白字符组成。</p>
+<h3 id="命令调用"><a href="#命令调用" class="headerlink" title="命令调用"></a>命令调用</h3><p>命令是由：命令名、（、空格分隔的参数、）组成。<br>‘CMakeLists.txt’ 文件中命令调用大小写不敏感的。 例如：</p>
+<pre><code>command (args….)</code></pre><p>上面的command可以是一个命令名；或者是一个宏；也可以是一个函数名。</p>
+<h3 id="命令参数"><a href="#命令参数" class="headerlink" title="命令参数"></a>命令参数</h3><p>args是以空格分隔的参数例表（如果参数中包含空格，则要加双引号）</p>
+<p>除了用于分隔参数的空白字符（空格、换行号、tabs）都是被忽略不计的。任何包含在双引号中的字符都做为一个参数。</p>
+<p>三种参数类型：括号、引号和普通</p>
+<p><strong>Bracket Argument</strong>:</p>
+<pre><code>message([=[
+This is the first line in a bracket argument with bracket length 1.
+No \-escape sequences or ${variable} references are evaluated.
+This is always one argument even though it contains a ; character.
+The text does not end on a closing bracket of length 0 like ]].
+It does end in a closing bracket of length 1.
+]=])</code></pre><p><strong>Quoted Argument</strong>:</p>
+<pre><code>message(&quot;This is a quoted argument containing multiple lines.
+This is always one argument even though it contains a ; character.
+Both \\-escape sequences and ${variable} references are evaluated.
+The text does not end on an escaped double-quote like \&quot;.
+It does end in an unescaped double quote.
+&quot;)</code></pre><p>可以在行尾添加 ‘&#39; 进行行连接，例如：</p>
+<pre><code>message(&quot;\
+This is the first line of a quoted argument. \
+In fact it is the only line but since it is long \
+the source code uses line continuation.\
+&quot;)</code></pre><p><strong>Unquoted Argument</strong>:</p>
+<pre><code>foreach(arg
+        NoSpace
+        Escaped\ Space
+        This;Divides;Into;Five;Arguments
+        Escaped\;Semicolon
+    )
+    message(&quot;${arg}&quot;)
+endforeach()</code></pre><p>前两种都是提供一个参数，而且不会进行转义，最后一个需要注意转义！</p>
+<h3 id="转义"><a href="#转义" class="headerlink" title="转义"></a>转义</h3><p>‘&#39;后跟的部分字符进行转义:</p>
+<pre><code>escape_sequence  ::=  escape_identity | escape_encoded | escape_semicolon
+escape_identity  ::=  &#39;\(&#39; | &#39;\)&#39; | &#39;\#&#39; | &#39;\&quot;&#39; | &#39;\ &#39; |
+                    &#39;\\&#39; | &#39;\$&#39; | &#39;\@&#39; | &#39;\^&#39;
+escape_encoded   ::=  &#39;\t&#39; | &#39;\r&#39; | &#39;\n&#39;
+escape_semicolon ::=  &#39;\;&#39;</code></pre><p>‘(‘,’)’,’#’,’”‘,’ ‘,’&#39;,’$’,‘@’,’^’ 进行简单转义；’\t’ : tab ‘\r’ : return ‘\n’ : newline；’;‘ 用于参数中不表示隔离参数</p>
+<h3 id="变量引用"><a href="#变量引用" class="headerlink" title="变量引用"></a>变量引用</h3><p>变量引用的形式为 ‘${variable_name}’，替换为变量的值，或空字符串（变量未赋值）。</p>
+<p>变量引用可以嵌套，从内到外展开，例如 ‘${outer_${inner_variable}_variable}’</p>
+<p>环境变量引用形式为 ‘$ENV{VAR}’</p>
+<h3 id="注释"><a href="#注释" class="headerlink" title="注释"></a>注释</h3><p>注释由一个不是 （括号中的参数、引用参数或’&#39;转义）一部分的’#’字符开始，有行注释和括号注释：</p>
+<p>括号注释：</p>
+<pre><code>#[[This is a bracket comment.
+It runs until the close bracket.]]
+message(&quot;First Argument\n&quot; #[[Bracket Comment]] &quot;Second Argument&quot;)</code></pre><p>行注释：</p>
+<pre><code># This is a line comment.
+message(&quot;First Argument\n&quot; # This is a line comment :)
+        &quot;Second Argument&quot;) # This is a line comment.</code></pre><h2 id="控制结构"><a href="#控制结构" class="headerlink" title="控制结构"></a>控制结构</h2><h3 id="Conditional-Blocks"><a href="#Conditional-Blocks" class="headerlink" title="Conditional Blocks"></a>Conditional Blocks</h3><pre><code># some_command will be called if the variable&#39;s value is not:
+# empty, 0, N, NO, OFF, FALSE, NOTFOUND, or -NOTFOUND. 
+if(var)
+    some_command(...)
+elseif()
+    some_command(...)
+else()
+    some_command(...)
+endif() </code></pre><h3 id="Loops"><a href="#Loops" class="headerlink" title="Loops"></a>Loops</h3><pre><code>set(VAR a b c) 
+
+# loop over a, b,c with the variable f 
+foreach(f ${VAR}) 
+    message(${f}) 
+endforeach(f)
+
+while(condition)
+    command(args ...)
+    command(args ...)
+endwhile(condition)</code></pre><h3 id="Command-Definitions"><a href="#Command-Definitions" class="headerlink" title="Command Definitions"></a>Command Definitions</h3><p>macro()/endmacro() 和 function()/endfunction() 进行宏和函数的定义：</p>
+<pre><code># define a macro hello 
+macro(hello MESSAGE)
+    message(${MESSAGE})
+endmacro(hello) 
+
+# call the macro with the string &quot;hello world&quot; 
+hello(&quot;hello world&quot;) 
+
+# define a function hello 
+function(hello MESSAGE)
+    message(${MESSAGE}) 
+endfunction(hello)</code></pre><h3 id="Variables"><a href="#Variables" class="headerlink" title="Variables"></a>Variables</h3><p>变量命名大小写敏感，set()/unset()对变量进行赋值操作：</p>
+<pre><code>set (VAR &quot; hello world &quot;)   #赋值
+unset (VAR)                 #取消赋值</code></pre><p>CMake支持简单的变量：字符串或字符串列表。用${VAR} 语法得到变量的引用。</p>
+<p>可以用一个set命令把一个字符串列表设置为一个变量，然后把这个变量传递给需要传递多参数的函数。例如：</p>
+<pre><code>set(Foo a b c)
+command(${Foo})</code></pre><p>上面两行等效 </p>
+<pre><code>command(a b c)</code></pre><p>如果你想传把一个字符串列表做为一个单独的参数传递给函数，用双引号包含它。例如：</p>
+<pre><code>Command(“${Foo}”)
+#等效于
+command(“a b c”)</code></pre><p>环境变量：</p>
+<p>用$ENV{VAR}得到环境变量的引用</p>
+<p>设置环境变量：</p>
+<p>Set(ENV{VAR} /home)</p>
+<h3 id="Lists"><a href="#Lists" class="headerlink" title="Lists"></a>Lists</h3><p>字符串(string)和字符串列表（lists）</p>
+<p>CMake的基本数据类型是字符串（string）。<br>CMake也支持由字符串组成的字符串列表。字符串列表可以由；或空格分隔的组成。例如：下面设置变量var是等效的。</p>
+<pre><code>set(var a;b;c)
+set(var a b c)</code></pre><p>字符串列表可以用 foreach命令叠代（iterated）或list命令操作。</p>
+<h2 id="正则表达式"><a href="#正则表达式" class="headerlink" title="正则表达式"></a>正则表达式</h2><p>一些CMake命令（如if和 string），能使用正则表达式或使用正则表达式作为参数。<br>一个简单的形式，一个正则表达式用于在一个序列的字符串中精确查找一个字符。<br>然而在大多时候，一个精确查找是不知道的或者只是匹配最前或者最后字符。<br>所以这里用正则表达式进行不同的转换。<br>Cmake标准是可被描述的。这个描述是基于开源的正则表达式类（Texas Instruments）。</p>
+<ul>
+<li>^ 匹配一行或一字符串开头</li>
+<li>$匹配一行或一字符串结尾</li>
+<li>.匹配单一字符或一个新行</li>
+<li>[ ]匹配括号中的任一字符</li>
+<li>[^ ] 匹配不在括号内的任一字符</li>
+<li>[-] 匹配指定范围内的字符</li>
+<li>* 匹配0次或多次</li>
+<li>+ 匹配一次或多次</li>
+<li>? 匹配0次或一次</li>
+<li>()保存匹配的表达式并用随后的替换它</li>
+</ul>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://www.cmake.org/cmake/help/v3.0/manual/cmake-language.7.html#syntax" target="_blank" rel="noopener">cmake syntax</a></li>
+<li><a href="http://www.cmake.org/cmake-tutorial/" target="_blank" rel="noopener">cmake tutorial</a></li>
+<li><a href="http://www.cmake.org/Wiki/CMake_Useful_Variables" target="_blank" rel="noopener">CMake常用变量列表</a></li>
+<li><a href="http://www.cmake.org/documentation/" target="_blank" rel="noopener">CMake文档列表</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/cmake/" rel="tag"># cmake</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2015/03/01/libcurl/" rel="next" title="Linux libcurl学习">
+                  <i class="fa fa-chevron-left"></i> Linux libcurl学习
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2015/03/04/cmake-02/" rel="prev" title="cmake使用">
+                  cmake使用 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#结构"><span class="nav-number">1.</span> <span class="nav-text">结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Directories"><span class="nav-number">1.1.</span> <span class="nav-text">Directories</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Scripts"><span class="nav-number">1.2.</span> <span class="nav-text">Scripts</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Modeles"><span class="nav-number">1.3.</span> <span class="nav-text">Modeles</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#语法"><span class="nav-number">2.</span> <span class="nav-text">语法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#编码"><span class="nav-number">2.1.</span> <span class="nav-text">编码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#源文件"><span class="nav-number">2.2.</span> <span class="nav-text">源文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#命令调用"><span class="nav-number">2.3.</span> <span class="nav-text">命令调用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#命令参数"><span class="nav-number">2.4.</span> <span class="nav-text">命令参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#转义"><span class="nav-number">2.5.</span> <span class="nav-text">转义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#变量引用"><span class="nav-number">2.6.</span> <span class="nav-text">变量引用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#注释"><span class="nav-number">2.7.</span> <span class="nav-text">注释</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#控制结构"><span class="nav-number">3.</span> <span class="nav-text">控制结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Conditional-Blocks"><span class="nav-number">3.1.</span> <span class="nav-text">Conditional Blocks</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Loops"><span class="nav-number">3.2.</span> <span class="nav-text">Loops</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Command-Definitions"><span class="nav-number">3.3.</span> <span class="nav-text">Command Definitions</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Variables"><span class="nav-number">3.4.</span> <span class="nav-text">Variables</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Lists"><span class="nav-number">3.5.</span> <span class="nav-text">Lists</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#正则表达式"><span class="nav-number">4.</span> <span class="nav-text">正则表达式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">5.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

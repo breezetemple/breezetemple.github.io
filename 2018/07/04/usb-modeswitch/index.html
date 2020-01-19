@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="usb modeswitch 是一种模式切换工具，用于控制具有 多种模式 的 USB 设备。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="usb-modeswitch 使用及代码分析">
+<meta property="og:url" content="http://yoursite.com/2018/07/04/usb-modeswitch/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="usb modeswitch 是一种模式切换工具，用于控制具有 多种模式 的 USB 设备。">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2018-07-04T10:05:21.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.674Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="usb modeswitch">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2018/07/04/usb-modeswitch/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>usb-modeswitch 使用及代码分析 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/07/04/usb-modeswitch/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          usb-modeswitch 使用及代码分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-07-04 18:05:21" itemprop="dateCreated datePublished" datetime="2018-07-04T18:05:21+08:00">2018-07-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>5.9k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><code>usb modeswitch</code> 是一种模式切换工具，用于控制具有 <code>多种模式</code> 的 USB 设备。</p>
+<a id="more"></a>
+
+<h2 id="I"><a href="#I" class="headerlink" title="I"></a>I</h2><p>无线网卡首次插入电脑时，它们会被识别为一个闪存设备，然后开始安装存储于其中的驱动程序。在安装完驱动程序之后就会在内部切换 USB 设备的连接模式，存储设备会消失，然后会出现一个新的设备。</p>
+<p>目前许多这种设备都可以在 Linux 的驱动下工作，如 <code>usb-storage</code> （存储设备的驱动模块）和 <code>options</code> （高速 Modem 的驱动模块），接下来的事情就是如何从存储设备到 Modem 的切换。</p>
+<p>依赖于 <code>libusb</code> 库， <code>usb modeswitch</code> 可以从一个配置文件中获取重要的参数，然后完成全部的初始化和通信工作，这样便使得用户可以轻松地处理这个过程。</p>
+<h2 id="源码与安装"><a href="#源码与安装" class="headerlink" title="源码与安装"></a>源码与安装</h2><ul>
+<li><a href="http://www.draisberghof.de/usb_modeswitch/#download" target="_blank" rel="noopener">usb modeswitch 2.5.2</a></li>
+<li><a href="http://www.draisberghof.de/usb_modeswitch/#download" target="_blank" rel="noopener">usb modeswitch.d</a> 包含设备数据库和规则文件</li>
+<li><a href="http://www.draisberghof.de/usb_modeswitch/device_reference.txt" target="_blank" rel="noopener">device_reference.txt</a> 设备的配置集合</li>
+<li><a href="https://libusb.info/" target="_blank" rel="noopener">libusb 1.0.22</a></li>
+</ul>
+<h2 id="标准自动化用法"><a href="#标准自动化用法" class="headerlink" title="标准自动化用法"></a>标准自动化用法</h2><p><strong>通过 udev 事件和规则</strong>，标准自动化用法详见 <a href="https://blog.csdn.net/yang1982_0907/article/details/45969179" target="_blank" rel="noopener">usb_modeswitch 使用详解</a></p>
+<h2 id="内核相关问题"><a href="#内核相关问题" class="headerlink" title="内核相关问题"></a>内核相关问题</h2><blockquote>
+<p>另一种能够影响内核行为的方法是“usb-storage”的“delay_use”参数，这个参数会设置存储设备插入系统到实际使用（可能会自动挂载）之间的延迟时间，以秒为单位。默认值为 5，这个参数可能会影响某些条件下的切换结果</p>
+</blockquote>
+<h2 id="嵌入式移植"><a href="#嵌入式移植" class="headerlink" title="嵌入式移植"></a>嵌入式移植</h2><ul>
+<li>建立 <code>usb-storage</code> - <code>options</code> 对应表，具体对应关系从 <code>usb modeswitch.d</code> 中获得，例如文件 <code>0421:062c</code></li>
+</ul>
+<pre><code># Nokia CS-19
+TargetVendor=0x0421
+TargetProductList=&quot;062d,062f&quot;
+StandardEject=1</code></pre><p>获得对应关系 <code>0421:062c</code> - <code>0421:062d 0421:062f</code></p>
+<ul>
+<li>切换设备<pre><code class="shell">usb_modeswitch -c /etc/usb_modeswitch.d/0421:062c -v 0x0421 -p 0x062c &amp;</code></pre>
+</li>
+</ul>
+<p>此时能从终端看到设备 <code>拔出</code> 和 <code>插入</code> 的信息，示例如下：</p>
+<pre><code>[10559.330000] usb 1-1: new high speed USB device using EHCI-NationalChip and address 6
+[10559.500000] usb 1-1: configuration #1 chosen from 1 choice
+[10559.510000] scsi11 : SCSI emulation for USB Mass Storage devices
+[10559.580000] scsi12 : SCSI emulation for USB Mass Storage devices
+[Hotplug] dev: 1-1
+[Hotplug] action: add
+[Hotplug] dev: 1-1:1.0
+[Hotplug] action: add
+[Hotplug]: usb id stack
+1-1+12d1:1446
+[Hotplug] dev: 1-1:1.1
+[Hotplug] action: add
+
+Look for target devices ...
+ No devices in target mode or class found
+Look for default devices ...
+ Found devices in default mode (1)
+Access device 006 on bus 001
+Get the current device configuration ...
+Current configuration number is 1
+Use interface number 0
+ with class 8
+Use endpoints 0x01 (out) and 0x81 (in)
+Using standard Huawei switching message
+Looking for active drivers ...
+ OK, driver detached
+ OK, driver detached
+Set up int[10560.320000] usb 1-1: USB disconnect, address 6
+erface 0
+Use endpoint 0x01 for message sending ...
+Trying to send message 1 to endpoint 0x01 ...
+ Device seems to have vanished right after sending. Good.
+ Device is gone, skip any further commands
+-&gt; Run lsusb to note any changes. Bye!
+
+[Hotplug] dev: 1-1:1.0
+[Hotplug] action: remove
+[Hotplug] dev: 1-1:1.1
+[Hotplug] action: remove
+[Hotplug] dev: 1-1
+[Hotplug] action: remove
+[Hotplug]: usb id stack
+[10564.390000] usb 1-1: new high speed USB device using EHCI-NationalChip and address 7
+[10564.550000] usb 1-1: configuration #1 chosen from 1 choice
+[10564.580000] usb-storage: probe of 1-1:1.0 failed with error -5
+[10564.590000] option 1-1:1.0: GSM modem (1-port) converter detected
+[10564.630000] usb 1-1: GSM modem (1-port) converter now attached to ttyUSB0
+[Hotplug] dev: 1-1
+[Hotplug] action: add
+[10564.710000] usb-storage: probe of 1-1:1.1 failed with error -5
+[10564.860000] usb-storage: probe of 1-1:1.2 failed with error -5
+[10564.960000] usb-storage: probe of 1-1:1.3 failed with error -5
+[10564.970000] option 1-1:1.3: GSM modem (1-port) converter detected
+[10565.040000] usb 1-1: GSM modem (1-port) converter now attached to ttyUSB1
+[10565.080000] usb-storage: probe of 1-1:1.4 failed with error -5
+[10565.090000] option 1-1:1.4: GSM modem (1-port) converter detected
+[Hotplug]: usb id stack
+1-1+12d1:1436
+[10565.250000] usb 1-1: GSM modem (1-port) converter now attached to ttyUSB2
+[Hotplug] dev: 1-1:1.0
+[Hotplug] action: add
+[Hotplug] dev: 1-1:1.2
+[Hotplug] action: add
+[Hotplug] dev: 1-1:1.1
+[Hotplug] action: add
+[Hotplug] dev: 1-1:1.3
+[Hotplug] action: add
+[Hotplug] dev: 1-1:1.5
+[Hotplug] action: add
+[Hotplug] dev: 1-1:1.4
+[Hotplug] action: add
+
+&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; 3G Start!
+TIMEOUT 5
+ABORT &#39;NO CARRIER&#39;
+ABORT &#39;ERROR&#39;
+ABORT &#39;NO DIALTONE&#39;
+ABORT &#39;BUSY&#39;
+ABORT &#39;NO ANSWER&#39;
+&#39;&#39; /rAT
+OK /rATZ
+OK /rAT+CGDCONT=1,&quot;IP&quot;,&quot;3gnet&quot;,,0,0
+OK-AT-OK ATDT*99#
+CONNECT /d/c
+
+[10575.350000] scsi18 : SCSI emulation for USB Mass Storage devices
+[Hotplug] dev: 1-1:1.6
+[Hotplug] action: add
+[10585.390000] scsi19 : SCSI emulation for USB Mass Storage devices
+[10585.400000] scsi 18:0:0:0: CD-ROM            HUAWEI   Mass Storage     2.31 PQ: 0 ANSI: 2
+timeout set to 5 seconds
+abort on (NO CARRIER)
+abort on (ERROR)
+abort on (NO DIALTONE)
+abort on (BUSY)
+abort on (NO ANSWER)
+send (/rAT^M)
+[10585.460000] scsi 18:0:0:0: Attached scsi generic sg0 type 5
+expect (OK)
+AT^M^M
+OK
+ -- got it</code></pre><p><strong>上述打印可以看出基本流程</strong></p>
+<ul>
+<li>插入设备，识别为 <code>usb-storage</code></li>
+<li>检测到对应关系，启动 <code>usb modeswitch</code></li>
+<li><code>usb-storage</code> 弹出</li>
+<li><code>option</code> 设备</li>
+<li><code>3G</code> 连接流程启动</li>
+</ul>
+<h2 id="代码分析"><a href="#代码分析" class="headerlink" title="代码分析"></a>代码分析</h2><p><code>usb modeswitch v2.5.2</code> 为例</p>
+<pre><code class="c">/* Detach driver
+ */
+int detachDriver()
+{
+    int ret;
+    SHOW_PROGRESS(output,&quot;Looking for active driver ...\n&quot;);
+    ret = libusb_kernel_driver_active(devh, 0);
+    if (ret == LIBUSB_ERROR_NOT_SUPPORTED) {
+        fprintf(output,&quot; Can&#39;t do driver detection on this platform.\n&quot;);
+        return 2;
+    }
+    if (ret &lt; 0) {
+        fprintf(output,&quot; Driver check failed with error %d. Try to continue\n&quot;, ret);
+        return 2;
+    }
+    if (ret == 0) {
+        SHOW_PROGRESS(output,&quot; No active driver found. Detached before or never attached\n&quot;);
+        return 1;
+    }
+
+    ret = libusb_detach_kernel_driver(devh, Interface);
+    if (ret == LIBUSB_ERROR_NOT_SUPPORTED) {
+        fprintf(output,&quot; Can&#39;t do driver detaching on this platform.\n&quot;);
+        return 2;
+    }
+    if (ret == 0) {
+        SHOW_PROGRESS(output,&quot; OK, driver detached\n&quot;);
+    } else
+        SHOW_PROGRESS(output,&quot; Driver detach failed (error %d). Try to continue\n&quot;, ret);
+    return 1;
+}
+
+int main(int argc, char **argv)
+{
+...
+    /* libusb initialization */
+    if ((libusbError = libusb_init(&amp;ctx)) != LIBUSB_SUCCESS) {
+        fprintf(stderr, &quot;Error: Failed to initialize libusb. %s (%d)\n\n&quot;,
+                libusb_error_name(libusbError), libusbError);
+        exit(1);
+    }
+...
+
+    if (dev == NULL) {
+        SHOW_PROGRESS(output,&quot; No bus/device match. Is device connected? Abort\n\n&quot;);
+        close_all();
+        exit(0);
+    } else {
+        if (devnum == -1) {
+            devnum = libusb_get_device_address(dev);
+            busnum = libusb_get_bus_number(dev);
+            SHOW_PROGRESS(output,&quot;Access device %03d on bus %03d\n&quot;, devnum, busnum);
+        }
+        libusb_open(dev, &amp;devh);
+        if (devh == NULL) {
+            SHOW_PROGRESS(output,&quot;Error opening the device. Abort\n\n&quot;);
+            abortExit();
+        }
+    }
+...
+
+    } else if (ModeMap &amp; HUAWEINEW_MODE) {
+        SHOW_PROGRESS(output,&quot;Using standard Huawei switching message\n&quot;);
+        detachDriver();
+        strcpy(Messages[0],&quot;55534243123456780000000000000011062000000101000100000000000000&quot;);
+        switchSendMessage();
+    }
+...
+
+    /* No &quot;removal&quot; check if these are set */
+    if ((Configuration &gt; 0 || AltSetting &gt; -1) &amp;&amp; !ResetUSB) {
+        libusb_close(devh);
+        devh = NULL;
+    }
+
+    if (ResetUSB) {
+        resetUSB();
+        devh = NULL;
+    }
+...
+}</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://trick77.com/setting-up-huawei-e3276-150-4g-lte-usb-modem-ubuntu-server-desktop/" target="_blank" rel="noopener">Setting up a Huawei E3276-150 4G/LTE USB modem on Ubuntu Server/Desktop</a></li>
+<li><a href="https://blog.csdn.net/yang1982_0907/article/details/45969179" target="_blank" rel="noopener">usb_modeswitch 使用详解</a></li>
+<li><a href="http://www.draisberghof.de/usb_modeswitch/#trouble" target="_blank" rel="noopener">USB_ModeSwitch - Handling Mode-Switching USB Devices on Linux</a></li>
+<li><a href="https://blog.csdn.net/gaopeiliang/article/details/40108385" target="_blank" rel="noopener">USB_ModeSwitch 介绍</a></li>
+<li><a href="https://blog.csdn.net/luckywang1103/article/details/39348447" target="_blank" rel="noopener">libusb API 入门</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/usb-modeswitch/" rel="tag"># usb modeswitch</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/06/26/hexo-code-highlight/" rel="next" title="hexo 代码高亮">
+                  <i class="fa fa-chevron-left"></i> hexo 代码高亮
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/07/05/linux-usb-device-driver/" rel="prev" title="linux-usb-device-driver">
+                  linux-usb-device-driver <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#I"><span class="nav-number">1.</span> <span class="nav-text">I</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#源码与安装"><span class="nav-number">2.</span> <span class="nav-text">源码与安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#标准自动化用法"><span class="nav-number">3.</span> <span class="nav-text">标准自动化用法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内核相关问题"><span class="nav-number">4.</span> <span class="nav-text">内核相关问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#嵌入式移植"><span class="nav-number">5.</span> <span class="nav-text">嵌入式移植</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#代码分析"><span class="nav-number">6.</span> <span class="nav-text">代码分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">7.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

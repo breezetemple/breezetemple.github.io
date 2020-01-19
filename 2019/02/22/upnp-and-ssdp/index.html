@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="DLNA 和 SAT&gt;IP 等功能使用到的核心技术：  UPnP SSDP">
+<meta property="og:type" content="article">
+<meta property="og:title" content="P2P 网络核心技术：UPnP 和 SSDP 协议">
+<meta property="og:url" content="http://yoursite.com/2019/02/22/upnp-and-ssdp/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="DLNA 和 SAT&gt;IP 等功能使用到的核心技术：  UPnP SSDP">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://pic1.zhimg.com/80/v2-b9a7c969540269a0f1243ad02487c084_hd.jpg">
+<meta property="og:image" content="https://pic1.zhimg.com/80/v2-c0bea083aa0415c42042f7fe60506640_hd.jpg">
+<meta property="og:image" content="https://pic3.zhimg.com/80/v2-0640425d49c52e1aa83870111a608cb2_hd.jpg">
+<meta property="article:published_time" content="2019-02-22T05:23:04.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.678Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="upnp">
+<meta property="article:tag" content="dlna">
+<meta property="article:tag" content="sat2ip">
+<meta property="article:tag" content="ssdp">
+<meta property="article:tag" content="p2p">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://pic1.zhimg.com/80/v2-b9a7c969540269a0f1243ad02487c084_hd.jpg">
+
+<link rel="canonical" href="http://yoursite.com/2019/02/22/upnp-and-ssdp/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>P2P 网络核心技术：UPnP 和 SSDP 协议 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/22/upnp-and-ssdp/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          P2P 网络核心技术：UPnP 和 SSDP 协议
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-02-22 13:23:04" itemprop="dateCreated datePublished" datetime="2019-02-22T13:23:04+08:00">2019-02-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/UPnP/" itemprop="url" rel="index">
+                    <span itemprop="name">UPnP</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><code>DLNA</code> 和 <code>SAT&gt;IP</code> 等功能使用到的核心技术：</p>
+<ol>
+<li><code>UPnP</code></li>
+<li><code>SSDP</code></li>
+</ol>
+<a id="more"></a>
+
+
+<h2 id="背景知识"><a href="#背景知识" class="headerlink" title="背景知识"></a><strong>背景知识</strong></h2><p>UPnP， Universal Plug and Play，中文是 “通用即插即用”。在理解 UPnP 之前，我们先了解一下传统的 PnP 技术，因为 UPnP 是对于传统 PnP（即插即用）概念的扩展。</p>
+<p>传统的 PnP <strong>“即插即用”</strong>是指 PC 电脑在添加硬件设备时可以自动处理的一种标准。在 PnP 技术出现以前，当需要为 PC 电脑安装新的硬件（比如：声卡，CD-ROM，打印机）时，这些设备需要用到 PC 电脑的 DMA 和 IRQ 等资源，为了避免硬件设备对计算机这些资源使用上的冲突，我们就需要<strong>手工为新添加的硬件设备设置中断和 I/O 端口</strong>（比如，想要为添加的声卡占用中断 5，就找一个小跳线在卡上标着中断 5 的针脚上一插）。这样的操作需要用户了解中断和 I/O 端口的知识，并且能够自己分配中断地址而不发生冲突，对普通用户提出这样的要求是不切实际的。</p>
+<p>PnP “即插即用”技术出现以后，可以<strong>自动为新添加的硬件分配中断和 I/O 端口，用户无须再做手工跳线，也不必使用软件配置程序</strong>。唯一的要求就是操作系统需要支持 PnP 标准，同时所安装的新硬件也符合 PnP 规范的。</p>
+<h2 id="UPnP-协议介绍"><a href="#UPnP-协议介绍" class="headerlink" title="UPnP 协议介绍"></a><strong>UPnP 协议介绍</strong></h2><p>现在我们讲 UPnP，在网络世界里，<strong>当一个主机加入网络时，其行为模式跟我们上述的添加和删除设备是类似的。</strong>尤其是在私有网络和公网交互的时候，私有网络中的主机使用的是内网 IP 地址，是无法被外网的主机直接访问的。必须借助 NAT 网关设备（本地路由器）把内网地址映射到网关的公网地址上。</p>
+<p>简单来说就是， NAT 网关设备拥有一个公网 IP 地址（比如 10.59.116.19），内网中的主机（比如 192.168.1.101）想要与外界通信的话，NAT 网关设备可以为其做一个端口映射（比如：180.59.116.19 :80 —&gt; 192.168.1.101 :80），这样，外部的主机发往 NAT 网关的数据包都会被转发给内网的该主机，从而实现了内网中的主机与外部主机的通信。</p>
+<p><img src="https://pic1.zhimg.com/80/v2-b9a7c969540269a0f1243ad02487c084_hd.jpg" alt="img"></p>
+<p>当内网中的主机想要被外界主机直接访问（比如开放 80 端口，对外提供 HTTP 服务），我们就需要在 NAT 设备中为当前主机手工配置端口映射，如果内网中有多台主机都想要被外界主机直接访问的话，我们必须在同一个 NAT 设备上为这些主机分别做端口映射，它们之间不能使用有冲突的端口。这个过程需要用户手工一一配置，显然给用户带来了很大的麻烦。</p>
+<p><img src="https://pic1.zhimg.com/80/v2-c0bea083aa0415c42042f7fe60506640_hd.jpg" alt="img"></p>
+<p>UPnP 技术标准的出现就是为了解决这个问题，只要 NAT 设备（路由器）支持 UPnP，并开启。那么，当我们的主机（或主机上的应用程序）向 NAT 设备发出端口映射请求的时候，<strong>NAT 设备就可以自动为主机分配端口并进行端口映射</strong>。这样，我们的主机就能够像公网主机一样被网络中任何主机访问了。</p>
+<h2 id="UPnP-的应用场景"><a href="#UPnP-的应用场景" class="headerlink" title="UPnP 的应用场景"></a><strong>UPnP 的应用场景</strong></h2><p>UPnP 典型的应用场景就是家庭智能设备的互联，还有，目前在网络应用比如 BitTorrent, eMule，IPFS，Ethereum 等使用 P2P 技术的软件，UPnP 功能为它们带来极大的便利。比如：利用 UPnP 能自动的把它们侦听的端口号映射到公网地址上，这样，公网上的用户也能对当前的 NAT 内网主机直接发起连接。</p>
+<p>实现 UPnP 必须同时满足三个条件：</p>
+<ul>
+<li>NAT 网关设备必须支持 UPnP 功能；这是因为它需要扮演控制点（239.255.255.250:1900）的角色，控制点提供的是 SSDP 服务。</li>
+<li>操作系统必须支持 UPnP 功能；比如 Windows 系列操作系统；</li>
+<li>应用程序必须支持 UPnP 功能；比如 Bt、eMule、IPFS, Ethereum 等。</li>
+</ul>
+<p>以上三个条件必须同时满足，缺一不可。</p>
+<p><strong>注：</strong>大多数路由器都是支持 UPnP 的，有的是默认开启，有的需要手工开启。</p>
+<p><img src="https://pic3.zhimg.com/80/v2-0640425d49c52e1aa83870111a608cb2_hd.jpg" alt="img"></p>
+<h2 id="UPnP-这么好，那么我们应该立即开启吗？"><a href="#UPnP-这么好，那么我们应该立即开启吗？" class="headerlink" title="UPnP 这么好，那么我们应该立即开启吗？"></a>UPnP 这么好，那么我们应该立即开启吗？</h2><p>非也，如果我们的电脑并不需要 UPnP 所提供的功能，比如，我们的电脑并不想要对外直接提供服务，也不运行上述 P2P 软件，那么我们就无需开启 UPnP。因为一旦开启 UPnP，就意味着我们把自己的主机暴露在公网环境中，任何主机都可以向我们的电脑发起连接，NAT 设备会对所有收到的数据包不进行任何 authentication 认证而转发给我们的主机，这样，路由防火墙就会完全失效，我们的主机就很容易受到恶意的网络窥探，感染病毒或者恶意程序的几率也大大增加。</p>
+<p><strong>注：</strong>上述 NAT 设备通常就是指我们本地的路由器。</p>
+<h2 id="SSDP-协议"><a href="#SSDP-协议" class="headerlink" title="SSDP 协议"></a><strong>SSDP 协议</strong></h2><p>介绍完了 UPnP 的概况，为了完整性，现在再介绍一下 UPnP 规范下的 SSDP 协议，SSDP 全称是 Simple Service Discover Protocol 简单服务发现协议，这个协议是 UPnP 的核心，在 UPnP 中定义了一组协议框架，其中有控制点，根设备等概念，UPnP 设备通过 SSDP 协议与根设备（用户设备）进行交互。SSDP 是应用层协议，使用 HTTPU 和 HTTPMU 规范，基于 UDP 端口进行通信。</p>
+<p><strong>SSDP 使用一个固定的组播地址 <code>239.255.255.250</code> 和 UDP 端口号 <code>1900</code> 来监听其他设备的请求。</strong></p>
+<p>SSDP 协议的请求消息有两种类型，第一种是服务通知，设备和服务使用此类通知消息声明自己存在；第二种是查询请求，协议客户端用此请求查询某种类型的设备和服务。</p>
+<h3 id="1）设备查询"><a href="#1）设备查询" class="headerlink" title="1）设备查询"></a><strong>1）设备查询</strong></h3><p>当一个客户端接入网络的时候，它可以向一个特定的多播地址的 SSDP 端口使用 <code>M-SEARCH</code> 方法发送 “ssdp:discover” 消息。当设备监听到这个保留的多播地址上由控制点发送的消息的时候，设备将通过单播的方式直接响应控制点的请求。</p>
+<p>典型的设备查询请求消息格式：</p>
+<pre><code class="bash">M-SEARCH * HTTP/1.1
+S:uuid:ijklmnop-7dec-11d0-a765-00a0c91e6bf6
+Host:239.255.255.250:1900
+Man:&quot;ssdp:discover&quot;ST:ge:fridge
+MX:3</code></pre>
+<p><strong>响应消息</strong></p>
+<p>响应消息应该包含服务的位置信息（Location 或 AL 头），ST 和 USN 头。响应消息应该包含 cache 控制信息（max-age 或者 Expires 头）。</p>
+<p>典型的响应消息格式：</p>
+<pre><code class="js">HTTP/1.1 200 OK
+Cache-Control: max-age= seconds until advertisement expires
+S: uuid:ijklmnop-7dec-11d0-a765-00a0c91e6bf6
+Location: URL for UPnP description for root device
+Cache-Control: no-cache=&quot;Ext&quot;,max-age=5000ST:ge:fridge // search targetUSN: uuid:abcdefgh-7dec-11d0-a765-00a0c91e6bf6 // advertisement UUIDAL: &lt;blender:ixl&gt;&lt;http://foo/bar&gt;</code></pre>
+<h3 id="2、设备通知消息"><a href="#2、设备通知消息" class="headerlink" title="2、设备通知消息"></a><strong>2、设备通知消息</strong></h3><p>在设备加入网络时，它应当向一个特定的多播地址的 SSDP 端口使用 NOTIFY 方法发送 “ssdp:alive” 消息，以便宣布自己的存在，更新期限信息，更新位置信息。</p>
+<h4 id="（1）ssdp-alive-消息"><a href="#（1）ssdp-alive-消息" class="headerlink" title="（1）ssdp:alive 消息"></a>（1）ssdp:alive 消息</h4><p>由于 UDP 协议是不可信的，设备应该定期发送它的公告消息。在设备加入网络时，它必须用 NOTIFY 方法发送一个多播传送请求。NOTIFY 方法发送的请求没有回应消息。</p>
+<p>典型的设备通知消息格式如下：</p>
+<pre><code class="text">NOTIFY * HTTP/1.1HOST: 239.255.255.250:1900CACHE-CONTROL: max-age = seconds until advertisement expiresLOCATION: URL for UPnP description for root deviceNT: search targetNTS: ssdp:aliveUSN: advertisement UUID</code></pre>
+<h4 id="（2）ssdp-byebye-消息"><a href="#（2）ssdp-byebye-消息" class="headerlink" title="（2）ssdp:byebye 消息"></a>（2）ssdp:byebye 消息</h4><p>当一个设备计划从网络上卸载的时候，它也应当向一个特定的多播地址的 SSDP 端口使用 NOTIFY 方法发送 “ssdp:byebye” 消息。但是，即使没有发送 “ssdp:byebye” 消息，控制点也会根据 “ssdp:alive” 消息指定的超时值，将超时并且没有再次收到的 “ssdp:alive” 消息对应的设备认为是失效的设备。</p>
+<p>典型的设备卸载消息格式如下：</p>
+<pre><code class="text">NOTIFY * HTTP/1.1
+HOST: 239.255.255.250:1900NT: search target
+NTS: ssdp:byebye
+USN: advertisement UUID</code></pre>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>1、SSDP 协议原文：<a href="http://link.zhihu.com/?target=http%3A//tools.ietf.org/html/draft-cai-ssdp-v1-03">http://tools.ietf.org/html/draft-cai-ssdp-v1-03</a><br>2、UPnP 协议框架：<a href="http://link.zhihu.com/?target=http%3A//www.upnp.org/specs/arch/UPnP-arch-DeviceArchitecture-v1.0.pdf">http://www.upnp.org/specs/arch/UPnP-arch-DeviceArchitecture-v1.0.pdf</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/upnp/" rel="tag"># upnp</a>
+              <a href="/tags/dlna/" rel="tag"># dlna</a>
+              <a href="/tags/sat2ip/" rel="tag"># sat2ip</a>
+              <a href="/tags/ssdp/" rel="tag"># ssdp</a>
+              <a href="/tags/p2p/" rel="tag"># p2p</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/01/30/mmap-and-malloc/" rel="next" title="malloc 与 mmap 内存读写效率问题">
+                  <i class="fa fa-chevron-left"></i> malloc 与 mmap 内存读写效率问题
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/02/25/dlan-introduction/" rel="prev" title="DLNA 协议分析及应用">
+                  DLNA 协议分析及应用 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景知识"><span class="nav-number">1.</span> <span class="nav-text">背景知识</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#UPnP-协议介绍"><span class="nav-number">2.</span> <span class="nav-text">UPnP 协议介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#UPnP-的应用场景"><span class="nav-number">3.</span> <span class="nav-text">UPnP 的应用场景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#UPnP-这么好，那么我们应该立即开启吗？"><span class="nav-number">4.</span> <span class="nav-text">UPnP 这么好，那么我们应该立即开启吗？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SSDP-协议"><span class="nav-number">5.</span> <span class="nav-text">SSDP 协议</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1）设备查询"><span class="nav-number">5.1.</span> <span class="nav-text">1）设备查询</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2、设备通知消息"><span class="nav-number">5.2.</span> <span class="nav-text">2、设备通知消息</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#（1）ssdp-alive-消息"><span class="nav-number">5.2.1.</span> <span class="nav-text">（1）ssdp:alive 消息</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#（2）ssdp-byebye-消息"><span class="nav-number">5.2.2.</span> <span class="nav-text">（2）ssdp:byebye 消息</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">6.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

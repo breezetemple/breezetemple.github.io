@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="读书笔记">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux Wi-Fi编程API">
+<meta property="og:url" content="http://yoursite.com/2014/10/04/wifi-introduction/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="读书笔记">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://www.infradead.org/~tgr/libnl/layer_diagram.png">
+<meta property="og:image" content="http://www.2cto.com/uploadfile/2014/0526/20140526010248822.jpg">
+<meta property="og:image" content="http://www.2cto.com/uploadfile/2014/0526/20140526010303990.jpg">
+<meta property="article:published_time" content="2014-10-04T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.658Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="wifi">
+<meta property="article:tag" content="wext">
+<meta property="article:tag" content="cfg80211">
+<meta property="article:tag" content="nl80211">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://www.infradead.org/~tgr/libnl/layer_diagram.png">
+
+<link rel="canonical" href="http://yoursite.com/2014/10/04/wifi-introduction/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linux Wi-Fi编程API | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/10/04/wifi-introduction/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux Wi-Fi编程API
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-10-05 00:00:00" itemprop="dateCreated datePublished" datetime="2014-10-05T00:00:00+08:00">2014-10-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>16k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>14 mins.</span>
+            </span>
+            <div class="post-description"><<深入理解Android：Wi-Fi、NFC和GPS卷>>读书笔记</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p>Linux平台上目前常用的专门针对无线网络设备<a href="http://wireless.kernel.org/en/developers/Documentation/Wireless-Extensions" target="_blank" rel="noopener">编程的API有两套</a>:</p>
+<ul>
+<li><p>最早的一套API由HP公司员工Jean Tourrilhes于1997年开发，全称为Linux Wireless Extensions。一般缩写为wex或wext。这套API使得用户空间的程序能通过ioctl函数来控制无线网卡驱动。</p>
+</li>
+<li><p>后来Linux又提供了 <code>cfg80211</code> 和 <code>nl80211</code> 两套编程接口用于替代 <code>wext</code> 。其中，cfg80211用于驱动开发，而nl80211 API供用户空间进程使用以操作那些利用cfg80211 API开发的无线网卡驱动。</p>
+</li>
+</ul>
+<h2 id="Linux-Wireless-Extensions介绍"><a href="#Linux-Wireless-Extensions介绍" class="headerlink" title="Linux Wireless Extensions介绍"></a>Linux Wireless Extensions介绍</h2><p>wext的用法相当简单。Linux平台中，wext API定义于wireless.h文件。其内部的数据结构定义、变量命名等都和80211规范中定义的原语有着莫大的关系。</p>
+<h3 id="常用数据结构–wireless-h"><a href="#常用数据结构–wireless-h" class="headerlink" title="常用数据结构–wireless.h"></a><strong>常用数据结构–wireless.h</strong></h3><pre><code>//该结构体专门用于往 socket 句柄传递 ioctrl 控制参数。
+struct  iwreq
+{
+    union
+    {
+        char    ifrn_name[IFNAMSIZ];    /* if name, e.g. &quot;eth0&quot; */                                                             
+    } ifr_ifrn;
+
+    /* Data part (defined just above) */
+    union   iwreq_data  u;
+};
+
+union   iwreq_data
+{
+    /* Config - generic */
+    char        name[IFNAMSIZ];
+    /* Name : used to verify the presence of  wireless extensions.
+    * Name of the protocol/provider... */
+
+    struct iw_point essid;      /* Extended network name */
+    struct iw_param nwid;       /* network id (or domain - the cell) */
+    struct iw_freq  freq;       /* frequency or channel :
+                                * 0-1000 = channel
+                                * &gt; 1000 = frequency in Hz */
+
+    struct iw_param sens;       /* signal level threshold */
+    struct iw_param bitrate;    /* default bit rate */
+    struct iw_param txpower;    /* default transmit power */
+    struct iw_param rts;        /* RTS threshold threshold */
+    struct iw_param frag;       /* Fragmentation threshold */
+    __u32       mode;       /* Operation mode */
+    struct iw_param retry;      /* Retry limits &amp; lifetime */
+
+    struct iw_point encoding;   /* Encoding stuff : tokens */
+    struct iw_param power;      /* PM duration/timeout */
+    struct iw_quality qual;     /* Quality part of statistics */
+
+    struct sockaddr ap_addr;    /* Access point address */
+    struct sockaddr addr;       /* Destination address (hw/mac) */
+
+    struct iw_param param;      /* Other small parameters */
+    struct iw_point data;       /* Other large parameters */
+};
+
+//专门用于触发无线网卡发起扫描请求的数据结构 iw_scan_req
+struct  iw_scan_req
+{
+    __u8        scan_type; /* IW_SCAN_TYPE_{ACTIVE,PASSIVE} */
+    __u8        essid_len;
+    __u8        num_channels; /* num entries in channel_list;
+                            * 0 = scan all allowed channels */
+    __u8        flags; /* reserved as padding; use zero, this may
+                        * be used in the future for adding flags
+                        * to request different scan behavior */
+    struct sockaddr bssid; /* ff:ff:ff:ff:ff:ff for broadcast BSSID or
+                            * individual address of a specific BSS */
+
+    /*
+    * Use this ESSID if IW_SCAN_THIS_ESSID flag is used instead of using
+    * the current ESSID. This allows scan requests for specific ESSID
+    * without having to change the current ESSID and potentially breaking
+    * the current association.
+    */
+    __u8        essid[IW_ESSID_MAX_SIZE];
+
+    /*
+    * Optional parameters for changing the default scanning behavior.
+    * These are based on the MLME-SCAN.request from IEEE Std 802.11.
+    * TU is 1.024 ms. If these are set to 0, driver is expected to use
+    * reasonable default values. min_channel_time defines the time that
+    * will be used to wait for the first reply on each channel. If no
+    * replies are received, next channel will be scanned after this. If
+    * replies are received, total time waited on the channel is defined by
+    * max_channel_time.
+    */
+    __u32       min_channel_time; /* in TU */
+    __u32       max_channel_time; /* in TU */
+
+    struct iw_freq  channel_list[IW_MAX_FREQUENCIES];
+};</code></pre><h3 id="wext-API-使用实例–wpa-supplicant"><a href="#wext-API-使用实例–wpa-supplicant" class="headerlink" title="wext API 使用实例–wpa_supplicant"></a><strong>wext API 使用实例–wpa_supplicant</strong></h3><p>wpa_supplicant-1.1/src/drivers/driver_wext.c文件就是以wext API来与无线网卡工作交互的代码，示例如下：</p>
+<pre><code>int wpa_driver_wext_scan(void *priv, struct wpa_driver_scan_params *params)
+{
+    struct wpa_driver_wext_data *drv = priv;
+    struct iwreq iwr;   //定义个iwreq对象
+    int ret = 0, timeout;
+    struct iw_scan_req req; //定义一个iw_scan_req对象
+    const u8 *ssid = params-&gt;ssids[0].ssid;                                                                                    
+    size_t ssid_len = params-&gt;ssids[0].ssid_len;
+
+    if (ssid_len &gt; IW_ESSID_MAX_SIZE) {
+        wpa_printf(MSG_DEBUG, &quot;%s: too long SSID (%lu)&quot;,
+                __FUNCTION__, (unsigned long) ssid_len);
+        return -1;
+    }    
+
+    os_memset(&amp;iwr, 0, sizeof(iwr));
+    os_strlcpy(iwr.ifr_name, drv-&gt;ifname, IFNAMSIZ);    //为iwr的ifr_name传递需操作的网卡设备名
+
+    if (ssid &amp;&amp; ssid_len) {
+        os_memset(&amp;req, 0, sizeof(req)); //设置iw_scan_req的信息
+        req.essid_len = ssid_len;
+        req.bssid.sa_family = ARPHRD_ETHER;
+        os_memset(req.bssid.sa_data, 0xff, ETH_ALEN);
+        os_memcpy(req.essid, ssid, ssid_len);
+        iwr.u.data.pointer = (caddr_t) &amp;req;
+        iwr.u.data.length = sizeof(req);
+        iwr.u.data.flags = IW_SCAN_THIS_ESSID; //IW_SCAN_THIS_ESSID表示只扫描指定ESSID的无线网络
+    }    
+    /*
+    ioctl_sock指向一个socket 句柄,其创建时候的代码如下:
+    ioctl_sock = socket(PF_INET,SOCK_DGRAM,0)
+    SIOCSIWSCAN用于通知驱动进行无线网络扫描
+    */
+    if (ioctl(drv-&gt;ioctl_sock, SIOCSIWSCAN, &amp;iwr) &lt; 0) {
+        perror(&quot;ioctl[SIOCSIWSCAN]&quot;);
+        ret = -1;
+    }
+
+    //other source code
+
+    return ret;
+}</code></pre><h2 id="nl80211介绍"><a href="#nl80211介绍" class="headerlink" title="nl80211介绍"></a>nl80211介绍</h2><p>目前Linux平台代替wext框架的是nl80211和cfg80211，其中cfg80211用于Kernel网卡驱动开发，nl80211 API则供用户空间进程使用。</p>
+<p>在nl80211框架中，用户空间进程与Kernel通信没有使用wext中的ioctl，而是采用netlink机制。虽然nl80211.h仅是定义了一些枚举值和有限的数据结构，但其操作比较复杂。netlink是Linux平台上一种基于socket的IPC通信机制，它支持：</p>
+<ul>
+<li>用户空间进程和Kernel通信</li>
+<li>用户空间中进程间通信</li>
+</ul>
+<h3 id="netlink编程"><a href="#netlink编程" class="headerlink" title="netlink编程"></a>netlink编程</h3><p>netlink是一种基于socket的IPC通信机制，所以它需要解决如下两个问题。</p>
+<ul>
+<li>寻址：即如何定位通信对象。</li>
+<li>双方通信的数据格式：socket编程中，通信双方传递的数据格式是由应用程序自己决定的。那么netlink是否有其自定义的数据格式呢？</li>
+</ul>
+<h4 id="netlink-socket创建及绑定"><a href="#netlink-socket创建及绑定" class="headerlink" title="netlink socket创建及绑定"></a><strong>netlink socket创建及绑定</strong></h4><p>netlink使用前，需要通过socket调用创建一个socket句柄，而socket函数的原型如下。</p>
+<pre><code>int socket(int domain, int type, int protocol);</code></pre><p>对于netlink编程来说，注意以下事项。</p>
+<ul>
+<li>domain：必须设置为AF_NETLINK，表示此socket句柄将用于netlink。</li>
+<li>type：netlink是基于消息的IPC通信，所以该值为SOCK_DGRAM。注意，对netlink编程来说，内核并不区分type的值是SOCK_DGRAM还是SOCK_RAW。</li>
+<li>protocol：该值可根据需要设为NETLINK_ROUTE、NETLINK_NETFILTER。不同的协议代表Kernel中不同的子系统。例如NETLINK_ROUTE代表通信对象将是Kernel中负责route的子系统，而NETLINK_NETFILTER代表通信对象将是Kernel中负责Netfilter的子系统，而第2章碰到的NETLINK_KOBJECT_UEVENT则代表应用程序希望接收来自Kernel中的uevent消息。</li>
+</ul>
+<p>使用netlink通信时，如何保证确保通信双方能正确定位对方呢？原来，在netlink中，通信的另一方地址由一个数据类型为sockaddr_nl的结构体来唯一标示。该结构体的原型如下。</p>
+<pre><code>[--&gt;netlink.h]
+struct sockaddr_nl {
+    // nl_family取值必须为AF_NETLINK或PF_NETLINK
+    sa_family_t nl_family;
+    unsigned short nl_pad;   // 该值暂时无用，必须设为0
+    /*
+    nl_pid看起来是用于存储进程pid的，但实际上它只是用于标示一个netlink socket。所以，用户空间
+    只要保证进程内该值的唯一性即可。另外，如果该值为0，表示通信的目标是Kernel。
+    */
+    __u32 nl_pid;
+    /*
+    每一个netlink协议都支持最多32个多播组，加入多播组的成员都能接收到对应的多播消息。
+    例如NETLINK_ROUTE协议就有RTMGRP_LINK和RTMGRP_IPV4_IFADDR等多个多播组。每个多播组对应
+    不同的消息。之所以采用多播的方式，是因为它能减少消息发送/接收的次数。
+    nl_groups为0，表示只处理单播消息。
+    */
+    __u32 nl_groups;
+};</code></pre><p>设置好地址后，通过bind函数将该地址和socket句柄绑定，这样通信的另一方就正式确定了。</p>
+<p>关于socket创建以及bind的使用，读者可参考下面的例子。</p>
+<pre><code>struct sockaddr_nl sa;
+
+memset(&amp;sa, 0, sizeof(sa));
+sa.nl_family = AF_NETLINK;
+sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR;
+// sa.nl_pid已经通过memset函数置为0了，代表此次netlink通信的目标是Kernel
+fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+bind(fd, (struct sockaddr *) &amp;sa, sizeof(sa));</code></pre><p>netlink中关于protocol和多播group的取值比较分散，而且Linux的man手册更新赶不上代码的更新速度。建议读者通过netlink.h寻找protocol的取值。通过protocol对应的头文件去寻找多播group的定义。例如rtnetlink.h就定义了RTMGRP_LINK等多播组。</p>
+<h4 id="netlink消息类型和标志"><a href="#netlink消息类型和标志" class="headerlink" title="netlink消息类型和标志"></a>netlink消息类型和标志</h4><p>netlink的消息及处理是netlink编程中较为复杂的一部分。netlink中，所有消息都有一个消息头，该头由结构体nlmsghdr表达，原型如下。</p>
+<pre><code>struct nlmsghdr {
+    __u32        nlmsg_len; // 整个消息的长度，包括消息头
+    __u16        nlmsg_type; // 消息类型，详情见后文
+    __u16        nlmsg_flags; // 附加标志
+    __u32        nlmsg_seq; // 消息序列号
+    __u32        nlmsg_pid; // 发送该消息的nl_pid。该值为0,表示数据来自内核
+};</code></pre><p>netlink定义了三种消息类型（type），分别如下。</p>
+<ul>
+<li>NLMSG_NOOP：无操作，程序可直接丢弃这类消息。</li>
+<li>NLMSG_ERROR：代表错误消息。这类消息携带的信息由结构体struct nlmsgerr表达。</li>
+<li>NLMSG_DONE：如果某个信息的数据量较大，需要分成多个netlink消息发送的话，NLMSG_DONE表示这是此信息最后一个消息分片包。</li>
+</ul>
+<p>从C/S角度来看，netlink消息可分为另外三种类型。</p>
+<ul>
+<li>Request消息：代表客户端向服务端发起的请求。这类消息必须为nlmsg_flags设置NLM_F_REQUEST标志位。同时，客户端最好为nlmsg_seq设置一个独一无二的值，以区分自己发送的不同请求。</li>
+<li>Response消息：该类消息作为服务端对客户端请求的回应。对应的消息类型是NLMSG_ERROR。注意，如果服务器处理请求成功，也返回该值。只不过nlmsgerr的error变量值为0。</li>
+<li>Notification消息：用于服务端向客户端发送通知。由于它不对应任何请求，故nlmsg_seq一般取值为0。</li>
+</ul>
+<p>对于Response消息，无论服务端处理请求是否成功，都会返回NLMSG_ERROR消息，其对应的数据类型是nlmsgerr，原型如下。</p>
+<pre><code>struct nlmsgerr {
+    int error;   // 值为负代表错误码，值为0表示请求处理成功
+    // 携带对应请求消息的消息头
+    // 由于只返回消息头，故客户端必须根据消息头中的nlmsg_seq找到具体的消息
+    struct nlmsghdr msg;
+};</code></pre><p>下面来看参数nlmsg_flags，它比type复杂，常设的位值有（通过“|”运算符将不同值“或”在一起）。</p>
+<ul>
+<li>NLM_F_REQUEST：代表请求消息。</li>
+<li>NLM_F_MULTI：代表消息分片中的一个。理论上说，由于nlmsghdr中的nlmsg_len为32位，其最大消息长度可达4GB，但内核实现时，最大消息的长度只有一个页面（一般为4KB）。如果有大于4KB的信息要传递，就需将其分成多个消息发送。除最后一个分片消息外，其余消息都需置NLM_F_MULTI位。当然，结合上文所述，最后一个分片消息需要设置nlmsg_type为NLMSG_DONE。</li>
+<li>NLM_F_ACK：该标志将强制服务端接收并处理完请求后回复ACK给客户端。</li>
+</ul>
+<h4 id="netlink消息的处理"><a href="#netlink消息的处理" class="headerlink" title="netlink消息的处理"></a>netlink消息的处理</h4><p>对于socket编程来说，一般客户端会分配一个buffer用于接收数据，而后续解析该buffer中的netlink消息其实也是一件比较麻烦的事情。另外，由于netlink对消息的大小有字节对齐的要求，所以应用程序在构造自己的netlink消息时，也比较麻烦。不过好在netlink为我们提供了一些帮助宏，利用这些宏，netlink消息就不再麻烦了。以下代码为netlink消息处理时常用的一些宏。</p>
+<pre><code>NLMSG_ALIGN(len)// 获取len按4字节补齐后的长度。例如，如果len为1，则该宏返回的值应是4
+// 整个消息包的长度，包括消息头和数据长度len。该值用于填充消息头中的nlmsg_len参数
+NLMSG_LENGTH(len)
+// 返回按4字节对齐后整个消息包的长度。它和NLMSG_LENGTH最大的不同是该宏将长度按4字节对齐
+NLMSG_SPACE(len)   // 该宏等于NLMSG_ALIGN(NLMSG_LENGTH(len))
+NLMSG_DATA(nlh)   // 获取消息中的数据起始地址
+// 用于分片消息的处理。可获取下一条分片消息。其用法见下文例子
+NLMSG_NEXT(nlh,len)
+NLMSG_OK(nlh,len)   // 用于判断接收到的数据是否包含一个完整的netlink消息
+// 用于返回数据的长度。注意，由于netlink消息在创建时会按4字节补齐
+// 所以其数据真正的长度不能通过nlms_len来判断
+NLMSG_PAYLOAD(nlh,len)</code></pre><p>netlink消息解析的例子。</p>
+<pre><code>// 本例基于linux netlink手册。可通过man 7 netlink查阅
+int len;
+char buf[4096];
+struct iovec iov = { buf, sizeof(buf) };
+struct sockaddr_nl sa;
+struct msghdr msg;  // 用于recvmsg系统调用，和netlink没关系
+struct nlmsghdr *nh;
+
+msg = { (void *)&amp;sa, sizeof(sa), &amp;iov, 1, NULL, 0, 0 };
+len = recvmsg(fd, &amp;msg, 0); // recvmsg返回，可能存储了多条netlink消息
+
+// 开始接受接收buffer，注意NLMSG_NEXT宏，其内部会对len长度进行修改，以调整到下一个消息的起始
+for (nh = (struct nlmsghdr *) buf; NLMSG_OK(nh, len);
+        nh = NLMSG_NEXT (nh, len)) {
+    /* The end of multipart message. */
+    if (nh-&gt;nlmsg_type == NLMSG_DONE){
+        return;   // 分片消息处理
+    }
+    if (nh-&gt;nlmsg_type == NLMSG_ERROR){
+        struct nlmsgerr* pError = （struct nlmsgerr*）NLMSG_DATA(nh);
+        // 获取nlmsgerr的内容
+        ...... /* 错误或ACK处理*/
+    }
+    void* data = NLMSG_DATA(nh); // 获取数据的起始地址
+    ......// 处理数据
+}</code></pre><p>netlink的消息收发和普通的socket消息收发一样，这里不赘述。</p>
+<h4 id="netlink编程小结"><a href="#netlink编程小结" class="headerlink" title="netlink编程小结"></a>netlink编程小结</h4><p>netlink强制要求每个netlink消息都包含消息头，其实它还定义了一个名为nlattr的结构体，用于规范载荷（Payload）的数据类型。其目的是希望Payload以属性（attribute）的方式来描述自己。struct nlattr结构非常简单，如下所示。</p>
+<pre><code>struct nlattr {
+    __u16     nla_len;  // 属性长度
+    __u16     nla_type;  // 属性类型
+};</code></pre><p>netlink虽然复用了socket编程以方便应用程序和内核通信，但因为其文档很少，而且不同protocol往往还有自己特定的数据结构，所以实际使用过程中难度较大。</p>
+<h3 id="libnl开源库"><a href="#libnl开源库" class="headerlink" title="libnl开源库"></a>libnl开源库</h3><p>鉴于netlink的复杂性，开源世界提供了几个比较完备的基于netlink编程的框架，其中最著名的就是<strong><a href="http://www.infradead.org/~tgr/libnl/" target="_blank" rel="noopener">libnl</a></strong>，框架图如下：</p>
+<p><img src="http://www.infradead.org/~tgr/libnl/layer_diagram.png" alt=""></p>
+<p>以下三个库都基于其核心库libnl。</p>
+<ul>
+<li>libnl-route：用于和Kernel中的Routing子系统交互。</li>
+<li>libnl-nf：用于和Kernel中的Netfilter子系统交互。</li>
+<li>libnl-genl：用于和Kernel中的Generic Netlink模块交互。</li>
+</ul>
+<h4 id="nl-sock结构体的使用"><a href="#nl-sock结构体的使用" class="headerlink" title="nl_sock结构体的使用"></a>nl_sock结构体的使用</h4><p>libnl以面向对象的方式重新封装了netlink原有的API。其使用时必须分配一个nl_sock结构体。下面展示了和它相关的一些API及使用方法。</p>
+<pre><code>#include &lt;netlink/socket.h&gt;
+// 分配和释放nl_sock结构体
+struct nl_sock *nl_socket_alloc(void)
+void nl_socket_free(struct nl_sock *sk)
+// nl_connet内部将通过bind函数将netlink socket和protocol对应的模块进行绑定
+int nl_connect(struct nl_sock *sk, int protocol)</code></pre><p>linbl还可为每个nl_sock设置消息处理函数，相关API如下。</p>
+<pre><code>// 为nl_sock对象设置一个回调函数，当该socket上收到消息后，就会回调此函数进行处理
+// 回调函数及参数封装在结构体struct nl_cb中
+void nl_socket_set_cb(struct nl_sock *sk, struct nl_cb *cb);
+// 获取该nl_sock设置的回调函数信息
+struct nl_cb *nl_socket_get_cb(const struct nl_sock *sk);</code></pre><p>注意，以上两个函数没有文档说明。建议使用另外一个控制力度更为精细的API。</p>
+<pre><code>/*
+   此API对消息接收及处理的力度更为精细，其中：
+   type类型包括NL_CB_ACK、NL_CB_SEQ_CHECK、NL_CB_INVALID等，可用于处理底层不同netlink消息的情况。
+   例如，当收到的netlink消息无效时，将调用NL_CB_INVALIDE设置的回调函数进行处理。
+   nl_cb_kinds指定消息回调函数的类型，可选值有NL_CB_CUSTOM，代表用户设置的回调函数，NL_CB_DEFAULT
+   代表默认的处理函数。
+   回调函数的返回值包括以下。
+   NL_OK:表示处理正常。
+   NL_SKIP：表示停止当前netlink消息分析，转而去分析接收buffer中下一条netlink消息（消息分
+   　　　 片的情况）。
+   NL_STOP：表示停止此次接收buffer中的消息分析。
+ */
+int nl_socket_modify_cb(struct nl_sock *sk,
+        enum nl_cb_type type, enum nl_cb_kind kind,
+        nl_recvmsg_msg_cb_t func, void *arg);</code></pre><p>另外，netlink还可设置错误消息（即专门处理nlmsgerr数据）处理回调函数，相关API如下。</p>
+<pre><code>#include &lt;netlink/handlers.h&gt;  // 必须包含此头文件
+// 设置错误消息处理
+int nl_cb_err(struct nl_cb *cb, enum nl_cb_kind kind,
+        nl_recvmsg_err_cb_t func, void * arg);
+typedef int(* nl_recvmsg_err_cb_t)(struct sockaddr_nl *nla,
+        struct nlmsgerr *nlerr, void *arg);</code></pre><h4 id="libnl中的消息处理"><a href="#libnl中的消息处理" class="headerlink" title="libnl中的消息处理"></a>libnl中的消息处理</h4><p>libnl定义了自己的消息结构体struct nl_msg。不过它也提供API直接处理netlink的消息。常用的API如下。</p>
+<pre><code>#include &lt;netlink/msg.h&gt;   // 必须包含这个头文件
+// 下面这两个函数计算netlink消息体中对应部分的长度
+int nlmsg_size(int payloadlen);  // 请参考图来理解这两个函数返回值的意义
+int nlmsg_total_size(int payloadlen);</code></pre><p>关于netlink消息的长度如图所示：</p>
+<p><img src="http://www.2cto.com/uploadfile/2014/0526/20140526010248822.jpg" alt=""></p>
+<p>其他可直接处理netlink消息的API如下。</p>
+<pre><code>struct nlmsghdr *nlmsg_next(struct nlmsghdr *hdr, int *remaining);
+int nlmsg_ok(const struct nlmsghdr *hdr, int remaining);
+/*定义一个消息处理的for循环宏，其值等于
+for (int rem = len, pos = head; nlmsg_ok(pos, rem);\
+    pos = nlmsg_next(pos, &amp;rem))
+*/
+#define nlmsg_for_each(pos,head,en)   </code></pre><p>也可以通过libnl定义的消息结构体nl_msg进行相关操作，和nl_msg有关的API如下。</p>
+<pre><code>struct nl_msg *nlmsg_alloc(void);
+void nlmsg_free(struct nl_msg *msg);
+// nl_msg内部肯定会指向一个netlink消息头实例，下面这个函数用于填充netlink消息头
+struct nlmsghdr *nlmsg_put(struct nl_msg *msg,
+        uint32_t port, uint32_t seqnr,
+        int nlmsg_type, int payload, int nlmsg_flags);</code></pre><h4 id="libnl中的消息发送和接收"><a href="#libnl中的消息发送和接收" class="headerlink" title="libnl中的消息发送和接收"></a>libnl中的消息发送和接收</h4><p>netlink直接利用系统调用（如send、recv、sendmsg、recvmsg等）进行数据收发，而libnl封装了自己特有的数据收发API。其中和发送有关的几个主要API如下。</p>
+<pre><code>// 直接发送netlink消息
+int nl_sendto (struct nl_sock *sk, void *buf, size_t size)
+    // 发送nl_msg消息
+int nl_send (struct nl_sock *sk, struct nl_msg *msg)
+    int nl_send_simple(struct nl_sock *sk, int type,
+            int flags,void *buf, size_t size);</code></pre><p>常用的数据接收API如下。</p>
+<pre><code>// 核心接收函数。nla参数用于存储发送端的地址信息。creds用于存储权限相关的信息
+int nl_recv(struct nl_sock *sk, struct sockaddr_nl *nla,
+        unsigned char **buf, struct ucred **creds)
+    // 内部通过nl_recv接收消息，然后通过cb回调结构体中的回调函数传给接收者
+int nl_recvmsgs (struct nl_sock *sk, struct nl_cb *cb)</code></pre><h4 id="libnl-genl-API介绍"><a href="#libnl-genl-API介绍" class="headerlink" title="libnl-genl API介绍"></a>libnl-genl API介绍</h4><p>libnl-genl封装了对generic netlink模块的处理，它基于libnl，一条genl消息的结构如图所示。</p>
+<p><img src="http://www.2cto.com/uploadfile/2014/0526/20140526010303990.jpg" alt=""></p>
+<p>其中，genlmsghdr的原型如下。</p>
+<pre><code>struct genlmsghdr {
+    __u8 cmd;  // cmd和version都和具体的案例有关
+    __u8 version;
+    __u16 reserved; // 保留
+};</code></pre><p>genl常用的API如下。</p>
+<pre><code>// 和libnl的nl_connect类型，只不过协议类型为GENERIC_NETLINK
+int genl_connect (struct nl_sock *sk)
+// genlmsg_put用于填充图中的nlmsghdr、genlmsghder和用户自定义的消息头。详细内容见下文
+void* genlmsg_put (struct nl_msg *msg, uint32_t port,
+        uint32_t seq, int family, int hdrlen,
+        int flags, uint8_t cmd, uint8_t version)
+// 用于获取genl消息中携带的nlattr内容
+struct nlattr* genlmsg_attrdata(const struct genlmsghdr *gnlh,int hdrlen)   </code></pre><p>另外，genl还有几个比较重要的API，它们和genl机制的内核实现有关，这里仅简单介绍其中几点内容。为实现genl机制，内核创建了一个虚拟的Generic Netlink Bus。所有genl的使用者（包含内核模块或用户空间进程）都会注册到此Bus上。这些使用者注册时，都需要填充一个名为genl_family的数据结构，该结构是一种身份标示。所以某一方只要设置好genlmsg_put中的family参数，数据就能传递到对应的模块。</p>
+<p>family是一个整型，可读性较差，所以genl使用者往往会指定一个字符串作为family name。而family name和family的对应关系则由genl中另外一个重要模块去处理。这个模块就是genl中的Controller，它也是Generic Bus使用者。其family name为“nlctrl”，只不过它的family是固定的，目前取值为16（一般为它定义一个NETLINK_GENERIC宏）。Controller的一个重要作用就是为其他注册者建立family name和family之间关系，也就是动态为其他注册者分配family编号。另外，Controller也支持查询，即返回当前Kernel中注册的所有genl模块的family name和family的值。</p>
+<p>对用户空间程序来说，只要知道family的值，就可和指定模块进行通信了。libnl-genl封装了上述操作，并提供了几个常用的API。</p>
+<pre><code>// 根据family name字符串去查询family，该函数内部实现将发送查询消息给Controller
+int  genl_ctrl_resolve (struct nl_sock *sk, const char *name)
+/*
+如果每次都向Controller去查询family编号将严重影响效率，所以libnl-genl会把查询到的信息
+缓存起来。
+下面这个函数将分配一个nl_cache列表，其内容存储了当前注册到Generic Netlink Bus上所有注
+册者的信息。
+*/
+int genl_ctrl_alloc_cache (struct nl_sock *sk, struct nl_cache **result)
+// 根据family name从缓存中获取对应的genl_family信息
+struct genl_family * genl_ctrl_search_by_name
+    (struct nl_cache *cache, const char *name)</code></pre><h3 id="nl80211实例"><a href="#nl80211实例" class="headerlink" title="nl80211实例"></a>nl80211实例</h3><p>简单来说，nl80211的核心就是通过netlink机制向Kernel中的无线网卡驱动发送特定的消息。只不过这些消息的类型、参数等都由nl80211.h定义。此处通过一个案例，学习如何通过nl80211触发网卡进行无线网络扫描。</p>
+<pre><code>[--&gt;driver_nl80211.c::wpa_driver_nl80211_scan]
+static int wpa_driver_nl80211_scan(void *priv,
+    struct wpa_driver_scan_params *params)
+{
+    struct i802_bss *bss = priv;
+    struct wpa_driver_nl80211_data *drv = bss-&gt;drv;
+    int ret = -1, timeout;
+    struct nl_msg *msg, *rates = NULL; // 定义两个nl_msg对象，rates和P2P有关，读者可忽略它
+
+    drv-&gt;scan_for_auth = 0;
+    // 创建nl80211消息，其中NL80211_CMD_TRIGGER_SCAN是Nl80211定义的命令，用于触发网络扫描
+    msg = nl80211_scan_common(drv, NL80211_CMD_TRIGGER_SCAN, params);
+    ......// P2P 处理
+    // 发送netlink消息
+    ret = send_and_recv_msgs(drv, msg, NULL, NULL);
+    msg = NULL;
+    if (ret)
+        goto nla_put_failure;
+    ......// wpa_supplicant其他处理
+    ......// 错误处理
+        return ret;
+}</code></pre><p>上面代码中构造无线网络扫描nl_msg的重要函数nl80211_scan_common代码如下所示。</p>
+<pre><code>[--&gt;driver_nl80211.c::nl80211_scan_common]
+static struct nl_msg * nl80211_scan_common
+    (struct wpa_driver_nl80211_data *drv, u8 cmd,
+    struct wpa_driver_scan_params *params)
+{
+    struct nl_msg *msg;
+    int err;
+    size_t i;
+    // 分配一个nl_msg对象
+    msg = nlmsg_alloc();
+    /*
+    调用nl80211_cmd函数填充nl_msg中的信息，其内部代码如下。
+    static void * nl80211_cmd(struct wpa_driver_nl80211_data *drv,
+    struct nl_msg *msg, int flags, uint8_t cmd){
+    return genlmsg_put(msg, 0, 0, drv-&gt;global-&gt;nl80211_id,0, flags, cmd, 0);
+    }
+    */
+    nl80211_cmd(drv, msg, 0, cmd);
+    /*
+    nl80211消息的参数通过netlink中的nlattr来存储。NL80211_ATTR_IFINDEX代表
+    此次操作所指定的网络设备编号。
+    */
+    nla_put_u32(msg, NL80211_ATTR_IFINDEX, drv-&gt;ifindex);
+
+    if (params-&gt;num_ssids) {
+        struct nl_msg *ssids = nlmsg_alloc();
+        for (i = 0; i &lt; params-&gt;num_ssids; i++) {
+            nla_put(ssids, i + 1, params-&gt;ssids[i].ssid_len,params-&gt;ssids[i].ssid);
+            ......
+        }
+        // netlink支持消息嵌套，即属性中携带的数据可以是另外一个nl_msg消息
+        err = nla_put_nested(msg, NL80211_ATTR_SCAN_SSIDS, ssids);
+        nlmsg_free(ssids);
+        ......
+    }
+    ......// 其他处理
+        return msg;
+    ......// 错误处理
+}</code></pre><p>由上面的例子可知，nl80211其实就是利用netlink机制将一些802.11相关的命令和参数发送给驱动去执行。这些命令和参数信息可通过nl80211头文件查询。</p>
+<p>首先，nl80211_copy.h定义其支持的命令，如下所示。</p>
+<pre><code>[--&gt;nl80211_copy.h]
+enum nl80211_commands {
+    NL80211_CMD_UNSPEC,
+    NL80211_CMD_GET_WIPHY,
+    NL80211_CMD_SET_WIPHY,
+    ......
+    NL80211_CMD_GET_INTERFACE,   
+    NL80211_CMD_SET_INTERFACE,
+    ......
+    NL80211_CMD_SET_BSS,
+    NL80211_CMD_SET_REG,
+    ......// 一共定义了94条命令
+}</code></pre><p>然后定义属性的取值，如下所示。</p>
+<pre><code>enum nl80211_attrs {
+    NL80211_ATTR_UNSPEC,
+    NL80211_ATTR_WIPHY,
+    NL80211_ATTR_WIPHY_NAME,
+    NL80211_ATTR_IFINDEX,
+    NL80211_ATTR_IFNAME,
+    NL80211_ATTR_IFTYPE,
+    NL80211_ATTR_MAC,
+    ......// 一共定义了155条属性
+}</code></pre><p>相比wext而言，nl80211的使用难度明显要复杂，其中重要原因是它是基于netlink编程的。而且，如果没有libnl的支持，相信使用难度会更大。但从Wi-Fi角度来看，nl80211和wext到没有太大区别，二者都是紧紧围绕MAC层service来设计数据结构的。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/wifi/" rel="tag"># wifi</a>
+              <a href="/tags/wext/" rel="tag"># wext</a>
+              <a href="/tags/cfg80211/" rel="tag"># cfg80211</a>
+              <a href="/tags/nl80211/" rel="tag"># nl80211</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2014/10/04/iptables-introduction/" rel="next" title="iptables简介">
+                  <i class="fa fa-chevron-left"></i> iptables简介
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2014/10/04/makedown-syntax/" rel="prev" title="makedown-syntax">
+                  makedown-syntax <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux-Wireless-Extensions介绍"><span class="nav-number">1.</span> <span class="nav-text">Linux Wireless Extensions介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#常用数据结构–wireless-h"><span class="nav-number">1.1.</span> <span class="nav-text">常用数据结构–wireless.h</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#wext-API-使用实例–wpa-supplicant"><span class="nav-number">1.2.</span> <span class="nav-text">wext API 使用实例–wpa_supplicant</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#nl80211介绍"><span class="nav-number">2.</span> <span class="nav-text">nl80211介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#netlink编程"><span class="nav-number">2.1.</span> <span class="nav-text">netlink编程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#netlink-socket创建及绑定"><span class="nav-number">2.1.1.</span> <span class="nav-text">netlink socket创建及绑定</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#netlink消息类型和标志"><span class="nav-number">2.1.2.</span> <span class="nav-text">netlink消息类型和标志</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#netlink消息的处理"><span class="nav-number">2.1.3.</span> <span class="nav-text">netlink消息的处理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#netlink编程小结"><span class="nav-number">2.1.4.</span> <span class="nav-text">netlink编程小结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#libnl开源库"><span class="nav-number">2.2.</span> <span class="nav-text">libnl开源库</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#nl-sock结构体的使用"><span class="nav-number">2.2.1.</span> <span class="nav-text">nl_sock结构体的使用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#libnl中的消息处理"><span class="nav-number">2.2.2.</span> <span class="nav-text">libnl中的消息处理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#libnl中的消息发送和接收"><span class="nav-number">2.2.3.</span> <span class="nav-text">libnl中的消息发送和接收</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#libnl-genl-API介绍"><span class="nav-number">2.2.4.</span> <span class="nav-text">libnl-genl API介绍</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#nl80211实例"><span class="nav-number">2.3.</span> <span class="nav-text">nl80211实例</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

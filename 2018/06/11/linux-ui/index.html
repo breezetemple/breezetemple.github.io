@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="简单介绍 Linux 图形编程概念、协议及库  SDL OpenGL DirectFB FrameBuffer">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 图形编程简介">
+<meta property="og:url" content="http://yoursite.com/2018/06/11/linux-ui/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="简单介绍 Linux 图形编程概念、协议及库  SDL OpenGL DirectFB FrameBuffer">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/SDL/SDL.jpeg">
+<meta property="og:image" content="http://yoursite.com/images/SDL/DFB.jpeg">
+<meta property="og:image" content="http://yoursite.com/images/SDL/DFBS.jpeg">
+<meta property="article:published_time" content="2018-06-11T05:27:20.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.674Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="Linux FB">
+<meta property="article:tag" content="SDL">
+<meta property="article:tag" content="OpenGL">
+<meta property="article:tag" content="DirectFB">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/SDL/SDL.jpeg">
+
+<link rel="canonical" href="http://yoursite.com/2018/06/11/linux-ui/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linux 图形编程简介 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/06/11/linux-ui/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 图形编程简介
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-06-11 13:27:20" itemprop="dateCreated datePublished" datetime="2018-06-11T13:27:20+08:00">2018-06-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.8k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>简单介绍 Linux 图形编程概念、协议及库</p>
+<ul>
+<li>SDL</li>
+<li>OpenGL</li>
+<li>DirectFB</li>
+<li>FrameBuffer</li>
+</ul>
+<a id="more"></a>
+
+<h2 id="OpenGL"><a href="#OpenGL" class="headerlink" title="OpenGL"></a><a href="https://en.wikipedia.org/wiki/OpenGL" target="_blank" rel="noopener">OpenGL</a></h2><p><code>OpenGL</code> is a standard specification defining a cross-language, cross-platform API for writing applications that produce 2D and 3D computer graphics. The interface consists of over 250 different function calls which can be used to draw complex three-dimensional scenes from simple primitives. OpenGL was developed by Silicon Graphics Inc. (SGI) in 1992[4] and is widely used in CAD, virtual reality, scientific visualization, information visualization, and flight simulation. It is also used in video games, where it competes with Direct3D on Microsoft Windows platforms (see OpenGL vs. Direct3D).</p>
+<p><code>OpenGL</code> 是一套规范 (Specification)，由 <code>Khronos Group</code> 开发维护。<br>它主要为我们定义了用来操作图形和图片的一系列函数的 API，需要注意的是 OpenGL 本身并非 API。<br>GPU 的硬件开发商则需要提供满足 OpenGL 规范的实现，这些实现通常被称为“驱动”，它们负责将 OpenGL 定义的 API 命令翻译为 GPU 指令。</p>
+<p>OpenGL 仅仅是标准，而如果你要使用 OpenGL，则需要找到可以实现这些 OpenGL 标准函数的程序库或源代码。<br>主要的 OpenGL|ES 程序库有：Klimt，Vincent (ogles)，TinyGL 等</p>
+<h2 id="DirectX"><a href="#DirectX" class="headerlink" title="DirectX"></a>DirectX</h2><p>linux 不支持对于游戏来说非常重要的驱动——DirectX。</p>
+<p>游戏驱动一般来说有两种——OpenGL 和 DirectX。<br>OpenGL 驱动不仅在游戏方面很重要，还在图形处理方面有举足轻重的作用。所以大家在装显卡驱动后都可以看到 OpenGL 的设置选项。几乎所有的操作系统（windows，linux，MacOS）都支持 OpenGL。<br><strong>DirectX 是微软专门 为游戏设计的一套驱动（程序接口）</strong></p>
+<h2 id="SDL"><a href="#SDL" class="headerlink" title="SDL"></a>SDL</h2><p>SDL 是一个跨平台的多媒体库，它通过 OpenGL 和 2D 视频帧缓冲，提供了针对音频、视频、键盘、鼠标、控制杆及 3D 硬件的低级别的访问接口。</p>
+<p><a href="http://www.libsdl.org/" target="_blank" rel="noopener">SDL</a> is a cross-platform multimedia library designed to provide low level access to audio, keyboard, mouse, joystick, etc. <strong>It also supports 3D hardware via OpenGL.</strong></p>
+<p>SDL uses OpenGL as a hardware renderer for content that wants hardware rendering on some platforms. If you have such a platform, then OpenGL is the underlying API over which SDL is an abstraction.</p>
+<p>SDL（Simple DirectMedia Layer）作为免费的跨平台多媒体应用编程接口，已经被人们广泛用于开发二维游戏，其优秀的消息框架支持、文件支持和声音支持都使得它能与微软 DirectX 匹敌。</p>
+<p>现在很多 game 游戏里面，都采用 SDL+OpenGL ES 的模式来绘制 3D 界面。 可以让 SDL 使用 OpenGL ES 的函数接口来渲染 3D。</p>
+<p>SDL 在结构上是将不同操作系统的库再包装成相同的函数，例如 SDL 在 Windows 平台上其实是 DirectX 的再包装。而在使用 X11 的平台上（包括 Linux），SDL 则是与 Xlib 库沟通来输出图像。</p>
+<p><img src="/images/SDL/SDL.jpeg" alt="SDL Modules"></p>
+<p>从图中可以看到 <code>SDL</code> 是平台性质，可以基于 <code>FB</code> 或 <code>OpenGL</code> 等</p>
+<p>SDL 库分为 Video、Audio、CD-ROM、Joystick 和 Timer 等若干子系统，除此之外，还有一些单独的官方扩充函数库。这些库由官方网站提供，并包含在官方文档中，共同组成了 SDL 的“标准库”：</p>
+<ul>
+<li>SDL_image—支持时下流行的图像格式：BMP、PPM、XPM、 PCX、GIF、JPEG、PNG、TGA。</li>
+<li>SDL_mixer—更多的声音输出函数以及更多的声音格式支持。</li>
+<li>SDL_net—网络支持。</li>
+<li>SDL_ttf—TrueType 字体渲染支持。</li>
+<li>SDL_rtf—简单的 RTF 渲染支持。</li>
+</ul>
+<h2 id="Linux-FrameBuffer"><a href="#Linux-FrameBuffer" class="headerlink" title="Linux FrameBuffer"></a>Linux FrameBuffer</h2><p>Linux 下的 framebuffer 是用于在显示器上显示图像的硬件无关抽象层，意味着包含当前视频帧的一块内存区域</p>
+<p>Framebuffer 看成是显示内存的一个映像，将其映射到进程地址空间之后，可以直接进行读写操作，写操作可以立即反应在屏幕上，这种操作是抽象统一的，用户态进程不必关心物理显存的位置、换页机制等等具体细节（由 Framebuffer 设备驱动来完成）</p>
+<p><code>Framebuffer</code> 对应的设备文件一般是 <code>/dev/fb0</code>、 <code>/dev/fb1</code> 等</p>
+<p>使用方法：</p>
+<ul>
+<li>打开 framebuffer 设备 (/dev/fbX)</li>
+<li>通过 ioctl FBIOGET_VSCREENINFO 命令获取当前 fb_var_screeninfo 信息</li>
+<li>设置需要修改的 fb_var_screeninfo 参数，并通过 ioctl FBIOPUT_VSCREENINFO 设置这些信息（可选）</li>
+<li>设置 global alpha 和 blank/unblank 参数，通过用于多个 fb 的情况（可选）</li>
+<li>计算屏幕的总大小（占用字节数）: xres * yres * bits_per_pixel / 8</li>
+<li>映射到用户进程地址空间：mmap</li>
+<li>往映射的地址空间写入数据</li>
+<li>删除映射 (munmap), 关闭 framebuffer 设备</li>
+</ul>
+<h2 id="DirectFB"><a href="#DirectFB" class="headerlink" title="DirectFB"></a>DirectFB</h2><p>DirectFB 项目是由德国 Convergence 公司推动的 Open source 计划的一部分，它是专门为满足嵌入式设备要求而开发的小巧、强大、灵活和易于使用的图形系统，并且试图成为一个建构于 Linux Framebuffer Device 之上的新图形标准。它在 FrameBuffer 的基础上提供了图形加速、输入设备处理提取、透明窗口和多重显示层的功能，能够对嵌入式系统 GUI 有较好的支持。与那些通用的嵌入式 GUI 系统相比，它具有非常简洁、高效的体系结构和硬件图形加速功能。</p>
+<p>DirectFB 是一个轻量级的提供硬件图形加速，输入设备处理和抽象的图形库，它集成了支持半透明的视窗系统以及在 LinuxFramebuffer 驱动之上的多层显示。它是一个用软件封装当前硬件无法支持的图形算法来完成硬件加速的层。DirectFB 是为嵌入式系统而设计。它是以最小的资源开销来实现最高的硬件加速性能。</p>
+<p>DirectFB 是图形 API 存在于 Frame Buffer 层之上与高级图形管理层如 GTK+ 等之下的。它可以以很小的系统资源占用来提供图形硬件加速功能，提供类如多路 a 通道渲染模型等高级图像操作。它不修改 Linux 内核，除了标准 C 库没有其他库的依赖。应用在了基于 Linux 系统的 DTV 显示系统的研发和其他有关 Linux 显示界面的项目上。支持市面上绝大多数显示卡，支持键盘、鼠标、遥控器、游戏手柄、触摸屏等输入设备。支持 JPEG、PNG、GIF、mpeg1/2、AVI、MOV、Flash、Video4Linux、DirectFB bitmap font 和 TrueType 等音视频文件和字体。</p>
+<p><code>DirectFB</code> 在系统中的位置</p>
+<p><img src="/images/SDL/DFB.jpeg" alt="DFB"></p>
+<p><code>DirectFB GUI</code> 架构</p>
+<p><img src="/images/SDL/DFBS.jpeg" alt="DFB Modules"></p>
+<p>对于底层的驱动来说，DirectFB 里面负责和硬件打交道的显卡的驱动（gfxdriver）和显示系统（system），这里面 gfxdriver 是和各个硬件平台相关的，有可能需要自己写。 为了更易于理解 DirectFB，需要先介绍几个 DirectFB 里面的概念：</p>
+<ul>
+<li>Layers：代表互相独立的图形缓存。大多数嵌入式设备都有多个 layer。多个 layer 根据对应的 alpha 值混合 在一起，从而显示出来。</li>
+<li>Surface：代表一块预留的内存，来保存像素数据。DirectFB 中的 Drawing，Bilitting 操作就是基于 surface 的。Surface 的内存根据设定，可以从系统中分配，也可以从显卡的内存中分配。</li>
+<li>Primary Surface：代表一个特殊 layer 的特殊 surface。如果 primary surface 是单缓冲的，任何对于 primary surface 的操作都会直接反应到显示屏上。</li>
+<li>Subsurface：是一个 surfac 的子集，但是自身并不占有任何内存。</li>
+<li>Window/Windowstack：控制一个 layer 中的 surface 该显示什么。Window 属于某个背景可以设定的 layer。 每个 window 有自己的 surface，window 用这个 surface 来组合图像。</li>
+</ul>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://www.zhihu.com/question/51867884" target="_blank" rel="noopener">OpenGL 是什么？</a></li>
+<li><a href="http://tiankefeng0520.iteye.com/blog/2010741" target="_blank" rel="noopener">OpenGL 与 DirectX 比较</a></li>
+<li><a href="https://blog.csdn.net/leixiaohua1020/article/details/11954039" target="_blank" rel="noopener">SDL 介绍</a></li>
+<li><a href="http://www.cnblogs.com/hzl6255/p/5476012.html" target="_blank" rel="noopener">Linux framebuffer 的介绍和使用</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux-FB/" rel="tag"># Linux FB</a>
+              <a href="/tags/SDL/" rel="tag"># SDL</a>
+              <a href="/tags/OpenGL/" rel="tag"># OpenGL</a>
+              <a href="/tags/DirectFB/" rel="tag"># DirectFB</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/06/07/hexo-update-theme-next/" rel="next" title="更新 NexT 主题并集成站内搜索">
+                  <i class="fa fa-chevron-left"></i> 更新 NexT 主题并集成站内搜索
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/06/12/cmake-check-include-files/" rel="prev" title="cmake-check-include-files">
+                  cmake-check-include-files <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#OpenGL"><span class="nav-number">1.</span> <span class="nav-text">OpenGL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DirectX"><span class="nav-number">2.</span> <span class="nav-text">DirectX</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SDL"><span class="nav-number">3.</span> <span class="nav-text">SDL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux-FrameBuffer"><span class="nav-number">4.</span> <span class="nav-text">Linux FrameBuffer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DirectFB"><span class="nav-number">5.</span> <span class="nav-text">DirectFB</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">6.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

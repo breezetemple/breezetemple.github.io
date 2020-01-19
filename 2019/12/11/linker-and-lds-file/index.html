@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="链接器工作过程及链接脚本文件 .lds 分析">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linker 及 ld 脚本分析">
+<meta property="og:url" content="http://yoursite.com/2019/12/11/linker-and-lds-file/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="链接器工作过程及链接脚本文件 .lds 分析">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/gnu/linker.png">
+<meta property="article:published_time" content="2019-12-11T06:41:04.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.682Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="ld">
+<meta property="article:tag" content="c">
+<meta property="article:tag" content="lds">
+<meta property="article:tag" content="linker">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/gnu/linker.png">
+
+<link rel="canonical" href="http://yoursite.com/2019/12/11/linker-and-lds-file/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linker 及 ld 脚本分析 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/12/11/linker-and-lds-file/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linker 及 ld 脚本分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-12-11 14:41:04" itemprop="dateCreated datePublished" datetime="2019-12-11T14:41:04+08:00">2019-12-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index">
+                    <span itemprop="name">C</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/Linker/" itemprop="url" rel="index">
+                    <span itemprop="name">Linker</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>1.9k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>链接器工作过程及链接脚本文件 <code>.lds</code> 分析</p>
+<a id="more"></a>
+
+<h2 id="Linker"><a href="#Linker" class="headerlink" title="Linker"></a>Linker</h2><p>链接器将多目标文件生成最终可执行文件，示意图如下</p>
+<p><img src="/images/gnu/linker.png" alt="Linker Role"></p>
+<p>在链接过程中执行如下操作</p>
+<ol>
+<li>Symbol Resolution - 符号解析<ul>
+<li>多文件声明与调用</li>
+<li>调用替换为具体函数入口</li>
+</ul>
+</li>
+<li>Relocation - 重定位<ul>
+<li>相同段合并，例如 <code>.text</code></li>
+<li>Section Placement, 各段在内存中的位置</li>
+</ul>
+</li>
+</ol>
+<p>详细解释见 <a href="https://www.bravegnu.org/gnu-eprog/linker.html" target="_blank" rel="noopener">Linker</a></p>
+<h2 id="Linker-Script-File"><a href="#Linker-Script-File" class="headerlink" title="Linker Script File"></a>Linker Script File</h2><p>控制链接器行为的脚本文件，一般后缀为 <code>.lds</code>。如果不指定，存在默认脚本，使用 <code>ld --verbose</code> 查看</p>
+<p><a href="https://www.bravegnu.org/gnu-eprog/lds.html" target="_blank" rel="noopener">Linker Script File</a></p>
+<pre><code class="lds">SECTIONS { ❶
+        . = 0x00000000; ❷
+        .text : { ❸
+                abc.o (.text);
+                def.o (.text);
+        }
+}</code></pre>
+<ol>
+<li><code>SECTIONS</code> 脚本各段组成及位置</li>
+<li><code>.</code> 定位器符号</li>
+<li><code>.text</code> 由 <code>abc.o</code> 和 <code>def.o</code> 中的 <code>.text</code> 组成</li>
+</ol>
+<h2 id="LMA-vs-VMA"><a href="#LMA-vs-VMA" class="headerlink" title="LMA vs VMA"></a>LMA vs VMA</h2><ul>
+<li><code>LMA</code> (load memory address 加载内存地址或进程地址空间地址）</li>
+<li><code>VMA</code> (virtual memory address 虚拟内存地址或程序地址空间地址）</li>
+</ul>
+<blockquote>
+<p>VMA 是执行输出文件时 section 所在的地址，而 LMA 是加载输出文件时 section 所在的地址。一般而言，某 section 的 VMA == LMA. 但在嵌入式系统中，经常存在加载地址和执行地址不同的情况：比如将输出文件加载到开发板的 flash 中（由 LMA 指定）, 而在运行时将位于 flash 中的输出文件复制到 SDRAM 中（由 VMA 指定）。</p>
+</blockquote>
+<h2 id="SECTIONS-命令"><a href="#SECTIONS-命令" class="headerlink" title="SECTIONS 命令"></a>SECTIONS 命令</h2><p><code>SECTIONS</code> 命令告诉 ld 如何把输入文件的 sections 映射到输出文件的各个 section: 如何将输入 section 合为输出 section; 如何把输出 section 放入 VMA 和 LMA</p>
+<pre><code>SECTIONS
+{
+    SECTIONS-COMMAND
+    SECTIONS-COMMAND
+    ...
+}</code></pre><p>SECTION-COMMAND 有四种：</p>
+<ol>
+<li>ENTRY 命令</li>
+<li>符号赋值语句</li>
+<li>一个输出 section 的描述 (output section description)</li>
+<li>一个 section 叠加描述 (overlay description)</li>
+</ol>
+<h3 id="ENTRY-命令"><a href="#ENTRY-命令" class="headerlink" title="ENTRY 命令"></a>ENTRY 命令</h3><p>将符号 <code>SYMBOL</code> 的值设置成入口地址</p>
+<pre><code>ENTRY(SYMBOL)</code></pre><h3 id="符号赋值"><a href="#符号赋值" class="headerlink" title="符号赋值"></a>符号赋值</h3><ul>
+<li>对符号的赋值只对全局变量起作用</li>
+<li>赋值语句包含 4 个语法元素：符号名、操作符、表达式、分号；一个也不能少</li>
+<li><code>.</code> 是一个特殊的符号，它是定位器，一个位置指针，指向程序地址空间内的某位置。该符号只能在 SECTIONS 命令内使用</li>
+</ul>
+<h3 id="叠加描述"><a href="#叠加描述" class="headerlink" title="叠加描述"></a>叠加描述</h3><p>覆盖图描述使两个或多个不同的 section 占用同一块程序地址空间。覆盖图管理代码负责将 section 的拷入和拷出。</p>
+<h3 id="输出描述"><a href="#输出描述" class="headerlink" title="输出描述"></a>输出描述</h3><p>格式如下</p>
+<pre><code>SECTION-NAME [ADDRESS] [(TYPE)] : [AT(LMA)]
+{
+    OUTPUT-SECTION-COMMAND
+    OUTPUT-SECTION-COMMAND
+    …
+} [&gt;REGION] [AT&gt;LMA_REGION] [:PHDR HDR ...] [=FILLEXP]</code></pre><ul>
+<li><code>ALIGN</code> 地址对齐</li>
+<li>文件通配符</li>
+<li><code>.</code> 定位符</li>
+<li><code>KEEP</code></li>
+<li><code>AT</code> 修改 LMA</li>
+<li><code>&gt;REGION</code> 修改 VMA</li>
+</ul>
+<h2 id="MEMORY-命令"><a href="#MEMORY-命令" class="headerlink" title="MEMORY 命令"></a>MEMORY 命令</h2><p>在默认情形下，连接器可以为 section 在程序地址空间内分配任意位置的存储区域。并通过输出 section 描述的 <code>&gt;REGION</code> 属性显示地将该输出 section 限定于在程序地址空间内的某块存储区域，当存储区域大小不能满足要求时，连接器会报告该错误。</p>
+<pre><code>MEMORY
+{
+    NAME1 [(ATTR)] : ORIGIN = ORIGIN1, LENGTH = LEN2
+    NAME2 [(ATTR)] : ORIGIN = ORIGIN2, LENGTH = LEN2
+    ...
+}</code></pre><h2 id="Example"><a href="#Example" class="headerlink" title="Example"></a>Example</h2><pre><code class="lds">MEMORY
+{
+    sram  :   ORIGIN = 0x00100000,    LENGTH = 0x8000
+    ddram :   ORIGIN = 0x80000000,    LENGTH = 0x100000
+}
+
+ENTRY(ResetEntry)
+SECTIONS {
+    . = ALIGN(4);
+    .text :
+    {
+        sram/*(.text*)
+        sram/*(.data*)
+        sram/*(.rodata*)
+        *(.reset_patch)
+        *(.sram_text)
+        *(.sram)
+    } &gt; sram
+
+    . = ALIGN(0x8000);
+    .data :
+    {
+        *(.text*)
+        . = ALIGN(4);
+        *(.data*)
+        *(.rodata*)
+        . = ALIGN(16);
+    } &gt; ddram
+
+    . = ALIGN(4);
+    .bss :
+    {
+        . = ALIGN(4);
+        __bss_start__ = .;
+        *(.bss*)
+        *(COMMON)
+        . = ALIGN(4);
+        __bss_end__ = .;
+    } &gt; ddram
+}</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://www.cnblogs.com/li-hao/p/4107964.html" target="_blank" rel="noopener">Linux 下的 lds 链接脚本详解</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/ld/" rel="tag"># ld</a>
+              <a href="/tags/c/" rel="tag"># c</a>
+              <a href="/tags/lds/" rel="tag"># lds</a>
+              <a href="/tags/linker/" rel="tag"># linker</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/12/10/nm-code-segment/" rel="next" title="objdump 解析目标文件各个段">
+                  <i class="fa fa-chevron-left"></i> objdump 解析目标文件各个段
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/12/18/makefile-static-pattern-rule/" rel="prev" title="Makefile 静态模板使用">
+                  Makefile 静态模板使用 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Linker"><span class="nav-number">1.</span> <span class="nav-text">Linker</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Linker-Script-File"><span class="nav-number">2.</span> <span class="nav-text">Linker Script File</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LMA-vs-VMA"><span class="nav-number">3.</span> <span class="nav-text">LMA vs VMA</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SECTIONS-命令"><span class="nav-number">4.</span> <span class="nav-text">SECTIONS 命令</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ENTRY-命令"><span class="nav-number">4.1.</span> <span class="nav-text">ENTRY 命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#符号赋值"><span class="nav-number">4.2.</span> <span class="nav-text">符号赋值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#叠加描述"><span class="nav-number">4.3.</span> <span class="nav-text">叠加描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#输出描述"><span class="nav-number">4.4.</span> <span class="nav-text">输出描述</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#MEMORY-命令"><span class="nav-number">5.</span> <span class="nav-text">MEMORY 命令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Example"><span class="nav-number">6.</span> <span class="nav-text">Example</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">7.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

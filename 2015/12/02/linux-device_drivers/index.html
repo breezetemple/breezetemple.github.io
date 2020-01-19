@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="$(document).ready(function(){         $(&quot;h2,h3,h4,h5,h6&quot;).each(function(i,item){             var tag &#x3D; $(item).get(0).localName;             $(item).attr(&quot;id&quot;,&quot;wow&quot;+i);             $(&quot;#category&quot;).app">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux设备驱动程序基础">
+<meta property="og:url" content="http://yoursite.com/2015/12/02/linux-device_drivers/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="$(document).ready(function(){         $(&quot;h2,h3,h4,h5,h6&quot;).each(function(i,item){             var tag &#x3D; $(item).get(0).localName;             $(item).attr(&quot;id&quot;,&quot;wow&quot;+i);             $(&quot;#category&quot;).app">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2015-12-02T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.662Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2015/12/02/linux-device_drivers/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linux设备驱动程序基础 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/12/02/linux-device_drivers/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux设备驱动程序基础
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-12-03 00:00:00" itemprop="dateCreated datePublished" datetime="2015-12-03T00:00:00+08:00">2015-12-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>8.6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>8 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h2 id="Linux设备驱动程序示例"><a href="#Linux设备驱动程序示例" class="headerlink" title="Linux设备驱动程序示例"></a>Linux设备驱动程序示例</h2><p>源代码：</p>
+<pre><code>#include &lt;linux/kernel.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/proc_fs.h&gt;
+#include &lt;linux/init.h&gt;
+#include &lt;linux/vmalloc.h&gt;
+
+static int num = 1;                                                                                                                 
+static char *mode = &quot;show&quot;;
+
+static int __init hello_module_init(void)
+{
+    printk(&quot;Hello,world\n&quot;);
+}
+
+static void __exit hello_module_exit(void)
+{
+    printk(&quot;Good Bye\n&quot;);
+}
+
+module_init(hello_module_init);
+module_exit(hello_module_exit);
+module_param(mode, charp, S_IRUGO);
+module_param(num, int, S_IRUGO);
+
+MODULE_DESCRIPTION(&quot;driver for the Hello World.&quot;);
+MODULE_AUTHOR(&quot;Hello&quot;);
+MODULE_LICENSE(&quot;GPL&quot;);</code></pre><p>Makefile：</p>
+<pre><code>obj-m += hello.o    #设置模块名
+hello-objs := bsp_hello.o hello_mod_linux.o
+
+all:
+    $(MAKE) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KERNEL_PATH) SUBDIRS=`pwd`
+
+clean:
+    rm -rf *.ko *.o *.mod.c .tmp_versions Module.symvers modules.order .tmp_versions
+    find ../ -name &quot;*.cmd&quot; -delete
+
+install:
+    cp $(HELLO_TARGET) $(OUTDIR) -f</code></pre><p><strong>Tips:obj-m += (module name).o</strong></p>
+<h2 id="相关宏定义"><a href="#相关宏定义" class="headerlink" title="相关宏定义"></a>相关宏定义</h2><p>Linux设备驱动编译时，如果<strong>MODULE</strong>未定义，表明设备驱动是<strong>build-in</strong>模式。<br>相应的<strong>module_init/module_exit</strong>宏定义展开不同。</p>
+<p>linux对只需要初始化运行一次的函数都加上<strong>init属性，<br>__init 宏告诉编译器如果这个模块被编译到内核则把这个函数放到（.init.text）段，<br>module_exit的参数卸载时同</strong>init类似，如果驱动被编译进内核，<br>则<strong>exit宏会忽略清理函数，因为编译进内核的模块不需要做清理工作，<br>**显然</strong>init和__exit对动态加载的模块是无效的，只支持完全编译进内核**。</p>
+<p>在kernel初始化后期，释放所有这些函数代码所占的内存空间。<br>连接器把带__init属性的函数放在同一个section里，在用完以后，把整个section释放掉。<br>当函数初始化完成后这个区域可以被清除掉以节约系统内存。<br>Kenrel启动时看到的消息“Freeing unused kernel memory: xxxk freed”同它有关。</p>
+<p>start_kernel-&gt;rest_init-&gt;kernel_init-&gt;init_post-&gt;free_initmem()来释放初始化代码和数据。</p>
+<h3 id="特殊宏定义"><a href="#特殊宏定义" class="headerlink" title="特殊宏定义"></a>特殊宏定义</h3><ul>
+<li>MODULE_LICENSE(license)           代码使用的许可证</li>
+<li>MODULE_AUTHOR(author)             描述模块作者</li>
+<li>MODULE_DESCRIPTION(description)   说明模块用途的简短描述</li>
+<li>MODULE_VERSION(version_string)    代码修订号</li>
+<li>MODULE_DEVICE_TABLE(table_info)   告诉用户空间模块所支持的设备</li>
+<li>MODULE_ALIAS(alternate_name)      模块的别名</li>
+</ul>
+<h3 id="加载函数宏定义module-init"><a href="#加载函数宏定义module-init" class="headerlink" title="加载函数宏定义module_init()"></a>加载函数宏定义<strong>module_init()</strong></h3><p>module_init定义如下：</p>
+<pre><code>include/linux/init.h
+#ifndef MODULE
+/**
+ * module_init() - driver initialization entry point
+ * @x: function to be run at kernel boot time or module insertion
+ * 
+ * module_init() will either be called during do_initcalls() (if
+ * builtin) or at module insertion time (if a module).  There can only
+ * be one per module.
+ */
+#define module_init(x)  __initcall(x);
+#else /* MODULE */
+/* Each module must use one module_init(). */
+#define module_init(initfn)                     \
+    static inline initcall_t __inittest(void)   \
+    { return initfn;  }                         \                                                                                           
+    int init_module(void) __attribute__((alias(#initfn)));
+#endif</code></pre><h4 id="build-in分支"><a href="#build-in分支" class="headerlink" title="build-in分支"></a><strong>build-in分支</strong></h4><pre><code>#define __initcall(fn) device_initcall(fn)
+#define device_initcall(fn)     __define_initcall(&quot;6&quot;,fn,6)
+#define __define_initcall(level,fn,id) \                                                                                            
+    static initcall_t __initcall_##fn##id __used \
+    __attribute__((__section__(&quot;.initcall&quot; level &quot;.init&quot;))) = fn</code></pre><p>因此使用module_init修饰的hello_module_init最终展开为：</p>
+<pre><code>static initcall_t  __initcall_hello_module_init6 __used __attribute__((__section__(&quot;.initcall6.init&quot;))) = hello_module_init;</code></pre><p>就是声明一类型为<strong>initcall_t（typedef int (*initcall_t)(void)）</strong>函数指针类型的变量<br><strong>__initcall_hello_module_init6</strong>并将<strong>hello_module_init</strong>赋值与它。</p>
+<p>其中<strong><strong>attribute</strong>((<strong>section</strong>(“.initcall6.init”)))</strong>表明变量<strong>__initcall_hello_module_init6</strong>放入section .initcall6.init中。</p>
+<p>在文件<strong>vmlinux.lds</strong>中有以下定义：</p>
+<pre><code>.initcall.init : AT(ADDR(.initcall.init) - 0) {                                                                                    
+ __initcall_start = .;
+ *(.initcallearly.init) __early_initcall_end = .; *(.initcall0.init) *(.initcall0s.init) *(.initcall1.init) 
+                                                *(.initcall1s.init) *(.initcall2.init) *(.initcall2s.init) 
+                                                *(.initcall3.init) *(.initcall3s.init) *(.initcall4.init) 
+                                                *(.initcall4s.init) *(.initcall5.init) *(.initcall5s.init)
+                                                *(.initcallrootfs.init) *(.initcall6.init) *(.initcall6s.init) 
+                                                *(.initcall7.init) *(.initcall7s.init)
+ __initcall_end = .;
+}</code></pre><p><strong>启动顺序</strong></p>
+<pre><code>init/main.c
+start_kernel()-&gt;rest_init()-&gt;kernel_init()-&gt;do_basic_setup()-&gt;do_initcalls()
+
+static void __init do_initcalls(void)
+{ 
+    initcall_t *call;
+
+    for (call = __early_initcall_end; call &lt; __initcall_end; call++)
+        do_one_initcall(*call);                                                                                                     
+
+    /* Make sure there is no pending stuff from the initcall sequence */
+    flush_scheduled_work();
+} </code></pre><p>do_initcalls()将按顺序从由<strong>early_initcall_end开始，<br>到</strong>initcall_end结束的section中<strong>以函数指针的形式取出这些编译到内核的驱动模块中初始化函数起始地址</strong>，<br>来依次完成相应的初始化。</p>
+<p>内核初始化函数do_basic_setup(): do_initcalls() 将从.initcall.init 中，<br>也就是这几个section中依次取出所有的函数指针，并调用这些函数指针所指向的函数，来完成内核的一些相关的初始化。</p>
+<p><strong>内核的加载的时候，会搜索”.initcall”中的所有条目，并按优先级加载它们，普通驱动程序的优先级是6。<br>其它模块优先级列出如下：值越小，越先加载。</strong></p>
+<h4 id="Module分支"><a href="#Module分支" class="headerlink" title="Module分支"></a><strong>Module分支</strong></h4><pre><code>/* Each module must use one module_init(). */
+#define module_init(initfn)                     \
+    static inline initcall_t __inittest(void)   \
+    { return initfn;  }                         \                                                                                           
+    int init_module(void) __attribute__((alias(#initfn)));
+
+typedef int (*initcall_t)(void)</code></pre><p>其中</p>
+<pre><code>typedef int (*initcall_t)(void)
+#define module_init(initfn)                     \
+    static inline initcall_t __inittest(void)   \
+    { return initfn;  }                         \                                                                                           </code></pre><p>用于对传入的initfn进行类型检测，类型必须为 int (*initcall_t)(void) 的函数指针，然后通过alias将initfn变名为init_module：</p>
+<pre><code>/* type newname __attribute__((alias(&quot;oldname&quot;))); */
+int init_module(void) __attribute__((alias(#initfn)));</code></pre><p>当调用insmod和rmmod时，只与init_module和cleanup_module有关，insmod和rmmod中调用这两个函数。</p>
+<pre><code>busybox/modutils/insmod.c:insmod_main()
+rc = bb_init_module(filename, parse_cmdline_module_options(argv, /*quote_spaces:*/ 0));
+.
+busybox/modutils/modutils.c:bb_init_module()
+init_module(image, image_size, options);
+.
+# define init_module(mod, len, opts) syscall(__NR_init_module, mod, len, opts)</code></pre><p>insmod最终会调用到 syscall <strong>__NR_init_module</strong>。</p>
+<p>在Kernel中，各个arch下的文件unistd.h有如下定义：</p>
+<pre><code>#define __NR_init_module        128
+#define __NR_delete_module      129
+#define __NR_get_kernel_syms    130
+#define __NR_quotactl           131
+#define __NR_getpgid            132</code></pre><p>然后，文件entry.S下有定义：</p>
+<pre><code>.data
+ALIGN
+sys_call_table:
+    .
+    .
+    .long sys_mprotect      /* 125 */
+    .long sys_sigprocmask
+    .long sys_ni_syscall    /* old &quot;create_module&quot; */
+    .long sys_init_module
+    .long sys_delete_module
+    .long sys_ni_syscall    /* 130 - old &quot;get_kernel_syms&quot; */
+    .long sys_quotactl
+    .
+    .</code></pre><p><strong>当insmod调用到系统调用号128时，sys_call_table中取出128地址的函数指针进行执行，及sys_init_module。</strong></p>
+<p>现在来看系统调用<strong>sys_init_module</strong>：</p>
+<pre><code>kernel/module.c
+SYSCALL_DEFINE3(init_module, void __user *, umod, unsigned long, len, const char __user *, uargs)
+.
+#define SYSCALL_DEFINE3(name, ...) SYSCALL_DEFINEx(3, _##name, __VA_ARGS__)
+#define SYSCALL_DEFINEx(x, name, ...)                   \                                                                           
+    asmlinkage long sys##name(__SC_DECL##x(__VA_ARGS__))</code></pre><p>宏定义<strong>__SC_DECL##x</strong>作用是将参数之间的‘，’去掉，定义如下：</p>
+<pre><code>#define __SC_DECL1(t1, a1)  t1 a1
+#define __SC_DECL2(t2, a2, ...) t2 a2, __SC_DECL1(__VA_ARGS__)
+#define __SC_DECL3(t3, a3, ...) t3 a3, __SC_DECL2(__VA_ARGS__)                                                                      
+#define __SC_DECL4(t4, a4, ...) t4 a4, __SC_DECL3(__VA_ARGS__)
+#define __SC_DECL5(t5, a5, ...) t5 a5, __SC_DECL4(__VA_ARGS__)
+#define __SC_DECL6(t6, a6, ...) t6 a6, __SC_DECL5(__VA_ARGS__)</code></pre><p>宏定义中的‘##’为<strong>（token-pasting）符号连接操作符</strong>，全部展开之后为：</p>
+<pre><code>asmlinkage long sys_init_module(void __user * umod, unsigned long len, const char __user * uargs)</code></pre><p>在文件<strong>include/linux/syscalls.h</strong>中可以看到所有的展开的系统调用，例如：</p>
+<pre><code>asmlinkage long sys_init_module(void __user *umod, unsigned long len,                                                               
+                const char __user *uargs);
+asmlinkage long sys_delete_module(const char __user *name_user,
+                unsigned int flags);
+
+asmlinkage long sys_rt_sigprocmask(int how, sigset_t __user *set,
+                sigset_t __user *oset, size_t sigsetsize);
+asmlinkage long sys_rt_sigpending(sigset_t __user *set, size_t sigsetsize);
+asmlinkage long sys_rt_sigtimedwait(const sigset_t __user *uthese,
+                siginfo_t __user *uinfo,
+                const struct timespec __user *uts,
+                size_t sigsetsize);</code></pre><p>在系统调用<strong>sys_init_module</strong>中：</p>
+<pre><code>.
+mod = load_module(umod, len, uargs);  //主要过程都在这儿
+.
+.
+/* Start the module */
+if (mod-&gt;init != NULL)
+    ret = do_one_initcall(mod-&gt;init);</code></pre><p>load_module做了绝大部分的工作，将驱动拷贝到内核，重定位等等，do_one_initcall调用module注册的init函数。</p>
+<h3 id="卸载函数宏定义module-exit"><a href="#卸载函数宏定义module-exit" class="headerlink" title="卸载函数宏定义module_exit()"></a>卸载函数宏定义<strong>module_exit()</strong></h3><pre><code>#ifndef MODULE
+/**
+ * module_exit() - driver exit entry point
+ * @x: function to be run when driver is removed
+ * 
+ * module_exit() will wrap the driver clean-up code
+ * with cleanup_module() when used with rmmod when
+ * the driver is a module.  If the driver is statically
+ * compiled into the kernel, module_exit() has no effect.
+ * There can only be one per module.
+ */
+#define module_exit(x)  __exitcall(x);
+#else /* MODULE */
+/* This is only required if you want to be unloadable. */
+#define module_exit(exitfn)                 \
+    static inline exitcall_t __exittest(void)       \
+    { return exitfn;  }                  \
+    void cleanup_module(void) __attribute__((alias(#exitfn)));
+#endif</code></pre><h4 id="build-in"><a href="#build-in" class="headerlink" title="build-in"></a>build-in</h4><p>无效，没有意义</p>
+<h4 id="module"><a href="#module" class="headerlink" title="module"></a>module</h4><p>busybox:</p>
+<pre><code># define delete_module(mod, flags) syscall(__NR_delete_module, mod, flags)</code></pre><p>kernel:</p>
+<pre><code>.long sys_delete_module
+#define __NR_delete_module      129
+
+SYSCALL_DEFINE2(delete_module, const char __user *, name_user, unsigned int, flags)
+{
+    .
+    if (mod-&gt;exit != NULL)
+        mod-&gt;exit();
+    .
+}
+
+asmlinkage long sys_delete_module(const char __user *name_user, unsigned int flags);</code></pre><h3 id="模块传参宏定义module-param"><a href="#模块传参宏定义module-param" class="headerlink" title="模块传参宏定义module_param()"></a>模块传参宏定义<strong>module_param()</strong></h3><pre><code>include/linux/moduleparam.h
+#define module_param(name, type, perm)              \                                                                               
+    module_param_named(name, name, type, perm)</code></pre><p>用于向模块传递参数，其允许驱动程序声明参数，并且用户在系统启动或模块装载时为参数指定相应值，<br>在驱动程序里，参数的用法如同全局变量。</p>
+<ul>
+<li>name既是用户看到的参数名，又是模块内接受参数的变量;</li>
+<li>type表示参数的数据类型，是下列之一：byte, short, ushort, int, uint, long, ulong, charp, bool, invbool;</li>
+<li>perm指定了在sysfs中相应文件的访问权限。<br>访问权限与linux文件爱你访问权限相同的方式管理，如0644，或使用stat.h中的宏如S_IRUGO表示。0表示完全关闭在sysfs中相对应的项。</li>
+</ul>
+<p>这些宏不会声明变量，因此在使用宏之前，必须声明变量，典型地用法如下：</p>
+<pre><code>static unsigned int int_var = 0;
+module_param(int_var, uint, S_IRUGO);</code></pre><h2 id="Tips"><a href="#Tips" class="headerlink" title="Tips"></a>Tips</h2><ul>
+<li>mod-&gt;exit()怎么调用到 <strong>alias 为 cleanup_module</strong>的函数</li>
+<li>mod-&gt;init()怎么调用到 <strong>alias 为 init_module</strong>的函数</li>
+</ul>
+<p>接下来分析module具体组成</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2015/11/25/gdb-disassemble-debug/" rel="next" title="gdb反汇编调试">
+                  <i class="fa fa-chevron-left"></i> gdb反汇编调试
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2015/12/03/linux-modules/" rel="prev" title="Linux Modules分析">
+                  Linux Modules分析 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux设备驱动程序示例"><span class="nav-number">1.</span> <span class="nav-text">Linux设备驱动程序示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#相关宏定义"><span class="nav-number">2.</span> <span class="nav-text">相关宏定义</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#特殊宏定义"><span class="nav-number">2.1.</span> <span class="nav-text">特殊宏定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#加载函数宏定义module-init"><span class="nav-number">2.2.</span> <span class="nav-text">加载函数宏定义module_init()</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#build-in分支"><span class="nav-number">2.2.1.</span> <span class="nav-text">build-in分支</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Module分支"><span class="nav-number">2.2.2.</span> <span class="nav-text">Module分支</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#卸载函数宏定义module-exit"><span class="nav-number">2.3.</span> <span class="nav-text">卸载函数宏定义module_exit()</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#build-in"><span class="nav-number">2.3.1.</span> <span class="nav-text">build-in</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#module"><span class="nav-number">2.3.2.</span> <span class="nav-text">module</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#模块传参宏定义module-param"><span class="nav-number">2.4.</span> <span class="nav-text">模块传参宏定义module_param()</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Tips"><span class="nav-number">3.</span> <span class="nav-text">Tips</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

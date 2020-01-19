@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="Linux Kernel Version : 2.6.27.55 netlink 是一种用于内核态和用户态进程之间进行数据传输的特殊的IPC机制。 特点：  用户态采用socket风格的API 除了预定义的协议类型之外，支持自定义协议类型 异步通讯 支持消息组播 全双工（特别是支持内核主动发起会话）">
+<meta property="og:type" content="article">
+<meta property="og:title" content="netlink-socket">
+<meta property="og:url" content="http://yoursite.com/2017/10/23/netlink-socket/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="Linux Kernel Version : 2.6.27.55 netlink 是一种用于内核态和用户态进程之间进行数据传输的特殊的IPC机制。 特点：  用户态采用socket风格的API 除了预定义的协议类型之外，支持自定义协议类型 异步通讯 支持消息组播 全双工（特别是支持内核主动发起会话）">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2017-10-23T03:06:18.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.670Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="netlink">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2017/10/23/netlink-socket/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>netlink-socket | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/23/netlink-socket/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          netlink-socket
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2017-10-23 11:06:18" itemprop="dateCreated datePublished" datetime="2017-10-23T11:06:18+08:00">2017-10-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>8.4k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>8 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Linux Kernel Version : 2.6.27.55</p>
+<p><code>netlink</code> 是一种用于内核态和用户态进程之间进行数据传输的特殊的IPC机制。</p>
+<p>特点：</p>
+<ol>
+<li>用户态采用socket风格的API</li>
+<li>除了预定义的协议类型之外，支持自定义协议类型</li>
+<li>异步通讯</li>
+<li>支持消息组播</li>
+<li>全双工（特别是支持内核主动发起会话）</li>
+</ol>
+<a id="more"></a>
+
+<h2 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h2><p><code>include/linux/netlink.h</code><br><code>include/linux/rtnetlink.h</code></p>
+<h3 id="netlink地址结构"><a href="#netlink地址结构" class="headerlink" title="netlink地址结构"></a>netlink地址结构</h3><pre><code>struct sockaddr_nl                                                            
+{                                                                             
+    sa_family_t nl_family;  /* AF_NETLINK   */                                
+    unsigned short  nl_pad; /* zero     */                                
+    __u32       nl_pid;     /* port ID  */                                    
+    __u32       nl_groups;  /* multicast groups mask */                   
+};  </code></pre><h3 id="netlink消息结构"><a href="#netlink消息结构" class="headerlink" title="netlink消息结构"></a>netlink消息结构</h3><p><code>nlmsghdr</code> + <code>pad</code> + <code>payload</code> + <code>pad</code> + <code>nlmsghdr</code> + <code>pad</code> + <code>payload</code> + <code>pad</code> …</p>
+<p>可以看出来，netlink消息在顶层呈现数组形式平行排列，也就是说，多条netlink消息可以以数组形式一次性传输</p>
+<p><code>netlink消息头结构</code></p>
+<pre><code>struct nlmsghdr                                                                                                                    
+{                                                                             
+    __u32       nlmsg_len;  /* Length of message including header */          
+    __u16       nlmsg_type; /* Message content */                             
+    __u16       nlmsg_flags;    /* Additional flags */                        
+    __u32       nlmsg_seq;  /* Sequence number */                             
+    __u32       nlmsg_pid;  /* Sending process port ID */                     
+}; </code></pre><h2 id="Example-1"><a href="#Example-1" class="headerlink" title="Example-1"></a>Example-1</h2><pre><code class="内核模块">#include &lt;linux/module.h&gt;
+#include &lt;net/sock.h&gt; 
+#include &lt;linux/netlink.h&gt;
+#include &lt;linux/skbuff.h&gt; 
+#define NETLINK_USER 31
+
+struct sock *nl_sk = NULL;
+
+static void hello_nl_recv_msg(struct sk_buff *skb)
+{
+
+    struct nlmsghdr *nlh;
+    int pid;
+    struct sk_buff *skb_out;
+    int msg_size;
+    char *msg = &quot;Hello from kernel&quot;;
+    int res;
+
+    printk(KERN_INFO &quot;Entering: %s\n&quot;, __FUNCTION__);
+
+    msg_size = strlen(msg);
+
+    nlh = (struct nlmsghdr *)skb-&gt;data;
+    printk(KERN_INFO &quot;Netlink received msg payload:%s\n&quot;, (char *)nlmsg_data(nlh));
+    pid = nlh-&gt;nlmsg_pid; /*pid of sending process */
+
+    skb_out = nlmsg_new(msg_size, 0);
+    if (!skb_out) {
+        printk(KERN_ERR &quot;Failed to allocate new skb\n&quot;);
+        return;
+    }
+
+    nlh = nlmsg_put(skb_out, 0, 0, NLMSG_DONE, msg_size, 0);
+    NETLINK_CB(skb_out).dst_group = 0; /* not in mcast group */
+    strncpy(nlmsg_data(nlh), msg, msg_size);
+
+    res = nlmsg_unicast(nl_sk, skb_out, pid);
+    if (res &lt; 0)
+        printk(KERN_INFO &quot;Error while sending bak to user\n&quot;);
+}
+
+static int __init hello_init(void)
+{
+
+    printk(&quot;Entering: %s\n&quot;, __FUNCTION__);
+    //nl_sk = netlink_kernel_create(&amp;init_net, NETLINK_USER, 0, hello_nl_recv_msg, NULL, THIS_MODULE);
+    struct netlink_kernel_cfg cfg = {
+        .input = hello_nl_recv_msg,
+    };
+
+    nl_sk = netlink_kernel_create(&amp;init_net, NETLINK_USER, &amp;cfg);
+    if (!nl_sk) {
+        printk(KERN_ALERT &quot;Error creating socket.\n&quot;);
+        return -10;
+    }
+
+    return 0;
+}
+
+static void __exit hello_exit(void)
+{
+
+    printk(KERN_INFO &quot;exiting hello module\n&quot;);
+    netlink_kernel_release(nl_sk);
+}
+
+module_init(hello_init); module_exit(hello_exit);
+
+MODULE_LICENSE(&quot;GPL&quot;);</code></pre>
+<pre><code class="userspace">#include &lt;sys/socket.h&gt;
+#include &lt;linux/netlink.h&gt;
+
+#define NETLINK_USER 31
+
+#define MAX_PAYLOAD 1024 /* maximum payload size*/
+struct sockaddr_nl src_addr, dest_addr;
+struct nlmsghdr *nlh = NULL;
+struct iovec iov;
+int sock_fd;
+struct msghdr msg;
+
+void main()
+{
+    sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
+    if (sock_fd &lt; 0)
+        return -1;
+
+    memset(&amp;src_addr, 0, sizeof(src_addr));
+    src_addr.nl_family = AF_NETLINK;
+    src_addr.nl_pid = getpid(); /* self pid */
+
+    bind(sock_fd, (struct sockaddr *)&amp;src_addr, sizeof(src_addr));
+
+    memset(&amp;dest_addr, 0, sizeof(dest_addr));
+    memset(&amp;dest_addr, 0, sizeof(dest_addr));
+    dest_addr.nl_family = AF_NETLINK;
+    dest_addr.nl_pid = 0; /* For Linux Kernel */
+    dest_addr.nl_groups = 0; /* unicast */
+
+    nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(MAX_PAYLOAD));
+    memset(nlh, 0, NLMSG_SPACE(MAX_PAYLOAD));
+    nlh-&gt;nlmsg_len = NLMSG_SPACE(MAX_PAYLOAD);
+    nlh-&gt;nlmsg_pid = getpid();
+    nlh-&gt;nlmsg_flags = 0;
+
+    strcpy(NLMSG_DATA(nlh), &quot;Hello&quot;);
+
+    iov.iov_base = (void *)nlh;
+    iov.iov_len = nlh-&gt;nlmsg_len;
+    msg.msg_name = (void *)&amp;dest_addr;
+    msg.msg_namelen = sizeof(dest_addr);
+    msg.msg_iov = &amp;iov;
+    msg.msg_iovlen = 1;
+
+    printf(&quot;Sending message to kernel\n&quot;);
+    sendmsg(sock_fd, &amp;msg, 0);
+    printf(&quot;Waiting for message from kernel\n&quot;);
+
+    /* Read message from kernel */
+    recvmsg(sock_fd, &amp;msg, 0);
+    printf(&quot;Received message payload: %s\n&quot;, NLMSG_DATA(nlh));
+    close(sock_fd);
+}</code></pre>
+<h2 id="Example-2"><a href="#Example-2" class="headerlink" title="Example-2"></a>Example-2</h2><p>功能描述：</p>
+<ol>
+<li>本实例包含2个部分：内核模块和用户程序</li>
+<li>用户程序通过netlink socket建立与kernel module连接，并向kernel module发送一条信息</li>
+<li>内核在接收到用户的信息后，向用户程序发送一条确认信息</li>
+</ol>
+<p>内核代码</p>
+<pre><code>#include &lt;linux/kernel.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/types.h&gt;
+#include &lt;linux/sched.h&gt;
+#include &lt;net/sock.h&gt;
+#include &lt;linux/netlink.h&gt;
+
+#define NETLINK_TEST 17
+struct {
+    __u32 pid;
+}user_process;
+
+static struct sock *netlinkfd = NULL;
+
+int send_to_user(char *info) //发送到用户空间
+{
+    int size;
+    struct sk_buff *skb;
+    unsigned char *old_tail;
+    struct nlmsghdr *nlh; //报文头
+
+    int retval;
+
+    size = NLMSG_SPACE(strlen(info)); //报文大小
+    skb = alloc_skb(size, GFP_ATOMIC); //分配一个新的套接字缓存,使用GFP_ATOMIC标志进程不&gt;会被置为睡眠
+
+    //初始化一个netlink消息首部
+    nlh = nlmsg_put(skb, 0, 0, 0, NLMSG_SPACE(strlen(info))-sizeof(struct nlmsghdr), 0);
+    old_tail = skb-&gt;tail;
+    memcpy(NLMSG_DATA(nlh), info, strlen(info)); //填充数据区
+    nlh-&gt;nlmsg_len = skb-&gt;tail - old_tail; //设置消息长度
+
+    //设置控制字段
+    NETLINK_CB(skb).pid = 0;
+    NETLINK_CB(skb).dst_group = 0;
+
+    printk(KERN_DEBUG &quot;[kernel space] skb-&gt;data:%s\n&quot;, (char *)NLMSG_DATA((struct nlmsghdr *)skb-&gt;data));
+
+    //发送数据
+    retval = netlink_unicast(netlinkfd, skb, user_process.pid, MSG_DONTWAIT);
+    printk(KERN_DEBUG &quot;[kernel space] netlink_unicast return: %d\n&quot;, retval);
+    return 0;
+}
+
+void kernel_receive(struct sk_buff *__skb) //内核从用户空间接收数据
+{
+    struct sk_buff *skb;
+    struct nlmsghdr *nlh = NULL;
+
+    char *data = &quot;This is eric&#39;s test message from kernel&quot;;
+
+    printk(KERN_DEBUG &quot;[kernel space] begin kernel_receive\n&quot;);
+    skb = skb_get(__skb);
+
+    if(skb-&gt;len &gt;= sizeof(struct nlmsghdr)){
+        nlh = (struct nlmsghdr *)skb-&gt;data;
+        if((nlh-&gt;nlmsg_len &gt;= sizeof(struct nlmsghdr))
+            &amp;&amp; (__skb-&gt;len &gt;= nlh-&gt;nlmsg_len)){
+            user_process.pid = nlh-&gt;nlmsg_pid;
+            printk(KERN_DEBUG &quot;[kernel space] data receive from user are:%s\n&quot;, (char *)NLMSG_DATA(nlh));
+            printk(KERN_DEBUG &quot;[kernel space] user_pid:%d\n&quot;, user_process.pid);
+            send_to_user(data);
+        }
+    }else{
+        printk(KERN_DEBUG &quot;[kernel space] data receive from user are:%s\n&quot;,(char *)NLMSG_DATA(nlmsg_hdr(__skb)));
+        send_to_user(data);
+    }
+
+    kfree_skb(skb);
+}
+
+int __init test_netlink_init(void)
+{
+
+    netlinkfd = netlink_kernel_create(&amp;init_net, NETLINK_TEST, 0, kernel_receive, NULL, THIS_MODULE);
+    if(!netlinkfd){
+        printk(KERN_ERR &quot;can not create a netlink socket\n&quot;);
+        return -1;
+    }
+    return 0;
+}
+
+void __exit test_netlink_exit(void)
+{
+    sock_release(netlinkfd-&gt;sk_socket);
+    printk(KERN_DEBUG &quot;test_netlink_exit!!\n&quot;);
+}
+
+module_init(test_netlink_init);
+module_exit(test_netlink_exit);
+MODULE_LICENSE(&quot;GPL&quot;);
+MODULE_AUTHOR(&quot;eric.hu&quot;);</code></pre><p>用户空间代码</p>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;string.h&gt;
+#include &lt;linux/netlink.h&gt;
+
+#define NETLINK_TEST 17
+#define MSG_LEN 100
+
+struct msg_to_kernel
+{
+    struct nlmsghdr hdr;
+    char data[MSG_LEN];
+};
+struct u_packet_info
+{
+    struct nlmsghdr hdr;
+    char msg[MSG_LEN];
+};
+
+int main(int argc, char* argv[])
+{
+    char *data = &quot;This message is from eric&#39;s space&quot;;
+    //初始化
+    struct sockaddr_nl local;
+    struct sockaddr_nl kpeer;
+    int skfd, ret, kpeerlen = sizeof(struct sockaddr_nl);
+    struct nlmsghdr *message;
+    struct u_packet_info info;
+    char *retval;
+    message = (struct nlmsghdr *)malloc(1);
+
+    skfd = socket(PF_NETLINK, SOCK_RAW, NETLINK_TEST);
+    if(skfd &lt; 0){
+        printf(&quot;can not create a netlink socket\n&quot;);
+        return -1;
+    }
+    memset(&amp;local, 0, sizeof(local));
+    local.nl_family = AF_NETLINK;
+    local.nl_pid = getpid();
+    local.nl_groups = 0;
+    if(bind(skfd, (struct sockaddr *)&amp;local, sizeof(local)) != 0){
+        printf(&quot;bind() error\n&quot;);
+        return -1;
+    }
+    memset(&amp;kpeer, 0, sizeof(kpeer));
+    kpeer.nl_family = AF_NETLINK;
+    kpeer.nl_pid = 0;
+    kpeer.nl_groups = 0;
+
+    memset(message, &#39;\0&#39;, sizeof(struct nlmsghdr));
+    message-&gt;nlmsg_len = NLMSG_SPACE(strlen(data));
+    message-&gt;nlmsg_flags = 0;
+    message-&gt;nlmsg_type = 0;
+    message-&gt;nlmsg_seq = 0;
+    message-&gt;nlmsg_pid = local.nl_pid;
+
+    retval = memcpy(NLMSG_DATA(message), data, strlen(data));
+
+    printf(&quot;message sendto kernel are:%s, len:%d\n&quot;, (char *)NLMSG_DATA(message), message-&gt;nlmsg_len);
+    ret = sendto(skfd, message, message-&gt;nlmsg_len, 0,(struct sockaddr *)&amp;kpeer, sizeof(kpeer));
+    if(!ret){
+        perror(&quot;send pid:&quot;);
+        exit(-1);
+    }
+
+    //接受内核态确认信息
+    ret = recvfrom(skfd, &amp;info, sizeof(struct u_packet_info),0, (struct sockaddr*)&amp;kpeer, &amp;kpeerlen);
+    if(!ret){
+        perror(&quot;recv form kerner:&quot;);
+        exit(-1);
+    }
+
+    printf(&quot;message receive from kernel:%s\n&quot;,(char *)info.msg);
+    //内核和用户进行通信
+
+    close(skfd);
+    return 0;
+}</code></pre><h2 id="uevent-message-payload-size"><a href="#uevent-message-payload-size" class="headerlink" title="uevent message payload size"></a>uevent message payload size</h2><p><code>lib/kobject_uevent.c</code> <code>kobject_uevent_env</code></p>
+<pre><code class="include/linux/kobject.h">#define UEVENT_BUFFER_SIZE      2048
+struct kobj_uevent_env {                                                                                                           
+    char *envp[UEVENT_NUM_ENVP];                                              
+    int envp_idx;                                                             
+    char buf[UEVENT_BUFFER_SIZE];                                             
+    int buflen;                                                               
+}; </code></pre>
+<pre><code>struct kobj_uevent_env *env;
+env = kzalloc(sizeof(struct kobj_uevent_env), GFP_KERNEL);
+
+/* default keys */                                                        
+retval = add_uevent_var(env, &quot;ACTION=%s&quot;, action_string);                                                                      
+if (retval)                                                               
+    goto exit;                                                            
+retval = add_uevent_var(env, &quot;DEVPATH=%s&quot;, devpath);                      
+if (retval)                                                               
+    goto exit;                                                            
+retval = add_uevent_var(env, &quot;SUBSYSTEM=%s&quot;, subsystem);                  
+if (retval)                                                               
+    goto exit;
+
+   ...
+/* send netlink message */
+
+NETLINK_CB(skb).dst_group = 1;
+netlink_broadcast(uevent_sock, skb, 0, 1, GFP_KERNEL);
+</code></pre><h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://www.cnblogs.com/happygirl-zjj/p/6293759.html" target="_blank" rel="noopener">netlink socket编程实例</a></li>
+<li><a href="http://bbs.chinaunix.net/thread-2029813-1-1.html" target="_blank" rel="noopener">netlink socket 编程之 why &amp; how</a></li>
+<li><a href="https://www.ibm.com/developerworks/cn/linux/l-netlink/index.html" target="_blank" rel="noopener">Linux 系统内核空间与用户空间通信的实现与分析</a></li>
+<li><a href="https://codeday.me/bug/20171018/87465.html" target="_blank" rel="noopener">linux-kernel – 如何使用netlink socket与内核模块通信？</a></li>
+<li><a href="http://www.codes51.com/article/detail_4256761.html" target="_blank" rel="noopener">linux的netlink接口详解上</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/netlink/" rel="tag"># netlink</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2017/10/19/linux-kernel-scheduling-policies/" rel="next" title="linux-kernel-scheduling-policies">
+                  <i class="fa fa-chevron-left"></i> linux-kernel-scheduling-policies
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2017/10/26/linux-netlink-socket-get-hotplug-info/" rel="prev" title="linux-netlink-socket-get-hotplug-info">
+                  linux-netlink-socket-get-hotplug-info <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#数据结构"><span class="nav-number">1.</span> <span class="nav-text">数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#netlink地址结构"><span class="nav-number">1.1.</span> <span class="nav-text">netlink地址结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#netlink消息结构"><span class="nav-number">1.2.</span> <span class="nav-text">netlink消息结构</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Example-1"><span class="nav-number">2.</span> <span class="nav-text">Example-1</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Example-2"><span class="nav-number">3.</span> <span class="nav-text">Example-2</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#uevent-message-payload-size"><span class="nav-number">4.</span> <span class="nav-text">uevent message payload size</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">5.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

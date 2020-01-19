@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="airkiss server使用udp broadcast实现，包括两部分  udp client广播airkiss编码数据 udp server接收device广播的random数据">
+<meta property="og:type" content="article">
+<meta property="og:title" content="airkiss server 实现过程遇到的问题">
+<meta property="og:url" content="http://yoursite.com/2019/01/10/airkiss-udp-problems/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="airkiss server使用udp broadcast实现，包括两部分  udp client广播airkiss编码数据 udp server接收device广播的random数据">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/socket/SOCK-TYPE.jpg">
+<meta property="article:published_time" content="2019-01-10T02:57:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.678Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="airkiss">
+<meta property="article:tag" content="udp">
+<meta property="article:tag" content="broacast">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/socket/SOCK-TYPE.jpg">
+
+<link rel="canonical" href="http://yoursite.com/2019/01/10/airkiss-udp-problems/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>airkiss server 实现过程遇到的问题 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/10/airkiss-udp-problems/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          airkiss server 实现过程遇到的问题
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-01-10 10:57:00" itemprop="dateCreated datePublished" datetime="2019-01-10T10:57:00+08:00">2019-01-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/Socket/" itemprop="url" rel="index">
+                    <span itemprop="name">Socket</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/Airkiss/" itemprop="url" rel="index">
+                    <span itemprop="name">Airkiss</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>8.1k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>7 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><code>airkiss server</code>使用<code>udp broadcast</code>实现，包括两部分</p>
+<ol>
+<li><code>udp client</code>广播<code>airkiss</code>编码数据</li>
+<li><code>udp server</code>接收<code>device</code>广播的<code>random</code>数据</li>
+</ol>
+<a id="more"></a>
+
+<h2 id="socket-type"><a href="#socket-type" class="headerlink" title="socket type"></a>socket type</h2><p>常用的三种类型</p>
+<ol>
+<li><code>SOCK_STREAM</code>流式的套接字可以提供可靠的、面向连接的通讯流</li>
+<li><code>SOCK_DGRAM</code>数据报套接字定义了一种无连接的服务，数据通过相互独立的报文进行传输，是无序的，并且不保证可靠，无差错</li>
+<li><code>SOCK_RAW</code>原始套接字主要用于一些协议的开发，可以进行比较底层的操作</li>
+</ol>
+<p>关系如下<br><img src="/images/socket/SOCK-TYPE.jpg" alt=""></p>
+<p>其中<code>SOCK_STREAM (TCP)</code>、<code>SOCK_DGRAM (UDP)</code>工作在传输层，<code>SOCK_RAW</code>工作在网络层。<code>SOCK_RAW</code>可以处理<code>ICMP</code>、<code>IGMP</code>等网络报文、特殊的<code>IPv4</code>报文、可以通过<code>IP_HDRINCL</code>套接字选项由用户构造<code>IP</code>头。</p>
+<h2 id="setsocket-指定-interface"><a href="#setsocket-指定-interface" class="headerlink" title="setsocket 指定 interface"></a>setsocket 指定 interface</h2><p><code>socket</code>发送数据默认根据路由表来发送，如果要指定<code>interface</code>可以使用<code>setsocket</code>选项<code>SO_BINDTODEVICE</code>来实现</p>
+<pre><code class="c">struct ifreq ifr;
+memset(&amp;ifr, 0, sizeof(ifr));
+snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), &quot;wlan0&quot;);
+if ((rc = setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, (void *)&amp;ifr, sizeof(ifr))) &lt; 0) {
+    perror(&quot;Server-setsockopt() error for SO_BINDTODEVICE&quot;);
+    printf(&quot;%s\n&quot;, strerror(errno));
+    close(sock);
+    exit(-1);
+}</code></pre>
+<blockquote>
+<p><strong>需要注意测试时，<code>server</code>与<code>client</code>要选定相同的<code>interface</code>，否则不再一个子网中，导致测试失败</strong></p>
+</blockquote>
+<p>参考文章：<a href="https://blog.csdn.net/eqiang8271/article/details/6793089" target="_blank" rel="noopener">setsockopt 的 SO_BINDTODEVICE 套接口选项</a></p>
+<ol>
+<li>对于<code>TCP 套接口</code>、<code>UDP 套接口</code>、<code>RAW 套接口</code>，可以通过<code>SO_BINDTODEVICE 套接口选项</code>将套接口绑定到指定的网络接口上。绑定之后，套接口的所有数据包收发都只经过指定的网络接口</li>
+<li>对于<code>PACKET 类型的套接口</code>，不能通过<code>SO_BINDTODEVICE</code>绑定到指定的网络接口上，而要通过<code>bind(2)</code>来与特定的网络接口绑定，所用的套接口地址结构为<code>struct sockaddr_ll</code>，此套接口地址结构是链路层的地址结构，独立于具体的网络设备。比如，该地址结构既可以用于表示<code>PPP 设备</code>，也能用于表示<code>ethernet 设备</code></li>
+</ol>
+<h2 id="broadcast"><a href="#broadcast" class="headerlink" title="broadcast"></a>broadcast</h2><p>广播地址<code>255.255.255.255</code>，在头文件<code>netinet/in.h</code>中定义为<code>INADDR_BROADCAST</code></p>
+<pre><code class="c">/* Address to accept any incoming messages. */
+#define INADDR_ANY      ((unsigned long int) 0x00000000)
+
+/* Address to send to all hosts. */
+#define INADDR_BROADCAST    ((unsigned long int) 0xffffffff)</code></pre>
+<ul>
+<li><code>INADDR_ANYA</code>表示地址为<code>0.0.0.0</code>，表示不确定地址、任意地址或所有地址。也就是表示本机的所有<code>IP</code>，因为有些机子不止一块网卡，多网卡的情况下，这个就表示所有网卡<code>IP</code>地址的意思</li>
+<li><code>INADDR_BROADCAST</code>表示广播地址<code>255.255.255.255</code>，仅用于本地连接，如果不指定<code>interface</code>，根据路由表确定</li>
+</ul>
+<h3 id="设置广播属性"><a href="#设置广播属性" class="headerlink" title="设置广播属性"></a>设置广播属性</h3><pre><code class="c">/* Set socket to allow broadcast */
+broadcastPermission = 1;
+if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (void *) &amp;broadcastPermission,
+               sizeof(broadcastPermission)) &lt; 0) {
+    printf(&quot;setsockopt() SO_BROADCAST failed\n&quot;);
+}</code></pre>
+<h3 id="udp-broadcast"><a href="#udp-broadcast" class="headerlink" title="udp broadcast"></a>udp broadcast</h3><pre><code class="c">/* Create socket for sending/receiving datagrams */
+if ((sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) &lt; 0) {
+    printf(&quot;socket() failed\n&quot;);
+}
+/* Set socket to allow broadcast */
+broadcastPermission = 1;
+if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (void *) &amp;broadcastPermission,
+            sizeof(broadcastPermission)) &lt; 0) {
+    printf(&quot;setsockopt() SO_BROADCAST failed\n&quot;);
+}
+struct sockaddr_in broadcastAddr;
+char *buffer = NULL;
+
+buffer = malloc(length);
+memset(buffer, &#39;a&#39;, length);
+
+/* Construct local address structure */
+memset(&amp;broadcastAddr, 0, sizeof(broadcastAddr));           /* Zero out structure */
+broadcastAddr.sin_family = AF_INET;                         /* Internet address family */
+broadcastAddr.sin_addr.s_addr = INADDR_BROADCAST;           /* Broadcast IP address */
+broadcastAddr.sin_port = htons(BROADCAST_PORT);             /* Broadcast port */
+
+sendto(s_akHandler.sock_fd, buffer, length, 0, (struct sockaddr *)&amp;broadcastAddr, sizeof(broadcastAddr));</code></pre>
+<h2 id="bind"><a href="#bind" class="headerlink" title="bind"></a>bind</h2><ol>
+<li><code>TCP</code>通信时，<code>server</code>必须<code>bind</code>自己本机地址和端口。<code>client</code>不需要<code>blind</code></li>
+<li><code>UDP</code>通信时与<code>TCP</code>一样</li>
+</ol>
+<p><code>bind</code>不是<code>server</code>专属，一般情况下<code>client</code>是不用调用<code>bind</code>的，一切都交给内核搞定！</p>
+<p><code>server</code>需要<code>bind</code>的原因</p>
+<blockquote>
+<p>因为服务器是时时在监听有没有客户端的连接，如果服务器不绑定 IP 和端口的话，客户端上线的时候怎么连到服务器呢，所以服务器要绑定 IP 和端口，而客户端就不需要了，客户端上线是主动向服务器发出请求的，因为服务器已经绑定了 IP 和端口，所以客户端上线的就向这个 IP 和端口发出请求，这时因为客户开始发数据了（发上线请求）, 系统就给客户端分配一个随机端口，这个端口和客户端的 IP 会随着上线请求一起发给服务器，服务收到上线请求后就可以从中获起发此请求的客户的 IP 和端口，接下来服务器就可以利用获起的 IP 和端口给客户端回应消息了</p>
+</blockquote>
+<p><code>server</code>需要<code>bind</code>：<code>port</code>和<code>ip addr</code></p>
+<ul>
+<li><code>port</code>包括公共端口和私有端口</li>
+<li><code>ip addr</code>目的是限制了服务端进程创建的 socket 只接受那些目的地为此 IP 地址的客户链接，一般<code>server</code>使用<code>servaddr.sin_addr.s_addr = htonl(INADDR_ANY)</code>，表示不指定<code>client ip</code>，来者不拒</li>
+</ul>
+<h2 id="数据收发时限"><a href="#数据收发时限" class="headerlink" title="数据收发时限"></a>数据收发时限</h2><pre><code class="c">struct timeva timeout;
+timeout.tv_sec=5;
+timeout.tv_usec=0;
+
+// 接受时限
+setsockopt(serversocket, SQL_SOCKET,SO_RCVTIMEO, (char*)&amp;timeout,sizeof(timeout));
+
+// 发送时限
+setsockopt(serversocket, SQL_SOCKET,SO_SNDTIMEO, (char*)&amp;timeout,sizeof(timeout));</code></pre>
+<h2 id="Example"><a href="#Example" class="headerlink" title="Example"></a>Example</h2><h3 id="udp-server"><a href="#udp-server" class="headerlink" title="udp server"></a>udp server</h3><pre><code class="c">#include &lt;stdio.h&gt;      // Default System Calls
+#include &lt;stdlib.h&gt;     // Needed for OS X
+#include &lt;string.h&gt;     // Needed for Strlen
+#include &lt;sys/socket.h&gt; // Needed for socket creating and binding
+#include &lt;netinet/in.h&gt; // Needed to use struct sockaddr_in
+#include &lt;time.h&gt;       // To control the timeout mechanism
+
+#define EXPR_SIZE   1024
+#define BUFLEN      512
+#define TRUE        1
+#define SERVERLEN   1024
+
+int main(int argc, char **argv){
+
+    struct sockaddr_in myaddr;  // address of the server
+    struct sockaddr_in claddr;  // address of the client
+    char buf[BUFLEN];
+    int fd;
+    long recvlen;
+    socklen_t clientlen;
+
+
+
+    if((fd = socket(AF_INET, SOCK_DGRAM, 0)) &lt; 0){
+        perror(&quot;cannot create socket&quot;);
+        return 0;
+    }
+
+    memset((char *)&amp;myaddr, 0, sizeof(myaddr));
+    myaddr.sin_family = AF_INET;
+    myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    myaddr.sin_port = htons(0);
+
+    if(bind(fd, (struct sockaddr *)&amp;myaddr, sizeof(myaddr)) &lt; 0){
+        perror(&quot;cannot bind&quot;);
+        return 0;
+    }
+    clientlen = sizeof(claddr);
+
+    while (TRUE) {
+        recvlen = recvfrom(fd, buf, BUFLEN, 0, (struct sockaddr *)&amp;claddr, &amp;clientlen);
+        if (recvlen &lt; 0) {
+            perror(&quot;cannot recvfrom()&quot;);
+            return 0;
+        }
+        printf(&quot;Received %ld bytes\n&quot;,recvlen);
+        buf[recvlen] = 0;
+        printf(&quot;Received message: \&quot;%s\&quot;\n&quot;,buf);
+
+    }
+
+    return 0;
+}</code></pre>
+<h3 id="udp-client"><a href="#udp-client" class="headerlink" title="udp client"></a>udp client</h3><p>使用<code>bind</code>版本</p>
+<pre><code class="c">#include &lt;stdio.h&gt;      // Default System Calls
+#include &lt;stdlib.h&gt;     // Needed for OS X
+#include &lt;string.h&gt;     // Needed for Strlen
+#include &lt;sys/socket.h&gt; // Needed for socket creating and binding
+#include &lt;netinet/in.h&gt; // Needed to use struct sockaddr_in
+#include &lt;time.h&gt;       // To control the timeout mechanism
+
+#define EXPR_SIZE   1024
+#define BUFLEN      512
+#define TRUE        1
+#define FALSE       0
+#define SERVERLEN   1024
+
+int main(int argc, char **argv){
+
+    long portNum;           // Since it&#39;s possible to input a value bigger
+                            // than 65535 we&#39;ll be using long to
+                            // avoid overflows
+    char expr[EXPR_SIZE];
+    char server[SERVERLEN];
+    int fd;                 // file descriptor for the connected socket
+    int buf[512];
+    struct hostent *h;           // information of the host
+    unsigned int addrLen;        // address length after getting the port number
+    struct sockaddr_in myaddr;   // address of the client
+    struct sockaddr_in servaddr; // server&#39;s address
+    unsigned int exprLen;
+    socklen_t slen = sizeof(servaddr);
+
+    printf(&quot;Enter server name or IP address:&quot;);
+    scanf(&quot;%s&quot;,server);
+    printf(&quot;Enter port:&quot;);
+    scanf(&quot;%ld&quot;,&amp;portNum);
+    if ((portNum &lt; 0) || (portNum &gt; 65535)) {
+        printf(&quot;Invalid port number. Terminating.&quot;);
+        return 0;
+    }
+    printf(&quot;Enter expression:&quot;);
+    scanf(&quot;%s&quot;,expr);
+
+    if((fd = socket(AF_INET, SOCK_DGRAM, 0)) &lt; 0){
+        perror(&quot;cannot create socket&quot;);
+        return 0;
+    }
+
+    memset((char *)&amp;myaddr, 0, sizeof(myaddr));
+    myaddr.sin_family = AF_INET;
+    myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    myaddr.sin_port = htons(0);
+
+    if(bind(fd, (struct sockaddr *)&amp;myaddr, sizeof(myaddr)) &lt; 0){
+        perror(&quot;cannot bind&quot;);
+        return 0;
+    }
+
+    /*
+     // Discovering the port number the OS allocated
+     addrLen = sizeof(myaddr);
+     if(getsockname(fd, (struct sockaddr *)&amp;myaddr, &amp;addrLen) &lt; 0){
+     perror(&quot;cannot getsockname&quot;);
+     return 0;
+     }
+     printf(&quot;local port number = %d\n&quot;, ntohs(myaddr.sin_port));
+     */
+
+    memset((char*)&amp;servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htonl(portNum);
+
+    exprLen = sizeof(expr);
+
+
+    while(TRUE){
+        printf(&quot;Sending message to %s port %ld\n&quot;,server, portNum);
+        if (sendto(fd, expr, strlen(expr), 0, (struct sockaddr *)&amp;servaddr, slen) &lt; 0) {
+            perror(&quot;cannot sendto()&quot;);
+        }
+        printf(&quot;Success\n&quot;);
+
+    }
+
+
+    return 0;
+}</code></pre>
+<p>不使用<code>bind</code>版本</p>
+<pre><code class="c">#include&lt;sys/types.h&gt;
+#include&lt;sys/socket.h&gt;
+#include&lt;unistd.h&gt;
+#include&lt;netinet/in.h&gt;
+#include&lt;arpa/inet.h&gt;
+#include&lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+#include&lt;errno.h&gt;
+#include&lt;netdb.h&gt;
+#include&lt;stdarg.h&gt;
+#include&lt;string.h&gt;
+
+#define SERVER_PORT 8000
+#define BUFFER_SIZE 1024
+#define FILE_NAME_MAX_SIZE 512
+
+int main()
+{
+    /* 服务端地址 */
+    struct sockaddr_in server_addr;
+    bzero(&amp;server_addr, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    //server_addr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
+    server_addr.sin_addr.s_addr = inet_addr(&quot;127.0.0.1&quot;);
+    server_addr.sin_port = htons(SERVER_PORT);
+
+    /* 创建 socket */
+    int client_socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (client_socket_fd &lt; 0) {
+        perror(&quot;Create Socket Failed:&quot;);
+        exit(1);
+    }
+
+    /* 输入文件名到缓冲区 */
+    char file_name[FILE_NAME_MAX_SIZE + 1];
+    bzero(file_name, FILE_NAME_MAX_SIZE + 1);
+    printf(&quot;Please Input File Name On Server:\t&quot;);
+    scanf(&quot;%s&quot;, file_name);
+
+    char buffer[BUFFER_SIZE];
+    bzero(buffer, BUFFER_SIZE);
+    strncpy(buffer, file_name, strlen(file_name) &gt; BUFFER_SIZE ? BUFFER_SIZE : strlen(file_name));
+
+    /* 发送文件名 */
+    if (sendto(client_socket_fd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&amp;server_addr, sizeof(server_addr)) &lt; 0) {
+        perror(&quot;Send File Name Failed:&quot;);
+        exit(1);
+    }
+
+    close(client_socket_fd);
+    return 0;
+}</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://stackoverflow.com/questions/3998569/how-to-bind-raw-socket-to-specific-interface" target="_blank" rel="noopener">how to bind raw socket to specific interface</a></li>
+<li><a href="https://docs.oracle.com/cd/E19253-01/819-7052/sockets-45900/index.html" target="_blank" rel="noopener">广播及确定网络配置</a></li>
+<li><a href="https://stackoverflow.com/questions/683624/udp-broadcast-on-all-interfaces" target="_blank" rel="noopener">UDP-Broadcast on all interfaces</a></li>
+<li><a href="http://blog.51cto.com/a1liujin/1699540" target="_blank" rel="noopener">socket 下的广播与多播实现</a></li>
+<li><a href="https://www.jianshu.com/p/498c63d13ff2" target="_blank" rel="noopener">Linux 网络编程之 UDP Socket 程序示例</a></li>
+<li><a href="https://blog.csdn.net/suxinpingtao51/article/details/11809011" target="_blank" rel="noopener">socket 通信关于 bind 那点事</a></li>
+<li><a href="https://blog.csdn.net/DLUTBruceZhang/article/details/17482209" target="_blank" rel="noopener">简单分析一下 socket 中的 bind</a></li>
+<li><a href="https://blog.csdn.net/stpeace/article/details/45001255" target="_blank" rel="noopener">为什么 TCP 服务端需要调用 bind 函数而客户端通常不需要呢？</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/airkiss/" rel="tag"># airkiss</a>
+              <a href="/tags/udp/" rel="tag"># udp</a>
+              <a href="/tags/broacast/" rel="tag"># broacast</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/01/04/airkiss/" rel="next" title="无线嗅探及 airkiss 协议分析">
+                  <i class="fa fa-chevron-left"></i> 无线嗅探及 airkiss 协议分析
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/01/18/dvb-mpe-Encapsulation/" rel="prev" title="MPE Encapsulation">
+                  MPE Encapsulation <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#socket-type"><span class="nav-number">1.</span> <span class="nav-text">socket type</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#setsocket-指定-interface"><span class="nav-number">2.</span> <span class="nav-text">setsocket 指定 interface</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#broadcast"><span class="nav-number">3.</span> <span class="nav-text">broadcast</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#设置广播属性"><span class="nav-number">3.1.</span> <span class="nav-text">设置广播属性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#udp-broadcast"><span class="nav-number">3.2.</span> <span class="nav-text">udp broadcast</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#bind"><span class="nav-number">4.</span> <span class="nav-text">bind</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#数据收发时限"><span class="nav-number">5.</span> <span class="nav-text">数据收发时限</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Example"><span class="nav-number">6.</span> <span class="nav-text">Example</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#udp-server"><span class="nav-number">6.1.</span> <span class="nav-text">udp server</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#udp-client"><span class="nav-number">6.2.</span> <span class="nav-text">udp client</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">7.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

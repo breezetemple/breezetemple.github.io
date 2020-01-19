@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="原始套接字、wifi驱动支持及Airkiss Client实现">
+<meta property="og:type" content="article">
+<meta property="og:title" content="AirKiss Client 实现评估及 raw socket">
+<meta property="og:url" content="http://yoursite.com/2019/04/19/airkiss-client-and-raw-socket/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="原始套接字、wifi驱动支持及Airkiss Client实现">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-04-19T05:53:47.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.682Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="monitor">
+<meta property="article:tag" content="802.11">
+<meta property="article:tag" content="airkiss">
+<meta property="article:tag" content="raw socket">
+<meta property="article:tag" content="raw packet">
+<meta property="article:tag" content="linux network stack">
+<meta property="article:tag" content="freebsd network stack">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2019/04/19/airkiss-client-and-raw-socket/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>AirKiss Client 实现评估及 raw socket | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/04/19/airkiss-client-and-raw-socket/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          AirKiss Client 实现评估及 raw socket
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-04-19 13:53:47" itemprop="dateCreated datePublished" datetime="2019-04-19T13:53:47+08:00">2019-04-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/Socket/" itemprop="url" rel="index">
+                    <span itemprop="name">Socket</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/802-11/" itemprop="url" rel="index">
+                    <span itemprop="name">802.11</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/Airkiss/" itemprop="url" rel="index">
+                    <span itemprop="name">Airkiss</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>5.3k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>原始套接字、<code>wifi</code>驱动支持及<code>Airkiss Client</code>实现</p>
+<a id="more"></a>
+
+<p>源码 <a href="https://github.com/pannzh/Airkiss.git" target="_blank" rel="noopener">AirKiss</a>，依赖于<code>libiw</code>实现抓取数据链路层 packet 功能</p>
+<p>常用网络协议栈</p>
+<ul>
+<li>Linux</li>
+<li>FreeBSD</li>
+</ul>
+<p><code>SOCK_RAW</code>常应用于<code>packet sniffer</code>，例如<code>libpcap</code>，结合接口混杂模式，监视本地电缆上流通的所有分组</p>
+<h2 id="Promiscuous-vs-Monitoring-mode"><a href="#Promiscuous-vs-Monitoring-mode" class="headerlink" title="Promiscuous vs Monitoring mode"></a>Promiscuous vs Monitoring mode</h2><p><strong>这两种模式不是所有设备都支持的！！！</strong><br>一般网卡都工作在非混杂模式下，只接受来自网络端口的目的地址指向自己的数据。<br>以下两种模式经常混淆，常用与捕捉数据，对比其特点与差异</p>
+<h3 id="Promiscuous-网卡混杂模式"><a href="#Promiscuous-网卡混杂模式" class="headerlink" title="Promiscuous 网卡混杂模式"></a>Promiscuous 网卡混杂模式</h3><p>混杂模式不是<strong>数据包捕获模式</strong>，它是以太网数据包捕获的一种选择<code>option</code>。</p>
+<ul>
+<li>设备必须入网，可以是 wire/wireless</li>
+<li>所有流经网卡的数据</li>
+<li>协议 IEEE 802.3，Ethernet level</li>
+<li>OSI 层次：Mac 层</li>
+</ul>
+<p>在此模式下监听以太网内部的流量，这个时候网卡不会区分流经其的数据包的目标地址是不是本机，一股脑儿的都将其截下供协议栈上层进行调用查看。</p>
+<p>命令开启</p>
+<pre><code class="shell">ifconfig wlan0 promisc  设置混杂模式
+ifconfig wlan0 -promisc 取消混杂模式</code></pre>
+<h3 id="Monitor-无线网卡监听模式"><a href="#Monitor-无线网卡监听模式" class="headerlink" title="Monitor 无线网卡监听模式"></a>Monitor 无线网卡监听模式</h3><p>监听模式仅用于<code>WIFI</code>，用于在<code>802.11 radio level</code>捕捉数据包，而不是在<code>Ethernet level</code>，是一种数据包捕获模式</p>
+<ul>
+<li>设备不能入网，不能位于任何网络中</li>
+<li>仅用于 wireless</li>
+<li>协议 IEEE 802.11，radio level</li>
+<li>OSI 层次：Physical (PHY) Layer + Data Link Layer (Mac)</li>
+</ul>
+<p>在此模式下监听所有<code>802.11</code>数据包</p>
+<p>命令开启</p>
+<pre><code class="shell">ifconfig wlan0 down
+iwconfig wlan0 mode monitor
+ifconfig wlan0 up
+
+// 或者增加虚拟监听网卡 mon0
+sudo iw dev wlan0 interface add mon0 type monitor
+sudo ifconfig mon0 up</code></pre>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li>监听模式允许网卡不用连接<code>AP</code>就可以抓取特性频道的数据，就是在空中抓取某个波段的数据。可以用在破解密码</li>
+<li>混杂模式（连接 wifi）就是接收所有经过网卡的数据包，包括不是发给本机的包，即不验证 MAC 地址</li>
+<li>普通模式下网卡只接收发给本机的包</li>
+</ul>
+<h2 id="L2-vs-L3-raw-socket"><a href="#L2-vs-L3-raw-socket" class="headerlink" title="L2 vs L3 raw socket"></a>L2 vs L3 raw socket</h2><p>见这篇文章了解原始套接字：<a href="/2019/04/28/raw-socket-L2-vs-L3/" title="Raw Socket L2 vs L3">Raw Socket L2 vs L3</a></p>
+<p><code>Airkiss Client</code>除了要求硬件具有<code>Monitor</code>能力之外，还需要系统提供<code>L2 Raw Socket</code>支持</p>
+<p>而现阶段<code>ecos</code>系统使用的<code>FreeBSD Network Stack</code>不支持，因此<code>ecos</code>下不能实现。而<code>Linux Network Stack</code>下使用<code>PF_PACKET</code>协议簇下的<code>SOCK_RAW</code>来实现链路层数据处理</p>
+<h2 id="Commands"><a href="#Commands" class="headerlink" title="Commands"></a>Commands</h2><pre><code class="shell">// down device
+$ sudo ifconfig wlan0 down
+// up device
+$ sudo ifconfig wlan0 up
+// check device modes
+$ sudo iw list
+// check device mode
+$ sudo iwconfig wlan0
+// set device monitor mode
+$ sudo iwconfig wlan0 mode monitor
+$ sudo iw wlan0 set type monitor
+// kill some processes
+$ sudo airmon-ng check kill
+// add virtual monitor device
+$ sudo iw dev wlan0 interface add mon0 type monitor
+// set channel
+$ sudo iw wlan0 set channel 5
+$ sudo iwconfig wlan0 channel 6
+// set freq
+$ sudo iwconfig wlan0 freq 2.484G
+$ sudo iw wlan0 set freq 2.484G
+// tcpdump with special channel
+$ sudo tcpdump -i mon0 -n -w file.cap
+// set device managed mode for station
+$ sudo ifconfig wlan0 down
+$ sudo iwconfig wlan0 mode managed
+$ sudo ifconfig wlan0 up
+// scan APs in managed mode
+$ sudo iwlist wlan0 scan</code></pre>
+<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><h3 id="1"><a href="#1" class="headerlink" title="1#"></a>1#</h3><p><code>airkiss</code>首先需要在各个<code>channel</code>上切换，以获取前导数据，在开源工程中使用如下命令来完成，有如下错误</p>
+<pre><code class="shell">$ iw wlan0 set channel 5
+command failed: Device or resource busy (-16)
+$ iwconfig wlan0 chan 2
+Error for wireless request &quot;Set Frequency&quot; (8B04) :
+    SET failed on device wlan0 ; Device or resource busy.</code></pre>
+<p>在主机环境下做如下测试</p>
+<pre><code>$ ifconfig
+wlx00117f5bb7b4: flags=4099&lt;UP,BROADCAST,MULTICAST&gt;  mtu 1500
+        ether 00:11:7f:5b:b7:b4  txqueuelen 1000  (Ethernet)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+$ iwconfig wlx00117f5bb7b4
+wlx00117f5bb7b4  IEEE 802.11  ESSID:off/any
+          Mode:Managed  Access Point: Not-Associated   Tx-Power=20 dBm
+          Retry short  long limit:2   RTS thr:off   Fragment thr:off
+          Power Management:off
+$ sudo iw wlx00117f5bb7b4 set channel 10
+command failed: Device or resource busy (-16)
+$ sudo ifconfig wlx00117f5bb7b4 down
+$ sudo iw wlx00117f5bb7b4 set channel 10
+command failed: Device or resource busy (-16)
+$ sudo ifconfig wlx00117f5bb7b4 up
+
+$ sudo iw wlx00117f5bb7b4 set type monitor
+command failed: Device or resource busy (-16)
+$ sudo ifconfig wlx00117f5bb7b4 down
+$ sudo iw wlx00117f5bb7b4 set type monitor
+$ sudo ifconfig wlx00117f5bb7b4 up
+$ iwconfig wlx00117f5bb7b4
+wlx00117f5bb7b4  IEEE 802.11  Mode:Monitor  Frequency:2.412 GHz  Tx-Power=20 dBm
+          Retry short  long limit:2   RTS thr:off   Fragment thr:off
+          Power Management:off
+$ sudo iw wlx00117f5bb7b4 set channel 10
+$ iwconfig wlx00117f5bb7b4
+wlx00117f5bb7b4  IEEE 802.11  Mode:Monitor  Frequency:2.457 GHz  Tx-Power=20 dBm
+          Retry short  long limit:2   RTS thr:off   Fragment thr:off
+          Power Management:off</code></pre><p>通过以上命令系列猜想<code>set channel</code>对应<code>SIOCSIWFREQ</code>，在<code>STATION</code>下不起作用，在<code>Monitor</code>下才可以设置</p>
+<p>在内核<code>4.9.x</code>中查找到如下代码，调用<code>SIOCSIWFREQ</code>会执行到文件<code>net/wireless/wext-compat.c</code>下函数<code>cfg80211_wext_siwfreq</code></p>
+<pre><code class="c">  20     case NL80211_IFTYPE_STATION:
+  19         return cfg80211_mgd_wext_siwfreq(dev, info, wextfreq, extra);
+  18     case NL80211_IFTYPE_ADHOC:
+  17         return cfg80211_ibss_wext_siwfreq(dev, info, wextfreq, extra);
+  16     case NL80211_IFTYPE_MONITOR:
+  15         freq = cfg80211_wext_freq(wextfreq);
+  14         if (freq &lt; 0)
+  13             return freq;
+  12         if (freq == 0)
+  11             return -EINVAL;
+  10         chandef.center_freq1 = freq;
+   9         chandef.chan = ieee80211_get_channel(&amp;rdev-&gt;wiphy, freq);
+   8         if (!chandef.chan)
+   7             return -EINVAL;
+   6         return cfg80211_set_monitor_channel(rdev, &amp;chandef);</code></pre>
+<p>其中<code>cfg80211_mgd_wext_siwfreq</code>最终调用<code>cfg80211_set_monitor_channel</code></p>
+<pre><code class="c">857 int cfg80211_set_monitor_channel(struct cfg80211_registered_device *rdev,
+  1                  struct cfg80211_chan_def *chandef)
+  2 {
+  3     if (!rdev-&gt;ops-&gt;set_monitor_channel)
+  4         return -EOPNOTSUPP;
+  5     if (!cfg80211_has_monitors_only(rdev))
+  6         return -EBUSY;
+  7
+  8     return rdev_set_monitor_channel(rdev, chandef);
+  9 }</code></pre>
+<p>得到证实，只有在<code>monitor</code>下才能执行成功</p>
+<h3 id="2"><a href="#2" class="headerlink" title="2#"></a>2#</h3><p>接上面的问题，<code>set channel</code>失败是因为不是<code>monitor</code>，而<code>set mode monitor</code>遇到错误</p>
+<p>原因是<code>interface down</code>之后被其他线程<code>up</code>，调整逻辑解决此问题</p>
+<h2 id="Airkiss-协议"><a href="#Airkiss-协议" class="headerlink" title="Airkiss 协议"></a>Airkiss 协议</h2><h3 id="底层协议"><a href="#底层协议" class="headerlink" title="底层协议"></a>底层协议</h3><p>见这篇文章了解<code>802.11</code>帧结构：<a href="/2019/05/06/radiotap-header-and-802-11-frame/" title="Radiotap、Prism 和 802.11 帧格式分析">Radiotap、Prism 和 802.11 帧格式分析</a></p>
+<p>涉及<code>802.2</code>、<code>802.11</code>以及<code>radiotap header</code></p>
+<p><code>Airkiss</code>协议数据是<code>802.11 数据帧</code>，在<code>FC</code>中的<code>subtype</code>可以确认</p>
+<p>通过<code>monitor</code>获取的数据为<code>802.11 plus Radiotap</code></p>
+<p>因为网卡驱动及路由区别导致链路层头长度不定，因此需要使用连续前导码来确定链路层头长度</p>
+<p>因为<code>mac payload</code>加密原因，只能分析到<code>802.11</code>这一层，更高层<code>SNAP/UDP/IP</code>看不到，全部在加密数据中封装</p>
+<p>开源工程<code>wicap</code>，<a href="https://github.com/niym/wicap.git" target="_blank" rel="noopener">地址</a> 中将数据直接转换为如下结构</p>
+<pre><code class="c">  18  struct ieee80211_hdr {
+    1     unsigned short frame_control;
+    2     unsigned short duration_id;
+    3     unsigned char addr1[6];
+    4     unsigned char addr2[6];
+    5     unsigned char addr3[6];
+    6     unsigned short seq_ctrl;
+    7     unsigned short addr4[6];
+    8 } __attribute__ ((packed));</code></pre>
+<h3 id="airkiss-优化"><a href="#airkiss-优化" class="headerlink" title="airkiss 优化"></a>airkiss 优化</h3><ol>
+<li>使用<code>802.11 FC</code>只过滤<code>data frame</code></li>
+<li>匹配<code>mac addr</code></li>
+</ol>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://blog.csdn.net/jnu_simba/article/details/12371127" target="_blank" rel="noopener">浅谈原始套接字 SOCK_RAW 的内幕及其应用</a></li>
+<li><a href="https://blog.csdn.net/nice_wen/article/details/53392918" target="_blank" rel="noopener">raw socket 的使用</a></li>
+<li><a href="https://blog.csdn.net/baidu20008/article/details/10225073" target="_blank" rel="noopener">linux 数据链路访问之 ETH_P_ALL 等等</a></li>
+<li><a href="https://blog.csdn.net/goodlixueyong/article/details/6541175" target="_blank" rel="noopener">网卡的混杂模式</a></li>
+<li><a href="https://blog.csdn.net/youfuchen/article/details/29782191" target="_blank" rel="noopener">linux Packet socket (1) 简介</a></li>
+<li><a href="https://dupengair.github.io/2016/05/28/%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0-unix%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8BEd3-%E7%AC%AC%E4%BA%8C%E5%8D%81%E4%B9%9D%E7%AB%A0-%E6%95%B0%E6%8D%AE%E9%93%BE%E8%B7%AF%E8%AE%BF%E9%97%AE/" target="_blank" rel="noopener">第二十九章 数据链路访问</a></li>
+<li><a href="https://opensourceforu.com/2015/03/a-guide-to-using-raw-sockets/" target="_blank" rel="noopener">A Guide to Using Raw Sockets</a></li>
+<li><a href="https://blog.csdn.net/LiuBF1994/article/details/50506170" target="_blank" rel="noopener">链路层套接字 PF_PACKET 简介</a></li>
+<li><a href="http://plasmixs.github.io/raw-sockets-programming-in-c.html" target="_blank" rel="noopener">RAW sockets programming in C</a></li>
+<li><a href="https://blog.csdn.net/q623702748/article/details/52063019" target="_blank" rel="noopener">Linux 网络编程：原始套接字编程及实例分析</a></li>
+<li><a href="https://medium.com/@debookee/promiscuous-vs-monitoring-mode-d603601f5fa" target="_blank" rel="noopener"><strong>Promiscuous vs Monitoring mode</strong></a></li>
+<li><a href="https://www.speedguide.net/faq/what-is-wireless-monitor-and-promiscuous-mode-282" target="_blank" rel="noopener">What is wireless monitor and promiscuous mode ?</a></li>
+<li><a href="https://security.stackexchange.com/questions/36997/what-is-the-difference-between-promiscuous-and-monitor-mode-in-wireless-networks" target="_blank" rel="noopener">What is the difference between Promiscuous and Monitor Mode in Wireless Networks?</a></li>
+<li><a href="https://blog.csdn.net/howeverpf/article/details/14108039" target="_blank" rel="noopener">无线网卡的 4 种工作模式</a></li>
+<li><a href="https://blog.csdn.net/jidushanbojueA/article/details/86478845" target="_blank" rel="noopener">linux 网卡混杂模式和监听模式</a></li>
+<li><a href="https://www.cnblogs.com/LittleHann/p/3700357.html" target="_blank" rel="noopener">802.11 协议帧格式、Wi-Fi 连接交互过程、无线破解入门研究</a></li>
+<li><a href="https://stackoverflow.com/questions/48271119/how-to-send-both-802-11-management-frames-and-data-frames-using-raw-sockets-in-l" target="_blank" rel="noopener">How to send both 802.11 management frames and data frames using RAW sockets in linux</a></li>
+<li><a href="https://stackoverflow.com/questions/44567716/sending-raw-packets-over-wifi-on-linux-c-c" target="_blank" rel="noopener">Sending raw packets over WiFi on Linux (C/C++)</a></li>
+<li><a href="https://www.binarytides.com/packet-sniffer-code-in-c-using-linux-sockets-bsd-part-2/" target="_blank" rel="noopener">Packet Sniffer Code in C using Linux Sockets (BSD) – Part 2</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/monitor/" rel="tag"># monitor</a>
+              <a href="/tags/802-11/" rel="tag"># 802.11</a>
+              <a href="/tags/airkiss/" rel="tag"># airkiss</a>
+              <a href="/tags/raw-socket/" rel="tag"># raw socket</a>
+              <a href="/tags/raw-packet/" rel="tag"># raw packet</a>
+              <a href="/tags/linux-network-stack/" rel="tag"># linux network stack</a>
+              <a href="/tags/freebsd-network-stack/" rel="tag"># freebsd network stack</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/04/15/Using-wolfSSL-instead-of-OpenSSL/" rel="next" title="使用 wolfssl 替换 openssl">
+                  <i class="fa fa-chevron-left"></i> 使用 wolfssl 替换 openssl
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/04/28/raw-socket-L2-vs-L3/" rel="prev" title="Raw Socket L2 vs L3">
+                  Raw Socket L2 vs L3 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Promiscuous-vs-Monitoring-mode"><span class="nav-number">1.</span> <span class="nav-text">Promiscuous vs Monitoring mode</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Promiscuous-网卡混杂模式"><span class="nav-number">1.1.</span> <span class="nav-text">Promiscuous 网卡混杂模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Monitor-无线网卡监听模式"><span class="nav-number">1.2.</span> <span class="nav-text">Monitor 无线网卡监听模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#总结"><span class="nav-number">1.3.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#L2-vs-L3-raw-socket"><span class="nav-number">2.</span> <span class="nav-text">L2 vs L3 raw socket</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Commands"><span class="nav-number">3.</span> <span class="nav-text">Commands</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题"><span class="nav-number">4.</span> <span class="nav-text">问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1"><span class="nav-number">4.1.</span> <span class="nav-text">1#</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2"><span class="nav-number">4.2.</span> <span class="nav-text">2#</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Airkiss-协议"><span class="nav-number">5.</span> <span class="nav-text">Airkiss 协议</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#底层协议"><span class="nav-number">5.1.</span> <span class="nav-text">底层协议</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#airkiss-优化"><span class="nav-number">5.2.</span> <span class="nav-text">airkiss 优化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">6.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

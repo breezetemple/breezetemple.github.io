@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="Movian 中使用了大量的 backend 服务，本文来分析 backend 实现流程">
+<meta property="og:type" content="article">
+<meta property="og:title" content="movian-backend">
+<meta property="og:url" content="http://yoursite.com/2018/01/16/movian-backend/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="Movian 中使用了大量的 backend 服务，本文来分析 backend 实现流程">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2018-01-16T06:12:31.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.670Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="movian">
+<meta property="article:tag" content="backend">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2018/01/16/movian-backend/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>movian-backend | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/01/16/movian-backend/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          movian-backend
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-01-16 14:12:31" itemprop="dateCreated datePublished" datetime="2018-01-16T14:12:31+08:00">2018-01-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Movian/" itemprop="url" rel="index">
+                    <span itemprop="name">Movian</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.9k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><code>Movian</code> 中使用了大量的 <code>backend</code> 服务，本文来分析 <code>backend</code> 实现流程</p>
+<a id="more"></a>
+
+<h2 id="Register"><a href="#Register" class="headerlink" title="Register"></a>Register</h2><p>以 <code>Search</code> 为例</p>
+<pre><code>static inr
+search_canhandle(const char *url)
+{
+  return !strncmp(url, &quot;search:&quot;, strlen(&quot;search:&quot;));
+}
+
+static int
+search_open(prop_t *page, const char *url0, int sync)
+{
+
+}
+
+static backend_t be_search = {
+  .be_canhandle = search_canhandle,
+  .be_open = search_open,
+};
+
+BE_REGISTER(search);</code></pre><p><code>BE_REGISTER</code> 宏定义</p>
+<pre><code>#define BE_REGISTER(name)
+  INITIALIZER(backend_init_ ## name) {                                 \
+    backend_register(&amp;be_ ## name);                                    \
+  }</code></pre><p><code>INITIALIZER</code> 宏定义在 <code>src/compiler.h</code></p>
+<pre><code>#elif defined(__GNUC__)
+
+#define INITIALIZER(f) \
+   static void f(void) __attribute__((constructor)); \
+   static void f(void)
+
+#endif</code></pre><p>其中 <code>__attribute__ constructor</code> 被修饰的函数作为构造函数执行</p>
+<p>其中 <code>backend_register</code> 将 <code>be_search</code> 插入到链表 <code>backends</code> 中</p>
+<pre><code>void
+backend_register(backend_t *be)
+{
+  LIST_INSERT_HEAD(&amp;backends, be, be_global_link);
+}</code></pre><p>因此在执行到 <code>main</code> 之前已经调用 <code>backend_register</code>，完成 <code>backend</code> 注册</p>
+<h2 id="Init"><a href="#Init" class="headerlink" title="Init"></a>Init</h2><p><code>src/arch/linux/linux_main.c</code></p>
+<p><code>main</code> -&gt;<br><code>main_init</code> -&gt;<br><code>backend_init</code></p>
+<pre><code class="backend_init">void
+backend_init(void)
+{
+  backend_t *be;
+  hts_lwmutex_init(&amp;dyanamic_backends_mutex);
+  hts_mutex_init(&amp;imageloader_mutex);
+  hts_cond_init(&amp;imageloader_cond, &amp;imageloader_mutex);
+
+  TAILQ_INIT(&amp;cached_images);
+
+  LIST_FOREACH(be, &amp;backends, be_global_link)
+    if(be-&gt;be_init != NULL)
+      be-&gt;be_init();
+}</code></pre>
+<h2 id="play-video"><a href="#play-video" class="headerlink" title="play video"></a>play video</h2><p><code>UI</code> -&gt;<br><code>glw_create</code> -&gt;<br><code>class-&gt;gc_ctor</code> -&gt;<br><code>glw_video_ctor</code> -&gt;<br><code>video_playback_create</code> -&gt;<br><code>video_player_idle</code> -&gt;<br><code>play_video</code> -&gt;<br><code>backend_play_video</code></p>
+<h2 id="play-audio"><a href="#play-audio" class="headerlink" title="play audio"></a>play audio</h2><p>与 <code>video</code> 流程不一样</p>
+<p><code>be_playqueue</code> 注册</p>
+<pre><code>static backend_t be_playqueue = {
+  .be_init = playqueue_init,
+  .be_canhandle = be_playqueue_canhandle,
+  .be_open = be_playqueue_open,
+};
+
+BE_REGISTER(playqueue);</code></pre><p><code>playqueue_init</code> -&gt;<br><code>player_thread</code> -&gt;<br><code>backend_play_audio</code></p>
+<h2 id="page-open"><a href="#page-open" class="headerlink" title="page open"></a>page open</h2><p><code>backend_page_open</code> 注册为 <code>backend</code>，除此之外只给 <code>upgrade</code> 调用</p>
+<pre><code class="upgrade_open_url">static int
+upgrade_open_url(prop_t *page, const char *url, int sync)
+{
+  if(!strcmp(url, &quot;showtime:upgrade&quot;)) {
+    usage_page_open(sync, &quot;Upgrade&quot;);
+    backend_page_open(page, &quot;page:upgrade&quot;, sync);
+    upgrade_refresh();
+    prop_set(page, &quot;directClose&quot;, PROP_SET_INT, 1);
+  } else {
+    nav_open_error(page, &quot;Invalid URI&quot;);
+  }
+  return 0;
+}</code></pre>
+<pre><code>static backend_t be_page = {
+  .be_canhandle = be_page_canhandle,
+  .be_open = backend_page_open,
+};
+
+BE_REGISTER(page);</code></pre><h2 id="backend-probe"><a href="#backend-probe" class="headerlink" title="backend probe"></a>backend probe</h2><p><code>main_init</code> -&gt;<br><code>service_int</code> -&gt;<br><code>service_probe_loop</code> -&gt;<br><code>backend_probe</code></p>
+<pre><code class="backend_probe">backend_probe_result_t
+backend_probe(const char *url, char *errbuf, size_t errlen, int timeout_ms)
+{
+  if(timeout_ms &lt;= 0)
+    timeout_ms = 5000;
+
+  // 匹配 URL
+  backend_t *be = backend_canhandle(url);
+  if(be == NULL) {
+    snprintf(errbuf, errlen, &quot;No handler for URL&quot;);
+    return BACKEND_PROBE_NO_HANDLER;
+  }
+
+  if(be-&gt;be_probe == NULL)
+    return BACKEND_PROBE_OK;
+
+  // Example: .be_probe = fa_check_url
+  return be-&gt;be_probe(url, errbuf, errlen, timeout_ms);
+}</code></pre>
+<h2 id="backend-open"><a href="#backend-open" class="headerlink" title="backend open"></a>backend open</h2><p><code>search_open</code> -&gt;<br><code>backend_open</code> -&gt; <code>backend_search</code></p>
+<p>可以匹配到 <code>.be_search = plugin_search</code> <code>.be_search = ecmascript_search</code></p>
+<p>通用 <code>src/arch/linux/linux_main.c</code></p>
+<p><code>main</code> -&gt;<br><code>linux_global_eventsink</code> -&gt;<br><code>switch_ui</code></p>
+<p>将 <code>ui_current</code> 设置为 <code>ui_glw</code>，然后</p>
+<p><code>main_loop</code> -&gt;<br><code>ui_glw-&gt;start</code> -&gt;<br><code>glw_x11_start</code> -&gt;<br><code>nav_spawn</code> -&gt;<br><code>nav_create</code> -&gt;<br><code>nav_open0</code> -&gt;<br><code>nav_open_backend</code> -&gt;<br><code>nav_open_thread</code> -&gt;<br><code>back_open</code></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/movian/" rel="tag"># movian</a>
+              <a href="/tags/backend/" rel="tag"># backend</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/01/16/movian-metadata/" rel="next" title="movian-metadata">
+                  <i class="fa fa-chevron-left"></i> movian-metadata
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/01/16/movian-sqldb/" rel="prev" title="movian-sqldb">
+                  movian-sqldb <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Register"><span class="nav-number">1.</span> <span class="nav-text">Register</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Init"><span class="nav-number">2.</span> <span class="nav-text">Init</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#play-video"><span class="nav-number">3.</span> <span class="nav-text">play video</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#play-audio"><span class="nav-number">4.</span> <span class="nav-text">play audio</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#page-open"><span class="nav-number">5.</span> <span class="nav-text">page open</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#backend-probe"><span class="nav-number">6.</span> <span class="nav-text">backend probe</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#backend-open"><span class="nav-number">7.</span> <span class="nav-text">backend open</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

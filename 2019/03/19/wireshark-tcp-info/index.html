@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="wireshark 抓包分析 TCP 常见信息">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Wireshark 中常见的 TCP Info">
+<meta property="og:url" content="http://yoursite.com/2019/03/19/wireshark-tcp-info/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="wireshark 抓包分析 TCP 常见信息">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1553073720428.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1553135965445.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1553138137570.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1553138255811.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1553138354613.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1553138386419.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1553138458034.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1553138431304.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1553138486481.png">
+<meta property="og:image" content="http://yoursite.com/images/wireshark/1553145383560.png">
+<meta property="article:published_time" content="2019-03-19T12:27:21.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.678Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="wireshark">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/wireshark/1553073720428.png">
+
+<link rel="canonical" href="http://yoursite.com/2019/03/19/wireshark-tcp-info/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Wireshark 中常见的 TCP Info | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/19/wireshark-tcp-info/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Wireshark 中常见的 TCP Info
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-03-19 20:27:21" itemprop="dateCreated datePublished" datetime="2019-03-19T20:27:21+08:00">2019-03-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/TCP/" itemprop="url" rel="index">
+                    <span itemprop="name">TCP</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/HTTP/" itemprop="url" rel="index">
+                    <span itemprop="name">HTTP</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.4k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>wireshark 抓包分析 TCP 常见信息</p>
+<a id="more"></a>
+
+<h2 id="TCP-Previous-segment-not-captured"><a href="#TCP-Previous-segment-not-captured" class="headerlink" title="TCP Previous segment not captured"></a>TCP Previous segment not captured</h2><p>前一个 TCP 分段没有抓到。 在 TCP 连接建立的时候，SYN 包里面会把彼此 TCP 最大的报文段长度，即 MSS 标志，一般都是 1460。如果发送的包比最大的报文段长度长的话就要分片了，被分片出来的包，就会被标记了<code>TCP segment of a reassembled PDU</code>，<strong>这些包分片存在同样的<code>ack number</code>，且每个分片的<code>seq number</code>不同</strong>。</p>
+<p>这些分片正常应该是连续接收的，即<strong>前一个分片指示的<code>next seq number</code>即为下一个收到的分片的<code>seq number</code></strong>。假如收到的下一个分片的<code>seq number</code>与上一个比不连续的话，wireshark 就会将该分片标记为<code>TCP Previous segment not captured</code>。如下图，<code>ack number</code>为 500 的 TCP 包被分为多个分片发送，在<code>1346</code>后应该收到一个<code>seq=60817 ack number=500</code>的包，但是<code>1347</code>为<code>seq=62265 ack number=500</code></p>
+<p><img src="/images/wireshark/1553073720428.png" alt="1553073720428"></p>
+<p>需要注意的是，前一个分片丢失，有可能是网络中确实丢失了，或者晚到了，也有可能是 wireshark 本身并没有抓到。</p>
+<h2 id="TCP-out-of-order-segment"><a href="#TCP-out-of-order-segment" class="headerlink" title="TCP out-of-order segment"></a>TCP out-of-order segment</h2><p>Wireshark 判断<code>TCP out-of-order</code>是基于 TCP 包中 SEQ number 并非期望收到的下一个 SEQ number，则判断为 out-of-order。因此，出现 TCP out-of-order 时，很大可能是 TCP 存在乱序或丢包，导致接收端的 seq number 不连续。 如上图<code>1349</code>，在客户端已经收到服务端的 TCP 包<code>seq=62265 ack number=500</code>，服务端再次发送了 TCP 包<code>seq=60817 ack number=500</code>，wireshark 将此包标记为 out-of-order。</p>
+<p>如果抓包中出现大量的 out-of-order 包，则说明网络存在较大的 TCP 乱序或丢包。</p>
+<h2 id="TCP-Spurious-Retransmission"><a href="#TCP-Spurious-Retransmission" class="headerlink" title="TCP Spurious Retransmission"></a>TCP Spurious Retransmission</h2><p>TCP 虚假重传。 发送端重发了一个已经收到应答的报文段。<br><strong>当抓到 2 次同一包数据时，wireshark 判断网络发生了重传，同时，wireshark 抓到初传包的反馈 ack，因此 wireshark 判断初传包实际并没有丢失，因此称为虚假重传</strong>。基于 wireshark 的判断机制，如果抓包点在客户端的话，虚假重传一般为下行包，因为这时，客户端在收到服务端的下行包后发送反馈 ack，并被 wireshark 抓到，但很有可能服务端未收到此反馈 ack，RTO 超时，触发服务端重传。如下图，红框内出现了 2 次虚假重传，其中绿色的两条为同一包数据，粉色的两条为同一包数据。</p>
+<p><img src="/images/wireshark/1553135965445.png" alt="1553135965445"></p>
+<h2 id="TCP-Retransmission"><a href="#TCP-Retransmission" class="headerlink" title="TCP Retransmission"></a>TCP Retransmission</h2><p>TCP 重传。<br><strong>当抓到 2 次同一包数据时，wireshark 判断发生了重传，同时 wireshark 没有抓到初传包的反馈 ack，因此，wireshark 判定重传有效，标记为 TCP Retransmission</strong>。基于软件的判定机制，如果抓包点在客户端的话，TCP 重传一般为上行包，因为这时，客户端并没有收到服务端的反馈 ack，无从知晓服务端是否收到了初传包，RTO 超时后触发客户端重传。此时存在 2 种情况：</p>
+<ol>
+<li>服务端收到了初传包，只是下发的反馈 ack 丢包，客户端没有收到</li>
+<li>服务端没有收到初传包，因此也就没有下发反馈 ack</li>
+</ol>
+<p>如下图，红线的 TCP 包为重传包，wireshark 为该包添加了重传原因，是由于 TRO 超时导致，以及初传包序号 45，并给出了当前的 RTO 超时时间。</p>
+<p><img src="/images/wireshark/1553138137570.png" alt="1553138137570"></p>
+<h2 id="TCP-fast-Retransmission"><a href="#TCP-fast-Retransmission" class="headerlink" title="TCP fast Retransmission"></a>TCP fast Retransmission</h2><p>TCP 快速重传。<br><strong>TCP 协议设定了快速重传机制以避免过多的慢启动对传输速率的影响。快速重传通过接收到 3 个或 3 个以上重复的 ack 反馈触发。快速重传不需要等待 RTO 超时</strong>。如下图。<br>325 包，客户端向服务端反馈 ack=133251，说明下一个期望收到服务端 seq=133251 的包；<br>326 包，服务端向客户端发送了 seq=135771 的数据包，与客户端的期望不符，因此客户端在 327 包重传了 ack=133251 的包，再次申明期望收到 seq=133251 的包。Wireshark 将重复 ack 标记为 TCP Dup ACK，#后边指明为第几次重传。<br>328 包，服务端向客户端发送了 seq=137031 的数据包，仍然与客户端期望不符，客户端在 329 包再次重传 ack=133251 的包。<br>330 包，服务端收到 3 次重复 ack，触发快速重传，重传了 seq=133251 的 TCP 分片。</p>
+<p><img src="/images/wireshark/1553138255811.png" alt="1553138255811"></p>
+<h2 id="TCP-Dup-ACK"><a href="#TCP-Dup-ACK" class="headerlink" title="TCP Dup ACK"></a>TCP Dup ACK</h2><p>重复 ack。<br><strong>当网络中存在乱序或者丢包时，将会导致接收端接收到的 seq number 不连续。此时接收端会向发送端回复重复 ack，ack 值为期望收到的下一个 seq number。重复 ack 数大于等于 3 次将会触发快速重传</strong>。如下图，<br>315 包，客户端向服务端发送 ack=126951 的反馈，期望下一包收到 seq=126951 的 TCP 包。但下一包接收到的却是 seq=128211 的 TCP 包，由于 seq 不连续，wireshark 将该报标记为 TCP Previous segment not captured。<br>317 包，客户端向服务端重复发送 ack=126951 的包，第一次重发，#后边带 1。<br>318 包，客户端收到 seq=126951 的 TCP 包。<br>319 包，截止到 seq=129471 的所有 TCP 包全部收到，因此客户端回复了 ack=129471 的反馈。</p>
+<p><img src="/images/wireshark/1553138354613.png" alt="1553138354613"></p>
+<h2 id="TCP-window-update"><a href="#TCP-window-update" class="headerlink" title="TCP window update"></a>TCP window update</h2><p>TCP 窗口更新。<br>当接收方的 TCP window 发生突变时，接收方通过 TCP window update 消息告知对方当前的接收窗口大小。如下图，TCP window Update 同时携带了反馈 ack，ack 序列号与前一个反馈 ack 序列号相同，但这并不是重复 ack。</p>
+<p><img src="/images/wireshark/1553138386419.png" alt="1553138386419"></p>
+<h2 id="TCP-acked-unseen-segment"><a href="#TCP-acked-unseen-segment" class="headerlink" title="TCP acked unseen segment"></a>TCP acked unseen segment</h2><p>反馈 ACK 指向了一个未知的 TCP 片段。<br>这个意思是说 ACK 反馈的是一个 wireshark 上不存在的 TCP 包。很可能是 wireshark 漏抓了这个包，但却抓到了对端反馈的该报的 ack 包。如下图，标记为 ack unseen segment 的包反馈的 ack=2721，看着像是反馈的 seq=1361 的包，但其实这个 ack 还反馈了 seq=1 的包，由于 seq=1 的包没有抓到，因此 wireshark 将反馈 ack 标记为 ack unseen segment。从下面的图还可知，由于对端已经反馈了 ack=2721，说明发端发送的 seq=1 的包，对端也收到了，只不过 wireshark 可能漏抓了而已。</p>
+<p><img src="/images/wireshark/1553138458034.png" alt="1553138458034"></p>
+<h2 id="TCP-ZeroWindow"><a href="#TCP-ZeroWindow" class="headerlink" title="TCP ZeroWindow"></a>TCP ZeroWindow</h2><p>TCP 滑动窗口为 0。<br>当发送端发包速率大于接收端的接收速率时，会造成接收端 TCP window 越来越小，当接收端在反馈 ack 时携带的 window size=0 时，wireshark 标记 TCP Zero window。此时发送端将暂停发送数据，直到收到接收端 window size!=0 的标志。</p>
+<p><img src="/images/wireshark/1553138431304.png" alt="1553138431304"></p>
+<h2 id="TCP-window-full"><a href="#TCP-window-full" class="headerlink" title="TCP window full"></a>TCP window full</h2><p>TCP window 满。<br>是指的发送端发送的数据已经达到的接受窗口的上限。发送端暂停发送，等待新的接收窗口的通告。<br>如下图，客户端向服务端发送的 ack 反馈，期望下一包收到的 seq=288961，但接收窗口仅有 960，服务端在收到 ack 后发送了 960 字节的数据，TCP window full。注意，len=1004 是整个 IP 包的长度，需要减去 IP 头 44 字节，即 960 字节。</p>
+<p><img src="/images/wireshark/1553138486481.png" alt="1553138486481"></p>
+<h2 id="TCP-RST"><a href="#TCP-RST" class="headerlink" title="TCP RST"></a>TCP RST</h2><p>TCP 重置。<br>是 TCP 协议结束异常连接的一种方式，通过 flog 中的 reset=1 标记。当 TCP 连接无法通过正常的 4 次挥手结束时，一方可以通过发送携带 reset 标志的 TCP 包结束 TCP 连接。<br>如下图，发送方通过 2 个 TCP 流发送数据，截图中，接收方首先向发送方反馈了 TCP window=0，让发送方暂缓发送数据，之后紧接着发送了 TCP RST 标记，释放了 TCP 连接。猜测可能接收方程序突然崩溃了，导致缓存区数据没法清空，之后接收方系统发送了 TCP reset 释放 TCP 连接。</p>
+<p><img src="/images/wireshark/1553145383560.png" alt="1553145383560"></p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://my.oschina.net/moooofly/blog/804568" target="_blank" rel="noopener">抓包分析之 “TCP Previous segment not captured”</a></li>
+<li><a href="https://my.oschina.net/u/2310891/blog/611502" target="_blank" rel="noopener">Wireshark 中的”TCP Spurious Retransmission”</a></li>
+<li><a href="https://blog.packet-foo.com/2013/06/spurious-retransmissions/comment-page-1/" target="_blank" rel="noopener">Spurious Retransmissions</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/wireshark/" rel="tag"># wireshark</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/03/18/wireshark-network-protocol/" rel="next" title="wireshark 观察网络协议">
+                  <i class="fa fa-chevron-left"></i> wireshark 观察网络协议
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/03/20/wireshark-tcp-retransmission/" rel="prev" title="wireshark-tcp-retransmission">
+                  wireshark-tcp-retransmission <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP-Previous-segment-not-captured"><span class="nav-number">1.</span> <span class="nav-text">TCP Previous segment not captured</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP-out-of-order-segment"><span class="nav-number">2.</span> <span class="nav-text">TCP out-of-order segment</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP-Spurious-Retransmission"><span class="nav-number">3.</span> <span class="nav-text">TCP Spurious Retransmission</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP-Retransmission"><span class="nav-number">4.</span> <span class="nav-text">TCP Retransmission</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP-fast-Retransmission"><span class="nav-number">5.</span> <span class="nav-text">TCP fast Retransmission</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP-Dup-ACK"><span class="nav-number">6.</span> <span class="nav-text">TCP Dup ACK</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP-window-update"><span class="nav-number">7.</span> <span class="nav-text">TCP window update</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP-acked-unseen-segment"><span class="nav-number">8.</span> <span class="nav-text">TCP acked unseen segment</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP-ZeroWindow"><span class="nav-number">9.</span> <span class="nav-text">TCP ZeroWindow</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP-window-full"><span class="nav-number">10.</span> <span class="nav-text">TCP window full</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP-RST"><span class="nav-number">11.</span> <span class="nav-text">TCP RST</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">12.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="本篇记录如何使用openssl自签 CA 证书，以及相关概念流程">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用 OpenSSL 生成私钥和签名并自己做 CA 签名">
+<meta property="og:url" content="http://yoursite.com/2019/04/08/setup-your-own-CA-with-OpenSSL/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="本篇记录如何使用openssl自签 CA 证书，以及相关概念流程">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-04-08T12:36:09.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.682Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="https">
+<meta property="article:tag" content="ssl">
+<meta property="article:tag" content="ca">
+<meta property="article:tag" content="self signed">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2019/04/08/setup-your-own-CA-with-OpenSSL/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>使用 OpenSSL 生成私钥和签名并自己做 CA 签名 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/04/08/setup-your-own-CA-with-OpenSSL/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          使用 OpenSSL 生成私钥和签名并自己做 CA 签名
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-04-08 20:36:09" itemprop="dateCreated datePublished" datetime="2019-04-08T20:36:09+08:00">2019-04-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/SSL/" itemprop="url" rel="index">
+                    <span itemprop="name">SSL</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.1k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本篇记录如何使用<code>openssl</code>自签 CA 证书，以及相关概念流程</p>
+<a id="more"></a>
+
+<h2 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h2><p>首先要有一个 CA 根证书，然后用 CA 根证书来签发用户证书。<br>用户进行证书申请：一般先生成一个私钥，然后用私钥生成证书请求（证书请求里应含有公钥信息），再利用证书服务器的 CA 根证书来签发证书。</p>
+<ol>
+<li>自签名证书（一般用于顶级证书、根证书）: 证书的名称和认证机构的名称相同</li>
+<li>根证书：根证书是 CA 认证中心给自己颁发的证书，是信任链的起始点。任何安装 CA 根证书的服务器都意味着对这个 CA 认证中心是信任的</li>
+<li>数字证书则是由证书认证机构（CA）对证书申请者真实身份验证之后，用 CA 的根证书对申请人的一些基本信息以及申请人的公钥进行签名（相当于加盖发证书机构的公章）后形成的一个数字文件。数字证书包含证书中所标识的实体的公钥（就是说你的证书里有你的公钥），由于证书将公钥与特定的个人匹配，并且该证书的真实性由颁发机构保证（就是说可以让大家相信你的证书是真的），因此，数字证书为如何找到用户的公钥并知道它是否有效这一问题提供了解决方案</li>
+</ol>
+<h2 id="x509-证书"><a href="#x509-证书" class="headerlink" title="x509 证书"></a>x509 证书</h2><p><a href="https://zh.wikipedia.org/wiki/X.509" target="_blank" rel="noopener">X.509</a> 一般会用到三类文件，<code>key</code>，<code>csr</code>，<code>crt</code></p>
+<ul>
+<li><code>key</code>私钥，<code>openssl</code>格式，通常是<code>rsa</code>算法</li>
+<li><code>csr(Certificate Signing Request)</code>是证书请求文件，用于申请证书，含有公钥信息。在申请的时候，必须使用自己的私钥来签署申请，还可以设定一个密钥</li>
+<li><code>crt</code>证书文件，是签署人用自己的 key 给你签署的凭证。<strong>可以自签署</strong></li>
+<li><code>pem</code>是以上三种文件的编码方式之一，另外一种是<code>DER</code>。Base64 编码后的文本格式。可以单独存放证书或密钥，也可以同时存放证书和密钥</li>
+<li><code>crl</code>证书吊销列表，Certificate Revocation List 的缩写</li>
+</ul>
+<h2 id="openssl-使用"><a href="#openssl-使用" class="headerlink" title="openssl 使用"></a>openssl 使用</h2><pre><code class="shell"># get Standard commands
+$ openssl -h
+$ man openssl
+Standard commands
+asn1parse         ca                ciphers           cms
+crl               crl2pkcs7         dgst              dh
+dhparam           dsa               dsaparam          ec
+ecparam           enc               engine            errstr
+gendh             gendsa            genpkey           genrsa
+nseq              ocsp              passwd            pkcs12
+pkcs7             pkcs8             pkey              pkeyparam
+pkeyutl           prime             rand              req
+rsa               rsautl            s_client          s_server
+s_time            sess_id           smime             speed
+spkac             srp               ts                verify
+version           x509
+
+# get openssl x509
+$ man x509</code></pre>
+<h2 id="证书生成"><a href="#证书生成" class="headerlink" title="证书生成"></a>证书生成</h2><blockquote>
+<p>当然，如果我们要弄 ssl，又没有钱请 CA 给我们签署的时候（他们的验证费都好贵的），可以考虑自己给自己签署。生成一份 key，生成一个 req，然后用自己的 key 签署自己的 req。当你使用这份证书做 ssl 的时候，就会产生不受信任的证书警报。你可以在客户那里安装这张证书为根证书，就不会弹出这个警告了。当然，考究的人，签署用证书和服务器身份认证证书要分开。先做一个自签署证书作为根证书，然后用这个根证书签署一个服务器证书。这样在客户那里安装根证书后，服务器证书就会自动信任。这样的好处是，一本证书只能颁发给一个特定域名。如果你有多个域名，就要反复在客户这里安装证书。然而如果采用根证书签名，那么只要安装一张根证书，其他都是自动的。不过如果事情只要干一次，就不用讲究这么多了。</p>
+</blockquote>
+<p>可以得到两种处理方式</p>
+<ol>
+<li>不需要根证书，直接生成用户证书</li>
+<li>首先需要自签署根证书，然后再签发服务器身份认证证书</li>
+</ol>
+<h2 id="CA-根证书的生成"><a href="#CA-根证书的生成" class="headerlink" title="CA 根证书的生成"></a>CA 根证书的生成</h2><p>生成 CA 私钥<code>key</code>–&gt;生成 CA 证书请求<code>csr</code>–&gt;自签名得到根证书<code>crt</code>（CA 给自已颁发的证书）</p>
+<pre><code class="shell"># Generate CA private key
+openssl genrsa -out ca.key 2048
+# Generate CSR
+openssl req -new -key ca.key -out ca.csr
+# Generate Self Signed certificate
+openssl x509 -req -days 365 -in ca.csr -signkey ca.key -out ca.crt</code></pre>
+<p>或者</p>
+<pre><code class="shell"># Generate CA private key
+openssl genrsa -out ca.key 2048
+# Generate Self Signed certificate
+openssl req -new -x509 -key ca.key -out ca.crt -days 365</code></pre>
+<ul>
+<li><code>genrsa</code> - generate an RSA private key</li>
+<li><code>req</code> - PKCS#10 certificate request and certificate generating utility</li>
+<li><code>x509</code> - Certificate display and signing utility</li>
+<li><code>-days</code> 证书有效期</li>
+<li><code>-x509</code> 在<code>req</code>中直接生成<code>crt</code>代替<code>csr</code></li>
+</ul>
+<p>这是生成的<code>ca.crt</code>可以直接作为用户证书使用，也可以作为根证书，接下来继续使用<code>ca.crt</code>来签署服务器证书</p>
+<h2 id="用户证书"><a href="#用户证书" class="headerlink" title="用户证书"></a>用户证书</h2><p><strong>根证书只需要生成一次，而每个用户都需要使用根证书签署自己的证书</strong></p>
+<ol>
+<li>生成私钥<br><code>openssl genrsa -out mydomain.com.key 2048</code></li>
+<li>检查私钥<br><code>openssl rsa -in mydomain.com.key -noout -text</code></li>
+<li>生成<code>CSR</code>，注意<code>Common Name</code>指向服务器地址或域名，有互动、命令行和配置文件三种方式来生成<ol>
+<li>互动方式，<code>openssl</code>要求填入一下信息用于生成<code>CSR</code><br><code>openssl req -new -key mydomain.com.key -out mydomain.com.csr</code></li>
+<li>命令行，直接填入信息生成<code>CSR</code><br><code>openssl req -new -sha256 -key mydomain.com.key -subj &quot;/C=US/ST=CA/O=MyOrg, Inc./CN=mydomain.com&quot; -out mydomain.com.csr</code></li>
+<li>配置文件<br><code>openssl req -new -out mydomain.com.csr -config oats.conf</code></li>
+</ol>
+</li>
+<li>检验<code>CSR</code>，可选项<br><code>openssl req -in mydomain.com.csr -noout -text</code></li>
+<li>由根证书签发用户证书<br><code>openssl x509 -req -in mydomain.com.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -out mydomain.com.crt -days 500 -sha256</code></li>
+<li>检验用户证书，可选项<br><code>openssl x509 -in mydomain.com.crt -text -noout</code></li>
+</ol>
+<h2 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h2><p><code>server</code>在<code>SSL/TLS</code>握手的过程中会下发自己的证书，而这个证书是经过 CA 签名的。CA 签名的时候使用的是 CA 自己的私钥，而<code>ca.crt</code>则包含了 CA 的公钥，可以用于检验这一签名，以确认是否是自己签的名。</p>
+<ol>
+<li>服务端需要使用的文件是：server 私钥 (key)， server 证书。</li>
+<li>客户端需要使用的文件是：CA file（ca 的证书，用以验证 server 下发的证书）</li>
+</ol>
+<p>生成证书脚本：<a href="https://gist.github.com/zapstar/4b51d7cfa74c7e709fcdaace19233443" target="_blank" rel="noopener">openssl_2way_auth.sh</a><br>源码：<a href="https://github.com/zapstar/two-way-ssl-c" target="_blank" rel="noopener">Two-way SSL authentication example in C</a></p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://gist.github.com/fntlnz/cf14feb5a46b2eda428e000157447309" target="_blank" rel="noopener">self-signed-certificate-with-custom-ca.md</a></li>
+<li><a href="https://gist.github.com/Soarez/9688998" target="_blank" rel="noopener"><strong>How to setup your own CA with OpenSSL</strong></a></li>
+<li><a href="https://blog.csdn.net/liuchunming033/article/details/48470575" target="_blank" rel="noopener">openssl 生成 SSL 证书的流程</a></li>
+<li><a href="https://blog.csdn.net/zxh2075/article/details/80657336" target="_blank" rel="noopener">用 openssl 生成 SSL 使用的私钥和证书，并自己做 CA 签名</a></li>
+<li><a href="https://blog.csdn.net/zxh2075/article/details/79967227" target="_blank" rel="noopener">openssl 基本原理 + 生成证书 + 使用实例</a></li>
+<li><a href="https://blog.csdn.net/gengxiaoming7/article/details/78505107" target="_blank" rel="noopener">使用 openssl 生成证书</a></li>
+<li><a href="https://blog.csdn.net/xs574924427/article/details/17240793" target="_blank" rel="noopener">SSL 编程</a></li>
+<li><a href="http://blog.shell909090.org/blog/archives/1772/" target="_blank" rel="noopener">说说 x509 证书链</a></li>
+<li><a href="https://www.zhihu.com/question/29620953" target="_blank" rel="noopener">SSL 中，公钥、私钥、证书的后缀名都是些啥？</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/https/" rel="tag"># https</a>
+              <a href="/tags/ssl/" rel="tag"># ssl</a>
+              <a href="/tags/ca/" rel="tag"># ca</a>
+              <a href="/tags/self-signed/" rel="tag"># self signed</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/04/03/cros-compile-openssl-and-wolfssl/" rel="next" title="openssl 和 wolfssl 及交叉编译移植">
+                  <i class="fa fa-chevron-left"></i> openssl 和 wolfssl 及交叉编译移植
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/04/09/ssl-programming/" rel="prev" title="SSL 编程">
+                  SSL 编程 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#概念"><span class="nav-number">1.</span> <span class="nav-text">概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#x509-证书"><span class="nav-number">2.</span> <span class="nav-text">x509 证书</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#openssl-使用"><span class="nav-number">3.</span> <span class="nav-text">openssl 使用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#证书生成"><span class="nav-number">4.</span> <span class="nav-text">证书生成</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CA-根证书的生成"><span class="nav-number">5.</span> <span class="nav-text">CA 根证书的生成</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#用户证书"><span class="nav-number">6.</span> <span class="nav-text">用户证书</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#流程"><span class="nav-number">7.</span> <span class="nav-text">流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">8.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="在 Linux 4.9 移植 MT7603U 时遇到 no file read method 错误导致读取配置出错，设备工作不正常，本文记录解决方法及相关知识点">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MT7603U 移植问题">
+<meta property="og:url" content="http://yoursite.com/2018/11/20/linux-filp-open/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="在 Linux 4.9 移植 MT7603U 时遇到 no file read method 错误导致读取配置出错，设备工作不正常，本文记录解决方法及相关知识点">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2018-11-20T11:27:33.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.678Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="mt7603u">
+<meta property="article:tag" content="filp">
+<meta property="article:tag" content="vfs_read">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2018/11/20/linux-filp-open/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>MT7603U 移植问题 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/20/linux-filp-open/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MT7603U 移植问题
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-11-20 19:27:33" itemprop="dateCreated datePublished" datetime="2018-11-20T19:27:33+08:00">2018-11-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>4.3k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在 <code>Linux 4.9</code> 移植 <code>MT7603U</code> 时遇到 <code>no file read method</code> 错误导致读取配置出错，设备工作不正常，本文记录解决方法及相关知识点</p>
+<a id="more"></a>
+
+<h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><p>在 <code>Linux 4.9</code> 编译 <code>MT7603U</code> 之后，复制 <code>MT7603USTA.dat</code>，启动之后出现错误</p>
+<pre><code>[ 2804.262246] no file read method
+[ 2804.265509] Read file &quot;/etc/Wireless/RT2870STA/MT7603USTA.dat&quot; failed(errCode=-1)!
+[ 2804.273097] ERROR!!! [ 2804.275221] RTMPReadParametersHook failed, Status[=0xffffffff]
+[ 2804.338301] !!! rt28xx init fail !!!</code></pre><h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><blockquote>
+<p>内核中可以使用 <code>printk(&quot;func name:%pF\n&quot;, ptr)</code> 来打印函数名</p>
+</blockquote>
+<p>搜索驱动代码找到出错函数代码并添加打印如下</p>
+<pre><code class="c">int RtmpOSFileRead(RTMP_OS_FD osfd, char *pDataPtr, int readLen)
+{
+    printk(&quot;read:%p\n&quot;, osfd-&gt;f_op-&gt;read);
+    printk(&quot;open:%pF\n&quot;, osfd-&gt;f_op-&gt;open);
+    printk(&quot;name:%s\n&quot;, osfd-&gt;f_op-&gt;owner-&gt;name);
+    /* The object must have a read method */
+    if (osfd-&gt;f_op &amp;&amp; osfd-&gt;f_op-&gt;read) {
+        return osfd-&gt;f_op-&gt;read(osfd, pDataPtr, readLen, &amp;osfd-&gt;f_pos);
+    } else {
+      DBGPRINT(RT_DEBUG_ERROR, (&quot;no file read method\n&quot;));
+      return -1;
+    }
+}</code></pre>
+<p>打印信息如下</p>
+<pre><code>[ 3886.638124] read:  (null)
+[ 3886.640808] open:nfs_file_open+0x0/0x54
+[ 3886.644741] name:(null)
+[ 3886.647211] no file read method
+[ 3886.650381] Read file &quot;/etc/Wireless/RT2870STA/MT7603USTA.dat&quot; failed(errCode=-1)!
+[ 3886.658037] ERROR!!! [ 3886.660161] RTMPReadParametersHook failed, Status[=0xffffffff]
+[ 3886.722205] !!! rt28xx init fail !!!</code></pre><p>内核中找到 <code>kernel/4.9.y/fs/nfs/file.c</code></p>
+<pre><code class="c">const struct file_operations nfs_file_operations = {
+    .llseek     = nfs_file_llseek,
+    .read_iter  = nfs_file_read,
+    .write_iter = nfs_file_write,
+    .mmap       = nfs_file_mmap,
+    .open       = nfs_file_open,
+    .flush      = nfs_file_flush,
+    .release    = nfs_file_release,
+    .fsync      = nfs_file_fsync,
+    .lock       = nfs_lock,
+    .flock      = nfs_flock,
+    .splice_read    = generic_file_splice_read,
+    .splice_write   = iter_file_splice_write,
+    .check_flags    = nfs_check_flags,
+    .setlease   = simple_nosetlease,
+};</code></pre>
+<p>在 <code>nfs</code> 文件系统下确实不存在 <code>read/write</code> 导致不正常，但是 <code>Linux 2.6</code> 下工作正常，代码如下</p>
+<pre><code class="c">const struct file_operations nfs_file_operations = {
+    .llseek     = nfs_file_llseek,
+    .read       = do_sync_read,
+    .write      = do_sync_write,
+    .aio_read   = nfs_file_read,
+    .aio_write  = nfs_file_write,
+#ifdef CONFIG_MMU
+    .mmap       = nfs_file_mmap,
+#else
+    .mmap       = generic_file_mmap,
+#endif
+    .open       = nfs_file_open,
+    .flush      = nfs_file_flush,
+    .release    = nfs_file_release,
+    .fsync      = nfs_file_fsync,
+    .lock       = nfs_lock,
+    .flock      = nfs_flock,
+    .splice_read    = nfs_file_splice_read,
+    .check_flags    = nfs_check_flags,
+    .setlease   = nfs_setlease,
+};</code></pre>
+<p>查找 <code>do_sync_read/do_sync_write</code> 在文件 <code>fs/read_write.c</code>，在 <code>Linux 4.9</code> 中查找替换函数如下</p>
+<pre><code class="c">static ssize_t new_sync_write(struct file *filp, const char __user *buf, size_t len, loff_t *ppos)
+{
+    struct iovec iov = { .iov_base = (void __user *)buf, .iov_len = len };
+    struct kiocb kiocb;
+    struct iov_iter iter;
+    ssize_t ret;
+
+    init_sync_kiocb(&amp;kiocb, filp);
+    kiocb.ki_pos = *ppos;
+    iov_iter_init(&amp;iter, WRITE, &amp;iov, 1, len);
+
+    ret = filp-&gt;f_op-&gt;write_iter(&amp;kiocb, &amp;iter);
+    BUG_ON(ret == -EIOCBQUEUED);
+    if (ret &gt; 0)
+        *ppos = kiocb.ki_pos;
+    return ret;
+}
+
+ssize_t __vfs_write(struct file *file, const char __user *p, size_t count,
+            loff_t *pos)
+{
+    if (file-&gt;f_op-&gt;write)
+        return file-&gt;f_op-&gt;write(file, p, count, pos);
+    else if (file-&gt;f_op-&gt;write_iter)
+        return new_sync_write(file, p, count, pos);
+    else
+        return -EINVAL;
+}
+
+EXPORT_SYMBOL(__vfs_write);
+
+ssize_t __kernel_write(struct file *file, const char *buf, size_t count, loff_t *pos)
+{
+    mm_segment_t old_fs;
+    const char __user *p;
+    ssize_t ret;
+
+    if (!(file-&gt;f_mode &amp; FMODE_CAN_WRITE))
+        return -EINVAL;
+
+    old_fs = get_fs();
+    set_fs(get_ds());
+    p = (__force const char __user *)buf;
+    if (count &gt; MAX_RW_COUNT)
+        count =  MAX_RW_COUNT;
+    ret = __vfs_write(file, p, count, pos);
+    set_fs(old_fs);
+    if (ret &gt; 0) {
+        fsnotify_modify(file);
+        add_wchar(current, ret);
+    }
+    inc_syscw(current);
+    return ret;
+}
+
+EXPORT_SYMBOL(__kernel_write);
+
+ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_t *pos)
+{
+    ssize_t ret;
+
+    if (!(file-&gt;f_mode &amp; FMODE_WRITE))
+        return -EBADF;
+    if (!(file-&gt;f_mode &amp; FMODE_CAN_WRITE))
+        return -EINVAL;
+    if (unlikely(!access_ok(VERIFY_READ, buf, count)))
+        return -EFAULT;
+
+    ret = rw_verify_area(WRITE, file, pos, count);
+    if (!ret) {
+        if (count &gt; MAX_RW_COUNT)
+            count =  MAX_RW_COUNT;
+        file_start_write(file);
+        ret = __vfs_write(file, buf, count, pos);
+        if (ret &gt; 0) {
+            fsnotify_modify(file);
+            add_wchar(current, ret);
+        }
+        inc_syscw(current);
+        file_end_write(file);
+    }
+
+    return ret;
+}
+
+EXPORT_SYMBOL(vfs_write);</code></pre>
+<p>使用 <code>vfs_write/vfs_read</code> 来替换之前的函数解决这个问题，修改如下</p>
+<pre><code class="c">int RtmpOSFileRead(RTMP_OS_FD osfd, char *pDataPtr, int readLen)
+{
+    /* The object must have a read method */
+    if (osfd-&gt;f_op &amp;&amp; osfd-&gt;f_op-&gt;read) {
+        return vfs_read(osfd, pDataPtr, readLen, &amp;osfd-&gt;f_pos);
+    } else {
+      DBGPRINT(RT_DEBUG_ERROR, (&quot;no file read method\n&quot;));
+      return -1;
+    }
+}</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://github.com/lwfinger/rtlwifi_new/issues/215" target="_blank" rel="noopener">Compilation failed for rtl8723be driver on Xubuntu 16.04.2</a></li>
+<li><a href="http://chrisrc.me/2015/09/06/linux-broadcom-driver-for-kernel-4/" target="_blank" rel="noopener">Broadcom Wireless Driver for Linux Kernel 4.0</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/mt7603u/" rel="tag"># mt7603u</a>
+              <a href="/tags/filp/" rel="tag"># filp</a>
+              <a href="/tags/vfs-read/" rel="tag"># vfs_read</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/11/20/linux-dtb-and-boot/" rel="next" title="Linux dtb 文件及相关启动流程">
+                  <i class="fa fa-chevron-left"></i> Linux dtb 文件及相关启动流程
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/11/20/Wireless-network-configuration/" rel="prev" title="Wireless-network-configuration">
+                  Wireless-network-configuration <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#现象"><span class="nav-number">1.</span> <span class="nav-text">现象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析"><span class="nav-number">2.</span> <span class="nav-text">分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">3.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

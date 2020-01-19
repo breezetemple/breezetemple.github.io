@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="使用三方库 Jansson 造成 memory leak，使用 valgrind 分析如下： $ gcc -O0 -g -ggdb main.c -ljansson                                       $ valgrind --tool&#x3D;memcheck --leak-check&#x3D;full --show-reachable&#x3D;yes .&#x2F;a.out  &#x3D;&#x3D;21">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用valgrind分析jansson memory leak">
+<meta property="og:url" content="http://yoursite.com/2016/12/20/valgrind-profile-jansson/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="使用三方库 Jansson 造成 memory leak，使用 valgrind 分析如下： $ gcc -O0 -g -ggdb main.c -ljansson                                       $ valgrind --tool&#x3D;memcheck --leak-check&#x3D;full --show-reachable&#x3D;yes .&#x2F;a.out  &#x3D;&#x3D;21">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2016-12-20T07:59:40.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.666Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="c">
+<meta property="article:tag" content="valgrind">
+<meta property="article:tag" content="jansson">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2016/12/20/valgrind-profile-jansson/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>使用valgrind分析jansson memory leak | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/12/20/valgrind-profile-jansson/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          使用valgrind分析jansson memory leak
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-12-20 15:59:40" itemprop="dateCreated datePublished" datetime="2016-12-20T15:59:40+08:00">2016-12-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index">
+                    <span itemprop="name">C</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/Memory/" itemprop="url" rel="index">
+                    <span itemprop="name">Memory</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>12k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>11 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>使用三方库 <code>Jansson</code> 造成 <code>memory leak</code>，使用 <code>valgrind</code> 分析如下：</p>
+<pre><code>$ gcc -O0 -g -ggdb main.c -ljansson                                      
+$ valgrind --tool=memcheck --leak-check=full --show-reachable=yes ./a.out
+
+==21533== 4,752 bytes in 1 blocks are definitely lost in loss record 4 of 4
+==21533==    at 0x4C2DB8F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==21533==    by 0x4E3F3C4: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3C9F7: json_dumps (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x40155F: ipc_db_save (main.c:153)
+==21533==    by 0x401C29: main (main.c:287)
+==21533== 
+==21533== LEAK SUMMARY:
+==21533==    definitely lost: 18,480 bytes in 4 blocks
+==21533==    indirectly lost: 0 bytes in 0 blocks
+==21533==      possibly lost: 0 bytes in 0 blocks
+==21533==    still reachable: 0 bytes in 0 blocks
+==21533==         suppressed: 0 bytes in 0 blocks
+==21533== 
+==21533== For counts of detected and suppressed errors, rerun with: -v
+==21533== ERROR SUMMARY: 8 errors from 8 contexts (suppressed: 0 from 0)</code></pre><a id="more"></a>
+
+<h2 id="source-code"><a href="#source-code" class="headerlink" title="source code"></a>source code</h2><pre><code class="c">int ipc_db_save(int index, AppIPCInfoClass *ipc_info)
+{
+    json_t *root = NULL;
+    json_t *new_ipc = NULL;
+    json_error_t error;
+
+    if (NULL == ipc_info) {
+        return 1;
+    }
+
+    if(access(&quot;ipcamera.dat&quot;, 0))
+    {
+        _new_db(&quot;ipcamera.dat&quot;);
+    }
+
+    root = json_load_file(&quot;ipcamera.dat&quot;, 0, &amp;error);
+    printf(&quot;[%s]source %s\n&quot;, __func__, error.source);
+    printf(&quot;[%s]text %s\n&quot;, __func__, error.text);
+
+    if (!json_is_array(root)) {
+        json_decref(root);
+    }
+
+    if ((new_ipc = json_object()) == NULL) {
+        json_decref(root);
+    }
+    printf(&quot;[%s]%d: obj type = %d\n&quot;, __func__, __LINE__, json_typeof(root));
+
+    char *result = json_dumps(root, JSON_PRESERVE_ORDER);
+    printf(&quot;[%s]%d: result %s\n&quot;, __func__, __LINE__, result);
+    //free(result);
+
+    _object_integer(new_ipc, CAMERA_TYPE_KEY, ipc_info-&gt;type);
+    _object_string(new_ipc, CAMERA_NAME_KEY, ipc_info-&gt;name);
+    _object_string(new_ipc, CAMERA_IP_KEY, ipc_info-&gt;ip);
+    _object_integer(new_ipc, CAMERA_PORT_KEY, ipc_info-&gt;port);
+    _object_string(new_ipc, CAMERA_USER_KEY, ipc_info-&gt;user);
+    _object_integer(new_ipc, CAMERA_CHANNEL_KEY, ipc_info-&gt;channel);
+    _object_string(new_ipc, CAMERA_PASSWD_KEY, ipc_info-&gt;passwd);
+    _object_string(new_ipc, CAMERA_STREAM_KEY, ipc_info-&gt;stream);
+
+    if (index == -1) { //add mode
+        json_array_append(root, new_ipc);
+    }
+    else { //edit mode
+        json_array_set(root, index, new_ipc);
+    }
+
+    result = json_dumps(root, JSON_PRESERVE_ORDER);
+    printf(&quot;[%s]%d: result %s\n&quot;, __func__, __LINE__, result);
+    free(result);
+
+    json_dump_file(root, &quot;ipcamera.dat&quot;, 0);
+    json_decref(new_ipc);
+    json_decref(root);
+
+    return 0;
+}
+
+int ipc_db_get(int index, AppIPCInfoClass *ipc_info)
+{
+    json_t *root = NULL;
+    json_t *info_obj = NULL;
+    json_t *obj_value = NULL;
+    json_error_t error;
+    const char *obj_key = NULL;
+
+    if (ipc_info == NULL) {
+        return 1;
+    }
+
+    root = json_load_file(&quot;ipcamera.dat&quot;, 0, &amp;error);
+    if (!json_is_array(root)) {
+        json_decref(root);
+        return 1;
+    }
+
+    info_obj = json_array_get(root, index);
+    if (!json_is_object(info_obj)) {
+        json_decref(info_obj);
+        json_decref(root);
+        return 1;
+    }
+
+    json_object_foreach(info_obj, obj_key, obj_value) {
+        _parse_info(obj_key, obj_value, ipc_info);
+    }
+
+    json_decref(info_obj);
+    json_decref(root);
+
+    return 0;
+}</code></pre>
+<h2 id="valgrind-memcheck"><a href="#valgrind-memcheck" class="headerlink" title="valgrind memcheck"></a>valgrind memcheck</h2><pre><code class="c">$ gcc -O0 -g -ggdb main.c -ljansson
+$ valgrind --tool=memcheck --leak-check=full --show-reachable=yes ./a.out
+
+==21533== Memcheck, a memory error detector
+==21533== Copyright (C) 2002-2015, and GNU GPL&#39;d, by Julian Seward et al.
+==21533== Using Valgrind-3.11.0 and LibVEX; rerun with -h for copyright info
+==21533== Command: ./a.out
+==21533== 
+==21533== Invalid read of size 8
+==21533==    at 0x4E42009: json_delete (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x400EFA: json_decref (jansson.h:106)
+==21533==    by 0x40186F: ipc_db_get (main.c:213)
+==21533==    by 0x401C44: main (main.c:293)
+==21533==  Address 0x54b09b8 is 8 bytes inside a block of size 72 free&#39;d
+==21533==    at 0x4C2EDEB: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==21533==    by 0x400EFA: json_decref (jansson.h:106)
+==21533==    by 0x401860: ipc_db_get (main.c:212)
+==21533==    by 0x401C44: main (main.c:293)
+==21533==  Block was alloc&#39;d at
+==21533==    at 0x4C2DB8F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==21533==    by 0x4E417BA: json_object (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3E8E4: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3EBB2: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3EDAD: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3F165: json_loadf (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3F1E7: json_load_file (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x40170F: ipc_db_get (main.c:195)
+==21533==    by 0x401C44: main (main.c:293)
+==21533== 
+==21533== Invalid write of size 8
+==21533==    at 0x4E4201A: json_delete (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x400EFA: json_decref (jansson.h:106)
+==21533==    by 0x40186F: ipc_db_get (main.c:213)
+==21533==    by 0x401C44: main (main.c:293)
+==21533==  Address 0x54b09b8 is 8 bytes inside a block of size 72 free&#39;d
+==21533==    at 0x4C2EDEB: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==21533==    by 0x400EFA: json_decref (jansson.h:106)
+==21533==    by 0x401860: ipc_db_get (main.c:212)
+==21533==    by 0x401C44: main (main.c:293)
+==21533==  Block was alloc&#39;d at
+==21533==    at 0x4C2DB8F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==21533==    by 0x4E417BA: json_object (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3E8E4: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3EBB2: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3EDAD: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3F165: json_loadf (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3F1E7: json_load_file (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x40170F: ipc_db_get (main.c:195)
+==21533==    by 0x401C44: main (main.c:293)
+==21533== 
+==21533== Invalid read of size 8
+==21533==    at 0x4E42009: json_delete (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x400EFA: json_decref (jansson.h:106)
+==21533==    by 0x40186F: ipc_db_get (main.c:213)
+==21533==    by 0x401C55: main (main.c:294)
+==21533==  Address 0x54c4918 is 8 bytes inside a block of size 72 free&#39;d
+==21533==    at 0x4C2EDEB: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==21533==    by 0x400EFA: json_decref (jansson.h:106)
+==21533==    by 0x401860: ipc_db_get (main.c:212)
+==21533==    by 0x401C55: main (main.c:294)
+==21533==  Block was alloc&#39;d at
+==21533==    at 0x4C2DB8F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==21533==    by 0x4E417BA: json_object (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3E8E4: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3EBB2: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3EDAD: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3F165: json_loadf (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3F1E7: json_load_file (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x40170F: ipc_db_get (main.c:195)
+==21533==    by 0x401C55: main (main.c:294)
+==21533== 
+==21533== Invalid write of size 8
+==21533==    at 0x4E4201A: json_delete (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x400EFA: json_decref (jansson.h:106)
+==21533==    by 0x40186F: ipc_db_get (main.c:213)
+==21533==    by 0x401C55: main (main.c:294)
+==21533==  Address 0x54c4918 is 8 bytes inside a block of size 72 free&#39;d
+==21533==    at 0x4C2EDEB: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==21533==    by 0x400EFA: json_decref (jansson.h:106)
+==21533==    by 0x401860: ipc_db_get (main.c:212)
+==21533==    by 0x401C55: main (main.c:294)
+==21533==  Block was alloc&#39;d at
+==21533==    at 0x4C2DB8F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==21533==    by 0x4E417BA: json_object (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3E8E4: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3EBB2: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3EDAD: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3F165: json_loadf (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3F1E7: json_load_file (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x40170F: ipc_db_get (main.c:195)
+==21533==    by 0x401C55: main (main.c:294)
+==21533== 
+==21533== 
+==21533== HEAP SUMMARY:
+==21533==     in use at exit: 18,480 bytes in 4 blocks
+==21533==   total heap usage: 5,525 allocs, 5,521 frees, 425,812 bytes allocated
+==21533== 
+==21533== 4,409 bytes in 1 blocks are definitely lost in loss record 1 of 4
+==21533==    at 0x4C2DB8F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==21533==    by 0x4E3F3C4: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3C9F7: json_dumps (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x40155F: ipc_db_save (main.c:153)
+==21533==    by 0x401A2C: main (main.c:251)
+==21533== 
+==21533== 4,577 bytes in 1 blocks are definitely lost in loss record 2 of 4
+==21533==    at 0x4C2DB8F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==21533==    by 0x4E3F3C4: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3C9F7: json_dumps (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x40155F: ipc_db_save (main.c:153)
+==21533==    by 0x401AD5: main (main.c:263)
+==21533== 
+==21533== 4,742 bytes in 1 blocks are definitely lost in loss record 3 of 4
+==21533==    at 0x4C2DB8F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==21533==    by 0x4E3F3C4: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3C9F7: json_dumps (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x40155F: ipc_db_save (main.c:153)
+==21533==    by 0x401B74: main (main.c:275)
+==21533== 
+==21533== 4,752 bytes in 1 blocks are definitely lost in loss record 4 of 4
+==21533==    at 0x4C2DB8F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==21533==    by 0x4E3F3C4: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3C9F7: json_dumps (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x40155F: ipc_db_save (main.c:153)
+==21533==    by 0x401C29: main (main.c:287)
+==21533== 
+==21533== LEAK SUMMARY:
+==21533==    definitely lost: 18,480 bytes in 4 blocks
+==21533==    indirectly lost: 0 bytes in 0 blocks
+==21533==      possibly lost: 0 bytes in 0 blocks
+==21533==    still reachable: 0 bytes in 0 blocks
+==21533==         suppressed: 0 bytes in 0 blocks
+==21533== 
+==21533== For counts of detected and suppressed errors, rerun with: -v
+==21533== ERROR SUMMARY: 8 errors from 8 contexts (suppressed: 0 from 0)</code></pre>
+<h3 id="Invalid-read-of-size-8"><a href="#Invalid-read-of-size-8" class="headerlink" title="Invalid read of size 8"></a>Invalid read of size 8</h3><pre><code>==21533== Invalid read of size 8
+==21533==    at 0x4E42009: json_delete (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x400EFA: json_decref (jansson.h:106)
+==21533==    by 0x40186F: ipc_db_get (main.c:213)
+==21533==    by 0x401C44: main (main.c:293)
+==21533==  Address 0x54b09b8 is 8 bytes inside a block of size 72 free&#39;d
+==21533==    at 0x4C2EDEB: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==21533==    by 0x400EFA: json_decref (jansson.h:106)
+==21533==    by 0x401860: ipc_db_get (main.c:212)
+==21533==    by 0x401C44: main (main.c:293)
+==21533==  Block was alloc&#39;d at
+==21533==    at 0x4C2DB8F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==21533==    by 0x4E417BA: json_object (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3E8E4: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3EBB2: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3EDAD: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3F165: json_loadf (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3F1E7: json_load_file (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x40170F: ipc_db_get (main.c:195)
+==21533==    by 0x401C44: main (main.c:293)</code></pre><p>重复释放，将<code>main.c:212</code>注释掉</p>
+<h3 id="memory-leak"><a href="#memory-leak" class="headerlink" title="memory leak"></a>memory leak</h3><pre><code>==21533== 4,577 bytes in 1 blocks are definitely lost in loss record 2 of 4
+==21533==    at 0x4C2DB8F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==21533==    by 0x4E3F3C4: ??? (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x4E3C9F7: json_dumps (in /usr/lib/x86_64-linux-gnu/libjansson.so.4.7.0)
+==21533==    by 0x40155F: ipc_db_save (main.c:153)
+==21533==    by 0x401AD5: main (main.c:263)</code></pre><p><code>main.c:153</code>处申请内存没有释放，添加 <code>free</code> 解决此问题</p>
+<h2 id="正常结果"><a href="#正常结果" class="headerlink" title="正常结果"></a>正常结果</h2><pre><code>$ gcc -O0 -g -ggdb main.c -ljansson                                      
+$ valgrind --tool=memcheck --leak-check=full --show-reachable=yes ./a.out
+==21929== Memcheck, a memory error detector
+==21929== Copyright (C) 2002-2015, and GNU GPL&#39;d, by Julian Seward et al.
+==21929== Using Valgrind-3.11.0 and LibVEX; rerun with -h for copyright info
+==21929== Command: ./a.out
+==21929== 
+==21929== 
+==21929== HEAP SUMMARY:
+==21929==     in use at exit: 0 bytes in 0 blocks
+==21929==   total heap usage: 5,919 allocs, 5,919 frees, 443,103 bytes allocated
+==21929== 
+==21929== All heap blocks were freed -- no leaks are possible
+==21929== 
+==21929== For counts of detected and suppressed errors, rerun with: -v
+==21929== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)</code></pre>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/c/" rel="tag"># c</a>
+              <a href="/tags/valgrind/" rel="tag"># valgrind</a>
+              <a href="/tags/jansson/" rel="tag"># jansson</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2016/12/14/string-copy/" rel="next" title="字符串复制相关 (strcpy, strncpy, memcpy, sprintf, snprintf, sizeof, strlen)">
+                  <i class="fa fa-chevron-left"></i> 字符串复制相关 (strcpy, strncpy, memcpy, sprintf, snprintf, sizeof, strlen)
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2016/12/20/c-optimization/" rel="prev" title="代码测试、调试与优化">
+                  代码测试、调试与优化 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#source-code"><span class="nav-number">1.</span> <span class="nav-text">source code</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#valgrind-memcheck"><span class="nav-number">2.</span> <span class="nav-text">valgrind memcheck</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Invalid-read-of-size-8"><span class="nav-number">2.1.</span> <span class="nav-text">Invalid read of size 8</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#memory-leak"><span class="nav-number">2.2.</span> <span class="nav-text">memory leak</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#正常结果"><span class="nav-number">3.</span> <span class="nav-text">正常结果</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="Linux系统编程读书笔记4">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux系统编程-缓冲I&#x2F;O">
+<meta property="og:url" content="http://yoursite.com/2014/11/02/Linux-system-programming-03-buffer-io/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="Linux系统编程读书笔记4">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2014-11-02T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.658Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="I&#x2F;O">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2014/11/02/Linux-system-programming-03-buffer-io/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linux系统编程-缓冲I/O | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/02/Linux-system-programming-03-buffer-io/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux系统编程-缓冲I/O
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-11-03 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-03T00:00:00+08:00">2014-11-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux System Programming</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>4.1k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+            <div class="post-description">Linux系统编程读书笔记4</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<p><strong>注意标准I/O调用与系统调用的区别</strong></p>
+<p>针对频繁轻量级I/O请求通常会使用“用户缓冲I/O”（user-buffered I/O）来提高执行效率。</p>
+<h2 id="标准I-O"><a href="#标准I-O" class="headerlink" title="标准I/O"></a><strong>标准I/O</strong></h2><p>C标准库中提供了标准I/O库（简称stdio），实现了跨平台的用户缓冲解决方案。<br>stdio不是直接操作文件描述符，而是通过唯一标识符，即<strong>文件指针（file pointer）</strong>来操作。<br>在标准C库中，文件指针和文件描述符一一映射。<br>文件指针是有指向类型定义FILE的指针表示，在&lt;stdio.h&gt;中。</p>
+<p>在标准I/O中，打开的文件称为“流”（stream）。流可以被打开来读（输入流）、写（输出流）或者两者兼有。</p>
+<h2 id="打开文件"><a href="#打开文件" class="headerlink" title="打开文件"></a><strong>打开文件</strong></h2><p>文件通过fopen()打开以供读写操作：</p>
+<pre><code>#include &lt;stdio.h&gt;
+FILE * fopen(const char * path,const char * mode);</code></pre><p>该函数根据mode参数，按照指定模式打开path指向的文件，并给它关联上新的流。</p>
+<ul>
+<li>r   以只读方式打开文件，该文件必须存在。</li>
+<li>r+  以可读写方式打开文件，该文件必须存在。</li>
+<li>rb+ 读写打开一个二进制文件，允许读数据。</li>
+<li>rt+ 读写打开一个文本文件，允许读和写。</li>
+<li>w   打开只写文件，若文件存在则文件长度清为0，即该文件内容会消失。若文件不存在则建立该文件。</li>
+<li>w+  打开可读写文件，若文件存在则文件长度清为零，即该文件内容会消失。若文件不存在则建立该文件。</li>
+<li>a   以附加的方式打开只写文件。若文件不存在，则会建立该文件，如果文件存在，写入的数据会被加到文件尾，即文件原先的内容会被保留。（EOF符保留）</li>
+<li>a+  以附加方式打开可读写的文件。若文件不存在，则会建立该文件，如果文件存在，写入的数据会被加到文件尾后，即文件原先的内容会被保留。 （原来的EOF符不保留）</li>
+<li>wb  只写打开或新建一个二进制文件；只允许写数据。</li>
+<li>wb+ 读写打开或建立一个二进制文件，允许读和写。</li>
+<li>wt+ 读写打开或着建立一个文本文件；允许读写。</li>
+<li>at+ 读写打开一个文本文件，允许读或在文本末追加数据。</li>
+<li>ab+ 读写打开一个二进制文件，允许读或在文件末追加数据。</li>
+</ul>
+<p>如果成功的打开一个文件, fopen()函数返回文件指针,<br>否则返回空指针(NULL)。由此可判断文件打开是否成功：</p>
+<pre><code>FILE *stream;
+stream = fopen(&quot;/etc/text.c&quot;, &quot;r&quot;);
+if(!stream)
+    /*error*/</code></pre><h2 id="通过文件描述符打开流"><a href="#通过文件描述符打开流" class="headerlink" title="通过文件描述符打开流"></a><strong>通过文件描述符打开流</strong></h2><p>fdopen()函数用于在一个已经打开的文件描述符上打开一个流:</p>
+<pre><code>#include &lt;stdio.h&gt;
+FILE fdopen(int fd, const char *mode);</code></pre><p>其第1个参数表示一个已经打开的文件描述符，<br>第2个参数mode的意义和fopen()函数的第2个参数一样。<br>只有一点不同的是，由于文件已经被打开，所以fdopen函数不会创建文件，<br>而且也不会将文件截短为0，这一点要特别注意。<br>这两步操作在打开该文件描述符的时候已经完成。</p>
+<h2 id="关闭流"><a href="#关闭流" class="headerlink" title="关闭流"></a><strong>关闭流</strong></h2><p>fclose()函数用来关闭一个由fopen()函数打开的文件 , 其调用格式为: </p>
+<pre><code>int fclose(FILE *stream); </code></pre><p>该函数返回一个整型数。当文件关闭成功时, 返回0,　否则返回一个非零值。<br>可以根据函数的返回值判断文件是否关闭成功。 </p>
+<h2 id="从流中读取数据"><a href="#从流中读取数据" class="headerlink" title="从流中读取数据"></a><strong>从流中读取数据</strong></h2><p><strong>为了成功调用读写函数，必须保证流以适当的模式打开。</strong></p>
+<p>字节操作：</p>
+<pre><code>#include &lt;stdio.h&gt;
+
+int fgetc(FILE *stream);
+int fputc(int c, FILE *stream);
+int ungetc(int c, FILE *stream);    //将字符放回到流中</code></pre><p>行操作：</p>
+<pre><code>#include &lt;stdio.h&gt;
+
+char * fgets(char *str, int size, FILE *stream);
+int fputs(const char *str, FILE *stream);</code></pre><p>二进制操作，用于读写复杂的二进制数据，例如C语言的结构体：</p>
+<pre><code>#include &lt;stdio.h&gt;
+
+size_t fread(void *buf, size_t size, size_t nr, FILE *stream);
+size_t fwrite(void *buf, size_t size, size_t nr, FILE *stream);</code></pre><h2 id="缓冲I-O示例"><a href="#缓冲I-O示例" class="headerlink" title="缓冲I/O示例"></a><strong>缓冲I/O示例</strong></h2><pre><code>#include &lt;stdio.h&gt;
+
+int main(void)
+{
+    FILE *in, *out;
+    struct pirate {
+        char name[100];
+        unsigned long booty;
+        unsigned int beard_len;
+    } p, blackbeard = {&quot;Edward Teach&quot;, 950, 48};
+
+    out = fopen(&quot;data&quot;, &quot;w&quot;);
+    if(!out) {
+        perror(&quot;fopen&quot;);
+        return 1;
+    }
+
+    if(!fwrite(&amp;blackbeard, sizeof(struct pirate), 1, out)) {
+        perror(&quot;fwrite&quot;);
+        return 1;
+    }
+
+    if(fclose(out)) {
+        perror(&quot;fclose&quot;);
+        return 1;
+    }
+
+    in = fopen(&quot;data&quot;, &quot;r&quot;);
+    if(!in) {
+        perror(&quot;fopen&quot;);
+        return 1;
+    }
+
+    if(!fread(&amp;p, sizeof(struct pirate), 1, in)) {
+        perror(&quot;fwrite&quot;);
+        return 1;
+    }
+
+    if(fclose(out)) {
+        perror(&quot;fclose&quot;);
+        return 1;
+    }
+
+    printf(&quot;name = %s booty = %lu beard_len = %u&quot;, p.name, p.booty, p.beard_len);
+
+}</code></pre><h2 id="定位流"><a href="#定位流" class="headerlink" title="定位流"></a><strong>定位流</strong></h2><pre><code>int fseek(FILE *stream, long offset, int whence);</code></pre><p>　　第一个参数stream为文件指针<br>　　第二个参数offset为偏移量，整数表示正向偏移，负数表示负向偏移<br>　　第三个参数whence设定从文件的哪里开始偏移,可能取值为：SEEK_CUR、 SEEK_END 或 SEEK_SET<br>　　* SEEK_SET： 文件开头<br>　　* SEEK_CUR： 当前位置<br>　　* SEEK_END： 文件结尾</p>
+<p>其他函数：</p>
+<pre><code>int fsetpos(FILE *stream, fpos_t *pos); //fseek(stream, pos, SEEK_SET);
+void rewind(FILE *stream);  //fseek(stream, 0, SEEK_SET);</code></pre><p>获取当前流位置的函数：</p>
+<pre><code>long ftell(FILE *stream);
+int fgetpos(FILE *stream, fpos_t *pos);</code></pre><h2 id="刷新流"><a href="#刷新流" class="headerlink" title="刷新流"></a><strong>刷新流</strong></h2><pre><code>#include &lt;stdio.h&gt;
+
+int fflush(FILE *stream);</code></pre><p>调用该函数时，stream指向的流中所有未写入的数据会被flush到内核中。<br>如果stream为NULL，进程中所有的stream会被flush。</p>
+<p><strong>C函数库维持的缓冲区和内核本身的缓冲区之间的区别：</strong><br>C函数库维持的缓冲器存在于用户空间，调用的性能提升来自于用户空间，运行的是用话代码，而不是系统调用。<br>只有当需要访问磁盘介质时，才会发起系统调用。</p>
+<p>fflush()函数的功能只是把用户缓冲区的数据写入到内核缓冲中，<br>但并不保证数据最终会写到物理介质上。如果需要这个功能，应该使用fsync()等函数。<br><strong>为了确保数据最终会备份存储，应该先保证用户缓冲区数据写到内核缓冲，然后保证内核缓冲写到磁盘介质上。</strong></p>
+<h2 id="控制缓冲"><a href="#控制缓冲" class="headerlink" title="控制缓冲"></a><strong>控制缓冲</strong></h2><pre><code>int setvbuf( FILE *stream, char *buffer, int mode, size_t size );</code></pre><p>函数setvbuf()设置用于stream(流)的缓冲区到buffer(缓冲区),其大小为size(大小). mode(方式)可以是:</p>
+<ul>
+<li>_IOFBF, 表示完全缓冲 </li>
+<li>_IOLBF, 表示线缓冲 </li>
+<li>_IONBF, 表示无缓存</li>
+</ul>
+<p>在关闭流时，其使用的缓冲区必须存在，要注意自定义的缓冲区位于局部作用域时的有效性。例如：</p>
+<pre><code>#include &lt;stdio.h&gt;
+
+int main(void)
+{
+    char buf[BUFSIZ];
+
+    setvbuf(stdout, buf, _IOFBF, BUFSIZ);
+
+    return 0;
+    /* &#39;buf&#39; exits scope and is freed, but stdout isn&#39;t closed until later */
+}</code></pre><h2 id="结束语"><a href="#结束语" class="headerlink" title="结束语"></a><strong>结束语</strong></h2><p>标准I/O最大的诟病是两次拷贝带来的性能开销。<br>当读数据时，标准I/O会向内核发起read()系统调用，把数据从内核中复制到标准I/O缓冲区。<br>当应用通过标准I/O如fgets()发起读请求时，又会从标准I/O缓冲区拷贝到指定缓冲区。<br>写入请求时：数据先从指定缓冲区拷贝到标准I/O缓冲区，然后执行系统调用从标准I/O缓冲区写入内核。</p>
+<p>与底层的系统调用相比，标准I/O为高层接口。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/I-O/" rel="tag"># I/O</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2014/10/30/Linux-system-programming-03-io/" rel="next" title="Linux系统编程-I/O多路复用">
+                  <i class="fa fa-chevron-left"></i> Linux系统编程-I/O多路复用
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2014/11/03/Linux-system-programming-process/" rel="prev" title="Linux系统编程-进程管理">
+                  Linux系统编程-进程管理 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#标准I-O"><span class="nav-number">1.</span> <span class="nav-text">标准I&#x2F;O</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#打开文件"><span class="nav-number">2.</span> <span class="nav-text">打开文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#通过文件描述符打开流"><span class="nav-number">3.</span> <span class="nav-text">通过文件描述符打开流</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#关闭流"><span class="nav-number">4.</span> <span class="nav-text">关闭流</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#从流中读取数据"><span class="nav-number">5.</span> <span class="nav-text">从流中读取数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#缓冲I-O示例"><span class="nav-number">6.</span> <span class="nav-text">缓冲I&#x2F;O示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#定位流"><span class="nav-number">7.</span> <span class="nav-text">定位流</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#刷新流"><span class="nav-number">8.</span> <span class="nav-text">刷新流</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#控制缓冲"><span class="nav-number">9.</span> <span class="nav-text">控制缓冲</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#结束语"><span class="nav-number">10.</span> <span class="nav-text">结束语</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

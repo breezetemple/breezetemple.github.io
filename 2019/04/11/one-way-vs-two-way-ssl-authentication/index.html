@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="关于SSL认证的两种方式：单向和双向  1-way “Standard” SSL Authentication 2-way “Mutual” SSL Authentication">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SSL 单向与双向认证">
+<meta property="og:url" content="http://yoursite.com/2019/04/11/one-way-vs-two-way-ssl-authentication/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="关于SSL认证的两种方式：单向和双向  1-way “Standard” SSL Authentication 2-way “Mutual” SSL Authentication">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/ssl/ssl.png">
+<meta property="og:image" content="http://yoursite.com/images/ssl/1555588843545.png">
+<meta property="og:image" content="http://yoursite.com/images/ssl/1555589285068.png">
+<meta property="og:image" content="http://yoursite.com/images/ssl/1555589401105.png">
+<meta property="article:published_time" content="2019-04-11T12:32:28.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.682Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="ssl">
+<meta property="article:tag" content="ca">
+<meta property="article:tag" content="openssl">
+<meta property="article:tag" content="wolfssl">
+<meta property="article:tag" content="1-way">
+<meta property="article:tag" content="2-way">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/ssl/ssl.png">
+
+<link rel="canonical" href="http://yoursite.com/2019/04/11/one-way-vs-two-way-ssl-authentication/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>SSL 单向与双向认证 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/04/11/one-way-vs-two-way-ssl-authentication/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          SSL 单向与双向认证
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-04-11 20:32:28" itemprop="dateCreated datePublished" datetime="2019-04-11T20:32:28+08:00">2019-04-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/SSL/" itemprop="url" rel="index">
+                    <span itemprop="name">SSL</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>6.2k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>6 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>关于<code>SSL</code>认证的两种方式：单向和双向</p>
+<ul>
+<li>1-way “Standard” SSL Authentication</li>
+<li>2-way “Mutual” SSL Authentication</li>
+</ul>
+<a id="more"></a>
+
+<h2 id="SSL-TLS-流程"><a href="#SSL-TLS-流程" class="headerlink" title="SSL/TLS 流程"></a>SSL/TLS 流程</h2><p><img src="/images/ssl/ssl.png" alt=""></p>
+<p><strong>CA:</strong> 证书授权中心 ( certificate authority)，用于签发证书，由于<code>ca.key</code>和<code>ca.crt</code>（含有公钥信息）是一对，于是<code>ca.crt</code>可以解密<code>server.crt</code>和<code>client.crt</code></p>
+<p>如果<code>SSL Client</code>想要校验<code>SSL server</code>. 那么<code>SSL server</code>必须要将他的证书<code>server.crt</code>传给<code>client</code>. 然后 <code>client</code> 用 <code>ca.crt</code> 去校验 <code>server.crt</code> 的合法性。如果是一个钓鱼网站，那么<strong>CA</strong>是不会给他颁发合法<code>server.crt</code>证书的，这样<code>client</code> 用<code>ca.crt</code>去校验就会失败。这样就可以保证了 client 的所有 https 访问都是安全的。</p>
+<h2 id="SSL-TLS-认证"><a href="#SSL-TLS-认证" class="headerlink" title="SSL/TLS 认证"></a>SSL/TLS 认证</h2><p>存在两种</p>
+<ol>
+<li>单向认证 – <strong>1-way “Standard” SSL Authentication</strong>，指的是只有一个对象校验对端的证书合法性。通常都是<code>client</code>来校验服务器的合法性。<code>client</code>需要一个<code>ca.crt</code>，<code>server</code>需要<code>server.crt</code>、<code>server.key</code><blockquote>
+<p>The point of this type of authentication is for you (as the client) to verify the authenticity of the web site you are connecting to and form a secure channel of communication.</p>
+</blockquote>
+</li>
+<li>双向认证 – <strong>2-way “Mutual” SSL Authentication</strong> ，指的是相互校验。<code>server</code>需要<code>server.key</code>、<code>server.crt</code>、<code>ca.crt</code>。<code>client</code>需要<code>client.key</code>、<code>client.crt</code>、<code>ca.crt</code><blockquote>
+<p>Contrary to one-way SSL; in case of two-way SSL, both client and server authenticate each other to ensure that both parties involved in the communication are trusted. Both parties share their public certificates to each other and then verification/validation is performed based on that.</p>
+</blockquote>
+</li>
+</ol>
+<h2 id="SSL-TLS-握手流程"><a href="#SSL-TLS-握手流程" class="headerlink" title="SSL/TLS 握手流程"></a>SSL/TLS 握手流程</h2><p>客户与服务器通信时，首先要进行 SSL 握手，SSL 握手主要完成以下任务：</p>
+<ol>
+<li>协商使用的加密套件。加密套件中包括一组加密参数，这些参数指定了加密算法和密钥的长度等信息</li>
+<li>验证对方的身份，此操作是可选的</li>
+<li>确定使用的加密算法</li>
+<li>SSL 握手过程采用非对称加密方法传递数据，由此来建立一个安全的 SSL 会话。SSL 握手完成后，通信双方将采用对称加密方法传递实际的应用数据</li>
+</ol>
+<p>以下是 SSL 握手的具体流程：</p>
+<ol>
+<li>客户将自己的 SSL 版本号、加密参数、与 SSL 会话有关的数据及其他一些必要信息发送到服务器</li>
+<li>服务器将自己的 SSL 版本号、加密参数、与 SSL 会话有关的数据及其他一些必要信息发送给客户，同时发给客户的还有服务器的证书。如果服务器需要验证客户身份，服务器还会发出要求客户提供安全证书的请求</li>
+<li>客户端验证服务器证书，如果验证失败，就提示不能建立 SSL 连接。如果成功，那么继续下一步骤</li>
+<li>客户端为本次 SSL 会话生成预备主密码（pre-master secret），并将其用服务器公钥加密后发送给服务器</li>
+<li>如果服务器要求验证客户身份，客户端还要对另外一些数据签名后，将其与客户端证书一起发送给服务器</li>
+<li>如果服务器要求验证客户身份，则检查签署客户证书的 CA（Certificate Authority，证书机构）是否可信。如果不在信任列表中，结束本次会话。如果检查通过，服务器用自己的私钥解密收到的预备主密码（pre-master secret），并用它通过某些算法生成本次会话的主密码（master secret）</li>
+<li>客户端与服务器端均使用此主密码（master secret）生成此次会话的会话密钥（对称密钥）。在双方 SSL 握手结束后传递任何消息均使用此会话密钥。这样做的主要原因是对称加密比非对称加密的运算量要低一个数量级以上，能够显著提高双方会话时的运算速度</li>
+<li>客户端通知服务器此后发送的消息都使用这个会话密钥进行加密，并通知服务器客户端已经完成本次 SSL 握手</li>
+<li>服务器通知客户端此后发送的消息都使用这个会话密钥进行加密，并通知客户端服务器已经完成本次 SSL 握手</li>
+<li>本次握手过程结束，SSL 会话已经建立。在接下来的会话过程中，双方使用同一个会话密钥分别对发送和接收的信息进行加密和解密</li>
+</ol>
+<h2 id="证书工作流"><a href="#证书工作流" class="headerlink" title="证书工作流"></a>证书工作流</h2><p><img src="/images/ssl/1555588843545.png" alt="1555588843545"></p>
+<ol>
+<li><strong>申请认证</strong>：服务器需自己生成公钥私钥对<code>pub_svr</code> &amp; <code>pri_svr</code>，同时根据 pub_svr 生成请求文件 csr, 提交给 CA，csr 中含有公钥、组织信息、个人信息（域名）等信息</li>
+<li><strong>审核信息</strong>：CA 通过线上、线下等多种手段验证申请者提供信息的真实性</li>
+<li><strong>签发证书</strong>：如信息审核通过，CA 会向申请者签发认证文件 - 证书。 包含以下信息：申请者公钥、申请者的组织信息和个人信息、签发机构 CA 的信息、有效时间、证书序列号等信息的明文，同时包含一个签名</li>
+<li><strong>返回证书</strong>：client 如果请求验证服务器，服务器需返回证书文件 – <code>SERVER_HELLO</code></li>
+<li><strong>client 验证证书</strong>：client 读取证书中的相关的明文信息，采用相同的散列函数计算得到信息摘要，然后，利用对应 CA 的公钥解密签名数据，对比证书的信息摘要，如果一致，则可以确认证书的合法性，即公钥合法。客户端然后验证证书相关的域名信息、有效时间是否吊销等信息。 客户端会内置信任 CA 的证书信息（包含公钥），如果 CA 不被信任，则找不到对应 CA 的证书，证书也会被判定非法</li>
+<li><strong>秘钥协商</strong>：验证通过后，Server 和 Client 将进行秘钥协商。接下来 Server 和 Client 会采用对称秘钥加密<ul>
+<li>pre-master</li>
+<li>change_cipher_spec</li>
+<li>encrypted_handshake_message</li>
+</ul>
+</li>
+<li><strong>数据传输</strong>：Server 和 Client 采用对称秘钥加密解密数据</li>
+</ol>
+<h2 id="1-way-单向认证"><a href="#1-way-单向认证" class="headerlink" title="1-way 单向认证"></a>1-way 单向认证</h2><p><img src="/images/ssl/1555589285068.png" alt="1555589285068"></p>
+<ol>
+<li>Client requests for some protected data from the server on HTTPS protocol. This initiates SSL/TLS handshake process.  – <code>CLIENT_HELLO</code></li>
+<li>Server returns its public certificate to the client along with <code>SERVER_HELLO</code> message.</li>
+<li>Client validates/verifies the received certificate. Client verifies the certificate through certification authority (CA) for CA signed certificates.<blockquote>
+<p>The client receives the servers certificate and it is verified against a list of known Certificate Authorities.</p>
+</blockquote>
+</li>
+<li>SSL/TLS client sends the random byte string that enables both the client and the server to compute the secret key to be used for encrypting subsequent message data. The random byte string itself is encrypted with the server’s public key.</li>
+<li>After agreeing on this secret key, client and server communicate further for actual data transfer by encryping/decrypting data using this key.</li>
+</ol>
+<h2 id="2-way-双向认证"><a href="#2-way-双向认证" class="headerlink" title="2-way 双向认证"></a>2-way 双向认证</h2><p><img src="/images/ssl/1555589401105.png" alt="1555589401105"></p>
+<ol>
+<li>Client requests a protected resource over HTTPS protocol and the SSL/TSL handshake process begins.</li>
+<li>Server returns its public certificate to the client along with <code>SERVER_HELLO</code>.</li>
+<li>Client validates/verifies the received certificate. Client verifies the certificate through certification authority (CA) for CA signed certificates.</li>
+<li>If Server certificate was validated successfully, client will provide its public certificate to the server.</li>
+<li>Server validates/verifies the received certificate. Server verifies the certificate through certification authority (CA) for CA signed certificates.</li>
+<li>After completion of handshake process, client and server communicate and transfer data with each other encrypted with the secret keys shared between the two during handshake.</li>
+</ol>
+<h2 id="编程-API"><a href="#编程-API" class="headerlink" title="编程 API"></a>编程 API</h2><p>证书验证函数<code>SSL_CTX_set_verify</code></p>
+<ul>
+<li>SSL_VERIFY_NONE 表示不验证</li>
+<li>SSL_VERIFY_PEER 用于客户端时要求服务器必须提供证书，用于服务器时服务器会发出证书请求消息要求客户端提供证书，但是客户端也可以不提供</li>
+<li>SSL_VERIGY_FAIL_IF_NO_PEER_CERT 只适用于服务器且必须提供证书。他必须与 SSL_VERIFY_PEER 一起使用</li>
+</ul>
+<pre><code class="c">/* Specify that we need to verify the client as well */
+SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+
+/* We accept only certificates signed only by the CA himself */
+SSL_CTX_set_verify_depth(ctx, 1);</code></pre>
+<p>设置可信证书默认位置<code>SSL_CTX_load_verify_locations</code><br>加载自身证书，用于发送到对端<code>SSL_CTX_use_certificate_file</code><br>加载私钥<code>SSL_CTX_use_PrivateKey_file</code><br>验证私钥<code>SSL_CTX_check_private_key</code><br>加载可信 CAs<code>SSL_load_client_CA_file</code><br>设置 CAs 列表，用于发送到客户端<code>SSL_CTX_set_client_CA_list</code><br><strong>设置握手时使用的密钥套件<code>SSL_CTX_set_cipher_list</code></strong></p>
+<pre><code class="c">SSLeay_add_ssl_algorithms();
+
+// 我们使用 SSL V3,V2
+ctx = SSL_CTX_new(SSLv23_server_method());
+if (ctx == NULL) {
+    ERR_print_errors_fp(stdout);
+    exit(1);
+}
+
+// 加载 CA 的证书，加载受信任的 CA 证书
+if (!SSL_CTX_load_verify_locations(ctx, &quot;../CA/ca.crt&quot;, NULL)) {
+    ERR_print_errors_fp(stdout);
+    exit(1);
+}
+
+/* Load the client&#39;s CA file location as well */
+// load user certificate,this cert will be send to server for server verify
+// 当需要客户端验证的时候，服务器把 CAfile 里面的可信任 CA 证书发往客户端
+SSL_CTX_set_client_CA_list(ctx, SSL_load_client_CA_file(&quot;../CA/ca.crt&quot;));
+
+// 加载自己的证书
+if (!SSL_CTX_use_certificate_file(ctx, &quot;./server.crt&quot;, SSL_FILETYPE_PEM)) {
+    ERR_print_errors_fp(stdout);
+    exit(1);
+}
+
+// 加载自己的私钥
+if (!SSL_CTX_use_PrivateKey_file(ctx, &quot;./server.key&quot;, SSL_FILETYPE_PEM)) {
+    ERR_print_errors_fp(stdout);
+    exit(1);
+}
+
+// 判定私钥是否正确
+if (!SSL_CTX_check_private_key(ctx)) {
+    ERR_print_errors_fp(stdout);
+    exit(1);
+}
+
+//set cipher ,when handshake client will send the cipher list to server
+SSL_CTX_set_cipher_list(g_sslctx,&quot;HIGH:MEDIA:LOW:!DH&quot;);
+
+/* We won&#39;t handle incomplete read/writes due to renegotiation */
+SSL_CTX_set_mode(ctx, SSL_MODE_AUTO_RETRY);
+
+/* Specify that we need to verify the client as well */
+SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+
+/* We accept only certificates signed only by the CA himself */
+// 最大的验证用户证书的上级数
+SSL_CTX_set_verify_depth(ctx, 1);</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://github.com/zapstar/two-way-ssl-c" target="_blank" rel="noopener">two-way-ssl-c</a></li>
+<li><a href="https://gist.github.com/zapstar/4b51d7cfa74c7e709fcdaace19233443" target="_blank" rel="noopener">openssl_2way_auth.sh</a></li>
+<li><a href="https://thejimmahknows.com/1-way-vs-2-way-ssl-authentication/" target="_blank" rel="noopener">1-Way vs 2-Way SSL authentication</a></li>
+<li><a href="https://blog.csdn.net/sjin_1314/article/details/21043613" target="_blank" rel="noopener"><strong>SSL 握手通信详解及 linux 下 c/c++ SSL Socket（另附 SSL 双向认证客户端代码）</strong></a></li>
+<li><a href="https://blog.csdn.net/ustccw/article/details/76691248" target="_blank" rel="noopener"><strong>SSL/TLS 双向认证（一） – SSL/TLS 工作原理及抓包分析</strong></a></li>
+<li><a href="https://blog.csdn.net/liangyuannao/article/details/7712882" target="_blank" rel="noopener">openssl 有关 SSL 客户端认证的问题</a></li>
+<li><a href="https://blog.csdn.net/duanbokan/article/details/50847612" target="_blank" rel="noopener">Https 单向认证和双向认证</a></li>
+<li><a href="https://blog.cloudboost.io/implementing-mutual-ssl-authentication-fc20ab2392b3" target="_blank" rel="noopener">Implementing Mutual SSL Authentication</a></li>
+<li><a href="http://cn.voidcc.com/question/p-dyyelxgp-sa.html" target="_blank" rel="noopener">相互身份验证总是成功与 OpenSSL</a></li>
+<li><a href="https://www.ibm.com/support/knowledgecenter/SSRMWJ_7.0.1.10/com.ibm.isim.doc/securing/cpt/cpt_ic_security_ssl_scenario.htm" target="_blank" rel="noopener">One-way and two-way SSL authentication – <strong>IBM Security Identity Manager</strong></a></li>
+<li><a href="http://tutorialspedia.com/an-overview-of-one-way-ssl-and-two-way-ssl/" target="_blank" rel="noopener">An Overview of One-Way SSL and Two-Way SSL</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/ssl/" rel="tag"># ssl</a>
+              <a href="/tags/ca/" rel="tag"># ca</a>
+              <a href="/tags/openssl/" rel="tag"># openssl</a>
+              <a href="/tags/wolfssl/" rel="tag"># wolfssl</a>
+              <a href="/tags/1-way/" rel="tag"># 1-way</a>
+              <a href="/tags/2-way/" rel="tag"># 2-way</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/04/09/ssl-programming/" rel="next" title="SSL 编程">
+                  <i class="fa fa-chevron-left"></i> SSL 编程
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/04/15/how-to-abandon-special-cipher-in-openssl/" rel="prev" title="OpenSSL 禁用特定密钥套件">
+                  OpenSSL 禁用特定密钥套件 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#SSL-TLS-流程"><span class="nav-number">1.</span> <span class="nav-text">SSL&#x2F;TLS 流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SSL-TLS-认证"><span class="nav-number">2.</span> <span class="nav-text">SSL&#x2F;TLS 认证</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SSL-TLS-握手流程"><span class="nav-number">3.</span> <span class="nav-text">SSL&#x2F;TLS 握手流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#证书工作流"><span class="nav-number">4.</span> <span class="nav-text">证书工作流</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-way-单向认证"><span class="nav-number">5.</span> <span class="nav-text">1-way 单向认证</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-way-双向认证"><span class="nav-number">6.</span> <span class="nav-text">2-way 双向认证</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#编程-API"><span class="nav-number">7.</span> <span class="nav-text">编程 API</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">8.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

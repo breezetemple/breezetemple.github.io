@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="$(document).ready(function(){         $(&quot;h2,h3,h4,h5,h6&quot;).each(function(i,item){             var tag &#x3D; $(item).get(0).localName;             $(item).attr(&quot;id&quot;,&quot;wow&quot;+i);             $(&quot;#category&quot;).app">
+<meta property="og:type" content="article">
+<meta property="og:title" content="几个有用的gcc attribute">
+<meta property="og:url" content="http://yoursite.com/2015/09/10/gcc-attributes/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="$(document).ready(function(){         $(&quot;h2,h3,h4,h5,h6&quot;).each(function(i,item){             var tag &#x3D; $(item).get(0).localName;             $(item).attr(&quot;id&quot;,&quot;wow&quot;+i);             $(&quot;#category&quot;).app">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2015-09-10T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.662Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="gcc">
+<meta property="article:tag" content="gcc attribute">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2015/09/10/gcc-attributes/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>几个有用的gcc attribute | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/09/10/gcc-attributes/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          几个有用的gcc attribute
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-09-11 00:00:00" itemprop="dateCreated datePublished" datetime="2015-09-11T00:00:00+08:00">2015-09-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index">
+                    <span itemprop="name">C</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>5k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h2 id="align属性"><a href="#align属性" class="headerlink" title="align属性"></a>align属性</h2><p>align属性不仅可以修饰变量，类型， 还可以修饰函数， 举个例子：</p>
+<h3 id="修饰变量"><a href="#修饰变量" class="headerlink" title="修饰变量"></a>修饰变量</h3><pre><code>int a = 0;
+
+int main(void)
+{
+    printf(&quot;a = %d\n&quot;, a);
+}</code></pre><p>用gdb看下变量a的地址：</p>
+<pre><code>(gdb) p/x &amp;a
+$1 = 0x60087c</code></pre><p>变量a地址是编译器随意生成的， 这个例子碰巧分配到了8字节对齐的位置上。<br>用align属性修饰下：</p>
+<pre><code>int a __attribute__((aligned(8))) = 0;
+
+(gdb) p/x &amp;a
+$1 = 0x600880</code></pre><p>编译器会把变量a生成在8字节对齐的内存地址上。</p>
+<h3 id="修饰类型"><a href="#修饰类型" class="headerlink" title="修饰类型"></a>修饰类型</h3><pre><code>int a __attribute__((aligned(8))) = 0;
+
+struct test {
+    int a;
+} __attribute__((aligned(8)));
+
+struct test aa;
+
+int main(void)
+{
+    printf(&quot;a = %d\n&quot;, a);
+}</code></pre><p>经过align修饰后，struct test数据结构定义的所有变量都会出现在8字节对齐的内存上。</p>
+<pre><code>(gdb) p/x &amp;aa
+$1 = 0x600888</code></pre><h3 id="修饰函数"><a href="#修饰函数" class="headerlink" title="修饰函数"></a>修饰函数</h3><pre><code>void test1(void) __attribute__((aligned(2)));
+
+void  test1(void)
+{
+    printf(&quot;hello, world.\n&quot;);
+}
+
+int main(void)
+{
+    test1();
+}</code></pre><p>经过align修饰后，函数出现在8字节对齐的内存上。</p>
+<pre><code>(gdb) p test1 
+$1 = {&lt;text variable, no debug info&gt;} 0x400538 &lt;test1&gt;</code></pre><h2 id="always-inline属性"><a href="#always-inline属性" class="headerlink" title="always_inline属性"></a>always_inline属性</h2><p>gcc有个inline关键字，可以将一个函数定义为内嵌形式：</p>
+<pre><code>static inline void test2(void);
+
+void test1(void)
+{
+    printf(&quot;hehe.\n&quot;);
+}
+
+void test2(void)
+{
+    asm(&quot;nop&quot;);
+}
+
+void test(void)
+{
+    test1();
+    test2();
+}
+
+int main(void)
+{
+    test();
+}</code></pre><p>按照inline的定义， test在调用test2函数的时候， 会直接将test2函数的代码展开在test函数内部，<br>这样就减少了一次函数调用过程， 加快了代码的执行速度， 用gdb反汇编看下：</p>
+<pre><code>(gdb) disass test
+Dump of assembler code for function test:
+0x00000000004004a8 :    push   %rbp
+0x00000000004004a9 :    mov    %rsp,%rbp
+0x00000000004004ac :    callq  0x400498 
+0x00000000004004b1 :    callq  0x4004b8 
+0x00000000004004b6 :   leaveq
+0x00000000004004b7 :   retq
+End of assembler dump.</code></pre><p>你可以看到，gcc并没有把test2函数展开，明明已经使用inline修饰了。<br>因为虽然用inline做了修饰，但是gcc会根据代码的逻辑来优化到底有没有必要使用inline代码。<br>像这种简单的代码，用inline代码效果不大，因此gcc并没有按照inline要求来生成代码。</p>
+<pre><code>static inline void test2(void) __attribute__((always_inline));
+加入always_inline属性后呢？
+(gdb) disass test
+Dump of assembler code for function test:
+0x00000000004004a8 :    push   %rbp
+0x00000000004004a9 :    mov    %rsp,%rbp
+0x00000000004004ac :    callq  0x400498 
+0x00000000004004b1 :    nop
+0x00000000004004b2 :   leaveq
+0x00000000004004b3 :   retq
+End of assembler dump.</code></pre><p>这次你会看到在调用完test1后， 直接把test2的代码， 也是nop语句加入在了test函数内。</p>
+<h2 id="constructor-amp-destructor"><a href="#constructor-amp-destructor" class="headerlink" title="constructor &amp; destructor"></a>constructor &amp; destructor</h2><p>很犀利的2个属性，用于修饰某个函数，经过constructor属性修饰过的函数，<br>可以在main函数运行前就可以先运行完毕，同理destructor在进程exit之前执行。</p>
+<pre><code>#include&lt;stdio.h&gt;
+
+void test1(void) __attribute__((aligned(8)));
+
+void  test1(void)
+{
+    printf(&quot;hello, world.\n&quot;);
+}
+
+void __attribute__((constructor)) test2(void)
+{
+    printf(&quot;hehe.\n&quot;);
+}
+
+void __attribute__((destructor)) test3(void)
+{
+    printf(&quot;haha.\n&quot;);
+}
+
+int main(void)
+{
+    test1();
+}</code></pre><p>执行输出如下：</p>
+<pre><code>➜  /data/test/1  &gt; ./main 
+hehe.
+hello, world.
+haha.</code></pre><h2 id="fastcall-amp-regparm属性"><a href="#fastcall-amp-regparm属性" class="headerlink" title="fastcall &amp; regparm属性"></a>fastcall &amp; regparm属性</h2><p>在c语言中，通过函数传递参数通常使用堆栈的方式，如：<br>    test(a, b, c);<br>参数从右到左依次压入堆栈c, b, a。<br>函数执行完后，还要把这3个参数从堆栈中弹出来，如果一个函数每秒钟有上万次调用，<br>这将非常耗时，为了加快代码运行速度，gcc扩展了fastcall和regparm2个属性，<br>对于fastcall属性，一个函数的前2个参数分别通过ecx和edx来传递，剩下的则是使用堆栈来传递。<br>对于regparm，它的用法如下regparm(n), 函数的1到n个参数，分别通过eax, edx, ecx来传递，最多就使用3个寄存器，<br>其余参数通过堆栈来传递。注意这2个属性只在x86平台有效。很对编译平台fastcall默认开启。</p>
+<pre><code>int __attribute__((fastcall)) test1(int a, int b)
+{
+    return a + b;
+}
+
+int __attribute__((regparm(2))) test2(int a, int b)
+{
+    return a + b;
+}
+
+int test3(int a, int b)
+{
+    return a + b;
+}
+
+int main(void)
+{
+    test1(1, 2);
+    test2(1, 2);
+    test3(1, 2);
+}
+
+(gdb) disass test1
+Dump of assembler code for function test1:
+0x08048354 :   push   %ebp
+0x08048355 :   mov    %esp,%ebp
+0x08048357 :   sub    $0x8,%esp 在堆栈里先分配了8个字节的空间
+0x0804835a :   mov    %ecx,-0x4(%ebp) 将ecx的值放入第一个变量里
+0x0804835d :   mov    %edx,-0x8(%ebp) 将edx的值放入第二个变量里
+0x08048360 :  mov    -0x8(%ebp),%eax
+0x08048363 :  add    -0x4(%ebp),%eax
+0x08048366 :  leave
+0x08048367 :  ret
+End of assembler dump.
+
+(gdb) disass test2
+Dump of assembler code for function test2:
+0x08048368 :   push   %ebp
+0x08048369 :   mov    %esp,%ebp
+0x0804836b :   sub    $0x8,%esp
+0x0804836e :   mov    %eax,-0x4(%ebp)
+0x08048371 :   mov    %edx,-0x8(%ebp)
+0x08048374 :  mov    -0x8(%ebp),%eax
+0x08048377 :  add    -0x4(%ebp),%eax
+0x0804837a :  leave
+0x0804837b :  ret
+End of assembler dump.
+
+(gdb) disass test3
+Dump of assembler code for function test3:
+0x0804837c :   push   %ebp
+0x0804837d :   mov    %esp,%ebp
+0x0804837f :   mov    0xc(%ebp),%eax 堆栈形式来传递参数，0×c(%ebp)保存第二个参数
+0x08048382 :   add    0x8(%ebp),%eax 堆栈形式来传递参数，0×8(%ebp)保存第一个参数
+0x08048385 :   pop    %ebp
+0x08048386 :  ret
+End of assembler dump.</code></pre><h2 id="packed属性"><a href="#packed属性" class="headerlink" title="packed属性"></a>packed属性</h2><p>用于修饰struct, union, enum数据结构，看如下的例子：</p>
+<pre><code>struct test {
+    char a;
+    int b;
+};
+
+struct test1 {
+    char a;
+    int b;
+}__attribute__((packed));
+
+int main(void)
+{
+    printf(&quot;%d, %d\n&quot;, sizeof(struct test), sizeof(struct test1));
+}</code></pre><p>struct test结构，理论来说一共有1+4=5字节的大小，但是gcc默认编译出来的大小是8，也就是说char是按照4字节来分配空间的。<br>加上packed修饰后，就会按照实际的类型大小来计算。</p>
+<pre><code>➜  /data/test/1  &gt; ./main 
+8, 5</code></pre><h2 id="section属性"><a href="#section属性" class="headerlink" title="section属性"></a>section属性</h2><p>gcc编译后的二进制文件为elf格式，代码中的函数部分会默认的链接到elf文件的text section中，<br>变量则会链接到bss和data section中。如果想把代码或变量放到特定的section中，就可以使用section属性来修饰。</p>
+<pre><code>int __attribute__((section(&quot;TEST&quot;))) test1(int a, int b)
+{
+    return a + b;
+}
+
+int test2(int a, int b)
+{
+    return a + b;
+}
+
+int main(void)
+{
+    test1(1, 2);
+    test2(1, 2);
+}</code></pre><p>使用readelf来观察下test二进制格式。</p>
+<pre><code>➜  /data/test/1  &gt; readelf -S main
+[13] .text             PROGBITS         0000000000400400  00000400
+00000000000001a2  0000000000000000  AX       0     0     16
+[14] TEST              PROGBITS         00000000004005a2  000005a2
+0000000000000014  0000000000000000  AX       0     0     1</code></pre><p>文件多出了一个TEST section，它的起始地址为0x4005a2, 大小为0x14， 它的地址范围在 0x4005a2 – 0x4005b6。<br>text section的起始地址为0x400400, 大小为0x1a2， 它的地址范围在0x400400 – 0x4005a2。</p>
+<p>在来看下test1, test2符号表的地址：</p>
+<pre><code>➜  /data/test/1  &gt; readelf -s main
+57: 00000000004005a2    20 FUNC    GLOBAL DEFAULT   14 test1
+68: 00000000004004f6    20 FUNC    GLOBAL DEFAULT   13 test2</code></pre><p>可以看到test2确实被链接在text section中， 而test1链接在TEST section中。</p>
+<h2 id="PS"><a href="#PS" class="headerlink" title="PS"></a>PS</h2><p>更多关于gcc attribute的介绍请看<a href="http://gcc.gnu.org/onlinedocs/gcc-4.3.2//gcc/Variable-Attributes.html#Variable-Attributes" target="_blank" rel="noopener">gcc手册</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/gcc/" rel="tag"># gcc</a>
+              <a href="/tags/gcc-attribute/" rel="tag"># gcc attribute</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2015/08/19/analysis-tools/" rel="next" title="代码分析工具">
+                  <i class="fa fa-chevron-left"></i> 代码分析工具
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2015/09/10/attribute-aligned/" rel="prev" title="\#pragma pack(n)和\_\_attribute\_\_((aligned(m)))的区别">
+                  \#pragma pack(n)和\_\_attribute\_\_((aligned(m)))的区别 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#align属性"><span class="nav-number">1.</span> <span class="nav-text">align属性</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#修饰变量"><span class="nav-number">1.1.</span> <span class="nav-text">修饰变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#修饰类型"><span class="nav-number">1.2.</span> <span class="nav-text">修饰类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#修饰函数"><span class="nav-number">1.3.</span> <span class="nav-text">修饰函数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#always-inline属性"><span class="nav-number">2.</span> <span class="nav-text">always_inline属性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#constructor-amp-destructor"><span class="nav-number">3.</span> <span class="nav-text">constructor &amp; destructor</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#fastcall-amp-regparm属性"><span class="nav-number">4.</span> <span class="nav-text">fastcall &amp; regparm属性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#packed属性"><span class="nav-number">5.</span> <span class="nav-text">packed属性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#section属性"><span class="nav-number">6.</span> <span class="nav-text">section属性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PS"><span class="nav-number">7.</span> <span class="nav-text">PS</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="$(document).ready(function(){         $(&quot;h2,h3,h4,h5,h6&quot;).each(function(i,item){             var tag &#x3D; $(item).get(0).localName;             $(item).attr(&quot;id&quot;,&quot;wow&quot;+i);             $(&quot;#category&quot;).app">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux GDB 调试命令">
+<meta property="og:url" content="http://yoursite.com/2015/02/28/Linux-gdb-commands/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="$(document).ready(function(){         $(&quot;h2,h3,h4,h5,h6&quot;).each(function(i,item){             var tag &#x3D; $(item).get(0).localName;             $(item).attr(&quot;id&quot;,&quot;wow&quot;+i);             $(&quot;#category&quot;).app">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2015-02-28T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.658Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="gdb">
+<meta property="article:tag" content="debug">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2015/02/28/Linux-gdb-commands/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linux GDB 调试命令 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/02/28/Linux-gdb-commands/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux GDB 调试命令
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-03-01 00:00:00" itemprop="dateCreated datePublished" datetime="2015-03-01T00:00:00+08:00">2015-03-01</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.9k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+
+<h3 id="Set-Break"><a href="#Set-Break" class="headerlink" title="Set Break"></a><strong>Set Break</strong></h3><p>断点命令（break）缩写为<em>b</em>，格式如下：</p>
+<ul>
+<li>break function        : b main </li>
+<li>break line            : b 256</li>
+<li>break file:line       : b app_main.c:256</li>
+<li>break file:function   : b app_main.c:main</li>
+<li>break +offset         : b +3</li>
+<li>break -offset         : b -3</li>
+<li>break *addr           : b *0x0811efd4</li>
+</ul>
+<h3 id="Set-Catch"><a href="#Set-Catch" class="headerlink" title="Set Catch"></a><strong>Set Catch</strong></h3><p>catch point作用是让程序在发生某种事件的时候停止运行。设置events如下：</p>
+<ul>
+<li>catch assert – Catch failed Ada assertions</li>
+<li>catch catch – Catch an exception</li>
+<li>catch exception – Catch Ada exceptions</li>
+<li>catch exec – Catch calls to exec</li>
+<li>catch fork – Catch calls to fork</li>
+<li>catch syscall – Catch system calls by their names and/or numbers</li>
+<li>catch throw – Catch an exception</li>
+<li>catch vfork – Catch calls to vfork</li>
+</ul>
+<h3 id="Show-Backtrace"><a href="#Show-Backtrace" class="headerlink" title="Show Backtrace"></a><strong>Show Backtrace</strong></h3><p>backtrace命令可以断点处执行显示栈帧，简写为<em>bt<em>，别名有</em>where</em> &amp; <em>info stack</em>，格式如下：</p>
+<ul>
+<li>bt        : show all</li>
+<li>bt N      : show start N</li>
+<li>bt -N     : show end N</li>
+<li>bt full   : show all &amp; locals</li>
+</ul>
+<p>查看桢信息：</p>
+<ul>
+<li>frame n: 查看第n桢的信息， frame可以用f缩写</li>
+<li>frame addr: 查看pc地址为addr的桢的相关信息</li>
+<li>up n: 查看当前桢上面第n桢的信息</li>
+<li>down n: 查看当前桢下面第n桢的信息</li>
+</ul>
+<p>查看更加详细的信息：</p>
+<ul>
+<li>info frame</li>
+<li>info frame n</li>
+<li>info frame addr</li>
+</ul>
+<p>示例如下：</p>
+<pre><code>(cskygdb) info frame 1
+Stack frame at 0x32aa9518:
+pc = 0x4ce00 in app_ott_vod_detail_create_exec (ott/app_ott_vod_detail.c:606); saved pc 0x49fee
+called by frame at 0x32aa9538, caller of frame at 0x32aa9500
+source language c.
+Arglist at 0x32aa9500, args: nAlbumNo=0, pName=0xa916d0 &quot;危险关系&quot;, pPic=0x96e628 &quot;/tmp/6C880089F646D38.jpg&quot;, 
+        pVid=0xa916a8 &quot;706afed05f&quot;
+        Locals at 0x32aa9500, Previous frame&#39;s sp is 0x32aa9518
+        Saved registers:
+        r8 at 0x32aa9514, r15 at 0x32aa9510, pc at 0x32aa9510</code></pre><p>上图中显示的信息有：</p>
+<ul>
+<li>当前桢的地址: 0x32aa9518</li>
+<li>当前桢PC: pc = 0x4ce00</li>
+<li>当前桢函数： app_ott_vod_detail_create_exec (ott/app_ott_vod_detail.c:606)</li>
+<li>caller桢的PC: saved pc 0x49fee</li>
+<li>caller桢的地址: called by frame at 0x32aa9538</li>
+<li>callee桢的地址: caller of frame at 0x32aa9500</li>
+<li>源代码所用的程序的语言(c/c++): source language c</li>
+<li>当前桢的参数的地址及值: Arglist at at 0x32aa9500, args: nAlbumNo=0, pName=0xa916d0 “危险关系”, pPic=0x96e628 “/tmp/6C880089F646D38.jpg” …</li>
+<li>当前相中局部变量的地址：Locals at 0x32aa9500, Previous frame’s sp is 0x32aa9518</li>
+<li>. 当前桢中存储的寄存器： Saved registers: r8 at 0x32aa9514, r15 at 0x32aa9510, pc at 0x32aa9510</li>
+</ul>
+<p>info args：查看当前桢中的参数</p>
+<pre><code>(cskygdb) info args
+window_name = 0x5650a8 &quot;wnd_ott_vod_detail&quot;</code></pre><p>info locals：查看当前桢中的局部变量</p>
+<pre><code>(cskygdb) info locals 
+widget = 0x0
+window = 0x0</code></pre><p>info catch：查看当前桢中的异常处理器（exception handlers）</p>
+<pre><code>(cskygdb) info catch 
+print_frame_label_vars disabled.</code></pre><p>示例2：</p>
+<pre><code>(cskygdb) info frame 3
+Stack frame at 0x32aa9550:
+pc = 0x4a40c in app_ott_vod_keypress (ott/app_ott_vod.c:489); saved pc 0x11cd86
+called by frame at 0x32aa9568, caller of frame at 0x32aa9538
+source language c.
+Arglist at 0x32aa9538, args: widgetname=0x6c44d0 &quot;wnd_ott_vod&quot;, usrdata=0x32aa963c
+Locals at 0x32aa9538, Previous frame&#39;s sp is 0x32aa9550
+Saved registers:
+r8 at 0x32aa954c, r15 at 0x32aa9548, pc at 0x32aa9548
+(cskygdb) frame 3
+#3  0x0004a40c in app_ott_vod_keypress (widgetname=0x6c44d0 &quot;wnd_ott_vod&quot;, usrdata=0x32aa963c) at ott/app_ott_vod.c:489
+489             app_ott_page_ok_keypress(find_virtualkey(event-&gt;key.scancode));
+(cskygdb) info args 
+widgetname = 0x6c44d0 &quot;wnd_ott_vod&quot;
+usrdata = 0x32aa963c
+(cskygdb) info locals 
+event = 0x32aa963c
+__FUNCTION__ = &quot;app_ott_vod_keypress&quot;
+(cskygdb) info catch 
+print_frame_label_vars disabled.</code></pre><h3 id="Show-Variable-amp-Registers"><a href="#Show-Variable-amp-Registers" class="headerlink" title="Show Variable &amp; Registers"></a><strong>Show Variable &amp; Registers</strong></h3><p>print命令可以显示变量，简写为<em>p</em>。</p>
+<p>info registers可以显示寄存器，简写为info reg。</p>
+<p>在寄存器名之前添加$，可以显示寄存器内容：</p>
+<pre><code>p &amp;pc</code></pre><p>支持的格式如下：</p>
+<ul>
+<li>x     : 十六进制</li>
+<li>d     : 十进制</li>
+<li>u     : 无符号十进制</li>
+<li>o     : 八进制</li>
+<li>t     : 二进制</li>
+<li>a     : 地址</li>
+<li>c     : ASCII</li>
+<li>f     : 浮点</li>
+<li>s     : 字符串</li>
+</ul>
+<p>用<em>x</em>命令可以显示内存内容，支持以上格式之外还支持：</p>
+<pre><code>i : 显示为汇编语言</code></pre><p>使用<em>x</em>命令格式为 <em>x/NFU ADDR</em>，参数意义如下：</p>
+<ul>
+<li>ADDR  : 希望显示的地址</li>
+<li>N     : 重复次数</li>
+<li>F     : 支持格式(x,d,u,o,t,a,c,f,s,i)</li>
+<li>U     : 单位，下所示<ul>
+<li>b : 字节</li>
+<li>h : 半字（2字节） </li>
+<li>w : 字（4字节，默认值）</li>
+<li>g : 双字（8字节）</li>
+</ul>
+</li>
+</ul>
+<p>反汇编存在命令：<strong>disassemble</strong></p>
+<p><strong>show value</strong>命令显示历史中的最后10个值</p>
+<h3 id="attach到进程"><a href="#attach到进程" class="headerlink" title="attach到进程"></a><strong>attach到进程</strong></h3><h3 id="条件断点"><a href="#条件断点" class="headerlink" title="条件断点"></a><strong>条件断点</strong></h3><p>使用格式如下：</p>
+<pre><code>break 断点 if 条件</code></pre><p>例如：</p>
+<pre><code>b main if mode==1</code></pre><p>使用condition可以给已存在的断点添加或删除触发条件：</p>
+<pre><code>condition Bn
+condition Bn 条件</code></pre><h3 id="反复执行"><a href="#反复执行" class="headerlink" title="反复执行"></a><strong>反复执行</strong></h3><p>在指定的断点、监控点或捕获点忽略指定次数，格式如下：</p>
+<pre><code>ignore Bn N</code></pre><p>类似命令如下：</p>
+<ul>
+<li>continue N</li>
+<li>step N</li>
+<li>stepi N</li>
+<li>next N</li>
+<li>nexti N</li>
+<li>finish</li>
+<li>until</li>
+<li>until ADDR</li>
+</ul>
+<h3 id="断点命令"><a href="#断点命令" class="headerlink" title="断点命令"></a><strong>断点命令</strong></h3><p>指定程序在某个breakpoint处停下来后执行一串命令，格式：</p>
+<pre><code>commands [bnum]
+… command-list …
+end</code></pre><p>指定程序在第bnum个breakpoint处停下来后，执行由command-list指定的命令串，<br>如果没有指定bnum，则对最后一个breakpoint生效，例子：</p>
+<pre><code>break foo if x&gt;0
+commands
+silent
+printf “x is %d\n”,x
+continue
+end</code></pre><p>上面的例子含义：当x&gt;0时，在foo函数处停下来，然后打印出x的值，然后继续运行程序</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/gdb/" rel="tag"># gdb</a>
+              <a href="/tags/debug/" rel="tag"># debug</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2014/12/15/aio/" rel="next" title="异步非阻塞I/O">
+                  <i class="fa fa-chevron-left"></i> 异步非阻塞I/O
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2015/03/01/libcurl/" rel="prev" title="Linux libcurl学习">
+                  Linux libcurl学习 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Set-Break"><span class="nav-number">1.</span> <span class="nav-text">Set Break</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Set-Catch"><span class="nav-number">2.</span> <span class="nav-text">Set Catch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Show-Backtrace"><span class="nav-number">3.</span> <span class="nav-text">Show Backtrace</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Show-Variable-amp-Registers"><span class="nav-number">4.</span> <span class="nav-text">Show Variable &amp; Registers</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#attach到进程"><span class="nav-number">5.</span> <span class="nav-text">attach到进程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#条件断点"><span class="nav-number">6.</span> <span class="nav-text">条件断点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#反复执行"><span class="nav-number">7.</span> <span class="nav-text">反复执行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#断点命令"><span class="nav-number">8.</span> <span class="nav-text">断点命令</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

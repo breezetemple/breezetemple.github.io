@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="time api使用，定时器管理  clock_gettime timespec_to_timeval timeradd timersub timercmp">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 定时器">
+<meta property="og:url" content="http://yoursite.com/2019/07/15/linux-timer/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="time api使用，定时器管理  clock_gettime timespec_to_timeval timeradd timersub timercmp">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-07-15T03:00:44.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.682Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="timer">
+<meta property="article:tag" content="time">
+<meta property="article:tag" content="dsmcc">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2019/07/15/linux-timer/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linux 定时器 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/07/15/linux-timer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 定时器
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-07-15 11:00:44" itemprop="dateCreated datePublished" datetime="2019-07-15T11:00:44+08:00">2019-07-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/Time/" itemprop="url" rel="index">
+                    <span itemprop="name">Time</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>4.7k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><code>time api</code>使用，定时器管理</p>
+<ul>
+<li><code>clock_gettime</code></li>
+<li><code>timespec_to_timeval</code></li>
+<li><code>timeradd</code></li>
+<li><code>timersub</code></li>
+<li><code>timercmp</code></li>
+</ul>
+<a id="more"></a>
+
+<h2 id="struct"><a href="#struct" class="headerlink" title="struct"></a>struct</h2><pre><code class="c">enum
+{
+    DSMCC_TIMEOUT_DSI,
+    DSMCC_TIMEOUT_DII,
+    DSMCC_TIMEOUT_MODULE,
+    DSMCC_TIMEOUT_NEXTBLOCK
+};
+
+struct dsmcc_timeout
+{
+    struct dsmcc_object_carousel *carousel;  /*&lt; carousel this timeout applies to */
+    int                           type;      /*&lt; type of timeout */
+    uint16_t                      module_id; /*&lt; module ID, for type == DSMCC_TIMEOUT_MODULE or DSMCC_TIMEOUT_NEXTBLOCK */
+    struct timeval                abstime;   /*&lt; absolute time */
+
+    struct dsmcc_timeout *next;
+};</code></pre>
+<h2 id="add-remove"><a href="#add-remove" class="headerlink" title="add/remove"></a>add/remove</h2><pre><code class="c">void dsmcc_timeout_remove(struct dsmcc_object_carousel *carousel, int type, uint16_t module_id)
+{
+    struct dsmcc_timeout *current, *prev;
+
+    current = carousel-&gt;state-&gt;timeouts;
+    prev = NULL;
+    while (current)
+    {
+        int match = current-&gt;carousel == carousel &amp;&amp; current-&gt;type == type;
+        if (type == DSMCC_TIMEOUT_MODULE || type == DSMCC_TIMEOUT_NEXTBLOCK)
+            match &amp;= current-&gt;module_id == module_id;
+        if (match)
+        {
+            if (prev)
+                prev-&gt;next = current-&gt;next;
+            else
+                carousel-&gt;state-&gt;timeouts = current-&gt;next;
+            free(current);
+            return;
+        }
+        prev = current;
+        current = current-&gt;next;
+    }
+}
+
+void dsmcc_timeout_set(struct dsmcc_object_carousel *carousel, int type, uint16_t module_id, uint32_t delay_us)
+{
+    struct dsmcc_timeout *timeout;
+    struct dsmcc_timeout *current, *next;
+    struct timeval now, delay;
+    struct timespec ts;
+
+    dsmcc_timeout_remove(carousel, type, module_id);
+
+    if (!delay_us)
+        return;
+
+    DSMCC_DEBUG(&quot;Adding timeout for carousel 0x%08x type %d module id 0x%04hhx delay %uus&quot;, carousel-&gt;cid, type, module_id, delay_us);
+
+    timeout = malloc(sizeof(struct dsmcc_timeout));
+    timeout-&gt;carousel = carousel;
+    timeout-&gt;type = type;
+    timeout-&gt;module_id = module_id;
+
+    clock_gettime(CLOCK_REALTIME, &amp;ts);
+    timespec_to_timeval(&amp;ts, &amp;now);
+
+    delay.tv_sec = delay_us / 1000000;
+    delay.tv_usec = delay_us - delay.tv_sec * 1000000;
+    timeradd(&amp;now, &amp;delay, &amp;timeout-&gt;abstime);
+
+    current = NULL;
+    next = carousel-&gt;state-&gt;timeouts;
+    while (next &amp;&amp; timercmp(&amp;next-&gt;abstime, &amp;timeout-&gt;abstime, &lt;))
+    {
+        current = next;
+        next = current-&gt;next;
+    }
+    timeout-&gt;next = next;
+    if (current)
+        current-&gt;next = timeout;
+    else
+        carousel-&gt;state-&gt;timeouts = timeout;
+}</code></pre>
+<h2 id="timer"><a href="#timer" class="headerlink" title="timer"></a>timer</h2><pre><code class="c">struct dsmcc_timeout *prevtimeout, *timeout, *nexttimeout;
+
+DSMCC_DEBUG(&quot;Current timeouts:&quot;);
+timeout = state-&gt;timeouts;
+prevtimeout = NULL;
+while (timeout)
+{
+    struct timeval curtime;
+
+    clock_gettime(CLOCK_REALTIME, &amp;ts);
+    timespec_to_timeval(&amp;ts, &amp;curtime);
+
+    if (dsmcc_log_enabled(DSMCC_LOG_DEBUG))
+    {
+        struct timeval waittime;
+        timersub(&amp;timeout-&gt;abstime, &amp;curtime, &amp;waittime);
+        DSMCC_DEBUG(&quot;CID 0x%08x DELAY %d.%06d TYPE %d MODULE_ID 0x%04hhx&quot;, timeout-&gt;carousel-&gt;cid, waittime.tv_sec, waittime.tv_usec,&gt;
+    }
+
+    nexttimeout = timeout-&gt;next;
+    if (timercmp(&amp;timeout-&gt;abstime, &amp;curtime, &lt;))
+    {
+        dsmcc_object_carousel_set_status(timeout-&gt;carousel, DSMCC_STATUS_TIMEDOUT);
+        dsmcc_filecache_notify_status(timeout-&gt;carousel, NULL);
+
+        /* remove timeout */
+        if (prevtimeout)
+            prevtimeout-&gt;next = timeout-&gt;next;
+        else
+            state-&gt;timeouts = timeout-&gt;next;
+        free(timeout);
+    }
+    timeout = nexttimeout;
+}</code></pre>
+<h2 id="api"><a href="#api" class="headerlink" title="api"></a>api</h2><p>头文件<code>sys/time.h</code>定义</p>
+<p><strong><code>Unix/Linux</code>都是采用<code>UTC（Universal Coordinated Time）</code>，<code>1970.1.1</code>到现在的秒数，采用<code>time_t（long int）</code>存储。</strong></p>
+<p>时间结构体包括<code>time_t</code>, <code>timeval</code>, <code>time_spec</code>，精度越来越高</p>
+<pre><code class="c">typedef long time_t</code></pre>
+<p>表示为从<code>UTC(coordinated universal time)</code>时间<code>1970 年 1 月 1 日 00 时 00 分 00 秒</code>( 也称为 Linux 系统的 Epoch 时间 ) 到当前时刻的秒数，<strong>只是精确到秒</strong></p>
+<pre><code class="c">struct timeval
+{
+    time_t  tv_sec; // 秒 s
+    long    tv_usec;// 微秒 us
+};</code></pre>
+<p><strong>精确到微秒</strong></p>
+<pre><code class="c">struct timespec
+{
+    long int tv_sec;    // 秒 s
+    long int tv_nsec;   // 纳秒 ns
+};</code></pre>
+<p><strong>精确到纳秒</strong></p>
+<h3 id="clock-gettime"><a href="#clock-gettime" class="headerlink" title="clock_gettime"></a>clock_gettime</h3><pre><code class="c">#include &lt;time.h&gt;
+
+struct timespec {
+    time_t   tv_sec;        /* seconds */
+    long     tv_nsec;       /* nanoseconds */
+};
+
+int clock_gettime(clockid_t clk_id, struct timespec *tp);</code></pre>
+<p><code>clk_id</code>常用：</p>
+<ol>
+<li><code>CLOCK_REALTIME</code>, 系统实时时间，随系统实时时间改变而改变，即从<code>UTC1970-1-1 0:0:0</code>开始计时，中间时刻如果系统时间被用户改成其他，则对应的时间相应改变</li>
+<li><code>CLOCK_MONOTONIC</code>, 从系统启动这一刻起开始计时，不受系统时间被用户改变的影响</li>
+</ol>
+<h3 id="timespec-to-timeval"><a href="#timespec-to-timeval" class="headerlink" title="timespec_to_timeval"></a>timespec_to_timeval</h3><p><code>struct timespec</code>与<code>struct timespec</code>之间的转换</p>
+<pre><code class="c">/* Macros for converting between `struct timeval&#39; and `struct timespec&#39;.  */
+# define TIMEVAL_TO_TIMESPEC(tv, ts) {                                   \
+        (ts)-&gt;tv_sec = (tv)-&gt;tv_sec;                                    \
+        (ts)-&gt;tv_nsec = (tv)-&gt;tv_usec * 1000;                           \
+}
+# define TIMESPEC_TO_TIMEVAL(tv, ts) {                                   \
+        (tv)-&gt;tv_sec = (ts)-&gt;tv_sec;                                    \
+        (tv)-&gt;tv_usec = (ts)-&gt;tv_nsec / 1000;                           \
+}</code></pre>
+<h3 id="timeval-运算"><a href="#timeval-运算" class="headerlink" title="timeval 运算"></a>timeval 运算</h3><p>在<code>sys/time.h</code>中定义了如下运算</p>
+<pre><code class="c">/* Convenience macros for operations on timevals.
+   NOTE: `timercmp&#39; does not work for &gt;= or &lt;=.  */
+# define timerisset(tvp)    ((tvp)-&gt;tv_sec || (tvp)-&gt;tv_usec)
+# define timerclear(tvp)    ((tvp)-&gt;tv_sec = (tvp)-&gt;tv_usec = 0)
+# define timercmp(a, b, CMP)                              \
+  (((a)-&gt;tv_sec == (b)-&gt;tv_sec) ?                         \
+   ((a)-&gt;tv_usec CMP (b)-&gt;tv_usec) :                          \
+   ((a)-&gt;tv_sec CMP (b)-&gt;tv_sec))
+# define timeradd(a, b, result)                           \
+  do {                                        \
+    (result)-&gt;tv_sec = (a)-&gt;tv_sec + (b)-&gt;tv_sec;                 \
+    (result)-&gt;tv_usec = (a)-&gt;tv_usec + (b)-&gt;tv_usec;                  \
+    if ((result)-&gt;tv_usec &gt;= 1000000)                         \
+      {                                       \
+    ++(result)-&gt;tv_sec;                           \
+    (result)-&gt;tv_usec -= 1000000;                         \
+      }                                       \
+  } while (0)
+# define timersub(a, b, result)                           \
+  do {                                        \
+    (result)-&gt;tv_sec = (a)-&gt;tv_sec - (b)-&gt;tv_sec;                 \
+    (result)-&gt;tv_usec = (a)-&gt;tv_usec - (b)-&gt;tv_usec;                  \
+    if ((result)-&gt;tv_usec &lt; 0) {                          \
+      --(result)-&gt;tv_sec;                             \
+      (result)-&gt;tv_usec += 1000000;                       \
+    }                                         \
+  } while (0)</code></pre>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/timer/" rel="tag"># timer</a>
+              <a href="/tags/time/" rel="tag"># time</a>
+              <a href="/tags/dsmcc/" rel="tag"># dsmcc</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/07/11/ecos-fstab/" rel="next" title="ecos 文件系统">
+                  <i class="fa fa-chevron-left"></i> ecos 文件系统
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/07/18/type-of-data/" rel="prev" title="理解编程语言中的数据类型">
+                  理解编程语言中的数据类型 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#struct"><span class="nav-number">1.</span> <span class="nav-text">struct</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#add-remove"><span class="nav-number">2.</span> <span class="nav-text">add&#x2F;remove</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#timer"><span class="nav-number">3.</span> <span class="nav-text">timer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#api"><span class="nav-number">4.</span> <span class="nav-text">api</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#clock-gettime"><span class="nav-number">4.1.</span> <span class="nav-text">clock_gettime</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#timespec-to-timeval"><span class="nav-number">4.2.</span> <span class="nav-text">timespec_to_timeval</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#timeval-运算"><span class="nav-number">4.3.</span> <span class="nav-text">timeval 运算</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="开源工程  minisatip libsatip tvheadend">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SAT2IP 开源工程分析">
+<meta property="og:url" content="http://yoursite.com/2019/02/26/open-source-project-minisatip-analysis/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="开源工程  minisatip libsatip tvheadend">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/sat2ip/20190226-093749.png">
+<meta property="article:published_time" content="2019-02-26T06:55:39.000Z">
+<meta property="article:modified_time" content="2020-01-19T08:54:54.678Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="sat2ip">
+<meta property="article:tag" content="ssdp">
+<meta property="article:tag" content="soap">
+<meta property="article:tag" content="rtsp">
+<meta property="article:tag" content="minisatip">
+<meta property="article:tag" content="vlc">
+<meta property="article:tag" content="rtcp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/sat2ip/20190226-093749.png">
+
+<link rel="canonical" href="http://yoursite.com/2019/02/26/open-source-project-minisatip-analysis/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>SAT2IP 开源工程分析 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/26/open-source-project-minisatip-analysis/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          SAT2IP 开源工程分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-02-26 14:55:39" itemprop="dateCreated datePublished" datetime="2019-02-26T14:55:39+08:00">2019-02-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-01-19 16:54:54" itemprop="dateModified" datetime="2020-01-19T16:54:54+08:00">2020-01-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/UPnP/" itemprop="url" rel="index">
+                    <span itemprop="name">UPnP</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>13k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>12 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>开源工程</p>
+<ol>
+<li><a href="https://github.com/catalinii/minisatip" target="_blank" rel="noopener">minisatip</a></li>
+<li><a href="https://github.com/not1337/libsatip.git" target="_blank" rel="noopener">libsatip</a></li>
+<li><a href="https://github.com/tvheadend/tvheadend.git" target="_blank" rel="noopener">tvheadend</a></li>
+</ol>
+<a id="more"></a>
+
+<h2 id="SAT-gt-IP-Server-Minisatip"><a href="#SAT-gt-IP-Server-Minisatip" class="headerlink" title="SAT&gt;IP Server Minisatip"></a>SAT&gt;IP Server Minisatip</h2><p><code>SAT&gt;IP Server</code>流程具体见 <a href="/2019/02/26/sat2ip-protocol/" title="SAT&gt;IP 协议简介">SAT&gt;IP 协议简介</a> 及 <a href="/2019/02/26/sat2ip-notes/" title="SAT&gt;IP 协议笔记">SAT&gt;IP 协议笔记</a></p>
+<p>流程图如下：<br><img src="/images/sat2ip/20190226-093749.png" alt=""></p>
+<h3 id="Main"><a href="#Main" class="headerlink" title="Main"></a>Main</h3><pre><code class="c">readBootID();
+if ((ssdp = udp_bind(NULL, 1900)) &lt; 1)
+    FAIL(&quot;SSDP: Could not bind on udp port 1900&quot;);
+if ((ssdp1 = udp_bind(opts.disc_host, 1900)) &lt; 1)
+    FAIL(&quot;SSDP: Could not bind on %s udp port 1900&quot;, opts.disc_host);
+if ((rtsp = tcp_listen(NULL, opts.rtsp_port)) &lt; 1)
+    FAIL(&quot;RTSP: Could not listen on port %d&quot;, opts.rtsp_port);
+if ((http = tcp_listen(NULL, opts.http_port)) &lt; 1)
+    FAIL(&quot;Could not listen on http port %d&quot;, opts.http_port);
+
+si = sockets_add(ssdp, NULL, -1, TYPE_UDP, (socket_action)ssdp_reply, NULL,
+                 (socket_action)ssdp_discovery);
+si1 = sockets_add(ssdp1, NULL, -1, TYPE_UDP, (socket_action)ssdp_reply,
+                  NULL, (socket_action)ssdp_discovery);
+if (si &lt; 0 || si1 &lt; 0)
+    FAIL(&quot;sockets_add failed for ssdp&quot;);
+
+sockets_timeout(si, 60 * 1000);
+set_sockets_rtime(si, -60 * 1000);
+if (0 &gt; sockets_add(rtsp, NULL, -1, TYPE_SERVER, (socket_action)new_rtsp,
+                    NULL, (socket_action)close_http))
+    FAIL(&quot;sockets_add failed for rtsp&quot;);
+if (0 &gt; sockets_add(http, NULL, -1, TYPE_SERVER, (socket_action)new_http,
+                    NULL, (socket_action)close_http))
+    FAIL(&quot;sockets_add failed for http&quot;);
+
+if (0 &gt; (sock_signal = sockets_add(SOCK_TIMEOUT, NULL, -1, TYPE_UDP, NULL,
+                                   NULL, (socket_action)signal_thread)))
+    FAIL(&quot;sockets_add failed for signal thread&quot;);
+
+if (!opts.no_threads)
+{
+    set_socket_thread(sock_signal, start_new_thread(&quot;signal&quot;));
+    sockets_timeout(sock_signal, 300); // 300 ms
+}
+else
+    sockets_timeout(sock_signal, 1000); // 1 sec
+
+if (0 &gt; (sock_bw = sockets_add(SOCK_TIMEOUT, NULL, -1, TYPE_UDP, NULL,
+                               NULL, (socket_action)calculate_bw)))
+    FAIL(&quot;sockets_add failed for BW calculation&quot;);</code></pre>
+<h3 id="Discovery"><a href="#Discovery" class="headerlink" title="Discovery"></a>Discovery</h3><p>函数<code>ssdp_discovery</code>以及<code>ssdp_reply</code></p>
+<pre><code class="c">int ssdp_discovery(sockets *s)
+{
+    char *reply = &quot;NOTIFY * HTTP/1.1\r\n&quot;
+                  &quot;HOST: %s:1900\r\n&quot;
+                  &quot;CACHE-CONTROL: max-age=1800\r\n&quot;
+                  &quot;LOCATION: http://%s/%s\r\n&quot;
+                  &quot;NT: %s\r\n&quot;
+                  &quot;NTS: ssdp:alive\r\n&quot;
+                  &quot;SERVER: Linux/1.0 UPnP/1.1 %s/%s\r\n&quot;
+                  &quot;USN: uuid:%s%s\r\n&quot;
+                  &quot;BOOTID.UPNP.ORG: %d\r\n&quot;
+                  &quot;CONFIGID.UPNP.ORG: 0\r\n&quot;
+                  &quot;DEVICEID.SES.COM: %d\r\n\r\n\0&quot;;
+    char buf[500], mac[15] = &quot;00000000000000&quot;;
+    char nt[3][50];
+
+    char uuid1[] = &quot;11223344-9999-0000-b7ae&quot;;
+    socklen_t salen;
+    int i;
+    s-&gt;wtime = getTick();
+    if (uuidi == 0)
+    {
+        uuidi = 1;
+        get_mac_address(mac);
+        sprintf(uuid, &quot;%s-%s&quot;, uuid1, mac);
+        fill_sockaddr(&amp;ssdp_sa, opts.disc_host, 1900);
+    }
+    strcpy(nt[0], &quot;::upnp:rootdevice&quot;);
+    sprintf(nt[1], &quot;::uuid:%s&quot;, uuid);
+    strcpy(nt[2], &quot;::urn:ses-com:device:SatIPServer:1&quot;);
+
+    if (s-&gt;type != TYPE_UDP)
+        return 0;
+
+    LOGM(&quot;ssdp_discovery: bootid: %d deviceid: %d http: %s&quot;, opts.bootid,
+         opts.device_id, opts.http_host);
+
+    for (i = 0; i &lt; 3; i++)
+    {
+        sprintf(buf, reply, opts.disc_host, opts.http_host, opts.xml_path,
+                nt[i] + 2, app_name, version, uuid, i == 1 ? &quot;&quot; : nt[i],
+                opts.bootid, opts.device_id);
+        salen = sizeof(ssdp_sa);
+        LOGM(&quot;Discovery packet %d:\n%s&quot;, i + 1, buf);
+        int wb = sendto(s-&gt;sock, buf, strlen(buf), MSG_NOSIGNAL, (const struct sockaddr *)&amp;ssdp_sa, salen);
+        if (wb != strlen(buf))
+            LOG(&quot;incomplete ssdp_discovery: wrote %d out of %d: error %d: %s&quot;, wb, strlen(buf), errno, strerror(errno));
+    }
+    s-&gt;rtime = getTick();
+    return 0;
+}
+
+int ssdp;
+int ssdp_reply(sockets *s)
+{
+    char *reply = &quot;HTTP/1.1 200 OK\r\n&quot;
+                  &quot;CACHE-CONTROL: max-age=1800\r\n&quot;
+                  &quot;DATE: %s\r\n&quot;
+                  &quot;EXT:\r\n&quot;
+                  &quot;LOCATION: http://%s/%s\r\n&quot;
+                  &quot;SERVER: Linux/1.0 UPnP/1.1 %s/%s\r\n&quot;
+                  &quot;ST: urn:ses-com:device:SatIPServer:1\r\n&quot;
+                  &quot;USN: uuid:%s::urn:ses-com:device:SatIPServer:1\r\n&quot;
+                  &quot;BOOTID.UPNP.ORG: %d\r\n&quot;
+                  &quot;CONFIGID.UPNP.ORG: 0\r\n&quot;
+                  &quot;DEVICEID.SES.COM: %d\r\n\r\n\0&quot;;
+    char *device_id_conflict = &quot;M-SEARCH * HTTP/1.1\r\n&quot;
+                               &quot;HOST: %s:1900\r\n&quot;
+                               &quot;MAN: \&quot;ssdp:discover\&quot;\r\n&quot;
+                               &quot;ST: urn:ses-com:device:SatIPServer:1\r\n&quot;
+                               &quot;USER-AGENT: Linux/1.0 UPnP/1.1 %s/%s\r\n&quot;
+                               &quot;DEVICEID.SES.COM: %d\r\n\r\n\0&quot;;
+    socklen_t salen;
+    char *man, *man_sd, *didsescom, *ruuid, *rdid;
+    char buf[500];
+    char ra[50];
+    int did = 0;
+
+    if (uuidi == 0)
+        ssdp_discovery(s);
+
+    s-&gt;rtime = s-&gt;wtime; // consider the timeout of the discovery operation
+
+    salen = sizeof(s-&gt;sa);
+    ruuid = strcasestr((const char *)s-&gt;buf, &quot;uuid:&quot;);
+    if (ruuid &amp;&amp; strncmp(uuid, strip(ruuid + 5), strlen(uuid)) == 0)
+    {
+        LOGM(&quot;Dropping packet from the same UUID as mine (from %s:%d)&quot;,
+             get_socket_rhost(s-&gt;id, ra, sizeof(ra)),
+             get_socket_rport(s-&gt;id));
+        return 0;
+    }
+
+    // not my uuid
+
+#ifdef AXE
+    axe_set_network_led(1);
+#endif
+
+    LOGM(&quot;Received SSDP packet from %s:%d -&gt; handle %d&quot;,
+         get_socket_rhost(s-&gt;id, ra, sizeof(ra)), get_socket_rport(s-&gt;id),
+         s-&gt;sock);
+    LOGM(&quot;%s&quot;, s-&gt;buf);
+
+    if (strncasecmp((const char *)s-&gt;buf, &quot;NOTIFY&quot;, 6) == 0)
+    {
+        rdid = strcasestr((const char *)s-&gt;buf, &quot;DEVICEID.SES.COM:&quot;);
+        if (rdid &amp;&amp; opts.device_id == map_int(strip(rdid + 17), NULL))
+        {
+            snprintf(buf, sizeof(buf), device_id_conflict, getlocalip(),
+                     app_name, version, opts.device_id);
+            LOG(
+                &quot;A new device joined the network with the same Device ID:  %s, asking to change DEVICEID.SES.COM&quot;,
+                get_socket_rhost(s-&gt;id, ra, sizeof(ra)));
+            int wb = sendto(ssdp, buf, strlen(buf), MSG_NOSIGNAL,
+                            (const struct sockaddr *)&amp;s-&gt;sa, salen);
+            if (wb != strlen(buf))
+                LOG(&quot;incomplete ssdp_reply notify: wrote %d out of %d: error %d: %s&quot;, wb, strlen(buf), errno, strerror(errno));
+        }
+
+        return 0;
+    }
+
+    man = strcasestr((const char *)s-&gt;buf, &quot;MAN&quot;);
+    man_sd = strcasestr((const char *)s-&gt;buf, &quot;ssdp:discover&quot;);
+    if ((didsescom = strcasestr((const char *)s-&gt;buf, &quot;DEVICEID.SES.COM:&quot;)))
+        did = map_int(didsescom + 17, NULL);
+
+    if (man &amp;&amp; man_sd &amp;&amp; didsescom &amp;&amp; (s-&gt;rtime &lt; 15000) &amp;&amp; did == opts.device_id) // SSDP Device ID clash, only first 5 seconds after the announcement
+    {
+        opts.device_id++;
+        s[si].timeout_ms = 1800 * 1000;
+        s[si].rtime = -s[si].timeout_ms;
+        LOG(
+            &quot;Device ID conflict, changing our device id to %d, destination SAT&gt;IP server %s&quot;,
+            opts.device_id, get_socket_rhost(s-&gt;id, ra, sizeof(ra)));
+        readBootID();
+    }
+    else
+        did = opts.device_id;
+
+    if (strncmp((const char *)s-&gt;buf, &quot;HTTP/1&quot;, 6) == 0)
+        LOG_AND_RETURN(0, &quot;ssdp_reply: the message is a reply, ignoring....&quot;);
+
+    sprintf(buf, reply, get_current_timestamp(), opts.http_host, opts.xml_path,
+            app_name, version, uuid, opts.bootid, did);
+
+    LOGM(&quot;ssdp_reply fd: %d -&gt; %s:%d, bootid: %d deviceid: %d http: %s&quot;, ssdp,
+         get_socket_rhost(s-&gt;id, ra, sizeof(ra)), get_socket_rport(s-&gt;id),
+         opts.bootid, did, opts.http_host);
+    //use ssdp (unicast) even if received to multicast address
+    LOGM(&quot;%s&quot;, buf);
+    int wb = sendto(ssdp, buf, strlen(buf), MSG_NOSIGNAL, (const struct sockaddr *)&amp;s-&gt;sa, salen);
+    if (wb != strlen(buf))
+        LOG(&quot;incomplete ssdp_reply: wrote %d out of %d: error %d: %s&quot;, wb, strlen(buf), errno, strerror(errno));
+    return 0;
+}</code></pre>
+<h3 id="Description"><a href="#Description" class="headerlink" title="Description"></a>Description</h3><p><code>ssdp</code>信息中的<code>LOCATION</code>字段，对于<code>minisatip</code>可以通过参数来指定</p>
+<pre><code>case XML_OPT:
+    while (*optarg &gt; 0 &amp;&amp; *optarg == &#39;/&#39;)
+        optarg++;
+    if (*optarg &gt; 0)
+        opts.xml_path = optarg;
+    else
+        LOG(&quot;Not a valid path for the xml file&quot;);
+    break;
+
+case PLAYLIST_OPT:
+{
+    if (strlen(optarg) &lt; 1000)
+    {
+        opts.playlist = malloc1(strlen(optarg) + 200);
+        if (opts.playlist)
+            sprintf(opts.playlist, &quot;&lt;satip:X_SATIPM3U xmlns:satip=\&quot;urn:ses-com:satip\&quot;&gt;%s&lt;/satip:X_SATIPM3U&gt;\r\n&quot;, &gt;
+    }
+    else
+        LOG(&quot;playlist length is too big %d bytes&quot;, strlen(optarg));
+    break;
+}</code></pre><p>另外从函数<code>read_http</code>也可以看到<code>xml</code>的组成成分及生成过程</p>
+<p><code>minisatip</code>同时支持<code>SAT&gt;IP Client</code>，文件<code>satipc.c</code>即为相关代码，函数<code>satip_getxml</code>为获取<code>LOCATION</code>过程</p>
+<h3 id="Control"><a href="#Control" class="headerlink" title="Control"></a>Control</h3><p>涉及<code>RTSP</code>和<code>HTTP</code>，忽略<code>HTTP</code>。<code>RTSP</code>函数为<code>new_rtsp</code>及<code>read_rtsp</code></p>
+<p><code>read_rtsp</code>为服务端处理<code>rtsp</code></p>
+<pre><code class="c">#define RTSP_SETUP 1
+#define RTSP_PLAY 2
+#define RTSP_OPTIONS 3
+#define RTSP_TEARDOWN 4
+#define RTSP_DESCRIBE 5
+
+if ((strncasecmp(arg[0], &quot;PLAY&quot;, 4) == 0) || (strncasecmp(arg[0], &quot;GET&quot;, 3) == 0) || (strncasecmp(arg[0], &quot;SETUP&quot;, 5) == 0))
+{
+    char ra[100];
+    int rv;
+
+    if (!(sid = get_sid(s-&gt;sid)))
+    {
+        http_response(s, 454, NULL, NULL, cseq, 0);
+        return 0;
+    }
+
+    if (useragent)
+        strncpy(sid-&gt;useragent, useragent, sizeof(sid-&gt;useragent) - 1);
+
+    if ((strncasecmp(arg[0], &quot;PLAY&quot;, 4) == 0) || (strncasecmp(arg[0], &quot;GET&quot;, 3) == 0))
+        if ((rv = start_play(sid, s)) &lt; 0)
+        {
+            http_response(s, -rv, NULL, NULL, cseq, 0);
+            return 0;
+        }
+    buf[0] = 0;
+    if (transport)
+    {
+        int s_timeout;
+
+        if (sid-&gt;timeout == 1)
+            sid-&gt;timeout = opts.timeout_sec;
+
+        s_timeout = ((sid-&gt;timeout &gt; 20000) ? sid-&gt;timeout : opts.timeout_sec) / 1000;
+        get_stream_rhost(sid-&gt;sid, ra, sizeof(ra));
+
+        switch (sid-&gt;type)
+        {
+        case STREAM_RTSP_UDP:
+            if (atoi(ra) &lt; 224)
+                snprintf(buf, sizeof(buf),
+                            &quot;Transport: RTP/AVP;unicast;destination=%s;source=%s;client_port=%d-%d;server_port=%d-%d\r\nSession: %010d;timeout=%d\r\ncom.ses.streamID: %d&quot;,
+                            ra, get_sock_shost(s-&gt;sock),
+                            get_stream_rport(sid-&gt;sid),
+                            get_stream_rport(sid-&gt;sid) + 1,
+                            //                            opts.start_rtp, opts.start_rtp + 1,
+                            get_sock_sport(sid-&gt;rsock),
+                            get_sock_sport(sid-&gt;rtcp), get_session_id(s-&gt;sid),
+                            s_timeout, sid-&gt;sid + 1);
+            else
+                snprintf(buf, sizeof(buf),
+                            &quot;Transport: RTP/AVP;multicast;destination=%s;port=%d-%d\r\nSession: %010d;timeout=%d\r\ncom.ses.streamID: %d&quot;,
+                            ra, get_stream_rport(sid-&gt;sid),
+                            ntohs(sid-&gt;sa.sin_port) + 1,
+                            get_session_id(s-&gt;sid), s_timeout, sid-&gt;sid + 1);
+            break;
+        case STREAM_RTSP_TCP:
+            snprintf(buf, sizeof(buf),
+                        &quot;Transport: RTP/AVP/TCP;interleaved=0-1\r\nSession: %010d;timeout=%d\r\ncom.ses.streamID: %d&quot;,
+                        get_session_id(s-&gt;sid), s_timeout, sid-&gt;sid + 1);
+            break;
+        }
+    }
+
+    if (strncasecmp(arg[0], &quot;PLAY&quot;, 4) == 0)
+    {
+        char *qm = strchr(arg[1], &#39;?&#39;);
+        if (qm)
+            *qm = 0;
+        if (buf[0])
+            strcat(buf, &quot;\r\n&quot;);
+
+        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf) - 1,
+                    &quot;RTP-Info: url=%s;seq=%jd;rtptime=%jd\r\nRange: npt=0.000-&quot;,
+                    arg[1], getTick(), (getTickUs() / 1000000));
+    }
+    if (buf[0] == 0 &amp;&amp; sid-&gt;type == STREAM_HTTP)
+        snprintf(buf, sizeof(buf), &quot;Content-Type: video/mp2t\r\nConnection: close&quot;);
+    http_response(s, 200, buf, NULL, cseq, 0);
+}
+else if (strncmp(arg[0], &quot;TEARDOWN&quot;, 8) == 0)
+{
+    buf[0] = 0;
+    if (get_sid(s-&gt;sid))
+        sprintf(buf, &quot;Session: %010d&quot;, get_session_id(s-&gt;sid));
+    close_stream(s-&gt;sid);
+    s-&gt;flush_enqued_data = 1;
+    http_response(s, 200, buf, NULL, cseq, 0);
+}
+else
+{
+    if (strncmp(arg[0], &quot;DESCRIBE&quot;, 8) == 0)
+    {
+        char sbuf[1000];
+        char *rv;
+        rv = describe_streams(s, arg[1], sbuf, sizeof(sbuf));
+        if (!rv)
+        {
+            http_response(s, 404, NULL, NULL, cseq, 0);
+            return 0;
+        }
+        snprintf(buf, sizeof(buf),
+                    &quot;Content-type: application/sdp\r\nContent-Base: rtsp://%s/&quot;,
+                    get_sock_shost(s-&gt;sock));
+        http_response(s, 200, buf, sbuf, cseq, 0);
+    }
+    else if (strncmp(arg[0], &quot;OPTIONS&quot;, 7) == 0)
+    {
+        //            if(!get_sid(s-&gt;sid))
+        //                http_response(s, 454, public, NULL, cseq, 0);
+        //            else
+        http_response(s, 200, public, NULL, cseq, 0);
+    }
+}
+</code></pre>
+<p>客户端发送<code>rtsp</code>命令可以参看文件<code>satipc.c</code>函数<code>satipc_reply</code></p>
+<h3 id="Media-Transport"><a href="#Media-Transport" class="headerlink" title="Media Transport"></a>Media Transport</h3><p>涉及<code>RTP</code>及<code>RTCP</code>协议</p>
+<p><code>RTP</code>处理流程<code>read_dmx</code> -&gt; <code>process_dmx</code> -&gt; <code>process_packet</code> -&gt; <code>flush_streami</code> -&gt; <code>send_rtp</code></p>
+<p><code>RTCP</code>处理流程<code>setup_stream</code> -&gt; <code>stream_timeout</code> -&gt; <code>send_rtcp</code></p>
+<h2 id="SAT-gt-IP-Client-Vlc"><a href="#SAT-gt-IP-Client-Vlc" class="headerlink" title="SAT&gt;IP Client Vlc"></a>SAT&gt;IP Client Vlc</h2><p>主要是<code>SAT&gt;IP Client</code>怎么获取<code>Channel List</code>，以<code>vlc</code>为例</p>
+<p><code>modules/services_discovery/upnp.cpp</code>函数<code>void MediaServerList::parseNewServer( IXML_Document *doc, const std::string &amp;location )</code></p>
+<pre><code>if ( !strncmp( SATIP_SERVER_DEVICE_TYPE, psz_device_type,
+        strlen( SATIP_SERVER_DEVICE_TYPE ) - 1 ) )
+{
+    SD::MediaServerDesc* p_server = NULL;
+
+    vlc_url_t url;
+    vlc_UrlParse( &amp;url, psz_base_url );
+
+    char *psz_satip_channellist = config_GetPsz(m_sd, &quot;satip-channelist&quot;);
+    if( !psz_satip_channellist ) {
+        break;
+    }
+
+    /* a user may have provided a custom playlist url */
+    if (strncmp(psz_satip_channellist, &quot;CustomList&quot;, 10) == 0) {
+        char *psz_satip_playlist_url = config_GetPsz( m_sd, &quot;satip-channellist-url&quot; );
+        if ( psz_satip_playlist_url ) {
+            p_server = new(std::nothrow) SD::MediaServerDesc( psz_udn, psz_friendly_name, psz_satip_playlist_url, iconUrl );
+
+            if( likely( p_server ) ) {
+                p_server-&gt;satIpHost = url.psz_host;
+                p_server-&gt;isSatIp = true;
+                if( !addServer( p_server ) ) {
+                    delete p_server;
+                }
+            }
+
+            /* to comply with the SAT&gt;IP specification, we don&#39;t fall back on another channel list if this path failed */
+            free( psz_satip_playlist_url );
+            vlc_UrlClean( &amp;url );
+            continue;
+        }
+    }
+
+    /* If requested by the user, check for a SAT&gt;IP m3u list, which may be provided by some rare devices */
+    if (strncmp(psz_satip_channellist, &quot;ServerList&quot;, 10) == 0) {
+        const char* psz_m3u_url = xml_getChildElementValue( p_device_element, &quot;satip:X_SATIPM3U&quot; );
+        if ( psz_m3u_url ) {
+            if ( strncmp( &quot;http&quot;, psz_m3u_url, 4) )
+            {
+                char* psz_url = NULL;
+                if ( UpnpResolveURL2( psz_base_url, psz_m3u_url, &amp;psz_url ) == UPNP_E_SUCCESS )
+                {
+                    p_server = new(std::nothrow) SD::MediaServerDesc( psz_udn, psz_friendly_name, psz_url, iconUrl );
+                    free(psz_url);
+                }
+            } else {
+                p_server = new(std::nothrow) SD::MediaServerDesc( psz_udn, psz_friendly_name, psz_m3u_url, iconUrl );
+            }
+
+            if ( unlikely( !p_server ) )
+            {
+                free( psz_satip_channellist );
+                break;
+            }
+
+            p_server-&gt;satIpHost = url.psz_host;
+            p_server-&gt;isSatIp = true;
+            if ( !addServer( p_server ) )
+                delete p_server;
+        } else {
+            msg_Warn( m_sd, &quot;SAT&gt;IP server &#39;%s&#39; did not provide a playlist&quot;, url.psz_host);
+        }
+
+        /* to comply with the SAT&gt;IP specifications, we don&#39;t fallback on another channel list if this path failed */
+        free(psz_satip_channellist);
+        vlc_UrlClean( &amp;url );
+        continue;
+    }
+
+    /* Normally, fetch a playlist from the web,
+        * which will be processed by a lua script a bit later */
+    char *psz_url;
+    if (asprintf( &amp;psz_url, &quot;http://www.satip.info/Playlists/%s.m3u&quot;,
+                    psz_satip_channellist ) &lt; 0 ) {
+        vlc_UrlClean( &amp;url );
+        free( psz_satip_channellist );
+        continue;
+    }
+
+    p_server = new(std::nothrow) SD::MediaServerDesc( psz_udn,
+                                                        psz_friendly_name, psz_url, iconUrl );
+
+    if( likely( p_server ) ) {
+        p_server-&gt;satIpHost = url.psz_host;
+        p_server-&gt;isSatIp = true;
+        if( !addServer( p_server ) ) {
+            delete p_server;
+        }
+    }
+    free( psz_url );
+    free( psz_satip_channellist );
+    vlc_UrlClean( &amp;url );
+
+    continue;
+}</code></pre><ol>
+<li>获取<code>CustomList</code></li>
+<li>根据<code>satip:X_SATIPM3U</code>获取</li>
+<li>指定<code>URL:http://www.satip.info/Playlists/%s.m3u</code>获取</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/sat2ip/" rel="tag"># sat2ip</a>
+              <a href="/tags/ssdp/" rel="tag"># ssdp</a>
+              <a href="/tags/soap/" rel="tag"># soap</a>
+              <a href="/tags/rtsp/" rel="tag"># rtsp</a>
+              <a href="/tags/minisatip/" rel="tag"># minisatip</a>
+              <a href="/tags/vlc/" rel="tag"># vlc</a>
+              <a href="/tags/rtcp/" rel="tag"># rtcp</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/02/26/sat2ip-notes/" rel="next" title="SAT>IP 协议笔记">
+                  <i class="fa fa-chevron-left"></i> SAT>IP 协议笔记
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/03/01/dlna-and-upnp-protocol/" rel="prev" title="源代码分析及 DLNA 和 UPnP 协议理解">
+                  源代码分析及 DLNA 和 UPnP 协议理解 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#SAT-gt-IP-Server-Minisatip"><span class="nav-number">1.</span> <span class="nav-text">SAT&gt;IP Server Minisatip</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Main"><span class="nav-number">1.1.</span> <span class="nav-text">Main</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Discovery"><span class="nav-number">1.2.</span> <span class="nav-text">Discovery</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Description"><span class="nav-number">1.3.</span> <span class="nav-text">Description</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Control"><span class="nav-number">1.4.</span> <span class="nav-text">Control</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Media-Transport"><span class="nav-number">1.5.</span> <span class="nav-text">Media Transport</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SAT-gt-IP-Client-Vlc"><span class="nav-number">2.</span> <span class="nav-text">SAT&gt;IP Client Vlc</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">431</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">454</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:41</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>
