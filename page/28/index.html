@@ -216,7 +216,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/dlopen/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/Linux-ld/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -230,7 +230,7 @@
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/2014/12/14/dlopen/" class="post-title-link" itemprop="url">动态库的显式调用</a>
+            <a href="/2014/12/14/Linux-ld/" class="post-title-link" itemprop="url">GCC静态库链接顺序</a>
         </h1>
 
         <div class="post-meta">
@@ -247,7 +247,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-01-19 17:33:08" itemprop="dateModified" datetime="2020-01-19T17:33:08+08:00">2020-01-19</time>
+                <time title="Modified: 2020-02-17 21:39:12" itemprop="dateModified" datetime="2020-02-17T21:39:12+08:00">2020-02-17</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -255,8 +255,8 @@
               </span>
               <span class="post-meta-item-text">In</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
+                  <a href="/categories/C/" itemprop="url" rel="index">
+                    <span itemprop="name">C</span>
                   </a>
                 </span>
             </span>
@@ -267,14 +267,14 @@
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>1.7k</span>
+              <span>866</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="fa fa-clock-o"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
+              <span>1 mins.</span>
             </span>
 
         </div>
@@ -286,63 +286,19 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>动态链接库在使用时，分为“隐式调用”和“显式调用”两种:</p>
-<p>1.如果是隐式调用，则与静态库的使用方法差不多，注意需要包含导出函数的头文件，即mylib.h：</p>
-<pre><code>#include ...
-#include &quot;mylib.h&quot;
-
-int main()
-{
-    Print();
-}</code></pre><p>编译方法：</p>
-<pre><code>gcc -o main main.c -L./ mylib.so</code></pre><p>注意要加上动态链接库的搜索路径，否则编译器只会到系统路径中去寻找。</p>
-<p>2.显式调用的方式，不必包含mylib.h，但是需要增加几个系统调用：</p>
-<pre><code>#include ...
-#include  &lt;dlfcn.h&gt;// 显式加载需要用到的头文件
-
-int main()
-{
-    void *pdlHandle = dlopen(&quot;./mylib.so&quot;, RTLD_LAZY); // RTLD_LAZY 延迟加载
-    char *pszErr = dlerror();
-    if( !pdlHandle || pszErr )
-    {
-        printf(&quot;Load mylib failed!n&quot;)
-            return 1;
-    }
-
-    void (*Print)() = dlsym(pdlHandle, &quot;Print&quot;); // 定位动态链接库中的函数
-    if( !Print )
-    {
-        pszErr = dlerror();
-        printf(&quot;Find symbol failed!%sn&quot;, pszErr);
-        dlclose(pdlHandle);
-        return 1;
-    }
-
-    Print(); // 调用动态链接库中的函数
-
-    dlclose(pdlHandle); // 系统动态链接库引用数减1
-
-    return 0;
-}</code></pre><p>可以看到，显式调用的代码看上去要复杂很多，但是却比隐式调用要灵活，<br>不必在编译时就确定要加载哪个动态链接库，可以在运行时再确定，甚至重新加载。</p>
-<p>看一下显式调用的编译方式：</p>
-<pre><code>gcc -ldl -o main main.c</code></pre><p>注意要添加-ldl选项，以使用显式调用相关的函数调用</p>
-<p>手动加载动态链接库dlopen dlsym dlcolose</p>
-<p><strong>打开动态链接库</strong>：</p>
-<pre><code>#include &lt;dlfcn.h&gt;
-void *dlopen(const char *filename, int flag);</code></pre><p>该函数返回操作句柄，如：</p>
-<pre><code>void *pHandle = dlopen(strSoFilePath, RTLD_LAZY);</code></pre><p><strong>取动态对象地址</strong>：</p>
-<pre><code>#include &lt;dlfcn.h&gt;
-void *dlsym(void *pHandle, char *symbol);</code></pre><p>dlsym根据动态链接库操作句柄(<code>pHandle</code>)与符号(<code>symbol</code>),返回符号对应的地址。<br>使用这个函数不但可以获取函数地址，也可以获取变量地址。比如，假设在so中<br>定义了一个<code>void mytest()函数</code>，那在使用so时先声明一个函数指针：<br><code>void (*pMytest)()</code>,然后使用dlsym函数将函数指针pMytest指向mytest函数，<br><code>pMytest = (void (*)())dlsym(pHandle, &quot;mytest&quot;)</code>;</p>
-<p><strong>关闭动态链接库</strong>：</p>
-<pre><code>#include &lt;dlfcn.h&gt;
-int dlclose(void *handle);</code></pre><p>该函数将该.so的引用计数减一，当引用计数为0时，将它从系统中卸载。</p>
-<p><strong>动态库错误函数</strong>：</p>
-<pre><code>#include &lt;dlfcn.h&gt;
-const char *dlerror(void);</code></pre><p>当动态链接库操作函数执行失败时，dlerror可以返回出错信息，返回值为NULL时   表示没有错误信息。</p>
-<p>在取到函数执行地址后，就可以在动态库的使用程序里根据动态库提供的函数接口调用动态库里的函数。<br>在编写调用动态库的程序的Makefile文件时，需要加入编译选-ldl。</p>
-<p>从<code>void *dlsym(void *handle, char *symbol)</code> 的参数可以看出，<br>该函数只传两个参数：一个指向so的handle和一个函数的symbol，<br>所以so里面的函数应该不允许重载，否则根据一个symbol不能确定指向那个函数。</p>
-
+          <p>工程中遇到问题，修改配置文件之后发现编译不过，部分符号未定义，检查Makefile如下：</p>
+<pre><code>LDFLAGS += -lui -lenca -lxml -lgxbox -lstdc++ -ljansson -lcurl
+...
+LDFLAGS += -L$(GXSRC_PATH)/lib/$(THIRD_LIB)/ -lkolatv -lpcre</code></pre><p>其中<strong>kolatv库</strong>需要调用<strong>jansson库</strong>，<strong>gxbox库</strong>也需要调用<strong>jansson库</strong>。</p>
+<p>在修改配置文件之前，开启了gxbox的支持，在编译中需要链接gxbox库，从而jansson库可以链接成功。</p>
+<p>在修改配置文件之后，关闭了gxbox的支持，在编译中不会编译gxbox代码，gxbox库链接失败，<br>从而jansson库链接失败，在载入kolatv库时不存在jansson库的符号表。</p>
+<p>GCC：</p>
+<p>-l library</p>
+<p>Search the library named library when linking.<br>(The second alternative with the library as a separate argument is only for POSIX compliance and is not recommended.)</p>
+<p>It makes a difference where in the command you write this option;<br>the linker searches and processes libraries and object files in the order they are specified.<br>Thus, <code>foo.o -lz bar.o&#39; searches library</code>z’ after file foo.o but before bar.o.<br>If bar.o refers to functions in `z’, those functions may not be loaded.</p>
+<p><strong>因此，在链接过程中，链接的库，一定要在使用该库的目标被连接之后，基本的库要放在最后。</strong></p>
+<p>修改如下：</p>
+<pre><code>LDFLAGS += -lui -lenca -lxml -lkolatv -lgxbox -lstdc++ -ljansson -lcurl</code></pre>
       
     </div>
 
@@ -392,7 +348,7 @@ const char *dlerror(void);</code></pre><p>当动态链接库操作函数执行�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-01-19 17:33:08" itemprop="dateModified" datetime="2020-01-19T17:33:08+08:00">2020-01-19</time>
+                <time title="Modified: 2020-02-17 21:39:12" itemprop="dateModified" datetime="2020-02-17T21:39:12+08:00">2020-02-17</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -617,6 +573,151 @@ int shutdown(int sockfd, int how);</code></pre><p>bind函数使用通用地址�
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/dlopen/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/12/14/dlopen/" class="post-title-link" itemprop="url">动态库的显式调用</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-12-15 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-15T00:00:00+08:00">2014-12-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-02-17 21:39:12" itemprop="dateModified" datetime="2020-02-17T21:39:12+08:00">2020-02-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>1.7k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>动态链接库在使用时，分为“隐式调用”和“显式调用”两种:</p>
+<p>1.如果是隐式调用，则与静态库的使用方法差不多，注意需要包含导出函数的头文件，即mylib.h：</p>
+<pre><code>#include ...
+#include &quot;mylib.h&quot;
+
+int main()
+{
+    Print();
+}</code></pre><p>编译方法：</p>
+<pre><code>gcc -o main main.c -L./ mylib.so</code></pre><p>注意要加上动态链接库的搜索路径，否则编译器只会到系统路径中去寻找。</p>
+<p>2.显式调用的方式，不必包含mylib.h，但是需要增加几个系统调用：</p>
+<pre><code>#include ...
+#include  &lt;dlfcn.h&gt;// 显式加载需要用到的头文件
+
+int main()
+{
+    void *pdlHandle = dlopen(&quot;./mylib.so&quot;, RTLD_LAZY); // RTLD_LAZY 延迟加载
+    char *pszErr = dlerror();
+    if( !pdlHandle || pszErr )
+    {
+        printf(&quot;Load mylib failed!n&quot;)
+            return 1;
+    }
+
+    void (*Print)() = dlsym(pdlHandle, &quot;Print&quot;); // 定位动态链接库中的函数
+    if( !Print )
+    {
+        pszErr = dlerror();
+        printf(&quot;Find symbol failed!%sn&quot;, pszErr);
+        dlclose(pdlHandle);
+        return 1;
+    }
+
+    Print(); // 调用动态链接库中的函数
+
+    dlclose(pdlHandle); // 系统动态链接库引用数减1
+
+    return 0;
+}</code></pre><p>可以看到，显式调用的代码看上去要复杂很多，但是却比隐式调用要灵活，<br>不必在编译时就确定要加载哪个动态链接库，可以在运行时再确定，甚至重新加载。</p>
+<p>看一下显式调用的编译方式：</p>
+<pre><code>gcc -ldl -o main main.c</code></pre><p>注意要添加-ldl选项，以使用显式调用相关的函数调用</p>
+<p>手动加载动态链接库dlopen dlsym dlcolose</p>
+<p><strong>打开动态链接库</strong>：</p>
+<pre><code>#include &lt;dlfcn.h&gt;
+void *dlopen(const char *filename, int flag);</code></pre><p>该函数返回操作句柄，如：</p>
+<pre><code>void *pHandle = dlopen(strSoFilePath, RTLD_LAZY);</code></pre><p><strong>取动态对象地址</strong>：</p>
+<pre><code>#include &lt;dlfcn.h&gt;
+void *dlsym(void *pHandle, char *symbol);</code></pre><p>dlsym根据动态链接库操作句柄(<code>pHandle</code>)与符号(<code>symbol</code>),返回符号对应的地址。<br>使用这个函数不但可以获取函数地址，也可以获取变量地址。比如，假设在so中<br>定义了一个<code>void mytest()函数</code>，那在使用so时先声明一个函数指针：<br><code>void (*pMytest)()</code>,然后使用dlsym函数将函数指针pMytest指向mytest函数，<br><code>pMytest = (void (*)())dlsym(pHandle, &quot;mytest&quot;)</code>;</p>
+<p><strong>关闭动态链接库</strong>：</p>
+<pre><code>#include &lt;dlfcn.h&gt;
+int dlclose(void *handle);</code></pre><p>该函数将该.so的引用计数减一，当引用计数为0时，将它从系统中卸载。</p>
+<p><strong>动态库错误函数</strong>：</p>
+<pre><code>#include &lt;dlfcn.h&gt;
+const char *dlerror(void);</code></pre><p>当动态链接库操作函数执行失败时，dlerror可以返回出错信息，返回值为NULL时   表示没有错误信息。</p>
+<p>在取到函数执行地址后，就可以在动态库的使用程序里根据动态库提供的函数接口调用动态库里的函数。<br>在编写调用动态库的程序的Makefile文件时，需要加入编译选-ldl。</p>
+<p>从<code>void *dlsym(void *handle, char *symbol)</code> 的参数可以看出，<br>该函数只传两个参数：一个指向so的handle和一个函数的symbol，<br>所以so里面的函数应该不允许重载，否则根据一个symbol不能确定指向那个函数。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/Linux-system-programming-syscall/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -648,7 +749,7 @@ int shutdown(int sockfd, int how);</code></pre><p>bind函数使用通用地址�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-01-19 17:33:08" itemprop="dateModified" datetime="2020-01-19T17:33:08+08:00">2020-01-19</time>
+                <time title="Modified: 2020-02-17 21:39:12" itemprop="dateModified" datetime="2020-02-17T21:39:12+08:00">2020-02-17</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -713,107 +814,6 @@ int shutdown(int sockfd, int how);</code></pre><p>bind函数使用通用地址�
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/Linux-ld/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/12/14/Linux-ld/" class="post-title-link" itemprop="url">GCC静态库链接顺序</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-12-15 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-15T00:00:00+08:00">2014-12-15</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-01-19 17:33:08" itemprop="dateModified" datetime="2020-01-19T17:33:08+08:00">2020-01-19</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/C/" itemprop="url" rel="index">
-                    <span itemprop="name">C</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>866</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>工程中遇到问题，修改配置文件之后发现编译不过，部分符号未定义，检查Makefile如下：</p>
-<pre><code>LDFLAGS += -lui -lenca -lxml -lgxbox -lstdc++ -ljansson -lcurl
-...
-LDFLAGS += -L$(GXSRC_PATH)/lib/$(THIRD_LIB)/ -lkolatv -lpcre</code></pre><p>其中<strong>kolatv库</strong>需要调用<strong>jansson库</strong>，<strong>gxbox库</strong>也需要调用<strong>jansson库</strong>。</p>
-<p>在修改配置文件之前，开启了gxbox的支持，在编译中需要链接gxbox库，从而jansson库可以链接成功。</p>
-<p>在修改配置文件之后，关闭了gxbox的支持，在编译中不会编译gxbox代码，gxbox库链接失败，<br>从而jansson库链接失败，在载入kolatv库时不存在jansson库的符号表。</p>
-<p>GCC：</p>
-<p>-l library</p>
-<p>Search the library named library when linking.<br>(The second alternative with the library as a separate argument is only for POSIX compliance and is not recommended.)</p>
-<p>It makes a difference where in the command you write this option;<br>the linker searches and processes libraries and object files in the order they are specified.<br>Thus, <code>foo.o -lz bar.o&#39; searches library</code>z’ after file foo.o but before bar.o.<br>If bar.o refers to functions in `z’, those functions may not be loaded.</p>
-<p><strong>因此，在链接过程中，链接的库，一定要在使用该库的目标被连接之后，基本的库要放在最后。</strong></p>
-<p>修改如下：</p>
-<pre><code>LDFLAGS += -lui -lenca -lxml -lkolatv -lgxbox -lstdc++ -ljansson -lcurl</code></pre>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/04/fat32/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -845,7 +845,7 @@ LDFLAGS += -L$(GXSRC_PATH)/lib/$(THIRD_LIB)/ -lkolatv -lpcre</code></pre><p>其�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-01-19 17:33:08" itemprop="dateModified" datetime="2020-01-19T17:33:08+08:00">2020-01-19</time>
+                <time title="Modified: 2020-02-17 21:39:12" itemprop="dateModified" datetime="2020-02-17T21:39:12+08:00">2020-02-17</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1008,7 +1008,7 @@ if ((LD_DWORD(&amp;fs-&gt;win[BS_FilSysType32]) &amp; 0xFFFFFF) == 0x544146)
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-01-19 17:33:08" itemprop="dateModified" datetime="2020-01-19T17:33:08+08:00">2020-01-19</time>
+                <time title="Modified: 2020-02-17 21:39:12" itemprop="dateModified" datetime="2020-02-17T21:39:12+08:00">2020-02-17</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1452,7 +1452,7 @@ int madvice(void *addr, size_t len, int advice);  </code></pre><p>madvise() 函�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-01-19 17:33:08" itemprop="dateModified" datetime="2020-01-19T17:33:08+08:00">2020-01-19</time>
+                <time title="Modified: 2020-02-17 21:39:12" itemprop="dateModified" datetime="2020-02-17T21:39:12+08:00">2020-02-17</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1536,6 +1536,112 @@ echo</code></pre>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/18/rgb/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/11/18/rgb/" class="post-title-link" itemprop="url">RGB 颜色空间显示</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-11-19 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-19T00:00:00+08:00">2014-11-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-02-17 21:39:12" itemprop="dateModified" datetime="2020-02-17T21:39:12+08:00">2020-02-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>316</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>代码如下，实现RGB颜色空间的显示：</p>
+<pre><code>for(r = 0 ; r &lt; 0xFF; r++)
+{   
+    for(g = 0 ; g &lt; 0xFF; g++)
+    {   
+        for(b = 0 ; b &lt; 0xFF; b++)                                                                                         
+        {   
+            count++;
+
+            printf(&quot;\e]4;60;rgb:%d/%d/%d\e\\\e[38;5;60m 0x%02x%02x%02x██████\e[m&quot;, r, g, b, r, g, b); 
+
+            if(count%8 == 0)
+                printf(&quot;\n&quot;);
+        }   
+    }   
+}   </code></pre><p>shell中如下进行显示：</p>
+<pre><code>$ echo -en &#39;\e]4;60;rgb:ff/ff/ff\e\\\e[38;5;60m = ██ \e[m\n&#39;</code></pre><p>可以方便进行RGB颜色的查询</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/18/ycbcr2rgb/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1567,7 +1673,7 @@ echo</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-01-19 17:33:08" itemprop="dateModified" datetime="2020-01-19T17:33:08+08:00">2020-01-19</time>
+                <time title="Modified: 2020-02-17 21:39:12" itemprop="dateModified" datetime="2020-02-17T21:39:12+08:00">2020-02-17</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1671,112 +1777,6 @@ echo</code></pre>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/18/rgb/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/11/18/rgb/" class="post-title-link" itemprop="url">RGB 颜色空间显示</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-11-19 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-19T00:00:00+08:00">2014-11-19</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-01-19 17:33:08" itemprop="dateModified" datetime="2020-01-19T17:33:08+08:00">2020-01-19</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>316</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>代码如下，实现RGB颜色空间的显示：</p>
-<pre><code>for(r = 0 ; r &lt; 0xFF; r++)
-{   
-    for(g = 0 ; g &lt; 0xFF; g++)
-    {   
-        for(b = 0 ; b &lt; 0xFF; b++)                                                                                         
-        {   
-            count++;
-
-            printf(&quot;\e]4;60;rgb:%d/%d/%d\e\\\e[38;5;60m 0x%02x%02x%02x██████\e[m&quot;, r, g, b, r, g, b); 
-
-            if(count%8 == 0)
-                printf(&quot;\n&quot;);
-        }   
-    }   
-}   </code></pre><p>shell中如下进行显示：</p>
-<pre><code>$ echo -en &#39;\e]4;60;rgb:ff/ff/ff\e\\\e[38;5;60m = ██ \e[m\n&#39;</code></pre><p>可以方便进行RGB颜色的查询</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/13/Linux-system-programming-Time/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1808,7 +1808,7 @@ echo</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-01-19 17:33:08" itemprop="dateModified" datetime="2020-01-19T17:33:08+08:00">2020-01-19</time>
+                <time title="Modified: 2020-02-17 21:39:12" itemprop="dateModified" datetime="2020-02-17T21:39:12+08:00">2020-02-17</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2038,7 +2038,7 @@ int timer_delete(timer_t timerid);</code></pre><p>*<a href="http://blog.csdn.net
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-01-19 17:33:08" itemprop="dateModified" datetime="2020-01-19T17:33:08+08:00">2020-01-19</time>
+                <time title="Modified: 2020-02-17 21:39:12" itemprop="dateModified" datetime="2020-02-17T21:39:12+08:00">2020-02-17</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2296,7 +2296,7 @@ int sigaction(int signum,const struct sigaction *act,struct sigaction *oldact));
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-01-19 17:33:08" itemprop="dateModified" datetime="2020-01-19T17:33:08+08:00">2020-01-19</time>
+                <time title="Modified: 2020-02-17 21:39:12" itemprop="dateModified" datetime="2020-02-17T21:39:12+08:00">2020-02-17</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2645,7 +2645,7 @@ int munlockall(void);</code></pre><h2 id="投机性内存分配策略"><a href="
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-01-19 17:33:08" itemprop="dateModified" datetime="2020-01-19T17:33:08+08:00">2020-01-19</time>
+                <time title="Modified: 2020-02-17 21:39:12" itemprop="dateModified" datetime="2020-02-17T21:39:12+08:00">2020-02-17</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2899,7 +2899,7 @@ thread2: unlock 59   i 6</code></pre><p>线程1先执行，获得mutex锁，打�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-01-19 17:33:08" itemprop="dateModified" datetime="2020-01-19T17:33:08+08:00">2020-01-19</time>
+                <time title="Modified: 2020-02-17 21:39:12" itemprop="dateModified" datetime="2020-02-17T21:39:12+08:00">2020-02-17</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -3245,7 +3245,7 @@ int main(int argc, char *argv[]){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-01-19 17:33:08" itemprop="dateModified" datetime="2020-01-19T17:33:08+08:00">2020-01-19</time>
+                <time title="Modified: 2020-02-17 21:39:12" itemprop="dateModified" datetime="2020-02-17T21:39:12+08:00">2020-02-17</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -3532,7 +3532,7 @@ int pthread_cond_timedwait (pthread_cond_t * cptr, pthread_mutex_t *mptr, const 
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">17:42</span>
+    <span title="Reading time total">17:41</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
   </div>
