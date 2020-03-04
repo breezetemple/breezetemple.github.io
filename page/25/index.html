@@ -216,6 +216,297 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/12/03/linux-modules/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/12/03/linux-modules/" class="post-title-link" itemprop="url">Linux Modules分析</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-12-04 00:00:00" itemprop="dateCreated datePublished" datetime="2015-12-04T00:00:00+08:00">2015-12-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>5.9k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a><strong>示例</strong></h3><p>源码：</p>
+<pre><code>#include &lt;linux/init.h&gt;
+#include &lt;linux/module.h&gt;
+
+static int __init hello_init(void)
+{
+    printk(&quot;Hello, world!\n&quot;);
+    return 0;
+}
+
+static void __exit hello_exit(void)
+{
+    printk(&quot;Goodbye, world!\n&quot;);
+}
+
+module_init(hello_init);
+module_exit(hello_exit);
+
+MODULE_LICENSE(&quot;GPL&quot;);
+MODULE_AUTHOR(&quot;printk&quot;);
+MODULE_DESCRIPTION(&quot;\&quot;Hello, world!\&quot;&quot;);
+MODULE_VERSION(&quot;printk&quot;);     </code></pre><p>使用的交叉编译，Makefile：</p>
+<pre><code>ARCH=xxx
+CROSS_COMPILE=$(ARCH)-linux-
+obj-m := printk.o
+
+KDIR := /home/workspace/kernel/2.6.27.55
+PWD   := $(shell pwd)
+
+default:
+    $(MAKE) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KDIR) M=$(PWD) modules
+
+clean:
+    $(MAKE) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KDIR) M=$(PWD) clean    </code></pre><p><strong>obj-m := printk.o 是kbuild Makefile中的目标定义部分</strong>，同时目标定义部分也是kbuild Makefile的重要组成部分。<br>该例子告诉Kbuild在这目录里，有一个名为printk.o的目标文件。<br>将会编译成一个可加载的模块而不是直接编译进内核</p>
+<h3 id="makefiles-txt"><a href="#makefiles-txt" class="headerlink" title="makefiles.txt"></a><strong>makefiles.txt</strong></h3><p>根据Linux内核文档<strong>makefiles.txt</strong>的说明：</p>
+<ol>
+<li><strong>obj-y Built-in object goals 对应内核配置[Y]</strong></li>
+<li><strong>obj-m Loadable module goals 对应内核配置[M]</strong></li>
+</ol>
+<p>obj-m由单个文件构成，其中$(CONFIG_ISDN_PPP_BSDCOMP)为配置系统配置为‘m’，示例：</p>
+<pre><code>obj-$(CONFIG_ISDN_PPP_BSDCOMP) += isdn_bsdcomp.o</code></pre><p>obj-m由多个文件构成，其中$(CONFIG_ISDN)为配置系统配置为‘m’，示例：</p>
+<pre><code>obj-$(CONFIG_ISDN) += isdn.o
+isdn-objs := isdn_net_lib.o isdn_v110.o isdn_common.o</code></pre><p>如果.config中存在以下配置<code>CONFIG_SCSI=y</code>，那么drivers/Makefile中存在以下配置<code>obj-$(CONFIG_SCSI) += scsi/</code>，示例：</p>
+<pre><code>obj-y               += base/ block/ misc/ mfd/ net/ media/
+obj-$(CONFIG_NUBUS)     += nubus/
+obj-$(CONFIG_ATM)       += atm/
+obj-y               += macintosh/
+obj-$(CONFIG_IDE)       += ide/
+obj-$(CONFIG_SCSI)      += scsi/                                                                                                    
+obj-$(CONFIG_ATA)       += ata/
+obj-$(CONFIG_FUSION)        += message/</code></pre><p><strong>当将模块配置为build-in时，即表示要将这些代码的相关目录放入编译目录中！</strong></p>
+<h3 id="Linux-Makefile"><a href="#Linux-Makefile" class="headerlink" title="Linux Makefile"></a><strong>Linux Makefile</strong></h3><p>Kernel/Documentation/kbuild/makefiles.txt 中描述Linux Makefile包含五部分：</p>
+<ol>
+<li>Makefile        the top Makefile.</li>
+<li>.config         the kernel configuration file.                                                                                 </li>
+<li>arch/$(ARCH)/Makefile   the arch Makefile.</li>
+<li>scripts/Makefile.*  common rules etc. for all kbuild Makefiles.</li>
+<li>kbuild Makefiles    there are about 500 of these.</li>
+</ol>
+<p>各个部分的作用：</p>
+<ol>
+<li>顶层Makefile读取.config内核配置文件，顶层Makefile负责编译两个主要的镜像文件：vmlinux（驻留内核镜像）和 内核模块，<br>它通过递归便利内核源码树的子目录来编译这些目标文件，访问的子目录列表取决于内核的配置。</li>
+<li>.config内核配置文件</li>
+<li>顶层Makefile还会包含arch/$(ARCH)/Makefile，这些平台Makefile向顶层Makefile提供架构特性信息</li>
+<li>每一个子目录下有一个kbulid Makefile会展开从上面传下来的命令，<br>kbulid Makefile利用来自.config的配置信息通过kbulid构建各种不同的文件编译内置或是模块可加载的目标</li>
+<li>scripts/Makefile.* 包含了所有的定义、规则等等，他们在kbulid makefiles的基础上构建内核</li>
+</ol>
+<h3 id="Makefile-modpost"><a href="#Makefile-modpost" class="headerlink" title="Makefile.modpost"></a><strong>Makefile.modpost</strong></h3><p>在script目录下有许多Makefile文件，由于各种情况；其中，Makefile.modpost由于module的生成。</p>
+<p>第一步：</p>
+<ol>
+<li>编译驱动的每个.o文件。</li>
+<li>将每个.o文件链接到.o。</li>
+<li>在$(MODVERDIR)/生成一个.mod文件，列出.ko及每个.o文件。</li>
+</ol>
+<p>第二步：</p>
+<ol>
+<li>找出所有在$(MODVERDIR)/的modules。</li>
+<li>接着使用modpost</li>
+<li>为每个module创建.mod.c</li>
+<li>创建一个Module.symvers文件，保存了所有引出符号及其CRC校验。</li>
+<li>编译全部 .mod.c文件。</li>
+<li>链接所有的module成为一个文件。</li>
+</ol>
+<p>第三步：替换module里一些ELF段，包括：</p>
+<p>Version magic (see include/vermagic.h for full details)</p>
+<ul>
+<li>Kernel release</li>
+<li>SMP is CONFIG_SMP</li>
+<li>PREEMPT is CONFIG_PREEMPT</li>
+<li>GCC Version</li>
+</ul>
+<p>Module info</p>
+<ul>
+<li>Module version (MODULE_VERSION)</li>
+<li>Module alias’es (MODULE_ALIAS)</li>
+<li>Module license (MODULE_LICENSE)</li>
+<li>See include/linux/module.h for more details</li>
+</ul>
+<p>第四步：</p>
+<p>Step 4 is solely used to allow module versioning in external modules,<br>where the CRC of each module is retrieved from the Module.symers file.<br>KBUILD_MODPOST_WARN can be set to avoid error out in case of undefined<br>symbols in the final module linking stage<br>KBUILD_MODPOST_NOFINAL can be set to skip the final link of modules.<br>This is solely usefull to speed up test compiles</p>
+<h3 id="编译及结果"><a href="#编译及结果" class="headerlink" title="编译及结果"></a><strong>编译及结果</strong></h3><p>源码结构：</p>
+<pre><code>.
+├── hello_printk.c
+└── Makefile</code></pre><p>编译过程：</p>
+<pre><code>make ARCH=xxx CROSS_COMPILE=xxx-linux- -C /home/workspace/kernel/2.6.27.55 M=/data/linux_drivers/hello_printk modules
+make[1]: Entering directory &#39;/home/workspace/kernel/2.6.27.55&#39;
+CC [M]  /data/linux_drivers/hello_printk/hello_printk.o
+Building modules, stage 2.
+MODPOST 1 modules
+CC      /data/linux_drivers/hello_printk/hello_printk.mod.o
+LD [M]  /data/linux_drivers/hello_printk/hello_printk.ko
+make[1]: Leaving directory &#39;/home/workspace/kernel/2.6.27.55&#39;</code></pre><p>结构：</p>
+<pre><code>.
+├── hello_printk.c
+├── hello_printk.ko
+├── .hello_printk.ko.cmd
+├── hello_printk.mod.c
+├── hello_printk.mod.o
+├── .hello_printk.mod.o.cmd
+├── hello_printk.o
+├── .hello_printk.o.cmd
+├── Makefile
+├── modules.order
+├── Module.symvers
+└── .tmp_versions
+    └── hello_printk.mod</code></pre><p>其中生成<code>&lt;module&gt;.mod.c</code>文件， 内容如下：</p>
+<pre><code>#include &lt;linux/module.h&gt;
+#include &lt;linux/vermagic.h&gt;
+#include &lt;linux/compiler.h&gt;
+
+MODULE_INFO(vermagic, VERMAGIC_STRING);
+
+struct module __this_module
+__attribute__((section(&quot;.gnu.linkonce.this_module&quot;))) = {
+    .name = KBUILD_MODNAME,
+    .init = init_module,
+#ifdef CONFIG_MODULE_UNLOAD
+    .exit = cleanup_module,
+#endif                                                                                                                              
+    .arch = MODULE_ARCH_INIT,
+};
+
+
+
+static const char __module_depends[]
+__used
+__attribute__((section(&quot;.modinfo&quot;))) =
+&quot;depends=&quot;;
+
+
+MODULE_INFO(srcversion, &quot;D9CAF6BFCBD9B121FB4765D&quot;);</code></pre><p><strong>其实就是在生成的文件里加入<code>.gnu.linkonce.this_module</code>这样一个段，<br>驱动加裁时会找到这个段并调用<code>.init</code>函数，卸载时调用<code>.exit</code>函数。</strong></p>
+<p>定义一个module结构类型的变量<code>struct module __this_module</code>，<br>这个变量是放在ELF文件的段名为<code>.gnu.linkonce.this_module</code>的段中，通过readelf工具也可以看到相关的段：</p>
+<pre><code>$ readelf -S hello_printk.mod.o
+共有 11 个节头，从偏移量 0x218 开始：
+
+节头：
+    [Nr] Name              Type            Addr     Off    Size   ES Flg Lk Inf Al
+    [ 0]                   NULL            00000000 000000 000000 00      0   0  0
+    [ 1] .text             PROGBITS        00000000 000034 000000 00  AX  0   0  1
+    [ 2] .data             PROGBITS        00000000 000034 000000 00  WA  0   0  1
+    [ 3] .bss              NOBITS          00000000 000034 000000 00  WA  0   0  1
+    [ 4] .gnu.linkonce.thi PROGBITS        00000000 000034 0000f4 00  WA  0   0  4
+    [ 5] .rela.gnu.linkonc RELA            00000000 000524 000018 0c      9   4  4
+    [ 6] .modinfo          PROGBITS        00000000 000128 00004f 00   A  0   0  4
+    [ 7] .comment          PROGBITS        00000000 000177 000043 01  MS  0   0  1
+    [ 8] .shstrtab         STRTAB          00000000 0001ba 00005d 00      0   0  1
+    [ 9] .symtab           SYMTAB          00000000 0003d0 0000e0 10     10  11  4
+    [10] .strtab           STRTAB          00000000 0004b0 000071 00      0   0  1
+Key to Flags:
+    W (write), A (alloc), X (execute), M (merge), S (strings)
+    I (info), L (link order), G (group), T (TLS), E (exclude), x (unknown)
+    O (extra OS processing required) o (OS specific), p (processor specific)</code></pre><p>最后将<strong><code>hello_printk.mod.o</code></strong>和<strong><code>hello_printk.o</code></strong>链接为ko，ko符号表如下：</p>
+<pre><code>nm hello_printk.ko
+00000000 T cleanup_module
+00000000 t hello_exit
+00000000 t hello_init
+00000000 T init_module
+0000003c r __mod_author59
+00000010 r __mod_description60
+00000060 r __mod_license58
+0000006c r __mod_srcversion23
+00000090 r __module_depends
+0000009c r __mod_vermagic5
+00000000 r __mod_version61
+U printk
+00000000 D __this_module</code></pre><p>module中可以使用的符号表为<strong><code>cleanup_module</code></strong>和<strong><code>init_module</code></strong>，其他为局部符号，对外不可见。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/12/02/linux-device_drivers/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +538,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -575,7 +866,7 @@ module_param(int_var, uint, S_IRUGO);</code></pre><h2 id="Tips"><a href="#Tips" 
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -769,7 +1060,7 @@ eax 0xbffff6a4 -1073744220</code></pre><p>　<br>1.<a href="http://blog.csdn.net
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1029,7 +1320,7 @@ o{2,} 与“Bob”中的“o”不匹配，但与“foooood”中的所有“o�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1129,7 +1420,7 @@ o{2,} 与“Bob”中的“o”不匹配，但与“foooood”中的所有“o�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1267,7 +1558,7 @@ dump tekhex value filename expression
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1458,7 +1749,7 @@ nmap &lt;leader&gt;&lt;leader&gt;q :call CodeFormat()&lt;CR&gt;</code></pre><p>�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1714,7 +2005,7 @@ net.core.wmem_max = 16777216</code></pre><p>一般来说，<strong>理论上的R
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2090,7 +2381,7 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb, int clone_it,
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2205,108 +2496,6 @@ PRI  </code></pre><p>解析如下：</p>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/31/python-Tkinter/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/10/31/python-Tkinter/" class="post-title-link" itemprop="url">python Tkinter编程</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-11-01 00:00:00" itemprop="dateCreated datePublished" datetime="2015-11-01T00:00:00+08:00">2015-11-01</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Python/" itemprop="url" rel="index">
-                    <span itemprop="name">Python</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>2.1k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>python提供了多个图形开发界面的库，几个常用Python GUI库如下：</p>
-<ul>
-<li>Tkinter： Tkinter模块(“Tk 接口”)是Python的标准Tk GUI工具包的接口.<br>Tk和Tkinter可以在大多数的Unix平台下使用,同样可以应用在Windows和Macintosh系统里.<br>Tk8.0的后续版本可以实现本地窗口风格,并良好地运行在绝大多数平台中。</li>
-<li>wxPython：wxPython 是一款开源软件，是 Python 语言的一套优秀的 GUI 图形库，<br>允许 Python 程序员很方便的创建完整的、功能键全的 GUI 用户界面。</li>
-<li>Jython：Jython程序可以和Java无缝集成。除了一些标准模块，Jython使用Java的模块。<br>Jython几乎拥有标准的Python中不依赖于C语言的全部模块。<br>比如，Jython的用户界面将使用Swing，AWT或者SWT。Jython可以被动态或静态地编译成Java字节码。</li>
-</ul>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2015/10/31/python-Tkinter/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/31/python-pyinstaller/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2338,7 +2527,7 @@ PRI  </code></pre><p>解析如下：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2501,7 +2690,7 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/29/python-ImageTK/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/31/python-Tkinter/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -2515,7 +2704,7 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/2015/10/29/python-ImageTK/" class="post-title-link" itemprop="url">python ImageTk加载错误</a>
+            <a href="/2015/10/31/python-Tkinter/" class="post-title-link" itemprop="url">python Tkinter编程</a>
         </h1>
 
         <div class="post-meta">
@@ -2525,14 +2714,14 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
               </span>
               <span class="post-meta-item-text">Posted on</span>
 
-              <time title="Created: 2015-10-30 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-30T00:00:00+08:00">2015-10-30</time>
+              <time title="Created: 2015-11-01 00:00:00" itemprop="dateCreated datePublished" datetime="2015-11-01T00:00:00+08:00">2015-11-01</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2552,14 +2741,14 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>510</span>
+              <span>2.1k</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="fa fa-clock-o"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
+              <span>2 mins.</span>
             </span>
 
         </div>
@@ -2571,18 +2760,20 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>python中使用PIL ImageTK出现以下问题：</p>
-<pre><code>Traceback (most recent call last):
-    File &quot;./ExportXiamiList.py&quot;, line 4, in &lt;module&gt;
-        from tkinter import *
-ImportError: No module named tkinter</code></pre><p>Ubuntu下环境：</p>
-<pre><code>ExportXiamiList-master &gt; python
-python            python2.7         python2-config    python3.3         python3.4         python3m                          
-python2           python2.7-config  python3           python3.3m        python3.4m        python-config            </code></pre><p>安装如下包，不起作用：</p>
-<pre><code>sudo apt-get install python-pil python-pil.imagetk --reinstall</code></pre><p>继续安装如下包解决问题：</p>
-<pre><code>sudo apt-get install python3-pil python3-pil.imagetk</code></pre><p>python中ImageTK用法如下：</p>
-<pre><code>from PIL import Image
-from PIL import ImageTk</code></pre>
+          <p>python提供了多个图形开发界面的库，几个常用Python GUI库如下：</p>
+<ul>
+<li>Tkinter： Tkinter模块(“Tk 接口”)是Python的标准Tk GUI工具包的接口.<br>Tk和Tkinter可以在大多数的Unix平台下使用,同样可以应用在Windows和Macintosh系统里.<br>Tk8.0的后续版本可以实现本地窗口风格,并良好地运行在绝大多数平台中。</li>
+<li>wxPython：wxPython 是一款开源软件，是 Python 语言的一套优秀的 GUI 图形库，<br>允许 Python 程序员很方便的创建完整的、功能键全的 GUI 用户界面。</li>
+<li>Jython：Jython程序可以和Java无缝集成。除了一些标准模块，Jython使用Java的模块。<br>Jython几乎拥有标准的Python中不依赖于C语言的全部模块。<br>比如，Jython的用户界面将使用Swing，AWT或者SWT。Jython可以被动态或静态地编译成Java字节码。</li>
+</ul>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2015/10/31/python-Tkinter/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -2632,7 +2823,7 @@ from PIL import ImageTk</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2722,7 +2913,7 @@ pip install pyinstaller</code></pre><p>均正确，解决此问题</p>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/27/shell-getopts/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/29/python-ImageTK/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -2736,7 +2927,7 @@ pip install pyinstaller</code></pre><p>均正确，解决此问题</p>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/2015/10/27/shell-getopts/" class="post-title-link" itemprop="url">shell脚本的命令行选项解析</a>
+            <a href="/2015/10/29/python-ImageTK/" class="post-title-link" itemprop="url">python ImageTk加载错误</a>
         </h1>
 
         <div class="post-meta">
@@ -2746,14 +2937,14 @@ pip install pyinstaller</code></pre><p>均正确，解决此问题</p>
               </span>
               <span class="post-meta-item-text">Posted on</span>
 
-              <time title="Created: 2015-10-28 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-28T00:00:00+08:00">2015-10-28</time>
+              <time title="Created: 2015-10-30 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-30T00:00:00+08:00">2015-10-30</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2761,8 +2952,8 @@ pip install pyinstaller</code></pre><p>均正确，解决此问题</p>
               </span>
               <span class="post-meta-item-text">In</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Shell/" itemprop="url" rel="index">
-                    <span itemprop="name">Shell</span>
+                  <a href="/categories/Python/" itemprop="url" rel="index">
+                    <span itemprop="name">Python</span>
                   </a>
                 </span>
             </span>
@@ -2773,14 +2964,14 @@ pip install pyinstaller</code></pre><p>均正确，解决此问题</p>
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>2.1k</span>
+              <span>510</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="fa fa-clock-o"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
+              <span>1 mins.</span>
             </span>
 
         </div>
@@ -2792,124 +2983,18 @@ pip install pyinstaller</code></pre><p>均正确，解决此问题</p>
     <div class="post-body" itemprop="articleBody">
 
       
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p>标准UNIX命一般都提供大量的选项和参数，例如：</p>
-<pre><code>ps --help
-Usage:
-ps [options]
-
-Try &#39;ps --help &lt;simple|list|output|threads|misc|all&gt;&#39;
-or &#39;ps --help &lt;s|l|o|t|m|a&gt;&#39;
-for additional help text.</code></pre><p>在这些工具的命令行处理中使用了C函数<strong>getopt</strong>；<br>shell脚本可以通过使用<strong>getopts</strong>来保持与UNIX一致的风格。</p>
-<h2 id="常用shell参数变量"><a href="#常用shell参数变量" class="headerlink" title="常用shell参数变量"></a>常用shell参数变量</h2><ul>
-<li>$0 ：即命令本身，相当于C/C++中的argv[0]</li>
-<li>$1 ：第一个参数.</li>
-<li>$2, $3, $4 … ：第2、3、4个参数，依次类推。</li>
-<li>$#  参数的个数，不包括命令本身</li>
-<li>$@ ：参数本身的列表，也不包括命令本身</li>
-<li>$* ：和$@相同，但”$*“ 和 “$@”(加引号)并不同，”$*“将所有的参数解释成一个字符串，而”$@”是一个参数数组。</li>
-</ul>
-<h2 id="getopts"><a href="#getopts" class="headerlink" title="getopts"></a>getopts</h2><p>getopts有两个参数，<br>第一个参数是一个字符串，包括字符和“：”，每一个字符都是一个有效的选项，<br>如果字符后面带有“：”，表示这个字符有自己的参数。<br>如果字符串最前面带有“：”，表示开启静默模式，屏蔽系统提示错误。<br>getopts从命令中获取这些参数，并且删去了“-”，<br>并将其赋值在第二个参数中，如果带有自己参数，这个参数赋值在“OPTARG”中。</p>
-<p>在使用getopts命令的时候，shell会自动产生两个变量OPTIND和OPTARG。<br>OPTIND初始值为1，其含义是下一个待处理的参数的索引。<br>只要存在，getopts命令返回true，所以一般getopts命令使用while循环；<br>OPTARG是当getopts获取到其期望的参数后存入的位置。</p>
-<h2 id="脚本"><a href="#脚本" class="headerlink" title="脚本"></a>脚本</h2><pre><code>[ $# -eq 0   ] &amp;&amp; usage
-
-# option_string以冒号开头表示屏蔽脚本的系统提示错误，自己处理错误提示。
-# 后面接合法的单字母选项，选项后若有冒号，则表示该选项必须接具体的参数
-
-while getopts :s:t:i:oh OPTION
-do
-    case $OPTION in
-        s)
-            STRING=$OPTARG
-            ;;
-
-        t)
-            STRING=`cat $OPTARG`
-            ;;
-
-        i)
-            IN=$OPTARG        #$OPTARG为特殊变量，表示选项的具体参数
-            ;;
-
-        o)
-            OUT=$OPTARG        #$OPTARG为特殊变量，表示选项的具体参数
-            ;;
-
-        h)
-            echo &quot;\033[31mHelp Info:\033[0m&quot;
-            java -jar sfntly-builds/java-openjdk-8/sfnttool/sfnttool.jar -h
-            exit 1
-        ;;
-
-        \?)                       #如果出现错误，则解析为?
-            usage
-            ;;
-    esac
-done
-
-#$OPTIND表示第几个选项，初始值为1
-#shift $(($OPTIND - 1))
-#if [ $# -eq 0  ]; then
-#    usage
-#fi</code></pre><h2 id="shift"><a href="#shift" class="headerlink" title="shift"></a>shift</h2><p>使用shift $(($OPTIND-1))的作用是:<br>通过shift $(($OPTIND - 1))的处理，$*中就只保留了除去选项内容的参数，可以在其后进行正常的shell编程处理，例如：</p>
-<pre><code>./xx -i in -o out para1 para2 ...</code></pre><p>经过处理之后，$*为 <strong>para1 para2</strong>，方便后续脚本处理</p>
-<pre><code>while getopts s:h OPTION
-do
-    case $OPTION in
-        s)
-            STRING=$OPTARG
-            ;;
-
-        h)
-            echo &quot;\033[31mHelp Info:\033[0m&quot;
-            exit 1
-        ;;
-
-        \?)                       #如果出现错误，则解析为?
-            usage
-            ;;
-    esac
-done
-
-echo &quot;OPTIND:&quot;$OPTIND
-shift $(($OPTIND - 1))      #除了选项之外，该脚本必须接至少一个参数
-
-echo $0
-echo $*
-echo $@
-
-if [ $# -eq 0  ]; then
-    usage
-fi
-
-for file in $@          #依次处理剩余的参数
-do
-    echo $file
-done</code></pre><p>执行结果如下：</p>
-<pre><code>➜  /data/OpenSourceCode/subset-ttf  &gt; ./test.sh -s &quot;123&quot; test1 test2 test3
-OPTIND:3
-./test.sh               $0
-test1 test2 test3       $*
-test1 test2 test3       $@
-test1                   file
-test2
-test3</code></pre>
+          <p>python中使用PIL ImageTK出现以下问题：</p>
+<pre><code>Traceback (most recent call last):
+    File &quot;./ExportXiamiList.py&quot;, line 4, in &lt;module&gt;
+        from tkinter import *
+ImportError: No module named tkinter</code></pre><p>Ubuntu下环境：</p>
+<pre><code>ExportXiamiList-master &gt; python
+python            python2.7         python2-config    python3.3         python3.4         python3m                          
+python2           python2.7-config  python3           python3.3m        python3.4m        python-config            </code></pre><p>安装如下包，不起作用：</p>
+<pre><code>sudo apt-get install python-pil python-pil.imagetk --reinstall</code></pre><p>继续安装如下包解决问题：</p>
+<pre><code>sudo apt-get install python3-pil python3-pil.imagetk</code></pre><p>python中ImageTK用法如下：</p>
+<pre><code>from PIL import Image
+from PIL import ImageTk</code></pre>
       
     </div>
 
@@ -2959,7 +3044,7 @@ test3</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -3141,20 +3226,20 @@ com</code></pre>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">432</span>
+          <span class="site-state-item-count">433</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-count">57</span>
         <span class="site-state-item-name">categories</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">455</span>
+        <span class="site-state-item-count">457</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -3214,7 +3299,7 @@ com</code></pre>
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">17:36</span>
+    <span title="Reading time total">17:37</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
   </div>

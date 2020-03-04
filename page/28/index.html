@@ -216,6 +216,371 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/15/aio/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/12/15/aio/" class="post-title-link" itemprop="url">异步非阻塞I/O</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-12-16 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-16T00:00:00+08:00">2014-12-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux System Programming</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.7k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<p>对I/O操作的分类主要基于时间和占有两个角度进行划分：<br>从时间角度可分为同步操作和异步操作；<br>从资源占有角度可分为阻塞操作和非阻塞操作。<br>从而UNXI可以构造出4种不同的I/O操作模型：</p>
+<ul>
+<li><strong>同步阻塞I/O</strong></li>
+<li><strong>同步非阻塞I/O</strong></li>
+<li><strong>异步阻塞I/O</strong></li>
+<li><strong>异步非阻塞I/O</strong>，AIO</li>
+</ul>
+<p>AIO是将I/O操作与应用程序的计算操作重叠执行的一种模型，即实现I/O操作与计算操作的有效分离。<br>AIO背后的基本思想是允许进程发起很多I/O操作，而不用阻塞或等待任何操作完成。<br>异步非阻塞I/O模型是一种处理与I/O重叠进行的模型。<br>读请求会立即返回，说明read请求已经成功发起了。<br>在后台完成读操作时，应用程序然后会执行其他处理操作。<br>当read的响应到达时，就会产生一个信号或执行一个基于线程的回调函数来完成这次 I/O 处理过程。</p>
+<p><img src="http://www.myexception.cn/img/2013/08/08/103815107.gif" alt=""></p>
+<p>在一个进程中为了执行多个I/O请求而对计算操作和I/O处理进行重叠处理的能力利用了处理速度与 I/O 速度之间的差异。<br>当一个或多个I/O请求挂起时，CPU可以执行其他任务；<br>或者更为常见的是，在发起其他I/O的同时对已经完成的I/O进行操作。</p>
+<p>AIO在当前Linux下主要有两种AIO实现技术：一种是glibc库函数实现，另一种是Linux内核实现，并由libaio库进行封装</p>
+<p>glibc库中的AIO实现，需要在编译时<code>-lrt</code>：</p>
+<pre><code>#include &lt;aio.h&gt;
+
+//请求异步读操作
+int aio_read(struct aiocb *aiocbp);
+//检查异步请求的状态
+int aio_error(const struct aiocb *aiocbp);
+//获得完成的异步请求的返回状态
+ssize_t aio_return(struct aiocb *aiocbp);
+//请求异步写操作
+int aio_write(struct aiocb *aiocbp);
+//挂起调用进程，直到一个或多个异步请求已经完成（或失败）
+int aio_suspend(const struct aiocb * const aiocb_list[],
+                int nitems, const struct timespec *timeout);
+//取消异步 I/O 请求
+int aio_cancel(int fd, struct aiocb *aiocbp);
+//发起一系列 I/O 操作
+int lio_listio(int mode, struct aiocb *const aiocb_list[],
+                int nitems, struct sigevent *sevp);</code></pre><p>在异步非阻塞I/O中，我们可以同时发起多个传输操作。<br>这需要每个传输操作都有惟一的上下文，<br>这样我们才能在它们完成时区分到底是哪个传输操作完成了。<br>在 AIO 中，这是一个 aiocb（AIO I/O Control Block）结构。<br>这个结构包含了有关传输的所有信息，包括为数据准备的用户缓冲区。<br>在产生 I/O （称为完成）通知时，aiocb 结构就被用来惟一标识所完成的 I/O 操作。<br>定义如下：</p>
+<pre><code>#include &lt;aiocb.h&gt;
+
+struct aiocb {
+    /* The order of these fields is implementation-dependent */
+
+    int             aio_fildes;     /* File descriptor */
+    off_t           aio_offset;     /* File offset */
+    volatile void  *aio_buf;        /* Location of buffer */
+    size_t          aio_nbytes;     /* Length of transfer */
+    int             aio_reqprio;    /* Request priority */
+    struct sigevent aio_sigevent;   /* Notification method */
+    int             aio_lio_opcode; /* Operation to be performed;
+                                    lio_listio() only */
+
+    /* Various implementation-internal fields not shown */
+};</code></pre><p>sigevent 结构告诉 AIO 在 I/O 操作完成时应该执行什么操作。<br>我们将在 AIO 的展示中对这个结构进行探索。<br>现在我们将展示各个 AIO 的 API 函数是如何工作的，以及我们应该如何使用它们。</p>
+<p>AIO通知：通过信号实现异步通知和通过函数回调来实现</p>
+<ol>
+<li><a href="http://blog.csdn.net/yfkiss/article/details/7516589" target="_blank" rel="noopener">网络编程–IO模型示例</a></li>
+<li><a href="http://www.ibm.com/developerworks/cn/linux/l-async/" target="_blank" rel="noopener">使用异步 I/O 大大提高应用程序的性能</a></li>
+<li><a href="http://www.wzxue.com/linux-kernel-aio%E8%BF%99%E4%B8%AA%E5%A5%87%E8%91%A9/" target="_blank" rel="noopener">Linux kernel AIO这个奇葩</a></li>
+<li><a href="http://nicedayyep.iteye.com/blog/89773" target="_blank" rel="noopener">Linux下的服务器开发模型 Epoll和AIO的讨论</a></li>
+<li><a href="http://blog.csdn.net/sparkliang/article/details/4836536" target="_blank" rel="noopener">Epoll vs. IOCP</a></li>
+<li><a href="http://bbs.chinaunix.net/thread-1942420-1-1.html" target="_blank" rel="noopener">异步,epoll和aio</a></li>
+</ol>
+<p>转载：</p>
+<p><strong>异步IO</strong>就是把IO提交给系统，让系统替你做，做完了再用某种方式通知你(通过信号，或者其他异步方式<br>通知，这时候，操作系统已经帮你完成IO操作，具体来说就是你那个作为传入参数的的buffer的指针所指向<br>的空间已经读到了数据或者你的buffer的数据已经写出去了）；</p>
+<p><strong>非阻塞IO</strong>就是你要通过某种方式不定时地向系统询问你是否可以开始做某个IO( 轮询啊 )，当可以开始<br>后，是要自己来完成IO(也就是说还要自己调用一次read来填充buffer或者write来不buffer的数据写出去)；</p>
+<p><strong>epoll和aio（这里的aio是指linux 2.6内核后提供的aio api）区别：</strong></p>
+<p>aio是异步非阻塞的。其实是aio是用线程池实现了异步IO。</p>
+<p>epoll在这方面的定义上有点复杂，首先epoll的fd集里面每一个fd都是非阻塞的，但是epoll（还<br>select poll ）在调用时阻塞等待fd可用，然后epoll只是一个异步通知机制，只是在fd可用时通知你，并<br>没有做任何IO操作，所以不是传统的异步。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/Linux-ld/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/12/14/Linux-ld/" class="post-title-link" itemprop="url">GCC静态库链接顺序</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-12-15 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-15T00:00:00+08:00">2014-12-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index">
+                    <span itemprop="name">C</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>866</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>工程中遇到问题，修改配置文件之后发现编译不过，部分符号未定义，检查Makefile如下：</p>
+<pre><code>LDFLAGS += -lui -lenca -lxml -lgxbox -lstdc++ -ljansson -lcurl
+...
+LDFLAGS += -L$(GXSRC_PATH)/lib/$(THIRD_LIB)/ -lkolatv -lpcre</code></pre><p>其中<strong>kolatv库</strong>需要调用<strong>jansson库</strong>，<strong>gxbox库</strong>也需要调用<strong>jansson库</strong>。</p>
+<p>在修改配置文件之前，开启了gxbox的支持，在编译中需要链接gxbox库，从而jansson库可以链接成功。</p>
+<p>在修改配置文件之后，关闭了gxbox的支持，在编译中不会编译gxbox代码，gxbox库链接失败，<br>从而jansson库链接失败，在载入kolatv库时不存在jansson库的符号表。</p>
+<p>GCC：</p>
+<p>-l library</p>
+<p>Search the library named library when linking.<br>(The second alternative with the library as a separate argument is only for POSIX compliance and is not recommended.)</p>
+<p>It makes a difference where in the command you write this option;<br>the linker searches and processes libraries and object files in the order they are specified.<br>Thus, <code>foo.o -lz bar.o&#39; searches library</code>z’ after file foo.o but before bar.o.<br>If bar.o refers to functions in `z’, those functions may not be loaded.</p>
+<p><strong>因此，在链接过程中，链接的库，一定要在使用该库的目标被连接之后，基本的库要放在最后。</strong></p>
+<p>修改如下：</p>
+<pre><code>LDFLAGS += -lui -lenca -lxml -lkolatv -lgxbox -lstdc++ -ljansson -lcurl</code></pre>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/Linux-system-programming-syscall/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/12/14/Linux-system-programming-syscall/" class="post-title-link" itemprop="url">Linux系统调用</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-12-15 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-15T00:00:00+08:00">2014-12-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux System Programming</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>345</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<p>计算机系统内存分为系统空间和用户空间。通常，用户是不能够直接访问系统空间、调用系统函数的，<br>但用户可以通过<strong>系统调用</strong>进入内核空间，获取内核服务。</p>
+<p>用户进程对系统函数的成功调用，将进行相应的用户空间到系统空间的转换。<br>进入内核后，不同的系统调用会找到各自对应的内核函数入口地址，<strong>由内核函数提供服务</strong>。</p>
+<p>以调用系统调用fork()来分析如下：</p>
+<p><img src="http://images.51cto.com/files/uploadimg/20090603/163946908.jpg" alt="fork()系统调用"></p>
+<p>从图中我们可以看出，调用fork()实际上是调用了中断0x80，通过事先初始化好的IDT，<br>程序转移到了_system_call，最终通过一个函数指针数组sys_call_table[]转化成了调用sys_fork()。</p>
+<p>系统调用起到了连接用户进程和操作系统的桥梁作用，由于桥两端处于不同的态，因此需要使用中断来过渡。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/dlopen/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +612,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -361,102 +726,6 @@ const char *dlerror(void);</code></pre><p>当动态链接库操作函数执行�
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/Linux-system-programming-syscall/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/12/14/Linux-system-programming-syscall/" class="post-title-link" itemprop="url">Linux系统调用</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-12-15 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-15T00:00:00+08:00">2014-12-15</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux System Programming</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>345</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
-<p>计算机系统内存分为系统空间和用户空间。通常，用户是不能够直接访问系统空间、调用系统函数的，<br>但用户可以通过<strong>系统调用</strong>进入内核空间，获取内核服务。</p>
-<p>用户进程对系统函数的成功调用，将进行相应的用户空间到系统空间的转换。<br>进入内核后，不同的系统调用会找到各自对应的内核函数入口地址，<strong>由内核函数提供服务</strong>。</p>
-<p>以调用系统调用fork()来分析如下：</p>
-<p><img src="http://images.51cto.com/files/uploadimg/20090603/163946908.jpg" alt="fork()系统调用"></p>
-<p>从图中我们可以看出，调用fork()实际上是调用了中断0x80，通过事先初始化好的IDT，<br>程序转移到了_system_call，最终通过一个函数指针数组sys_call_table[]转化成了调用sys_fork()。</p>
-<p>系统调用起到了连接用户进程和操作系统的桥梁作用，由于桥两端处于不同的态，因此需要使用中断来过渡。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/socket/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -488,7 +757,7 @@ const char *dlerror(void);</code></pre><p>当动态链接库操作函数执行�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -713,107 +982,6 @@ int shutdown(int sockfd, int how);</code></pre><p>bind函数使用通用地址�
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/Linux-ld/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/12/14/Linux-ld/" class="post-title-link" itemprop="url">GCC静态库链接顺序</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-12-15 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-15T00:00:00+08:00">2014-12-15</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/C/" itemprop="url" rel="index">
-                    <span itemprop="name">C</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>866</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>工程中遇到问题，修改配置文件之后发现编译不过，部分符号未定义，检查Makefile如下：</p>
-<pre><code>LDFLAGS += -lui -lenca -lxml -lgxbox -lstdc++ -ljansson -lcurl
-...
-LDFLAGS += -L$(GXSRC_PATH)/lib/$(THIRD_LIB)/ -lkolatv -lpcre</code></pre><p>其中<strong>kolatv库</strong>需要调用<strong>jansson库</strong>，<strong>gxbox库</strong>也需要调用<strong>jansson库</strong>。</p>
-<p>在修改配置文件之前，开启了gxbox的支持，在编译中需要链接gxbox库，从而jansson库可以链接成功。</p>
-<p>在修改配置文件之后，关闭了gxbox的支持，在编译中不会编译gxbox代码，gxbox库链接失败，<br>从而jansson库链接失败，在载入kolatv库时不存在jansson库的符号表。</p>
-<p>GCC：</p>
-<p>-l library</p>
-<p>Search the library named library when linking.<br>(The second alternative with the library as a separate argument is only for POSIX compliance and is not recommended.)</p>
-<p>It makes a difference where in the command you write this option;<br>the linker searches and processes libraries and object files in the order they are specified.<br>Thus, <code>foo.o -lz bar.o&#39; searches library</code>z’ after file foo.o but before bar.o.<br>If bar.o refers to functions in `z’, those functions may not be loaded.</p>
-<p><strong>因此，在链接过程中，链接的库，一定要在使用该库的目标被连接之后，基本的库要放在最后。</strong></p>
-<p>修改如下：</p>
-<pre><code>LDFLAGS += -lui -lenca -lxml -lkolatv -lgxbox -lstdc++ -ljansson -lcurl</code></pre>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/04/fat32/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -845,7 +1013,7 @@ LDFLAGS += -L$(GXSRC_PATH)/lib/$(THIRD_LIB)/ -lkolatv -lpcre</code></pre><p>其�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1008,7 +1176,7 @@ if ((LD_DWORD(&amp;fs-&gt;win[BS_FilSysType32]) &amp; 0xFFFFFF) == 0x544146)
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1452,7 +1620,7 @@ int madvice(void *addr, size_t len, int advice);  </code></pre><p>madvise() 函�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1536,6 +1704,112 @@ echo</code></pre>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/18/rgb/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/11/18/rgb/" class="post-title-link" itemprop="url">RGB 颜色空间显示</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-11-19 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-19T00:00:00+08:00">2014-11-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>316</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>代码如下，实现RGB颜色空间的显示：</p>
+<pre><code>for(r = 0 ; r &lt; 0xFF; r++)
+{   
+    for(g = 0 ; g &lt; 0xFF; g++)
+    {   
+        for(b = 0 ; b &lt; 0xFF; b++)                                                                                         
+        {   
+            count++;
+
+            printf(&quot;\e]4;60;rgb:%d/%d/%d\e\\\e[38;5;60m 0x%02x%02x%02x██████\e[m&quot;, r, g, b, r, g, b); 
+
+            if(count%8 == 0)
+                printf(&quot;\n&quot;);
+        }   
+    }   
+}   </code></pre><p>shell中如下进行显示：</p>
+<pre><code>$ echo -en &#39;\e]4;60;rgb:ff/ff/ff\e\\\e[38;5;60m = ██ \e[m\n&#39;</code></pre><p>可以方便进行RGB颜色的查询</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/18/ycbcr2rgb/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1567,7 +1841,7 @@ echo</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1671,112 +1945,6 @@ echo</code></pre>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/18/rgb/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/11/18/rgb/" class="post-title-link" itemprop="url">RGB 颜色空间显示</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-11-19 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-19T00:00:00+08:00">2014-11-19</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>316</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>代码如下，实现RGB颜色空间的显示：</p>
-<pre><code>for(r = 0 ; r &lt; 0xFF; r++)
-{   
-    for(g = 0 ; g &lt; 0xFF; g++)
-    {   
-        for(b = 0 ; b &lt; 0xFF; b++)                                                                                         
-        {   
-            count++;
-
-            printf(&quot;\e]4;60;rgb:%d/%d/%d\e\\\e[38;5;60m 0x%02x%02x%02x██████\e[m&quot;, r, g, b, r, g, b); 
-
-            if(count%8 == 0)
-                printf(&quot;\n&quot;);
-        }   
-    }   
-}   </code></pre><p>shell中如下进行显示：</p>
-<pre><code>$ echo -en &#39;\e]4;60;rgb:ff/ff/ff\e\\\e[38;5;60m = ██ \e[m\n&#39;</code></pre><p>可以方便进行RGB颜色的查询</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/13/Linux-system-programming-Time/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1808,7 +1976,7 @@ echo</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2038,7 +2206,7 @@ int timer_delete(timer_t timerid);</code></pre><p>*<a href="http://blog.csdn.net
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2265,6 +2433,260 @@ int sigaction(int signum,const struct sigaction *act,struct sigaction *oldact));
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/11/Linux-system-programming-pthread_cont/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/11/11/Linux-system-programming-pthread_cont/" class="post-title-link" itemprop="url">Linux系统编程-多线程同步条件变量</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-11-12 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-12T00:00:00+08:00">2014-11-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux System Programming</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>5.1k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<p>与互斥锁不同，<strong>条件变量是用来等待而不是用来上锁的。<br>条件变量用来自动阻塞一个线程，直到某特殊情况发生为止。通常条件变量和互斥锁同时使用。</strong></p>
+<p>条件变量使我们可以睡眠等待某种条件出现。<br>条件变量是利用线程间共享的全局变量进行同步的一种机制，<br>主要包括两个动作：<strong>一个线程等待”条件变量的条件成立”而挂起；另一个线程使”条件成立”（给出条件成立信号）。</strong></p>
+<p><strong>条件的检测是在互斥锁的保护下进行的。<br>如果一个条件为假，一个线程自动阻塞，并释放等待状态改变的互斥锁。</strong><br>如果另一个线程改变了条件，它发信号给关联的条件变量，<br>唤醒一个或多个等待它的线程，重新获得互斥锁，重新评价条件。<br>如果两进程共享可读写的内存，条件变量可以被用来实现这两进程间的线程同步。</p>
+<p>使用条件变量之前要先进行初始化。<br>可以在单个语句中生成和初始化一个条件变量如：pthread_cond_t my_condition=PTHREAD_COND_INITIALIZER;（用于进程间线程的通信）。<br>可以利用函数pthread_cond_init动态初始化。</p>
+<p><strong>条件变量分为两部分: 条件和变量。<br>条件本身是由互斥量保护的。<br>线程在改变条件状态前先要锁住互斥量。<br>它利用线程间共享的全局变量进行同步的一种机制。</strong></p>
+<h2 id="API"><a href="#API" class="headerlink" title="API"></a><strong>API</strong></h2><pre><code>int pthread_cond_init(pthread_cond_t *cond,pthread_condattr_t *cond_attr);     
+int pthread_cond_destroy(pthread_cond_t *cond);  
+int pthread_cond_wait(pthread_cond_t *cond,pthread_mutex_t *mutex);
+int pthread_cond_timewait(pthread_cond_t *cond,pthread_mutex *mutex,const timespec *abstime);
+int pthread_cond_signal(pthread_cond_t *cond);
+int pthread_cond_broadcast(pthread_cond_t *cond);  //解除所有线程的阻塞</code></pre><p>条件变量采用的数据类型是pthread_cond_t, 在使用之前必须要进行初始化, 这包括两种方式:</p>
+<ul>
+<li>静态: 可以把常量PTHREAD_COND_INITIALIZER给静态分配的条件变量</li>
+<li>动态: pthread_cond_init函数, 释放动态条件变量的内存空间之前, 要用pthread_cond_destroy对其进行清理</li>
+</ul>
+<p>pthread_cond_wait()函数用于等待条件被触发。<br>该函数传入两个参数，一个条件变量一个互斥量，函数将条件变量和互斥量进行关联，<br>互斥量对该条件进行保护，传入的互斥量必须是已经锁住的。<br>调用pthread_cond_wait()函数后，会原子的执行以下两个动作：</p>
+<ul>
+<li>将调用线程放到等待条件的线程列表上，即进入睡眠</li>
+<li>对互斥量进行解锁</li>
+</ul>
+<p>由于这两个操作时原子操作，<br>这样就关闭了条件检查和线程进入睡眠等待条件改变这两个操作之间的时间通道，<br>这样就不会错过任何条件的变化。<br><strong>当pthread_cond_wait()返回后，互斥量会再次被锁住。</strong></p>
+<p>pthread_cond_timedwait()函数和pthread_cond_wait()的工作方式相似，只是多了一个等待时间。<br>等待时间的结构为struct timespec，</p>
+<pre><code>struct timespec{  
+    time_t  tv_sec    //Seconds.  
+    long    tv_nsec   //Nanoseconds.  
+};</code></pre><p>函数要求传入的时间值是一个绝对值，不是相对值，<br>例如，想要等待3分钟，必须先获得当前时间，然后加上3分钟。<br>要想获得当前系统时间的timespec值，没有直接可调用的函数，<br>需要通过调用gettimeofday函数获取timeval结构，然后转换成timespec结构，转换公式就是：</p>
+<pre><code>timeSpec.tv_sec = timeVal.tv_sec;  
+timeSpec.tv_nsec = timeVal.tv_usec * 1000; </code></pre><p>所以要等待3分钟，timespec时间结构的获得应该如下所示:</p>
+<pre><code>struct timeval now;  
+struct timespec until;  
+gettimeofday(&amp;now);//获得系统当前时间  
+
+//把时间从timeval结构转换成timespec结构  
+until.tv_sec = now.tv_sec;  
+until.tv_nsec = now.tv_usec * 1000;  
+
+//增加min  
+until.tv_sec += 3 * 60;  </code></pre><p>如果时间到后，条件还没有发生，那么会返回ETIMEDOUT错误。</p>
+<p><strong>从pthread_cond_wait()和pthread_cond_timewait()成功返回时，<br>线程需要重新计算条件，因为其他线程可能在运行过程中已经改变条件。</strong></p>
+<p>pthread_cond_signal() 和 pthread_cond_broadcast()<br>这两个函数都是用于向等待条件的线程发送唤醒信号，<br>pthread_cond_signal()函数只会唤醒等待该条件的某个线程，<br>pthread_cond_broadcast()会广播条件状态的改变，以唤醒等待该条件的所有线程。<br>例如多个线程只读共享资源，这是可以将它们都唤醒。<br>这里要注意的是：<strong>一定要在改变条件状态后，再给线程发送信号。</strong><br>考虑条件变量信号单播发送和广播发送的一种候选方式是坚持使用广播发送。<br><strong>只有在等待者代码编写确切，只有一个等待者需要唤醒，<br>且唤醒哪个线程无所谓，那么此时为这种情况使用单播，<br>所以其他情况下都必须使用广播发送。</strong></p>
+<p>在实际编程中，把共享数据和它们的同步变量集合到一个结构中，这往往是一个较好的编程技巧：</p>
+<pre><code>struct{  
+    pthread_mutex_t mutex;  
+    pthread_cond_t cond;  
+    int data;  
+}Data;  </code></pre><h2 id="Source-Code"><a href="#Source-Code" class="headerlink" title="Source Code"></a><strong>Source Code</strong></h2><pre><code>#include &lt;pthread.h&gt;  
+#include &lt;stdio.h&gt;  
+#include &lt;stdlib.h&gt;  
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;/* 初始化互斥锁*/  
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;/* 初始化条件变量*/  
+void *thread1(void *);  
+void *thread2(void *);  
+int i=1;  
+int main(void)  
+{  
+    pthread_t t_a;  
+    pthread_t t_b;  
+
+    pthread_create(&amp;t_a,NULL,thread1,(void *)NULL);/* 创建进程t_a*/  
+    sleep(1);
+    pthread_create(&amp;t_b,NULL,thread2,(void *)NULL); /* 创建进程t_b*/  
+
+    pthread_join(t_a, NULL);/* 等待进程t_a结束*/  
+    pthread_join(t_b, NULL);/* 等待进程t_b结束*/  
+
+    pthread_mutex_destroy(&amp;mutex);  
+    pthread_cond_destroy(&amp;cond);  
+
+    exit(0);  
+}  
+void *thread1(void *junk)  
+{  
+    for(i=1;i&lt;=6;i++)  
+    {  
+        pthread_mutex_lock(&amp;mutex);/* 锁住互斥量*/  
+        printf(&quot;thread1: lock %d\t i %d\n&quot;, __LINE__, i);  
+
+        if(i%3==0){  
+            printf(&quot;thread1:signal 1  %d\n&quot;, __LINE__);  
+            pthread_cond_signal(&amp;cond);/* 条件改变，发送信号，通知t_b进程*/  
+            printf(&quot;thread1:signal 2  %d\n&quot;, __LINE__);  
+            sleep(1);  
+        }  
+
+        pthread_mutex_unlock(&amp;mutex);/* 解锁互斥量*/  
+        printf(&quot;thread1: unlock %d\t i %d\n\n&quot;, __LINE__, i);  
+        sleep(1);  
+    }  
+}  
+void *thread2(void *junk)  
+{  
+    while(i&lt;6)  
+    {  
+        pthread_mutex_lock(&amp;mutex);  
+        printf(&quot;thread2: lock %d\t i %d\n&quot;, __LINE__, i);  
+
+        if(i%3!=0){  
+            printf(&quot;thread2: wait 1  %d\n&quot;, __LINE__);  
+            pthread_cond_wait(&amp;cond,&amp;mutex);/* 解锁mutex，并等待cond改变*/  
+            printf(&quot;thread2: wait 2  %d\n&quot;, __LINE__);  
+        }  
+
+        pthread_mutex_unlock(&amp;mutex);  
+        printf(&quot;thread2: unlock %d\t i %d\n\n&quot;, __LINE__, i);  
+        sleep(1);  
+    }  
+}</code></pre><p>编译运行结果如下：</p>
+<pre><code>thread1: lock 31     i 1
+thread1: unlock 41   i 1
+
+thread2: lock 50     i 1
+thread2: wait 1  53
+thread1: lock 31     i 2
+thread1: unlock 41   i 2
+
+thread1: lock 31     i 3
+thread1:signal 1  34
+thread1:signal 2  36
+thread1: unlock 41   i 3
+
+thread2: wait 2  55
+thread2: unlock 59   i 3
+
+thread1: lock 31     i 4
+thread1: unlock 41   i 4
+
+thread2: lock 50     i 4
+thread2: wait 1  53
+thread1: lock 31     i 5
+thread1: unlock 41   i 5
+
+thread1: lock 31     i 6
+thread1:signal 1  34
+thread1:signal 2  36
+thread1: unlock 41   i 6
+
+thread2: wait 2  55
+thread2: unlock 59   i 6</code></pre><p>线程1先执行，获得mutex锁，打印，然后释放mutex锁，然后阻塞自己1秒。</p>
+<p>线程2执行,阻塞在pthread_mutex_lock(&amp;mutex)<br>这行语句中，直到线程1释放mutex锁。<br>然后线程2得已执行，获取metux锁，满足if条件，到pthread_cond_wait (&amp;cond,&amp;mutex)<br>这里线程2阻塞，不仅仅是等待cond变量发生改变，同时释放mutex锁。<br>mutex锁释放后，线程1终于获得了mutex锁，得已继续运行，当线程1的if（i%3==0）的条件满足后，<br>通过pthread_cond_signal发送信号，<br>告诉等待cond的变量的线程（线程2），cond条件变量已经发生了改变。</p>
+<p>线程2并没有立即得到运行，因为线程2还在等待mutex锁的释放，<br>所以线程1继续往下走，直到线程1释放mutex锁，<br>线程2才能停止等待，打印语句，<br>然后往下走通过pthread_mutex_unlock(&amp;mutex)释放mutex锁，进入下一个循环。</p>
+<h2 id="References"><a href="#References" class="headerlink" title="References"></a><strong>References</strong></h2><ul>
+<li><a href="http://www.cnblogs.com/feisky/archive/2010/03/08/1680950.html" target="_blank" rel="noopener">Linux线程同步之条件变量</a></li>
+<li><a href="http://blog.csdn.net/anonymalias/article/details/9174481" target="_blank" rel="noopener">Linux线程同步之条件变量</a></li>
+<li><a href="http://my.oschina.net/solu/blog/125998" target="_blank" rel="noopener">线程同步之条件变量原理</a></li>
+<li><a href="http://www.blogjava.net/fhtdy2004/archive/2009/07/05/285519.html" target="_blank" rel="noopener">线程同步：何时互斥锁不够，还需要条件变量?</a></li>
+<li><a href="多线程同步条件变量">多线程同步条件变量</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/11/Linux-system-programming-Memory-Management/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2296,7 +2718,7 @@ int sigaction(int signum,const struct sigaction *act,struct sigaction *oldact));
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2645,7 +3067,7 @@ int munlockall(void);</code></pre><h2 id="投机性内存分配策略"><a href="
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
+                <time title="Modified: 2020-03-04 11:00:48" itemprop="dateModified" datetime="2020-03-04T11:00:48+08:00">2020-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2956,459 +3378,6 @@ int main(int argc, char *argv[]){
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/11/Linux-system-programming-pthread_cont/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/11/11/Linux-system-programming-pthread_cont/" class="post-title-link" itemprop="url">Linux系统编程-多线程同步条件变量</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-11-12 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-12T00:00:00+08:00">2014-11-12</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux System Programming</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>5.1k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>5 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
-<p>与互斥锁不同，<strong>条件变量是用来等待而不是用来上锁的。<br>条件变量用来自动阻塞一个线程，直到某特殊情况发生为止。通常条件变量和互斥锁同时使用。</strong></p>
-<p>条件变量使我们可以睡眠等待某种条件出现。<br>条件变量是利用线程间共享的全局变量进行同步的一种机制，<br>主要包括两个动作：<strong>一个线程等待”条件变量的条件成立”而挂起；另一个线程使”条件成立”（给出条件成立信号）。</strong></p>
-<p><strong>条件的检测是在互斥锁的保护下进行的。<br>如果一个条件为假，一个线程自动阻塞，并释放等待状态改变的互斥锁。</strong><br>如果另一个线程改变了条件，它发信号给关联的条件变量，<br>唤醒一个或多个等待它的线程，重新获得互斥锁，重新评价条件。<br>如果两进程共享可读写的内存，条件变量可以被用来实现这两进程间的线程同步。</p>
-<p>使用条件变量之前要先进行初始化。<br>可以在单个语句中生成和初始化一个条件变量如：pthread_cond_t my_condition=PTHREAD_COND_INITIALIZER;（用于进程间线程的通信）。<br>可以利用函数pthread_cond_init动态初始化。</p>
-<p><strong>条件变量分为两部分: 条件和变量。<br>条件本身是由互斥量保护的。<br>线程在改变条件状态前先要锁住互斥量。<br>它利用线程间共享的全局变量进行同步的一种机制。</strong></p>
-<h2 id="API"><a href="#API" class="headerlink" title="API"></a><strong>API</strong></h2><pre><code>int pthread_cond_init(pthread_cond_t *cond,pthread_condattr_t *cond_attr);     
-int pthread_cond_destroy(pthread_cond_t *cond);  
-int pthread_cond_wait(pthread_cond_t *cond,pthread_mutex_t *mutex);
-int pthread_cond_timewait(pthread_cond_t *cond,pthread_mutex *mutex,const timespec *abstime);
-int pthread_cond_signal(pthread_cond_t *cond);
-int pthread_cond_broadcast(pthread_cond_t *cond);  //解除所有线程的阻塞</code></pre><p>条件变量采用的数据类型是pthread_cond_t, 在使用之前必须要进行初始化, 这包括两种方式:</p>
-<ul>
-<li>静态: 可以把常量PTHREAD_COND_INITIALIZER给静态分配的条件变量</li>
-<li>动态: pthread_cond_init函数, 释放动态条件变量的内存空间之前, 要用pthread_cond_destroy对其进行清理</li>
-</ul>
-<p>pthread_cond_wait()函数用于等待条件被触发。<br>该函数传入两个参数，一个条件变量一个互斥量，函数将条件变量和互斥量进行关联，<br>互斥量对该条件进行保护，传入的互斥量必须是已经锁住的。<br>调用pthread_cond_wait()函数后，会原子的执行以下两个动作：</p>
-<ul>
-<li>将调用线程放到等待条件的线程列表上，即进入睡眠</li>
-<li>对互斥量进行解锁</li>
-</ul>
-<p>由于这两个操作时原子操作，<br>这样就关闭了条件检查和线程进入睡眠等待条件改变这两个操作之间的时间通道，<br>这样就不会错过任何条件的变化。<br><strong>当pthread_cond_wait()返回后，互斥量会再次被锁住。</strong></p>
-<p>pthread_cond_timedwait()函数和pthread_cond_wait()的工作方式相似，只是多了一个等待时间。<br>等待时间的结构为struct timespec，</p>
-<pre><code>struct timespec{  
-    time_t  tv_sec    //Seconds.  
-    long    tv_nsec   //Nanoseconds.  
-};</code></pre><p>函数要求传入的时间值是一个绝对值，不是相对值，<br>例如，想要等待3分钟，必须先获得当前时间，然后加上3分钟。<br>要想获得当前系统时间的timespec值，没有直接可调用的函数，<br>需要通过调用gettimeofday函数获取timeval结构，然后转换成timespec结构，转换公式就是：</p>
-<pre><code>timeSpec.tv_sec = timeVal.tv_sec;  
-timeSpec.tv_nsec = timeVal.tv_usec * 1000; </code></pre><p>所以要等待3分钟，timespec时间结构的获得应该如下所示:</p>
-<pre><code>struct timeval now;  
-struct timespec until;  
-gettimeofday(&amp;now);//获得系统当前时间  
-
-//把时间从timeval结构转换成timespec结构  
-until.tv_sec = now.tv_sec;  
-until.tv_nsec = now.tv_usec * 1000;  
-
-//增加min  
-until.tv_sec += 3 * 60;  </code></pre><p>如果时间到后，条件还没有发生，那么会返回ETIMEDOUT错误。</p>
-<p><strong>从pthread_cond_wait()和pthread_cond_timewait()成功返回时，<br>线程需要重新计算条件，因为其他线程可能在运行过程中已经改变条件。</strong></p>
-<p>pthread_cond_signal() 和 pthread_cond_broadcast()<br>这两个函数都是用于向等待条件的线程发送唤醒信号，<br>pthread_cond_signal()函数只会唤醒等待该条件的某个线程，<br>pthread_cond_broadcast()会广播条件状态的改变，以唤醒等待该条件的所有线程。<br>例如多个线程只读共享资源，这是可以将它们都唤醒。<br>这里要注意的是：<strong>一定要在改变条件状态后，再给线程发送信号。</strong><br>考虑条件变量信号单播发送和广播发送的一种候选方式是坚持使用广播发送。<br><strong>只有在等待者代码编写确切，只有一个等待者需要唤醒，<br>且唤醒哪个线程无所谓，那么此时为这种情况使用单播，<br>所以其他情况下都必须使用广播发送。</strong></p>
-<p>在实际编程中，把共享数据和它们的同步变量集合到一个结构中，这往往是一个较好的编程技巧：</p>
-<pre><code>struct{  
-    pthread_mutex_t mutex;  
-    pthread_cond_t cond;  
-    int data;  
-}Data;  </code></pre><h2 id="Source-Code"><a href="#Source-Code" class="headerlink" title="Source Code"></a><strong>Source Code</strong></h2><pre><code>#include &lt;pthread.h&gt;  
-#include &lt;stdio.h&gt;  
-#include &lt;stdlib.h&gt;  
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;/* 初始化互斥锁*/  
-pthread_cond_t cond = PTHREAD_COND_INITIALIZER;/* 初始化条件变量*/  
-void *thread1(void *);  
-void *thread2(void *);  
-int i=1;  
-int main(void)  
-{  
-    pthread_t t_a;  
-    pthread_t t_b;  
-
-    pthread_create(&amp;t_a,NULL,thread1,(void *)NULL);/* 创建进程t_a*/  
-    sleep(1);
-    pthread_create(&amp;t_b,NULL,thread2,(void *)NULL); /* 创建进程t_b*/  
-
-    pthread_join(t_a, NULL);/* 等待进程t_a结束*/  
-    pthread_join(t_b, NULL);/* 等待进程t_b结束*/  
-
-    pthread_mutex_destroy(&amp;mutex);  
-    pthread_cond_destroy(&amp;cond);  
-
-    exit(0);  
-}  
-void *thread1(void *junk)  
-{  
-    for(i=1;i&lt;=6;i++)  
-    {  
-        pthread_mutex_lock(&amp;mutex);/* 锁住互斥量*/  
-        printf(&quot;thread1: lock %d\t i %d\n&quot;, __LINE__, i);  
-
-        if(i%3==0){  
-            printf(&quot;thread1:signal 1  %d\n&quot;, __LINE__);  
-            pthread_cond_signal(&amp;cond);/* 条件改变，发送信号，通知t_b进程*/  
-            printf(&quot;thread1:signal 2  %d\n&quot;, __LINE__);  
-            sleep(1);  
-        }  
-
-        pthread_mutex_unlock(&amp;mutex);/* 解锁互斥量*/  
-        printf(&quot;thread1: unlock %d\t i %d\n\n&quot;, __LINE__, i);  
-        sleep(1);  
-    }  
-}  
-void *thread2(void *junk)  
-{  
-    while(i&lt;6)  
-    {  
-        pthread_mutex_lock(&amp;mutex);  
-        printf(&quot;thread2: lock %d\t i %d\n&quot;, __LINE__, i);  
-
-        if(i%3!=0){  
-            printf(&quot;thread2: wait 1  %d\n&quot;, __LINE__);  
-            pthread_cond_wait(&amp;cond,&amp;mutex);/* 解锁mutex，并等待cond改变*/  
-            printf(&quot;thread2: wait 2  %d\n&quot;, __LINE__);  
-        }  
-
-        pthread_mutex_unlock(&amp;mutex);  
-        printf(&quot;thread2: unlock %d\t i %d\n\n&quot;, __LINE__, i);  
-        sleep(1);  
-    }  
-}</code></pre><p>编译运行结果如下：</p>
-<pre><code>thread1: lock 31     i 1
-thread1: unlock 41   i 1
-
-thread2: lock 50     i 1
-thread2: wait 1  53
-thread1: lock 31     i 2
-thread1: unlock 41   i 2
-
-thread1: lock 31     i 3
-thread1:signal 1  34
-thread1:signal 2  36
-thread1: unlock 41   i 3
-
-thread2: wait 2  55
-thread2: unlock 59   i 3
-
-thread1: lock 31     i 4
-thread1: unlock 41   i 4
-
-thread2: lock 50     i 4
-thread2: wait 1  53
-thread1: lock 31     i 5
-thread1: unlock 41   i 5
-
-thread1: lock 31     i 6
-thread1:signal 1  34
-thread1:signal 2  36
-thread1: unlock 41   i 6
-
-thread2: wait 2  55
-thread2: unlock 59   i 6</code></pre><p>线程1先执行，获得mutex锁，打印，然后释放mutex锁，然后阻塞自己1秒。</p>
-<p>线程2执行,阻塞在pthread_mutex_lock(&amp;mutex)<br>这行语句中，直到线程1释放mutex锁。<br>然后线程2得已执行，获取metux锁，满足if条件，到pthread_cond_wait (&amp;cond,&amp;mutex)<br>这里线程2阻塞，不仅仅是等待cond变量发生改变，同时释放mutex锁。<br>mutex锁释放后，线程1终于获得了mutex锁，得已继续运行，当线程1的if（i%3==0）的条件满足后，<br>通过pthread_cond_signal发送信号，<br>告诉等待cond的变量的线程（线程2），cond条件变量已经发生了改变。</p>
-<p>线程2并没有立即得到运行，因为线程2还在等待mutex锁的释放，<br>所以线程1继续往下走，直到线程1释放mutex锁，<br>线程2才能停止等待，打印语句，<br>然后往下走通过pthread_mutex_unlock(&amp;mutex)释放mutex锁，进入下一个循环。</p>
-<h2 id="References"><a href="#References" class="headerlink" title="References"></a><strong>References</strong></h2><ul>
-<li><a href="http://www.cnblogs.com/feisky/archive/2010/03/08/1680950.html" target="_blank" rel="noopener">Linux线程同步之条件变量</a></li>
-<li><a href="http://blog.csdn.net/anonymalias/article/details/9174481" target="_blank" rel="noopener">Linux线程同步之条件变量</a></li>
-<li><a href="http://my.oschina.net/solu/blog/125998" target="_blank" rel="noopener">线程同步之条件变量原理</a></li>
-<li><a href="http://www.blogjava.net/fhtdy2004/archive/2009/07/05/285519.html" target="_blank" rel="noopener">线程同步：何时互斥锁不够，还需要条件变量?</a></li>
-<li><a href="多线程同步条件变量">多线程同步条件变量</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/10/Linux-system-programming-thread/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/11/10/Linux-system-programming-thread/" class="post-title-link" itemprop="url">Linux系统编程-线程</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-11-11 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-11T00:00:00+08:00">2014-11-11</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-26 13:05:49" itemprop="dateModified" datetime="2020-02-26T13:05:49+08:00">2020-02-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux System Programming</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>4.5k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>4 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
-<p>线程是指在单个进程内，多路并行执行的创建和管理单元。由于线程引入了数据竞争和死锁，相关的编程错误不计其数。</p>
-<h2 id="进程和线程"><a href="#进程和线程" class="headerlink" title="进程和线程"></a><strong>进程和线程</strong></h2><p>现代操作系统包括了两种对用户空间的基础的虚拟抽象：<strong>虚拟内存和虚拟处理器</strong>。<br>它们使进程认为自己独占机器资源。</p>
-<p>虚拟内存为每个进程提供独立的内存地址空间，该内存地址连续映射到物理内存上。<br>虚拟处理器使得进程“感觉”只有自己正在运行，操作系统对其“隐藏”了事实：多个进程在可能多个处理器上以多任务方式同时运行。</p>
-<p>虚拟内存是和进程相关的，与线程无关。<br>因此，每个进程有独立的内存空间，而进程中的所有线程共享这份空间。</p>
-<p>虚拟处理器是和线程相关的，与进程无关。每个线程都是可独立调度的实体，支持单个进程每次“处理”多个操作。</p>
-<p>和进程一样，线程也“感觉”自己独占一个处理器。<br>但是，和进程不一样的是，线程没有“感觉”自己独占内存–进程中的所有线程共享内存空间。</p>
-<h2 id="多线程"><a href="#多线程" class="headerlink" title="多线程"></a><strong>多线程</strong></h2><p>进程是正在运行的程序的抽象。但是，为什么要分离执行单元，引入线程？多线程机制有以下优点：</p>
-<ul>
-<li>编程抽象：将工作分为多个模块，每个模块分配一个执行单元（线程）。<br>利用这种方法的设计模式包括“每个连接一个线程”和线程池模式</li>
-<li>并发性：对多处理器提供了实现“真正并发”的高效方式。<br>每个线程有自己的虚拟处理器，作为独立的调度实体，可以在多处理器上运行多个线程，从而提高系统吞吐量</li>
-<li>提高响应能力：单线程进程中，一个长时间运行的任务会影响应用对用户输入的响应，多线程中可以有一条线程响应用户输入</li>
-<li>I/O阻塞：单线程中，I/O阻塞会影响整个进程</li>
-<li>上下文切换：线程间切换的代价显著低于进程间的上下文切换</li>
-<li>内存保存：线程提供了一种可以共享内存，并同时利用多个执行单元的高效方式</li>
-</ul>
-<p><strong>上下文切换</strong>：线程的一大性能优势是同一进程内的线程之间切换代价很低。<br>在任何系统上，进程内切换的代价低于进程间切换，前者通常是后者的一部分。<br>在非Linux系统上，这种差别非常明显，进程间通信（IPC）代价非常高。<br>因此，很多系统上，称线程为“轻量级进程”。在Linux中，进程间切换代价并不高，而进程内切换的成本接近于0：<br>接近进入和退出内核的代价。进程的代价不高，但是线程的代价更低。</p>
-<h2 id="线程模型"><a href="#线程模型" class="headerlink" title="线程模型"></a><strong>线程模型</strong></h2><p>在系统上实现线程模型的方式有好几种，因内核和用户空间提供的支持而有一定程度的级别差异。</p>
-<p>最简单的是内核为线程提供了本地支持的情况，每个内核线程直接转换成用户空间的线程。<br>这种模型称为“1:1线程模型”，也称为“内核级线程模型”。<br>在Linux中只是简单的将线程实现成能够共享资源的进程。<br>线程库通过系统调用clone()创建一个新的线程，返回的“进程”直接作为用户空间的线程。</p>
-<p>“用户级线程模型”是“N:1线程模型”，一个N个线程的进程只会映射到一个内核进程。</p>
-<p>“混合式线程模型”是“N:M线程模型”，上述两中的综合，但是模型过于复杂。</p>
-<p>Linux上普遍的线程模型是第一种。</p>
-<h2 id="线程模式"><a href="#线程模式" class="headerlink" title="线程模式"></a><strong>线程模式</strong></h2><p>创建多线程应用最重要的一步是确定线程模式，线程模式也是应用程序的逻辑处理和I/O模式，<br>可能存在很多抽象和实现细节，但两个核心的编程模式是：</p>
-<ul>
-<li><strong>每个连接对应一个线程（thread-per-connection）</strong></li>
-<li><strong>事件驱动（event-driven）</strong></li>
-</ul>
-<h2 id="并发性、并行性和竞争"><a href="#并发性、并行性和竞争" class="headerlink" title="并发性、并行性和竞争"></a><strong>并发性、并行性和竞争</strong></h2><p>并发性与并行性？？</p>
-<p><strong>竞争条件</strong>是指由两个或多个线程对共享资源的非同步访问而导致错误的程序行为。<br>共享资源可以是系统硬件、内核资源或内存中的数据。后者最常见，称为数据竞争（date race）。<br>竞争发生的窗口–需要同步的代码–成为“临界区”。</p>
-<h2 id="同步，互斥和死锁"><a href="#同步，互斥和死锁" class="headerlink" title="同步，互斥和死锁"></a><strong>同步，互斥和死锁</strong></h2><p>最常用来完成同步，实现临界区原子操作的技术是锁（lock），在Pthreads中称之为“互斥（mutexes）”。</p>
-<p><strong>锁住数据，而不是代码</strong>，当锁和代码关联起来时，锁的语义就很难理解。<br>随着时间变化，锁和数据之间的关系就不会很清晰，程序员会为数据引入新的使用方式，而不会包含相应的锁。<br>把锁和数据关联，这个映射就会很清晰。</p>
-<p>互斥的引入会带来编程BUG：死锁。</p>
-<p>避免死锁需要从一开始的设计中为多线程设计好锁的机制。<br>互斥体应该和数据关联，而不是和代码关联，从而有清晰的数据层。<br>针对死锁（ABBA）问题，需要明确互斥获取的顺序。</p>
-<h2 id="Pthreads"><a href="#Pthreads" class="headerlink" title="Pthreads"></a><strong>Pthreads</strong></h2><p>Linux内核只为线程的支持提供了底层原语，比如clone()系统调用。<br>POSIX对线程库进行了标准化，称之为POSIX线程，简称为Pthreads。<br>是UNIX系统上C／C++语言的主要线程解决方案。</p>
-<h3 id="Pthread-API"><a href="#Pthread-API" class="headerlink" title="Pthread API"></a><strong>Pthread API</strong></h3><p>Pthreads是由glibc提供，存在于独立库libpthread中，使用时需要显示链接：</p>
-<pre><code>gcc -Wall -Werror -pthread b.c -o b</code></pre><p>Pthread API在文件&lt;pthread.h&gt;中定义，每个函数前缀都是pthread_，可以分为两大类：<br><strong>线程管理（创建、销毁、连接和detach线程等）</strong>和<strong>同步（互斥、条件变量等）</strong>。</p>
-<pre><code>#include &lt;pthread.h&gt;
-
-int pthread_create(pthread_t *tid, const pthread_attr_t *attr, void *(*func) (void *), void *arg);
-int pthread_join (pthread_t tid, void ** status);
-pthread_t pthread_self (void);
-int pthread_equal(pthread_t t1, pthread_t t2);
-int pthread_detach (pthread_t tid);
-void pthread_exit (void *status);
-int pthread_cancel(pthread_t thread);
-
-int pthread_mutex_lock(pthread_mutex_t * mptr); 
-int pthread_mutex_unlock(pthread_mutex_t * mptr); 
-
-int pthread_cond_wait(pthread_cond_t *cptr, pthread_mutex_t *mptr); 
-int pthread_cond_signal(pthread_cond_t *cptr); 
-int pthread_cond_broadcast (pthread_cond_t * cptr);
-int pthread_cond_timedwait (pthread_cond_t * cptr, pthread_mutex_t *mptr, const struct timespec *abstime);</code></pre><p>pthread_create用于创建一个线程，成功返回0，否则返回错误码（不使用errno）。</p>
-<ul>
-<li>pthread_t <em>tid：线程id的类型为pthread_t，通常为无符号整型，当调用pthread_create成功时，通过</em>tid指针返回。</li>
-<li>const pthread_attr_t *attr：指定创建线程的属性，如线程优先级、初始栈大小、是否为守护进程等。<br>可以使用NULL来使用默认值，通常情况下我们都是使用默认值。</li>
-<li>void <em>(</em>func) (void *)：函数指针func，指定当新的线程创建之后，将执行的函数。</li>
-<li>void *arg：线程将执行的函数的参数。如果想传递多个参数，请将它们封装在一个结构体中。</li>
-</ul>
-<p>pthread_join用于等待某个线程退出，成功返回0，否则返回错误码（不使用errno）。<br>成功调用时，调用线程会被阻塞，直到由tid指定的线程终止，用于线程同步。</p>
-<ul>
-<li>pthread_t tid：指定要等待的线程ID</li>
-<li>void ** status：如果不为NULL，那么线程的返回值存储在status指向的空间中（这就是为什么status是二级指针的原因！这种才参数也称为“值-结果”参数）。</li>
-</ul>
-<p>默认情况下，线程是创建成可join的。<br>pthread_detach用于是指定线程变为分离状态（不可join），就像进程脱离终端而变为后台进程类似。<br>成功返回0，否则返回错误码（不使用errno）。变为分离状态的线程，如果线程退出，它的所有资源将全部释放。<br>而如果不是分离状态，线程必须保留它的线程ID，退出状态直到其它线程对它调用了pthread_join。</p>
-<p><strong>pthread_join()或pthread_detach()都应该在进程中每个线程上调用，这样当线程终止时，也会释放资源。</strong></p>
-<p>pthread_self用于返回当前线程的ID</p>
-<p>pthread_equal用于比较两个线程ID是否一样，如果不同返回0</p>
-<p>pthread_exit用于终止线程，可以指定返回值，以便其他线程通过pthread_join函数获取该线程的返回值。</p>
-<p>pthread_cancel用于通过其他线程调用来结束线程。</p>
-<p>在对临界资源进行操作之前需要pthread_mutex_lock先加锁，操作完之后pthread_mutex_unlock再解锁。<br>而且在这之前需要声明一个pthread_mutex_t类型的变量，用作前面两个函数的参数。</p>
-<pre><code>int withdraw(struct account *account, int amount)
-{
-    pthread_mutex_lock(&amp;account-&gt;mutex);
-    const int balance = account-&gt;balance;
-    if(balance &lt; amount)
-    {
-        pthread_mutex_unlock(&amp;account-&gt;mutex);
-        return -1;
-    }
-
-    account-&gt;balance = balance - amount;
-    pthread_mutex_unlock(&amp;account-&gt;mutex);
-
-    disburse_money(amount);
-
-    return 0;
-}</code></pre><p>在这个例子中，不是使用全局锁，而是在结构体中定义一把锁，这样每个account实例都有自己的锁，实现对数据的加锁。</p>
-<p>条件变量是一种同步机制，允许线程挂起，直到共享数据上的某些条件得到满足。<br>条件变量上的基本操作有：触发条件(当条件变为 true 时)；等待条件，挂起线程直到其他线程触发条件。<br>条件变量要和互斥量相联结，以避免出现条件竞争–一个线程预备等待一个条件变量，<br>当它在真正进入等待之前，另一个线程恰好触发了该条件。</p>
-<h2 id="References"><a href="#References" class="headerlink" title="References"></a>References</h2><ul>
-<li><a href="http://fanqiang.chinaunix.net/a4/b8/20010811/0905001105.html" target="_blank" rel="noopener">Linux下的多线程编程</a></li>
-<li><a href="http://www.cnblogs.com/skynet/archive/2010/10/30/1865267.HTML" target="_blank" rel="noopener">Linux多线程编程-吴秦</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -3459,20 +3428,20 @@ int pthread_cond_timedwait (pthread_cond_t * cptr, pthread_mutex_t *mptr, const 
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">432</span>
+          <span class="site-state-item-count">433</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-count">57</span>
         <span class="site-state-item-name">categories</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">455</span>
+        <span class="site-state-item-count">457</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -3532,7 +3501,7 @@ int pthread_cond_timedwait (pthread_cond_t * cptr, pthread_mutex_t *mptr, const 
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">17:36</span>
+    <span title="Reading time total">17:37</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
   </div>
