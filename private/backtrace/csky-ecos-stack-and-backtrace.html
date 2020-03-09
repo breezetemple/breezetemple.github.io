@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="CK610m Ecos 操作系统下堆栈及 BackTrace 分析工具gdb caller 调用者 callee 被调用者  (cskygdb) info f 0 Stack frame at 0x90ca8ba8:  pc &#x3D; 0x9001982e in _eutel_chlist_keypress (richepg&#x2F;app_eutel_chlist.c:316); saved pc 0x900">
+<meta property="og:type" content="website">
+<meta property="og:title" content="IT日记">
+<meta property="og:url" content="http://yoursite.com/private/backtrace/csky-ecos-stack-and-backtrace.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="CK610m Ecos 操作系统下堆栈及 BackTrace 分析工具gdb caller 调用者 callee 被调用者  (cskygdb) info f 0 Stack frame at 0x90ca8ba8:  pc &#x3D; 0x9001982e in _eutel_chlist_keypress (richepg&#x2F;app_eutel_chlist.c:316); saved pc 0x900">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/data/tools/tools/repo/books/hexo/breezetemple/source/private/1582854637494.png">
+<meta property="og:image" content="http://yoursite.com/data/tools/tools/repo/books/hexo/breezetemple/source/private/1582854861325.png">
+<meta property="og:image" content="http://yoursite.com/data/tools/tools/repo/books/hexo/breezetemple/source/private/1582855006859.png">
+<meta property="og:image" content="http://yoursite.com/data/tools/tools/repo/books/hexo/breezetemple/source/private/1582856792318.png">
+<meta property="article:published_time" content="2020-03-09T03:19:18.786Z">
+<meta property="article:modified_time" content="2020-03-09T03:19:18.786Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/data/tools/tools/repo/books/hexo/breezetemple/source/private/1582854637494.png">
+
+<link rel="canonical" href="http://yoursite.com/private/backtrace/csky-ecos-stack-and-backtrace">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: false,
+    isPage: true,
+    isArchive: false
+  };
+</script>
+
+  <title> | IT日记
+  </title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+  
+  
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+    
+    
+    
+    <div class="post-block" lang="en">
+      <header class="post-header">
+
+<h1 class="post-title" itemprop="name headline">
+</h1>
+
+<div class="post-meta">
+  
+  <ul class="breadcrumb">
+          
+            <li><a href="/private/">PRIVATE</a></li>
+            <li><a href="/private/backtrace/">BACKTRACE</a></li>
+            <li>CSKY-ECOS-STACK-AND-BACKTRACE</li>
+          
+  </ul>
+
+</div>
+
+</header>
+
+      
+      
+      
+      <div class="post-body">
+          <h1 id="CK610m-Ecos-操作系统下堆栈及-BackTrace-分析"><a href="#CK610m-Ecos-操作系统下堆栈及-BackTrace-分析" class="headerlink" title="CK610m Ecos 操作系统下堆栈及 BackTrace 分析"></a>CK610m Ecos 操作系统下堆栈及 BackTrace 分析</h1><h2 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h2><h3 id="gdb"><a href="#gdb" class="headerlink" title="gdb"></a>gdb</h3><ul>
+<li><code>caller</code> 调用者</li>
+<li><code>callee</code> 被调用者</li>
+</ul>
+<pre><code class="gdb">(cskygdb) info f 0
+Stack frame at 0x90ca8ba8:
+ pc = 0x9001982e in _eutel_chlist_keypress (richepg/app_eutel_chlist.c:316); saved pc 0x90019f28
+ called by frame at 0x90ca8bc0
+ source language c.
+ Arglist at 0x90ca8ae8, args: widget=0x90d5fa8c, usrdata=0x90ca8c48
+ Locals at 0x90ca8ae8, Previous frame&#39;s sp is 0x90ca8ba8
+ Saved registers:
+  r8 at 0x90ca8ba4, r15 at 0x90ca8ba0, pc at 0x90ca8ba0
+(cskygdb) info f 1
+Stack frame at 0x90ca8bc0:
+ pc = 0x90019f28 in app_eutel_chlist_keypress (richepg/app_eutel_chlist.c:621); saved pc 0x902d5f10
+ called by frame at 0x90ca8be8, caller of frame at 0x90ca8ba8
+ source language c.
+ Arglist at 0x90ca8ba8, args: widget=0x90d5fa8c, usrdata=0x90ca8c48
+ Locals at 0x90ca8ba8, Previous frame&#39;s sp is 0x90ca8bc0
+ Saved registers:
+  r8 at 0x90ca8bbc, r15 at 0x90ca8bb8, pc at 0x90ca8bb8
+(cskygdb) info f 2
+Stack frame at 0x90ca8be8:
+ pc = 0x902d5f10 in exec_widget_event_data (/debug/richepg/platform/gxbus/gui_core/widget/widget.c:1597); saved pc 0x902d947c
+ called by frame at 0x90ca8c08, caller of frame at 0x90ca8bc0
+ source language c.
+ Arglist at 0x90ca8bc0, args: widget=0x90d9f820, signal=0x90d3bc6c, userdata=0x90ca8c48
+ Locals at 0x90ca8bc0, Previous frame&#39;s sp is 0x90ca8be8
+ Saved registers:
+  r8 at 0x90ca8be4, r15 at 0x90ca8be0, pc at 0x90ca8be0</code></pre>
+<p>显示信息包括如下：</p>
+<ul>
+<li>the address of the frame</li>
+<li>the program counter saved in it (the address of execution in the caller frame)</li>
+<li>the address of the next frame down (called by this frame) 调用func</li>
+<li>the address of the next frame up (caller of this frame) 被调用func</li>
+<li>the language in which the source code corresponding to this frame is written</li>
+<li>the address of the frame’s arguments</li>
+<li>which registers were saved in the frame</li>
+</ul>
+<h3 id="objdump"><a href="#objdump" class="headerlink" title="objdump"></a>objdump</h3><h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><h3 id="编程模型"><a href="#编程模型" class="headerlink" title="编程模型"></a>编程模型</h3><p><img src="/data/tools/tools/repo/books/hexo/breezetemple/source/private/1582854637494.png" alt="1582854637494"></p>
+<h3 id="普通用户编程模式"><a href="#普通用户编程模式" class="headerlink" title="普通用户编程模式"></a>普通用户编程模式</h3><ul>
+<li>16 个 32 位通用寄存器（R[15:0]）</li>
+<li>32 位程序计数器（PC）</li>
+<li>条件码／进位标志位（C bit）</li>
+</ul>
+<p><img src="/data/tools/tools/repo/books/hexo/breezetemple/source/private/1582854861325.png" alt="1582854861325"></p>
+<h3 id="超级用户编程模式"><a href="#超级用户编程模式" class="headerlink" title="超级用户编程模式"></a>超级用户编程模式</h3><ul>
+<li>16 个 32 位可选择寄存器</li>
+<li>处理器状态寄存器(PSR)</li>
+<li>向量基址寄存器(VBR)</li>
+<li>异常保留程序计数器(EPC)</li>
+<li>异常保留处理器状态寄存器(EPSR)</li>
+<li>快速中断保留程序计数器(FPC)</li>
+<li>快速中断保留处理器状态寄存器(FPSR)</li>
+<li>5 个 32 位超级用户寄存器(SS0-SS4)</li>
+<li>12 位全控制寄存器(GCR)</li>
+<li>12 位全状态寄存器(GSR)</li>
+<li>产品序号寄存器(CPIDR)</li>
+<li>高速缓存配置寄存器(CCR)</li>
+<li>可高缓和访问权限配置寄存器(CAPR)</li>
+<li>保护区控制寄存器(PACR)</li>
+<li>保护区选择寄存器(PRSR)</li>
+</ul>
+<p><img src="/data/tools/tools/repo/books/hexo/breezetemple/source/private/1582855006859.png" alt="1582855006859"></p>
+<h3 id="异常向量"><a href="#异常向量" class="headerlink" title="异常向量"></a>异常向量</h3><p><img src="/data/tools/tools/repo/books/hexo/breezetemple/source/private/1582856792318.png" alt="1582856792318"></p>
+<p>对应代码 <code>ecos3.0/packages/hal/gx/ckmmu/arch/v3_0/src/hal_misc.c</code></p>
+<pre><code class="c">static char exception_str_list[32][64] = {
+    &quot;Reset&quot;,
+    &quot;Missaligned Access&quot;,
+    &quot;Access Error&quot;,
+    &quot;Divide by Zero&quot;,
+    &quot;Illegal Instruction&quot;,
+    &quot;Privilege Violation&quot;,
+    &quot;Trace Exception&quot;,
+    &quot;Breakpoint Exception&quot;,
+    &quot;Unrecoverable Error&quot;,
+    &quot;Soft Reset&quot;,
+    &quot;Normal Autovector Interrupt&quot;,
+    &quot;Fast Interrupt Autovector (AF used)&quot;,
+    &quot;Hardware Accelerator&quot;,
+    &quot;FP&quot;,
+    &quot;TLB Miss&quot;,
+    &quot;TLB Modify&quot;,
+    &quot;Trap0&quot;,
+    &quot;Trap1&quot;,
+    &quot;Trap2&quot;,
+    &quot;Trap3&quot;,
+    &quot;TLB Read invalid&quot;,
+    &quot;TLB Write invalid&quot;,
+    &quot;Reserved&quot;,
+    &quot;Reserved&quot;,
+    &quot;Reserved&quot;,
+    &quot;Reserved&quot;,
+    &quot;Reserved&quot;,
+    &quot;Reserved&quot;,
+    &quot;Reserved&quot;,
+    &quot;Reserved&quot;,
+    &quot;Co-processor interrupt &amp; exception&quot;,
+    &quot;System Description Ptr&quot;
+};
+
+// 根据 cr2 epsr 获取向量号
+printf(&quot;\n %s \n&quot;, &amp;exception_str_list[(pt_reg-&gt;cr2 &gt;&gt; 16) &amp; 0x7f][0]);</code></pre>
+<h3 id="异常中断处理"><a href="#异常中断处理" class="headerlink" title="异常中断处理"></a>异常中断处理</h3><p>相关代码如下，进入中断前保存相关寄存器，包括 <code>regs</code> 和 <code>crs</code></p>
+<pre><code class="disass">.macro hal_cpu_save_regs
+    subi    r0, 32
+    subi    r0, 32
+    stm r1-r15, (r0)
+.endm
+
+.macro hal_cpu_restore_regs
+    ldm r1-r15, (r0)
+    addi    r0, 32
+    addi    r0, 32
+.endm
+
+.macro hal_cpu_save_cr
+    mfcr    r1, cr21
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr20
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr19
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr18
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr17
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr16
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr15
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr14
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr13
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr12
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr11
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr10
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr9
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr8
+    subi    r0, 4
+    stw r1, (r0)
+    mfcr    r1, cr7
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr6
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr5
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr4
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr3
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr2
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr1
+    subi    r0, 4
+    stw r1, (r0)
+
+    mfcr    r1, cr0
+    subi    r0, 4
+    stw r1, (r0)
+.endm
+
+.macro hal_cpu_restore_cr
+    addi    r0, 32
+    addi    r0, 32
+    addi    r0, 24
+.endm
+
+# Common exception handling code.
+.extern cyg_ck_exception_c
+.export __default_interrupt_vsr
+__default_exception_vsr:
+    mtcr    r2, ss3
+    mtcr    r0, ss4
+    lrw r2, startup_stack + STARTUP_STACK_SIZE
+    mov r0, r2
+    mfcr    r2, ss3
+    hal_cpu_save_cr
+    hal_cpu_save_regs
+    mfcr    r3, ss4
+    mov r2, r0
+    lrw     r1, cyg_ck_exception_c
+    jsr r1
+    hal_cpu_restore_regs
+    hal_cpu_restore_cr
+    mfcr    r2, ss3
+    mfcr    r0, ss4
+    br .</code></pre>
+<p>相关 c 源码</p>
+<pre><code class="c">struct pt_reg {
+    unsigned int r1;
+    unsigned int r2;
+    unsigned int r3;
+    unsigned int r4;
+    unsigned int r5;
+    unsigned int r6;
+    unsigned int r7;
+    unsigned int r8;
+    unsigned int r9;
+    unsigned int r10;
+    unsigned int r11;
+    unsigned int r12;
+    unsigned int r13;
+    unsigned int r14;
+    unsigned int r15;
+
+    unsigned int cr0;
+    unsigned int cr1;
+    unsigned int cr2;
+    unsigned int cr3;
+    unsigned int cr4;
+    unsigned int cr5;
+    unsigned int cr6;
+    unsigned int cr7;
+    unsigned int cr8;
+    unsigned int cr9;
+    unsigned int cr10;
+    unsigned int cr11;
+    unsigned int cr12;
+    unsigned int cr13;
+    unsigned int cr14;
+    unsigned int cr15;
+    unsigned int cr16;
+    unsigned int cr17;
+    unsigned int cr18;
+    unsigned int cr19;
+    unsigned int cr20;
+    unsigned int cr21;
+};
+
+void cyg_ck_exception_c(struct pt_reg *pt_reg, unsigned int reg0)
+{
+    unsigned long   *sp;
+    unsigned char   *tp;
+    int     i;
+
+    diag_printf(&quot;\n##### Kernel Panic: %d #####\n&quot;, (pt_reg-&gt;cr2 &gt;&gt; 16) &amp; 0x7f);
+
+    diag_printf(&quot;  r0: 0x%08x\n&quot;, reg0);
+    diag_printf(&quot;  r1: 0x%08x\n&quot;, pt_reg-&gt;r1);
+    diag_printf(&quot;  r2: 0x%08x\n&quot;, pt_reg-&gt;r2);
+    diag_printf(&quot;  r3: 0x%08x\n&quot;, pt_reg-&gt;r3);
+    diag_printf(&quot;  r4: 0x%08x\n&quot;, pt_reg-&gt;r4);
+    diag_printf(&quot;  r5: 0x%08x\n&quot;, pt_reg-&gt;r5);
+    diag_printf(&quot;  r6: 0x%08x\n&quot;, pt_reg-&gt;r6);
+    diag_printf(&quot;  r7: 0x%08x\n&quot;, pt_reg-&gt;r7);
+    diag_printf(&quot;  r8: 0x%08x\n&quot;, pt_reg-&gt;r8);
+    diag_printf(&quot;  r9: 0x%08x\n&quot;, pt_reg-&gt;r9);
+    diag_printf(&quot; r10: 0x%08x\n&quot;, pt_reg-&gt;r10);
+    diag_printf(&quot; r11: 0x%08x\n&quot;, pt_reg-&gt;r11);
+    diag_printf(&quot; r12: 0x%08x\n&quot;, pt_reg-&gt;r12);
+    diag_printf(&quot; r13: 0x%08x\n&quot;, pt_reg-&gt;r13);
+    diag_printf(&quot; r14: 0x%08x\n&quot;, pt_reg-&gt;r14);
+    diag_printf(&quot; r15: 0x%08x\n&quot;, pt_reg-&gt;r15);
+
+    diag_printf(&quot; cr0: 0x%08x, psr\n&quot;,   pt_reg-&gt;cr0);
+    diag_printf(&quot; cr1: 0x%08x, vbr\n&quot;,   pt_reg-&gt;cr1);
+    diag_printf(&quot; cr2: 0x%08x, epsr\n&quot;,  pt_reg-&gt;cr2);
+    diag_printf(&quot; cr3: 0x%08x, fpsr\n&quot;,  pt_reg-&gt;cr3);
+    diag_printf(&quot; cr4: 0x%08x, epc\n&quot;,   pt_reg-&gt;cr4);
+    diag_printf(&quot; cr5: 0x%08x, fpc\n&quot;,   pt_reg-&gt;cr5);
+    diag_printf(&quot; cr6: 0x%08x, ss0\n&quot;,   pt_reg-&gt;cr6);
+    diag_printf(&quot; cr7: 0x%08x, ss1\n&quot;,   pt_reg-&gt;cr7);
+    diag_printf(&quot; cr8: 0x%08x, ss2\n&quot;,   pt_reg-&gt;cr8);
+    diag_printf(&quot; cr9: 0x%08x, ss3\n&quot;,   pt_reg-&gt;cr9);
+    diag_printf(&quot;cr10: 0x%08x, ss4\n&quot;,   pt_reg-&gt;cr10);
+    diag_printf(&quot;cr11: 0x%08x, gcr  \n&quot;, pt_reg-&gt;cr11);
+    diag_printf(&quot;cr12: 0x%08x, gsr  \n&quot;, pt_reg-&gt;cr12);
+    diag_printf(&quot;cr13: 0x%08x, cpidr\n&quot;, pt_reg-&gt;cr13);
+    diag_printf(&quot;cr14: 0x%08x, dcsr \n&quot;, pt_reg-&gt;cr14);
+    diag_printf(&quot;cr15: 0x%08x, cwr  \n&quot;, pt_reg-&gt;cr15);
+    diag_printf(&quot;cr16: 0x%08x,      \n&quot;, pt_reg-&gt;cr16);
+    diag_printf(&quot;cr17: 0x%08x, cfr  \n&quot;, pt_reg-&gt;cr17);
+    diag_printf(&quot;cr18: 0x%08x, ccr  \n&quot;, pt_reg-&gt;cr18);
+    diag_printf(&quot;cr19: 0x%08x, capr \n&quot;, pt_reg-&gt;cr19);
+    diag_printf(&quot;cr20: 0x%08x, pacr \n&quot;, pt_reg-&gt;cr20);
+    diag_printf(&quot;cr21: 0x%08x, prsr \n&quot;, pt_reg-&gt;cr21);
+
+    diag_printf(&quot;\n %s \n&quot;, &amp;exception_str_list[(pt_reg-&gt;cr2 &gt;&gt; 16) &amp; 0x7f][0]);
+
+    diag_printf( &quot;CODE: \n&quot;);
+    tp = ((unsigned char *) pt_reg-&gt;cr4);
+    if (tp &gt;= 0x90000020 &amp;&amp; tp &lt;= 0x91000000) {
+        tp = tp - 0x20;
+        tp += ((int)tp % 4) ? 2 : 0;
+        for (sp = (unsigned long *) tp, i = 0; (i &lt; 0x40);  i += 4) {
+            if ((i % 0x10) == 0)
+                diag_printf( &quot;\n%08x: &quot;, (int) (tp + i));
+            diag_printf( &quot;%08x &quot;, (int) *sp++);
+        }
+        diag_printf( &quot;\n&quot;);
+    }
+    diag_printf( &quot;\n&quot;);
+}</code></pre>
+<p>如上代码存在一个问题导致寄存器不对应，原因出在 <code>hal_cpu_save_regs</code> 上</p>
+<ul>
+<li><code>hal_cpu_save_regs</code> 中开辟了 64 字节空间</li>
+<li><code>struct pt_reg</code> 中声明到 <code>cr0</code> 寄存器有 60 字节空间</li>
+<li>不对应，现象为从 <code>cr0</code> 开始打印不匹配</li>
+<li>可以在 <code>struct pt_reg</code> 中添加空位</li>
+<li>同时存在另外一个问题，因为在 <code>hal_cpu_save_cr</code> 中 <code>r1</code> 参与运算，导致 <code>r1</code> 值被覆盖</li>
+<li>存在疑问：<ul>
+<li>CR16 不存在，为什么存储？</li>
+<li>CR15 为协处理器专属，应该没有，为什么存储？</li>
+<li>CR14 为 E 专属，应该没有，为什么存储？</li>
+<li>难道是只要 <code>hal_cpu_save_cr</code> 和 <code>hal_cpu_restore_cr</code> 操作的内存对应即可？</li>
+</ul>
+</li>
+</ul>
+<p>验证如下</p>
+<pre><code class="gdb">(cskygdb) i r fpc
+fpc            0x0    0
+(cskygdb) i r cwr
+Invalid register `cwr&#39;
+(cskygdb) i r dcsr
+Invalid register `dcsr&#39;
+(cskygdb) i r epsr
+epsr           0x80030150    -2147286704</code></pre>
+<p>增加堆栈打印</p>
+<pre><code class="c">    diag_printf( &quot;R0: \n&quot;);
+    tp = ((unsigned char *)reg0);
+        if (tp &gt;= 0x90000000 &amp;&amp; tp &lt;= 0xa0000000) {
+            tp = tp - 0x100;
+            tp += ((int)tp % 4) ? 2 : 0;
+            for (sp = (unsigned long *) tp, i = 0; (i &lt; 0x400);  i += 4) {
+                if ((i % 0x10) == 0)
+                    diag_printf( &quot;\n%08x: &quot;, (int) (tp + i));
+                diag_printf( &quot;%08x &quot;, (int) *sp++);
+            }
+            diag_printf( &quot;\n&quot;);
+    }</code></pre>
+<h2 id="编译器选项"><a href="#编译器选项" class="headerlink" title="编译器选项"></a>编译器选项</h2><p><code>-fno-omit-frame-pointer</code> 和 <code>-fomit-frame-pointer</code> 影响栈帧记录，输入编译器插入的调试信息，影响 <code>r8</code> 的记录</p>
+<h2 id="汇编代码"><a href="#汇编代码" class="headerlink" title="汇编代码"></a>汇编代码</h2><pre><code class="gdb">(cskygdb) disassemble app_eutel_chlist_keypress
+Dump of assembler code for function app_eutel_chlist_keypress:
+   // 开辟 8 字节
+   0x90019f1c &lt;+0&gt;:        subi    r0, r0, 8
+   // r15 入栈
+   0x90019f1e &lt;+2&gt;:        st    r15, (r0, 0)
+   // r8 入栈
+   0x90019f20 &lt;+4&gt;:        st    r8, (r0, 4)
+   // 继续开辟 16 字节
+   0x90019f22 &lt;+6&gt;:        subi    r0, r0, 16
+   // 参数1 r2、参数2 r3 入栈
+   0x90019f24 &lt;+8&gt;:        mov    r8, r0
+   0x90019f26 &lt;+10&gt;:    st    r2, (r8, 8)
+   0x90019f28 &lt;+12&gt;:    st    r3, (r8, 12)
+   0x90019f2a &lt;+14&gt;:    movi    r7, 0
+   0x90019f2c &lt;+16&gt;:    st    r7, (r8, 0)
+   0x90019f2e &lt;+18&gt;:    ld    r2, (r8, 8)
+   0x90019f30 &lt;+20&gt;:    ld    r3, (r8, 12)
+   0x90019f32 &lt;+22&gt;:    jsri    0x90019728
+   0x90019f34 &lt;+24&gt;:    st    r2, (r8, 0)
+   0x90019f36 &lt;+26&gt;:    ld    r7, (r8, 0)
+   0x90019f38 &lt;+28&gt;:    mov    r2, r7
+   0x90019f3a &lt;+30&gt;:    mov    r0, r8
+   // 收回 16 字节栈空间
+   0x90019f3c &lt;+32&gt;:    addi    r0, r0, 16
+   0x90019f3e &lt;+34&gt;:    ld    r6, (r0, 16)
+   // r15 出栈
+   0x90019f40 &lt;+36&gt;:    ld    r15, (r0, 0)
+   // r8 出栈
+   0x90019f42 &lt;+38&gt;:    ld    r8, (r0, 4)
+   // 收回 8 字节栈空间
+   0x90019f44 &lt;+40&gt;:    addi    r0, r0, 8
+   // 返回
+   0x90019f46 &lt;+42&gt;:    jmp    r15
+End of assembler dump.</code></pre>
+<h2 id="堆栈"><a href="#堆栈" class="headerlink" title="堆栈"></a>堆栈</h2><h2 id="Bactrace"><a href="#Bactrace" class="headerlink" title="Bactrace"></a>Bactrace</h2><h2 id="Example"><a href="#Example" class="headerlink" title="Example"></a>Example</h2><pre><code>##### Kernel Panic: 3 #####
+  r0: 0x90ca8ae8
+  r1: 0x80030010
+  r2: 0x0000000d
+  r3: 0x0000bb57
+  r4: 0x00000196
+  r5: 0x000000a8
+  r6: 0x00000196
+  r7: 0x00000000
+  r8: 0x90ca8ae8
+  r9: 0x11110000
+ r10: 0x11110000
+ r11: 0x11110000
+ r12: 0x11110000
+ r13: 0x90c89b14
+ r14: 0x90c89af8
+ r15: 0x900197aa
+ cr0: 0x80030010, psr
+ cr1: 0x90000400, vbr
+ cr2: 0x80030150, epsr
+ cr3: 0x00000000, fpsr
+ cr4: 0x9001982e, epc
+ cr5: 0x00000000, fpc
+ cr6: 0x00000000, ss0
+ cr7: 0x00000000, ss1
+ cr8: 0x90ca8408, ss2
+ cr9: 0x0000000d, ss3
+cr10: 0x90ca8ae8, ss4
+cr11: 0x00000000, gcr
+cr12: 0x00000000, gsr
+cr13: 0x102816b2, cpidr
+cr14: 0x00000000, dcsr
+cr15: 0x00000000, cwr
+cr16: 0x00000000,
+cr17: 0x00000002, cfr
+cr18: 0x0000007d, ccr
+cr19: 0x00000000, capr
+cr20: 0x00000000, pacr
+cr21: 0x00000000, prsr
+
+ Divide by Zero
+CODE:
+
+90019810: 72627f62 7f626003 f1047f63 86d78718
+90019820: 34756285 1c871257 12648707 32141271
+90019830: 2a071247 f0f6e001 86477757 34756285
+90019840: 1c871257 73581262 7f581274 86d78718
+
+R0:
+
+90ca89e8: 909fca1c 90bda9a8 00000000 9018de36
+90ca89f8: 00000001 90ca0dc4 90ca8cc0 00000000
+90ca8a08: 909fca1c 9098bc24 909fca20 00000000
+90ca8a18: 90ca8b38 90ca8b04 90ca8b44 00000004
+90ca8a28: 00000000 90b3b780 9098bc24 9018e05a
+90ca8a38: 909d0670 08080808 80808080 00000008
+90ca8a48: 909ec928 909fca18 90ca8cc0 00000000
+90ca8a58: 90ca8cc0 00000000 909fca1c 9098bc24
+90ca8a68: 90ca8cc0 00000000 90ca8cc0 00000000
+90ca8a78: 90ca8cc0 00000000 909fca1c 9098bc24
+90ca8a88: 909fca20 909fd3e8 90ca8ae8 00000000
+90ca8a98: 90ca8cc0 00000000 0000000d 0000000d
+90ca8aa8: 0000000d 00000001 90a8f4b0 0000bb57
+90ca8ab8: 902f22d0 90ca8ac0 0000000d 00000000
+90ca8ac8: 0000bb57 901c6adc 900b07ec 90ca8ad8
+90ca8ad8: 0000bb57 0000000d 900197aa 90ca8ae8
+90ca8ae8: 00000000 90ac7c3c 00000000 90ca8c48
+90ca8af8: 00000000 00000000 00000000 00000000
+90ca8b08: 00000000 00000000 00000000 00000000
+90ca8b18: 00000000 00000000 00000000 00000000
+90ca8b28: 00000000 00000000 00000000 00000000
+90ca8b38: 00000000 00000000 00000000 00000000
+90ca8b48: 00000000 00000000 00000000 00000000
+90ca8b58: 00000000 00000000 00000000 00000000
+90ca8b68: 00000000 00000000 00000000 00000000
+90ca8b78: 00000000 00000000 00000000 00000000
+90ca8b88: 00000000 00000000 00000000 900d9f66
+90ca8b98: 90d5fa8c 90ca8c48 90019f28 90ca8ba8
+90ca8ba8: 00000000 0000000e 90d5fa8c 90ca8c48
+90ca8bb8: 902d5f10 90ca8bc0 00000000 00003a8e
+90ca8bc8: 00000000 90dafd24 90d9f820 90d3bc6c
+90ca8bd8: 90ca8c48 90ca8be0 902d947c 90ca8be8
+90ca8be8: 90daeeec 90ca8c48 00000000 00000000
+90ca8bf8: 90d9f820 90ca8c48 902d59c6 90ca8c08
+90ca8c08: 90d9f820 90cf3e40 90dabf30 90ca8c48
+90ca8c18: 902c870a 90ca8c20 00000001 90dabf30
+90ca8c28: 90b1c1ac 00000000 90ca8c48 00000000
+90ca8c38: 902c69b0 90ca8c40 00000002 90b1c1ac
+90ca8c48: 00000002 0000bb57 0000000d 11110000
+90ca8c58: 11110000 90c89b14 902c5c3a 90ca8c68
+90ca8c68: 9018bbbc 90c89af8 90c84f20 900d9eca
+90ca8c78: 904f0aca 90ca8c80 90c84f28 90ca0c60
+90ca8c88: 90c84f20 90188af8 90ca0c60 11110000
+90ca8c98: 900d90e4 11110000 11110000 90ca0d30
+90ca8ca8: 90188d7a 90ca0d30 9018caec 11110000
+90ca8cb8: 11110000 9018cad8 90ca0d30 80da1d20
+90ca8cc8: b0ea2d10 a0fa3d00 d08a4d70 c09a5d60
+90ca8cd8: f0aa6d50 e0ba7d40 00000000 00000000
+90ca8ce8: 00000000 00000000 00000000 00000000
+90ca8cf8: 00000000 00000000 00000000 00000000
+90ca8d08: 00000000 00000000 00000000 00000000
+90ca8d18: 00000000 00000041 90c84f20 90c89b60
+90ca8d28: 90ca8df0 90ca8df0 00000000 90ca8dc0
+90ca8d38: 90ca8d60 00000000 00000000 00000000
+90ca8d48: 00000000 00000000 00000000 00000000
+90ca8d58: 00000000 00000061 70746f68 2067756c
+90ca8d68: 76726573 00656369 00000000 00000000
+90ca8d78: 00000000 00000000 90518d14 90518d78
+90ca8d88: 00000000 90518de4 00000000 00000001
+90ca8d98: 00000000 00000000 00000000 00000000
+90ca8da8: 00000000 00000000 00000000 00000000
+90ca8db8: 00000000 00000081 90ca0c60 90cab480
+90ca8dc8: 50746f48 4367756c 6f736e6f 6353656c
+90ca8dd8: 75646568 0072656c 00000000 00000000</code></pre><pre><code class="shell">$ csky-elf-addr2line -f -e out.elf 0x9001982e
+_eutel_chlist_keypress
+/debug/richepg/solution/app/richepg/app_eutel_chlist.c:316
+
+$ ./check-kernel-panic.sh
+[0x900197aa] /debug/richepg/solution/app/richepg/app_eutel_chlist.c:305 _eutel_chlist_keypress
+[0x90019f28] /debug/richepg/solution/app/richepg/app_eutel_chlist.c:621 app_eutel_chlist_keypress
+[0x902d5f10] /debug/richepg/platform/gxbus/gui_core/widget/widget.c:1597 exec_widget_event_data
+[0x902d947c] /debug/richepg/platform/gxbus/gui_core/widget/window.c:1336 window_event
+[0x902d59c6] /debug/richepg/platform/gxbus/gui_core/widget/widget.c:1374 widget_notify_parent
+[0x902c870a] /debug/richepg/platform/gxbus/gui_core/core/gui_core.c:1760 GUI_ExecEvent
+[0x902c69b0] /debug/richepg/platform/gxbus/gui_core/core/gui_core.c:504 GUI_Exec
+[0x902c5c3a] /debug/richepg/platform/gxbus/gui_view/gxgui_view.c:197 GxGuiViewServiceConsole
+[0x9018bbbc] /debug/richepg/platform/ecos3.0/ecos3.0/packages/kernel/v3_0/src/common/kapi.cxx:241 cyg_thread_yield
+[0x904f0aca] /debug/richepg/platform/gxbus/bus/gxbus.c:439 sched_console_thread
+[0x90188af8] /debug/richepg/platform/ecos3.0/ecos3.0/packages/compat/posix/v3_0/src/time.cxx:286 pthread_setspecific
+[0x900d90e4] /debug/richepg/platform/gxapi/api/os/ecos/osapi.c:404 default_thread_function
+[0x90188d7a] /debug/richepg/platform/ecos3.0/ecos3.0/packages/compat/posix/v3_0/src/time.cxx:286 _ZL13pthread_entryj
+[0x9018caec] /debug/richepg/platform/ecos3.0/../../library/goxceed/csky-ecos/include/cyg/libc/time/time.inl:233 _ZN18Cyg_HardwareThread12thread_entryEP10Cyg_Thread
+[0x9018cad8] /debug/richepg/platform/ecos3.0/../../library/goxceed/csky-ecos/include/cyg/libc/time/time.inl:233 _ZN18Cyg_HardwareThread12thread_entryEP10Cyg_Thread
+[0x90518d14] /debug/richepg/platform/gxbus/hotplug/gxhotplug.c:447 GxHotPlugServiceInit
+[0x90518d78] /debug/richepg/platform/gxbus/hotplug/gxhotplug.c:471 GxHotPlugServiceDestroy
+[0x90518de4] /debug/richepg/platform/gxbus/hotplug/gxhotplug.c:488 GxHotPlugServiceConsole</code></pre>
+<p>真正的堆栈</p>
+<pre><code class="gdb">(cskygdb) set $pc=$epc
+(cskygdb) bt
+#0  0x9001982e in _eutel_chlist_keypress (widget=0x90d5fa8c, usrdata=0x90ca8c48) at richepg/app_eutel_chlist.c:316
+#1  0x90019f28 in app_eutel_chlist_keypress (widget=0x90d5fa8c, usrdata=0x90ca8c48) at richepg/app_eutel_chlist.c:621
+#2  0x902d5f10 in exec_widget_event_data (widget=0x90d9f820, signal=0x90d3bc6c, userdata=0x90ca8c48)
+    at /debug/richepg/platform/gxbus/gui_core/widget/widget.c:1597
+#3  0x902d947c in window_event (self=0x90d9f820, data=0x90ca8c48) at /debug/richepg/platform/gxbus/gui_core/widget/window.c:1336
+#4  0x902d59c6 in widget_notify_parent (widget=0x90dabf30, data=0x90ca8c48) at /debug/richepg/platform/gxbus/gui_core/widget/widget.c:1374
+#5  0x902c870a in GUI_ExecEvent (event=0x90ca8c48) at /debug/richepg/platform/gxbus/gui_core/core/gui_core.c:1760
+#6  0x902c69b0 in GUI_Exec () at /debug/richepg/platform/gxbus/gui_core/core/gui_core.c:503
+#7  0x902c5c3a in GxGuiViewServiceConsole (self=-1865920736) at /debug/richepg/platform/gxbus/gui_view/gxgui_view.c:194
+#8  0x904f0aca in sched_console_thread (arg=0x90ca0c60) at /debug/richepg/platform/gxbus/bus/gxbus.c:439
+#9  0x900d90e4 in default_thread_function (arg=0x90c89af8) at os/ecos/osapi.c:403
+#10 0x90188d7a in pthread_entry(unsigned int) ()
+#11 0x9018caec in Cyg_HardwareThread::thread_entry(Cyg_Thread*) ()
+#12 0x9018cad8 in ?? ()
+(cskygdb) info f 0
+Stack frame at 0x90ca8ba8:
+ pc = 0x9001982e in _eutel_chlist_keypress (richepg/app_eutel_chlist.c:316); saved pc 0x90019f28
+ called by frame at 0x90ca8bc0
+ source language c.
+ Arglist at 0x90ca8ae8, args: widget=0x90d5fa8c, usrdata=0x90ca8c48
+ Locals at 0x90ca8ae8, Previous frame&#39;s sp is 0x90ca8ba8
+ Saved registers:
+  r8 at 0x90ca8ba4, r15 at 0x90ca8ba0, pc at 0x90ca8ba0
+(cskygdb) info f 1
+Stack frame at 0x90ca8bc0:
+ pc = 0x90019f28 in app_eutel_chlist_keypress (richepg/app_eutel_chlist.c:621); saved pc 0x902d5f10
+ called by frame at 0x90ca8be8, caller of frame at 0x90ca8ba8
+ source language c.
+ Arglist at 0x90ca8ba8, args: widget=0x90d5fa8c, usrdata=0x90ca8c48
+ Locals at 0x90ca8ba8, Previous frame&#39;s sp is 0x90ca8bc0
+ Saved registers:
+  r8 at 0x90ca8bbc, r15 at 0x90ca8bb8, pc at 0x90ca8bb8
+(cskygdb) info f 2
+Stack frame at 0x90ca8be8:
+ pc = 0x902d5f10 in exec_widget_event_data (/debug/richepg/platform/gxbus/gui_core/widget/widget.c:1597); saved pc 0x902d947c
+ called by frame at 0x90ca8c08, caller of frame at 0x90ca8bc0
+ source language c.
+ Arglist at 0x90ca8bc0, args: widget=0x90d9f820, signal=0x90d3bc6c, userdata=0x90ca8c48
+ Locals at 0x90ca8bc0, Previous frame&#39;s sp is 0x90ca8be8
+ Saved registers:
+  r8 at 0x90ca8be4, r15 at 0x90ca8be0, pc at 0x90ca8be0
+(cskygdb) info f 3
+Stack frame at 0x90ca8c08:
+ pc = 0x902d947c in window_event (/debug/richepg/platform/gxbus/gui_core/widget/window.c:1336); saved pc 0x902d59c6
+ called by frame at 0x90ca8c20, caller of frame at 0x90ca8be8
+ source language c.
+ Arglist at 0x90ca8be8, args: self=0x90d9f820, data=0x90ca8c48
+ Locals at 0x90ca8be8, Previous frame&#39;s sp is 0x90ca8c08
+ Saved registers:
+  r8 at 0x90ca8c04, r15 at 0x90ca8c00, pc at 0x90ca8c00</code></pre>
+<p>分析堆栈</p>
+<pre><code>// frame 0
+(cskygdb) info f 0
+Stack frame at 0x90ca8ba8:
+ pc = 0x9001982e in _eutel_chlist_keypress (richepg/app_eutel_chlist.c:316); saved pc 0x90019f28
+ called by frame at 0x90ca8bc0
+ source language c.
+ Arglist at 0x90ca8ae8, args: widget=0x90d5fa8c, usrdata=0x90ca8c48
+ Locals at 0x90ca8ae8, Previous frame&#39;s sp is 0x90ca8ba8
+ Saved registers:
+  r8 at 0x90ca8ba4, r15 at 0x90ca8ba0, pc at 0x90ca8ba0
+   0x90019728 &lt;+0&gt;:    subi    r0, r0, 8 开辟 8 字节
+   0x9001972a &lt;+2&gt;:    st    r15, (r0, 0)
+   0x9001972c &lt;+4&gt;:    st    r8, (r0, 4)
+   0x9001972e &lt;+6&gt;:    movi    r1, 56
+   0x90019730 &lt;+8&gt;:    bseti    r1, r1, 7 r1 为 0xb8 184 字节 GxMsgProperty_NodeByIdGet node
+   0x90019732 &lt;+10&gt;:    subu    r0, r0, r1
+=&gt; 0x90019734 &lt;+12&gt;:    mov    r8, r0
+   0x90019736 &lt;+14&gt;:    movi    r4, 48
+   0x90019738 &lt;+16&gt;:    bseti    r4, r4, 7
+   0x9001973a &lt;+18&gt;:    mov    r7, r4 0xb0 174
+   0x9001973c &lt;+20&gt;:    addu    r7, r7, r8
+   0x9001973e &lt;+22&gt;:    st    r2, (r7, 0)
+   0x90019740 &lt;+24&gt;:    movi    r5, 52
+   0x90019742 &lt;+26&gt;:    bseti    r5, r5, 7
+   0x90019744 &lt;+28&gt;:    mov    r7, r5
+   0x90019746 &lt;+30&gt;:    addu    r7, r7, r8
+   0x90019748 &lt;+32&gt;:    st    r3, (r7, 0)
+(cskygdb) p 0x90ca8ba8-0x90ca8ae8
+$3 = 192
+(cskygdb) p 192-0xb8
+$4 = 8
+
+90ca89e8: 909fca1c 90bda9a8 00000000 9018de36
+90ca89f8: 00000001 90ca0dc4 90ca8cc0 00000000
+90ca8a08: 909fca1c 9098bc24 909fca20 00000000
+90ca8a18: 90ca8b38 90ca8b04 90ca8b44 00000004
+90ca8a28: 00000000 90b3b780 9098bc24 9018e05a
+90ca8a38: 909d0670 08080808 80808080 00000008
+90ca8a48: 909ec928 909fca18 90ca8cc0 00000000
+90ca8a58: 90ca8cc0 00000000 909fca1c 9098bc24
+90ca8a68: 90ca8cc0 00000000 90ca8cc0 00000000
+90ca8a78: 90ca8cc0 00000000 909fca1c 9098bc24
+90ca8a88: 909fca20 909fd3e8 90ca8ae8 00000000
+90ca8a98: 90ca8cc0 00000000 0000000d 0000000d
+90ca8aa8: 0000000d 00000001 90a8f4b0 0000bb57
+90ca8ab8: 902f22d0 90ca8ac0 0000000d 00000000
+90ca8ac8: 0000bb57 901c6adc 900b07ec 90ca8ad8
+90ca8ad8: 0000bb57 0000000d 900197aa 90ca8ae8
+90ca8ae8: 00000000 90ac7c3c 00000000 90ca8c48
+90ca8af8: 00000000 00000000 00000000 00000000
+90ca8b08: 00000000 00000000 00000000 00000000
+90ca8b18: 00000000 00000000 00000000 00000000
+90ca8b28: 00000000 00000000 00000000 00000000
+90ca8b38: 00000000 00000000 00000000 00000000
+90ca8b48: 00000000 00000000 00000000 00000000
+90ca8b58: 00000000 00000000 00000000 00000000
+90ca8b68: 00000000 00000000 00000000 00000000
+90ca8b78: 00000000 00000000 00000000 00000000
+90ca8b88: 00000000 00000000 00000000 900d9f66
+90ca8b98: 90d5fa8c(r2) 90ca8c48(r3) 90019f28(r15) 90ca8ba8(r8)
+
+// frame 1
+(cskygdb) info f 1
+Stack frame at 0x90ca8bc0:
+ pc = 0x90019f28 in app_eutel_chlist_keypress (richepg/app_eutel_chlist.c:621); saved pc 0x902d5f10
+ called by frame at 0x90ca8be8, caller of frame at 0x90ca8ba8
+ source language c.
+ Arglist at 0x90ca8ba8, args: widget=0x90d5fa8c, usrdata=0x90ca8c48
+ Locals at 0x90ca8ba8, Previous frame&#39;s sp is 0x90ca8bc0
+ Saved registers:
+  r8 at 0x90ca8bbc, r15 at 0x90ca8bb8, pc at 0x90ca8bb8
+(cskygdb) disassemble app_eutel_chlist_keypress
+Dump of assembler code for function app_eutel_chlist_keypress:
+   0x90019f10 &lt;+0&gt;:    subi    r0, r0, 8
+   0x90019f12 &lt;+2&gt;:    st    r15, (r0, 0)
+   0x90019f14 &lt;+4&gt;:    st    r8, (r0, 4)
+   0x90019f16 &lt;+6&gt;:    subi    r0, r0, 16
+   0x90019f18 &lt;+8&gt;:    mov    r8, r0
+   0x90019f1a &lt;+10&gt;:    st    r2, (r8, 8)
+   0x90019f1c &lt;+12&gt;:    st    r3, (r8, 12)
+
+栈大小为 8 + 16
+
+90ca8ba8: 00000000 0000000e 90d5fa8c(r2) 90ca8c48(r3)
+90ca8bb8: 902d5f10(r15) 90ca8bc0(r8)
+
+// frame 2
+(cskygdb) info f 2
+Stack frame at 0x90ca8be8:
+ pc = 0x902d5f10 in exec_widget_event_data (/debug/richepg/platform/gxbus/gui_core/widget/widget.c:1597); saved pc 0x902d947c
+ called by frame at 0x90ca8c08, caller of frame at 0x90ca8bc0
+ source language c.
+ Arglist at 0x90ca8bc0, args: widget=0x90d9f820, signal=0x90d3bc6c, userdata=0x90ca8c48
+ Locals at 0x90ca8bc0, Previous frame&#39;s sp is 0x90ca8be8
+ Saved registers:
+  r8 at 0x90ca8be4, r15 at 0x90ca8be0, pc at 0x90ca8be0
+(cskygdb) disassemble exec_widget_event_data
+Dump of assembler code for function exec_widget_event_data:
+   0x902d5eac &lt;+0&gt;:    subi    r0, r0, 8
+   0x902d5eae &lt;+2&gt;:    st    r15, (r0, 0)
+   0x902d5eb0 &lt;+4&gt;:    st    r8, (r0, 4)
+   0x902d5eb2 &lt;+6&gt;:    subi    r0, r0, 32
+   0x902d5eb4 &lt;+8&gt;:    mov    r8, r0
+   0x902d5eb6 &lt;+10&gt;:    st    r2, (r8, 16)
+   0x902d5eb8 &lt;+12&gt;:    st    r3, (r8, 20)
+   0x902d5eba &lt;+14&gt;:    st    r4, (r8, 24)
+
+栈大小为 8 + 32
+
+90ca8bc0: 00000000 00003a8e
+90ca8bc8: 00000000 90dafd24 90d9f820(r2) 90d3bc6c(r3)
+90ca8bd8: 90ca8c48(r4) 90ca8be0 902d947c(r15) 90ca8be8(r8)
+
+// frame 3
+info f 3
+Stack frame at 0x90ca8c08:
+ pc = 0x902d947c in window_event (/debug/richepg/platform/gxbus/gui_core/widget/window.c:1336); saved pc 0x902d59c6
+ called by frame at 0x90ca8c20, caller of frame at 0x90ca8be8
+ source language c.
+ Arglist at 0x90ca8be8, args: self=0x90d9f820, data=0x90ca8c48
+ Locals at 0x90ca8be8, Previous frame&#39;s sp is 0x90ca8c08
+ Saved registers:
+  r8 at 0x90ca8c04, r15 at 0x90ca8c00, pc at 0x90ca8c00
+   0x902d940c &lt;+0&gt;:    subi    r0, r0, 8
+   0x902d940e &lt;+2&gt;:    st    r15, (r0, 0)
+   0x902d9410 &lt;+4&gt;:    st    r8, (r0, 4)
+   0x902d9412 &lt;+6&gt;:    subi    r0, r0, 24
+   0x902d9414 &lt;+8&gt;:    mov    r8, r0
+   0x902d9416 &lt;+10&gt;:    st    r2, (r8, 16)
+   0x902d9418 &lt;+12&gt;:    st    r3, (r8, 20)
+
+栈大小为 8 + 24，
+
+90ca8be8: 90daeeec 90ca8c48 00000000 00000000
+90ca8bf8: 90d9f820(r2) 90ca8c48(r3) 902d59c6(r15) 90ca8c08(r8)
+
+90ca8c08: 90d9f820 90cf3e40 90dabf30 90ca8c48
+90ca8c18: 902c870a 90ca8c20
+
+90ca8c20: 00000001 90dabf30
+90ca8c28: 90b1c1ac 00000000 90ca8c48 00000000
+90ca8c38: 902c69b0 90ca8c40 00000002 90b1c1ac
+90ca8c48: 00000002 0000bb57 0000000d 11110000
+90ca8c58: 11110000 90c89b14 902c5c3a 90ca8c68
+90ca8c68: 9018bbbc 90c89af8 90c84f20 900d9eca
+90ca8c78: 904f0aca 90ca8c80 90c84f28 90ca0c60
+90ca8c88: 90c84f20 90188af8 90ca0c60 11110000
+90ca8c98: 900d90e4 11110000 11110000 90ca0d30
+90ca8ca8: 90188d7a 90ca0d30 9018caec 11110000
+90ca8cb8: 11110000 9018cad8 90ca0d30 80da1d20
+90ca8cc8: b0ea2d10 a0fa3d00 d08a4d70 c09a5d60
+90ca8cd8: f0aa6d50 e0ba7d40 00000000 00000000
+90ca8ce8: 00000000 00000000 00000000 00000000
+90ca8cf8: 00000000 00000000 00000000 00000000
+90ca8d08: 00000000 00000000 00000000 00000000
+90ca8d18: 00000000 00000041 90c84f20 90c89b60
+90ca8d28: 90ca8df0 90ca8df0 00000000 90ca8dc0
+90ca8d38: 90ca8d60 00000000 00000000 00000000
+90ca8d48: 00000000 00000000 00000000 00000000
+90ca8d58: 00000000 00000061 70746f68 2067756c
+90ca8d68: 76726573 00656369 00000000 00000000
+90ca8d78: 00000000 00000000 90518d14 90518d78
+90ca8d88: 00000000 90518de4 00000000 00000001
+90ca8d98: 00000000 00000000 00000000 00000000
+90ca8da8: 00000000 00000000 00000000 00000000
+90ca8db8: 00000000 00000081 90ca0c60 90cab480
+90ca8dc8: 50746f48 4367756c 6f736e6f 6353656c
+90ca8dd8: 75646568 0072656c 00000000 00000000</code></pre>
+      </div>
+      
+      
+      
+    </div>
+    
+  <ul class="breadcrumb">
+          
+            <li><a href="/private/">PRIVATE</a></li>
+            <li><a href="/private/backtrace/">BACKTRACE</a></li>
+            <li>CSKY-ECOS-STACK-AND-BACKTRACE</li>
+          
+  </ul>
+
+    
+    
+    
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#CK610m-Ecos-操作系统下堆栈及-BackTrace-分析"><span class="nav-number">1.</span> <span class="nav-text">CK610m Ecos 操作系统下堆栈及 BackTrace 分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#工具"><span class="nav-number">1.1.</span> <span class="nav-text">工具</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#gdb"><span class="nav-number">1.1.1.</span> <span class="nav-text">gdb</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#objdump"><span class="nav-number">1.1.2.</span> <span class="nav-text">objdump</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#概述"><span class="nav-number">1.2.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#编程模型"><span class="nav-number">1.2.1.</span> <span class="nav-text">编程模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#普通用户编程模式"><span class="nav-number">1.2.2.</span> <span class="nav-text">普通用户编程模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#超级用户编程模式"><span class="nav-number">1.2.3.</span> <span class="nav-text">超级用户编程模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#异常向量"><span class="nav-number">1.2.4.</span> <span class="nav-text">异常向量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#异常中断处理"><span class="nav-number">1.2.5.</span> <span class="nav-text">异常中断处理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#编译器选项"><span class="nav-number">1.3.</span> <span class="nav-text">编译器选项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#汇编代码"><span class="nav-number">1.4.</span> <span class="nav-text">汇编代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#堆栈"><span class="nav-number">1.5.</span> <span class="nav-text">堆栈</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Bactrace"><span class="nav-number">1.6.</span> <span class="nav-text">Bactrace</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Example"><span class="nav-number">1.7.</span> <span class="nav-text">Example</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">434</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">58</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">458</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:39</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>
