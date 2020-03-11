@@ -1,6 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>Linux 内核符号表的生成和查找</title>
+    <url>/2020/03/11/linux-kernel-all-syms/</url>
+    <content><![CDATA[<p><code>printk</code> 可以根据地址打印函数名/符号名，记录内核符号表生成及使用过程</p>
+<a id="more"></a>
+
+<h2 id="System-map"><a href="#System-map" class="headerlink" title="System.map"></a>System.map</h2><p>System.map 文件是编译内核时生成的，它记录了内核中的符号列表，以及符号在内存中的虚拟地址，由脚本 <code>scripts/mksysmap</code> 生成</p>
+<h2 id="proc-kallsyms"><a href="#proc-kallsyms" class="headerlink" title="/proc/kallsyms"></a>/proc/kallsyms</h2><p>内核必须打开 <code>CONFIG_KALLSYMS</code> 编译选项，和 System.map 的区别是<strong>它同时包含了内核模块的符号列表</strong>，是在内核启动后生成的，位于文件系统的 /proc 目录下，实现代码见 <code>kernel/kallsyms.c</code></p>
+<h2 id="内核符号表"><a href="#内核符号表" class="headerlink" title="内核符号表"></a>内核符号表</h2><p><strong>System.map 和内核启动后的 /proc/kallsyms 文件中的符号表只是给我们看的，内核不会使用它们</strong>，而是在编译内核时，向 vmlinux 嵌入了一个符号表</p>
+<h3 id="内核符号表结构"><a href="#内核符号表结构" class="headerlink" title="内核符号表结构"></a>内核符号表结构</h3><p>由工具 <code>scripts/kallsyms</code> 生成，工具源码在同目录，用法如下</p>
+<pre><code>nm -n vmlinux | scripts/kallsyms [--all-symbols] &gt; symbols.S</code></pre><p>使用 nm 工具获得符号表之后进行整理得到汇编文件，包括 6 个全局变量</p>
+<ul>
+<li><code>kallsyms_addresses</code> 数组，存放所有符号的地址列表，按地址升序排列</li>
+<li><code>kallsyms_num_syms</code> 符号的数量</li>
+<li><code>kallsyms_names</code> 数组，存放所有符号的名称，和 <code>kallsyms_addresses</code> 一一对应</li>
+<li><code>kallsyms_markers</code> 存储索引用于加速搜索</li>
+<li><code>kallsyms_token_table</code> 数组，存储压缩字符串</li>
+<li><code>kallsyms_token_index</code> 记录每个 token 首字符在 <code>kallsyms_token_table</code> 中的偏移</li>
+</ul>
+<h3 id="查找过程"><a href="#查找过程" class="headerlink" title="查找过程"></a>查找过程</h3><pre><code>c0008000 T _text
+c0008000 T stext
+c000808c t __create_page_tables</code></pre><p>计算符号 <code>c000808c t __create_page_tables</code> 偏移为 <code>0x8c</code>，从 <code>kallsyms_addresses</code> 中得到索引为 <code>2</code></p>
+<pre><code>kallsyms_addresses:
+     PTR _text + 0
+     PTR _text + 0
+     PTR _text + 0x8c
+
+kallsyms_names:
+    .byte 0x04, 0x9b, 0xef, 0x78, 0x74
+    .byte 0x05, 0x54, 0x5f, 0xef, 0x78, 0x74
+    .byte 0x0a, 0xff, 0xe1, 0xf5, 0x8b, 0xa7, 0x18, 0xfd, 0x62, 0xd2, 0x73
+
+kallsyms_markers:
+    PTR 0
+    PTR 2917
+    PTR 5993</code></pre><p>根据 <code>2 &gt;&gt; 8</code> 计算出在 <code>kallsyms_markers</code> 第一组 <code>PTR 0</code>，指出起始字符的偏移在 <code>kallsyms_names[0]</code>，同时根据 <code>2 &amp;&amp; 0xFF</code> 找到具体位置</p>
+<p><code>.byte 0x0a, 0xff, 0xe1, 0xf5, 0x8b, 0xa7, 0x18, 0xfd, 0x62, 0xd2, 0x73</code> 为压缩字符，需要根据 <code>kallsyms_token_table</code> 解析</p>
+<ul>
+<li>0x0a 长度</li>
+<li>0xff <code>t_</code></li>
+<li>0xe1 <code>_c</code></li>
+<li>0xf5 <code>re</code></li>
+<li>0x8b <code>ate_</code></li>
+<li>0xa7 <code>pa</code></li>
+<li>0x18 <code>get_</code></li>
+<li>0xfd <code>ta</code></li>
+<li>0x62 <code>b</code></li>
+<li>0xd2 <code>le</code></li>
+<li>0x73 <code>s</code></li>
+</ul>
+<p><code>t__create_page_tables</code> 其中 <code>t</code> 为符号类型，去除之后为 <code>__create_page_tables</code></p>
+<h3 id="内核实现"><a href="#内核实现" class="headerlink" title="内核实现"></a>内核实现</h3><p>内核文件参照 <code>kernel/kallsyms.c</code> 提供接口用于内核符号表查找</p>
+<ul>
+<li><code>get_symbol_pos</code> 根据地址查找索引及偏移</li>
+<li><code>module_address_lookup</code> 内核模块符号查找</li>
+<li><code>get_symbol_offset</code> 根据 <code>kallsyms_markers</code> 获取偏移</li>
+<li><code>kallsyms_expand_symbol</code> 获取符号名</li>
+<li><code>kallsyms_get_symbol_type</code> 获取符号类型</li>
+</ul>
+<p>例如函数 <code>kallsyms_lookup</code></p>
+<pre><code class="c">if (is_ksym_addr(addr)) {
+    unsigned long pos;
+
+    pos = get_symbol_pos(addr, symbolsize, offset);
+    /* Grab name */
+    kallsyms_expand_symbol(get_symbol_offset(pos),
+                   namebuf, KSYM_NAME_LEN);
+    if (modname)
+        *modname = NULL;
+    return namebuf;
+}
+
+/* See if it&#39;s in a module. */
+return module_address_lookup(addr, symbolsize, offset, modname,
+                 namebuf);</code></pre>
+]]></content>
+      <categories>
+        <category>Linux</category>
+        <category>Debug</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>kallsyms</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Linux内核栈溢出检测</title>
     <url>/2020/03/09/linux-kernel-stack/</url>
     <content><![CDATA[<p>监测内核栈使用情况，分析 crash 问题</p>
