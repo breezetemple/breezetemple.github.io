@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="使用 user_debug 打印由用户态引起的 oops 信息">
+<meta property="og:type" content="article">
+<meta property="og:title" content="打印用户态段错误信息">
+<meta property="og:url" content="http://yoursite.com/2020/03/05/linux-user-debug/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="使用 user_debug 打印由用户态引起的 oops 信息">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-03-05T02:01:09.000Z">
+<meta property="article:modified_time" content="2020-03-11T02:35:26.216Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="stack">
+<meta property="article:tag" content="oops">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2020/03/05/linux-user-debug/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>打印用户态段错误信息 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/03/05/linux-user-debug/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          打印用户态段错误信息
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-03-05 10:01:09" itemprop="dateCreated datePublished" datetime="2020-03-05T10:01:09+08:00">2020-03-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-03-11 10:35:26" itemprop="dateModified" datetime="2020-03-11T10:35:26+08:00">2020-03-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index">
+                    <span itemprop="name">C</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/Debug/" itemprop="url" rel="index">
+                    <span itemprop="name">Debug</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/BackTrace/" itemprop="url" rel="index">
+                    <span itemprop="name">BackTrace</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.9k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>使用 <code>user_debug</code> 打印由用户态引起的 oops 信息</p>
+<a id="more"></a>
+
+<p><a href="https://www.cnblogs.com/lifexy/p/8045191.html" target="_blank" rel="noopener">Linux应用调试-修改内核来打印用户态的oops</a></p>
+<ul>
+<li>Linux 4.9</li>
+<li>arm arch</li>
+</ul>
+<h2 id="Linux-内核错误处理"><a href="#Linux-内核错误处理" class="headerlink" title="Linux 内核错误处理"></a>Linux 内核错误处理</h2><p>文件 <code>arch/arm/mm/fsr-2level.c</code></p>
+<pre><code class="c">{ do_bad,       SIGSEGV, 0,     &quot;vector exception&quot;         },
+{ do_bad,       SIGBUS,  BUS_ADRALN,    &quot;alignment exception&quot;          },
+{ do_bad,       SIGKILL, 0,     &quot;terminal exception&quot;           },
+{ do_bad,       SIGBUS,  BUS_ADRALN,    &quot;alignment exception&quot;          },
+{ do_bad,       SIGBUS,  0,     &quot;external abort on linefetch&quot;      },
+{ do_translation_fault, SIGSEGV, SEGV_MAPERR,   &quot;section translation fault&quot;    },
+{ do_bad,       SIGBUS,  0,     &quot;external abort on linefetch&quot;      },
+{ do_page_fault,    SIGSEGV, SEGV_MAPERR,   &quot;page translation fault&quot;       },
+{ do_bad,       SIGBUS,  0,     &quot;external abort on non-linefetch&quot;  },
+{ do_bad,       SIGSEGV, SEGV_ACCERR,   &quot;section domain fault&quot;         },
+{ do_bad,       SIGBUS,  0,     &quot;external abort on non-linefetch&quot;  },
+{ do_bad,       SIGSEGV, SEGV_ACCERR,   &quot;page domain fault&quot;        },
+{ do_bad,       SIGBUS,  0,     &quot;external abort on translation&quot;    },
+{ do_sect_fault,    SIGSEGV, SEGV_ACCERR,   &quot;section permission fault&quot;     },
+{ do_bad,       SIGBUS,  0,     &quot;external abort on translation&quot;    },
+{ do_page_fault,    SIGSEGV, SEGV_ACCERR,   &quot;page permission fault&quot;        },</code></pre>
+<ul>
+<li><code>do_translation_fault</code> 调用 <code>do_bad_area</code></li>
+<li><code>do_page_fault</code> 调用 <code>__do_user_fault</code> 或 <code>__do_kernel_fault</code></li>
+<li><code>do_sect_fault</code> 调用 <code>do_bad_area</code></li>
+</ul>
+<pre><code class="c">/*                                                                              
+ * Oops.  The kernel tried to access some page that wasn&#39;t present.             
+ */                                                                             
+static void                                                                     
+__do_kernel_fault(struct mm_struct *mm, unsigned long addr, unsigned int fsr,   
+          struct pt_regs *regs)                                                 
+{                                                                               
+    /*                                                                          
+     * Are we prepared to handle this kernel fault?                             
+     */                                                                         
+    if (fixup_exception(regs))                                                  
+        return;                                                                 
+
+    /*                                                                          
+     * No handler, we&#39;ll have to terminate things with extreme prejudice.       
+     */                                                                         
+    bust_spinlocks(1);                                                          
+    pr_alert(&quot;Unable to handle kernel %s at virtual address %08lx\n&quot;,           
+         (addr &lt; PAGE_SIZE) ? &quot;NULL pointer dereference&quot; :                      
+         &quot;paging request&quot;, addr);                                               
+
+    show_pte(mm, addr);                                                         
+    die(&quot;Oops&quot;, regs, fsr);                                                     
+    bust_spinlocks(0);                                                          
+    do_exit(SIGKILL);                                                           
+}
+
+/*
+ * Something tried to access memory that isn&#39;t in our memory map..
+ * User mode accesses just cause a SIGSEGV
+ */
+static void
+__do_user_fault(struct task_struct *tsk, unsigned long addr,
+        unsigned int fsr, unsigned int sig, int code,
+        struct pt_regs *regs)
+{
+    struct siginfo si;
+
+#ifdef CONFIG_DEBUG_USER
+    if (((user_debug &amp; UDBG_SEGV) &amp;&amp; (sig == SIGSEGV)) ||
+        ((user_debug &amp; UDBG_BUS)  &amp;&amp; (sig == SIGBUS))) {
+        printk(KERN_DEBUG &quot;%s: unhandled page fault (%d) at 0x%08lx, code 0x%03x\n&quot;,
+               tsk-&gt;comm, sig, addr, fsr);
+        show_pte(tsk-&gt;mm, addr);
+        show_regs(regs);
+    }
+#endif
+
+    tsk-&gt;thread.address = addr;
+    tsk-&gt;thread.error_code = fsr;
+    tsk-&gt;thread.trap_no = 14;
+    si.si_signo = sig;
+    si.si_errno = 0;
+    si.si_code = code;
+    si.si_addr = (void __user *)addr;
+    force_sig_info(sig, &amp;si, tsk);
+}
+
+void do_bad_area(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+{
+    struct task_struct *tsk = current;
+    struct mm_struct *mm = tsk-&gt;active_mm;
+
+    /*
+     * If we are in kernel mode at this point, we
+     * have no context to handle this fault with.
+     */
+    if (user_mode(regs))
+        __do_user_fault(tsk, addr, fsr, SIGSEGV, SEGV_MAPERR, regs);
+    else
+        __do_kernel_fault(mm, addr, fsr, regs);
+}</code></pre>
+<p>可以看出 <code>__do_kernel_fault</code> 为内核态 oops 输出，<code>__do_user_fault</code> 为用户态输出，同时需要满足</p>
+<ol>
+<li>定义 <code>CONFIG_DEBUG_USER</code></li>
+<li>设置 <code>user_debug</code></li>
+</ol>
+<h2 id="配置内核"><a href="#配置内核" class="headerlink" title="配置内核"></a>配置内核</h2><ul>
+<li><code>Kernel hacking</code> -&gt; <code>Verbose user fault messages</code></li>
+<li><code>user_debug</code> 见文档 <code>kernel-parameters.txt</code>，在 cmdline 中增加 <code>user_debug=31</code><pre><code class="txt">  user_debug= [KNL,ARM]
+          Format: &lt;int&gt;
+          See arch/arm/Kconfig.debug help text.
+              1 - undefined instruction events
+              2 - system calls
+              4 - invalid data aborts
+              8 - SIGSEGV faults
+              16 - SIGBUS faults
+          Example: user_debug=31</code></pre>
+<pre><code class="c">unsigned int user_debug;
+static int __init user_debug_setup(char *str)
+{
+  get_option(&amp;str, &amp;user_debug);
+  return 1;
+}
+__setup(&quot;user_debug=&quot;, user_debug_setup);</code></pre>
+</li>
+</ul>
+<p>修改之后测试会输出调试信息，但不包括栈信息</p>
+<h2 id="打印应用栈数据"><a href="#打印应用栈数据" class="headerlink" title="打印应用栈数据"></a>打印应用栈数据</h2><p>参考 <code>__do_kernel_fault</code> 中打印栈信息函数</p>
+<pre><code class="c">if (!user_mode(regs) || in_interrupt()) {
+    dump_mem(KERN_EMERG, &quot;Stack: &quot;, regs-&gt;ARM_sp,
+         THREAD_SIZE + (unsigned long)task_stack_page(tsk));
+    dump_backtrace(regs, tsk);
+    dump_instr(KERN_EMERG, regs);
+}</code></pre>
+<p>通过sp寄存器里存的栈地址，每打印一个栈地址里的32位数据, 栈地址便加4</p>
+<p>在 <code>__do_user_fault</code> 中修改如下</p>
+<pre><code class="c">unsigned long ret;
+unsigned long val;
+int i = 0;
+printk(&quot;Stack: \n&quot;);
+while(i &lt; 1024){
+    if(copy_from_user(&amp;val, (const void __user *)(regs-&gt;ARM_sp + i*4), 4)){
+        break;
+    }
+    i++;
+    printk(&quot;%08x &quot;, val);
+    if(i%8 == 0)
+        printk(&quot;\n&quot;);
+}
+printk(&quot;\n end of stack \n&quot;);</code></pre>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/stack/" rel="tag"># stack</a>
+              <a href="/tags/oops/" rel="tag"># oops</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2020/02/26/gcc-options-fomit-frame-pointer/" rel="next" title="gcc 编译选项 -fomit-frame-pointer">
+                  <i class="fa fa-chevron-left"></i> gcc 编译选项 -fomit-frame-pointer
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2020/03/09/linux-kernel-stack/" rel="prev" title="Linux内核栈溢出检测">
+                  Linux内核栈溢出检测 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux-内核错误处理"><span class="nav-number">1.</span> <span class="nav-text">Linux 内核错误处理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#配置内核"><span class="nav-number">2.</span> <span class="nav-text">配置内核</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#打印应用栈数据"><span class="nav-number">3.</span> <span class="nav-text">打印应用栈数据</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">435</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">58</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">458</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:42</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>
