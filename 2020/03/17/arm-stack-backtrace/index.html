@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="介绍 arm 体系下如何实现 stack backtrace">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ARM stack backtrace的实现">
+<meta property="og:url" content="http://yoursite.com/2020/03/17/arm-stack-backtrace/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="介绍 arm 体系下如何实现 stack backtrace">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/linux/apcs_t.png">
+<meta property="article:published_time" content="2020-03-17T06:09:46.000Z">
+<meta property="article:modified_time" content="2020-03-17T06:45:41.447Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="stack">
+<meta property="article:tag" content="backtrace">
+<meta property="article:tag" content="unwind">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/linux/apcs_t.png">
+
+<link rel="canonical" href="http://yoursite.com/2020/03/17/arm-stack-backtrace/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>ARM stack backtrace的实现 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/03/17/arm-stack-backtrace/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          ARM stack backtrace的实现
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2020-03-17 14:09:46 / Modified: 14:45:41" itemprop="dateCreated datePublished" datetime="2020-03-17T14:09:46+08:00">2020-03-17</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index">
+                    <span itemprop="name">C</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/Debug/" itemprop="url" rel="index">
+                    <span itemprop="name">Debug</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/BackTrace/" itemprop="url" rel="index">
+                    <span itemprop="name">BackTrace</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>4.5k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>介绍 arm 体系下如何实现 stack backtrace</p>
+<a id="more"></a>
+
+<h2 id="APCS"><a href="#APCS" class="headerlink" title="APCS"></a>APCS</h2><p>APCS (ARM Procedure Call Standard)，ARM 过程调用标准规范了 arm 寄存器的使用、过程调用时出栈和入栈的约定。如下图示意：</p>
+<p><img src="/images/linux/apcs_t.png" alt=""></p>
+<p>函数的栈帧由 <code>fp</code> 和 <code>sp</code> 标记边界。如果编译器遵循APCS，形成结构化的函数调用栈，就可以解析当前栈(callee)结构，从而得到调用栈(caller)的结构，这样就输出了整个回溯栈。</p>
+<p>编译器选项 <code>-g</code> 生成栈帧信息 <code>.debug_frame</code></p>
+<pre><code class="shell">$ readelf -S output/out.elf
+There are 18 section headers, starting at offset 0x1bb0fd0:
+
+节头：
+  [Nr] Name              Type            Addr     Off    Size   ES Flg Lk Inf Al
+  [ 0]                   NULL            00000000 000000 000000 00      0   0  0
+  [ 1] .text             PROGBITS        90000000 001000 6c132c 04  AX  0   0 1024
+  [ 2] .devtab           PROGBITS        906c132c 6c232c 000c8c 00  WA  0   0  8
+  [ 3] .bss              NOBITS          906c1fb8 6c2fb8 16a568 00  WA  0   0  8
+  [ 4] .debug_abbrev     PROGBITS        00000000 6c2fb8 0b82a7 00      0   0  1
+  [ 5] .debug_info       PROGBITS        00000000 77b25f a37035 00      0   0  1
+  [ 6] .debug_line       PROGBITS        00000000 11b2294 3bb5fc 00      0   0  1
+  [ 7] .debug_pubnames   PROGBITS        00000000 156d890 04911e 00      0   0  1
+  [ 8] .debug_pubtypes   PROGBITS        00000000 15b69ae 166807 00      0   0  1
+  [ 9] .debug_aranges    PROGBITS        00000000 171d1b5 018900 00      0   0  1
+  [10] .debug_str        PROGBITS        00000000 1735ab5 0c4732 01  MS  0   0  1
+  [11] .comment          PROGBITS        00000000 17fa1e7 0000cf 01  MS  0   0  1
+  [12] .debug_frame      PROGBITS        00000000 17fa2b8 08c8b0 00      0   0  4
+  [13] .debug_ranges     PROGBITS        00000000 1886b68 056380 00      0   0  1
+  [14] .debug_loc        PROGBITS        00000000 18dcee8 2d402b 00      0   0  1
+  [15] .shstrtab         STRTAB          00000000 1bb0f13 0000bd 00      0   0  1
+  [16] .symtab           SYMTAB          00000000 1bb12a0 071130 10     17 14593  4
+  [17] .strtab           STRTAB          00000000 1c223d0 086411 00      0   0  1</code></pre>
+<p>内核编译选项</p>
+<pre><code class="makefile">ifeq ($(CONFIG_FRAME_POINTER),y)
+KBUILD_CFLAGS   +=-fno-omit-frame-pointer -mapcs -mno-sched-prolog
+endif</code></pre>
+<h2 id="unwind"><a href="#unwind" class="headerlink" title="unwind"></a>unwind</h2><p>APCS的缺陷是，维护栈框的指令过多，栈消耗大，占用的寄存器也过多，比如每次调用都必须将 <code>r11,r12,lr,pc</code> 入栈。使用unwind就能避免这些问题，生产指令的效率要有用的多。它的原理是记录每个函数的入栈指令(一般比APCS的入栈要少的多)到特殊的段 <code>.ARM.unwind_idx</code> <code>.ARM.unwind_tab</code>。</p>
+<pre><code class="shell">$ readelf -S vmlinux
+There are 33 section headers, starting at offset 0xa33ba8:
+
+节头：
+  [Nr] Name              Type            Addr     Off    Size   ES Flg Lk Inf Al
+  [ 0]                   NULL            00000000 000000 000000 00      0   0  0
+  [ 1] .head.text        PROGBITS        c0008000 008000 00026c 00  AX  0   0  4
+  [ 2] .text             PROGBITS        c0100000 010000 55e3dc 00  AX  0   0 64
+  [ 3] .fixup            PROGBITS        c065e3dc 56e3dc 00001c 00  AX  0   0  4
+  [ 4] .rodata           PROGBITS        c0700000 570000 105fc8 00  WA  0   0 4096
+  [ 5] __bug_table       PROGBITS        c0805fc8 675fc8 0057a8 00   A  0   0  4
+  [ 6] __ksymtab         PROGBITS        c080b770 67b770 006e28 00   A  0   0  4
+  [ 7] __ksymtab_gpl     PROGBITS        c0812598 682598 005d10 00   A  0   0  4
+  [ 8] __ksymtab_strings PROGBITS        c08182a8 6882a8 01e235 00   A  0   0  1
+  [ 9] __param           PROGBITS        c08364e0 6a64e0 000d34 00   A  0   0  4
+  [10] __modver          PROGBITS        c0837214 6a7214 000dec 00   A  0   0  4
+  [11] __ex_table        PROGBITS        c0838000 6a8000 001038 00   A  0   0  8
+  [12] .ARM.unwind_idx   ARM_EXIDX       c0839038 6a9038 0273d8 00  AL 17   0  4
+  [13] .ARM.unwind_tab   PROGBITS        c0860410 6d0410 003630 00   A  0   0  4
+  [14] .notes            NOTE            c0863a40 6d3a40 000024 00  AX  0   0  4
+  [15] .vectors          PROGBITS        ffff0000 6e0000 000020 00  AX  0   0  4
+  [16] .stubs            PROGBITS        ffff1000 6e1000 0002ac 00  AX  0   0 32
+  [17] .init.text        PROGBITS        c09002e0 6f02e0 0440d0 00  AX  0   0 32
+  [18] .exit.text        PROGBITS        c09443b0 7343b0 000ee4 00  AX  0   0  4
+  [19] .init.arch.info   PROGBITS        c0945294 735294 0000d0 00   A  0   0  4
+  [20] .init.tagtable    PROGBITS        c0945364 735364 000048 00   A  0   0  4
+  [21] .init.smpalt      PROGBITS        c09453ac 7353ac 00bd10 00   A  0   0  4
+  [22] .init.pv_table    PROGBITS        c09510bc 7410bc 00064c 00   A  0   0  1
+  [23] .init.data        PROGBITS        c0952000 742000 00a194 00  WA  0   0 4096
+  [24] .data..percpu     PROGBITS        c095d000 74d000 0067cc 00  WA  0   0 64
+  [25] .data             PROGBITS        c0a00000 760000 0609ac 00  WA  0   0 64
+  [26] .data..page_align PROGBITS        c0a61000 7c1000 001000 00  WA  0   0 4096
+  [27] .bss              NOBITS          c0a62000 7c2000 03260c 00  WA  0   0 64
+  [28] .comment          PROGBITS        00000000 7c2000 00004e 01  MS  0   0  1
+  [29] .ARM.attributes   ARM_ATTRIBUTES  00000000 7c204e 00002f 00      0   0  1
+  [30] .symtab           SYMTAB          00000000 7c2080 167560 10     31 77680  4
+  [31] .strtab           STRTAB          00000000 9295e0 10a46c 00      0   0  1
+  [32] .shstrtab         STRTAB          00000000 a33a4c 00015a 00      0   0  1
+
+$ objdump -D vmlinu
+c04ee72c &lt;__skb_recv_datagram&gt;:
+c04ee72c:       e3110040        tst     r1, #64 ; 0x40
+c04ee730:       e92d43f0        push    {r4, r5, r6, r7, r8, r9, lr}
+c04ee734:       e1a09003        mov     r9, r3
+c04ee738:       05903144        ldreq   r3, [r0, #324]  ; 0x144
+c04ee73c:       e24dd014        sub     sp, sp, #20
+
+$ readelf -u .ARM.unwind_idx vmlinux
+0xc04ee72c &lt;__skb_recv_datagram&gt;: 0x8004adb0
+  Compact model index: 0
+  0x04      vsp = vsp + 20
+  0xad      pop {r4, r5, r6, r7, r8, r9, r14}
+  0xb0      finish</code></pre>
+<p>输出了函数的地址和对应的编码。接下输出的是编码对应的出栈伪指令，这些伪指令正好是函数栈操作的逆过程，用于回溯。</p>
+<p>内核编译选项</p>
+<pre><code class="makefile">ifeq ($(CONFIG_ARM_UNWIND),y)
+CFLAGS_ABI  +=-funwind-tables
+endif</code></pre>
+<h2 id="内核实现"><a href="#内核实现" class="headerlink" title="内核实现"></a>内核实现</h2><p>APCS会产生更多的代码指令，对性能有影响，使用unwind的方式会生成额外的段，但不影响性能。</p>
+<p>文件 <code>arch/arm/kernel/traps.c</code></p>
+<pre><code class="c">#ifdef CONFIG_ARM_UNWIND
+static inline void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
+{
+    unwind_backtrace(regs, tsk);
+}
+#else
+static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
+{
+    unsigned int fp, mode;
+    int ok = 1;
+
+    printk(&quot;Backtrace: &quot;);
+
+    if (!tsk)
+        tsk = current;
+
+    if (regs) {
+        fp = frame_pointer(regs);
+        mode = processor_mode(regs);
+    } else if (tsk != current) {
+        fp = thread_saved_fp(tsk);
+        mode = 0x10;
+    } else {
+        asm(&quot;mov %0, fp&quot; : &quot;=r&quot; (fp) : : &quot;cc&quot;);
+        mode = 0x10;
+    }
+
+    if (!fp) {
+        pr_cont(&quot;no frame pointer&quot;);
+        ok = 0;
+    } else if (verify_stack(fp)) {
+        pr_cont(&quot;invalid frame pointer 0x%08x&quot;, fp);
+        ok = 0;
+    } else if (fp &lt; (unsigned long)end_of_stack(tsk))
+        pr_cont(&quot;frame pointer underflow&quot;);
+    pr_cont(&quot;\n&quot;);
+
+    if (ok)
+        c_backtrace(fp, mode);
+}
+#endif</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://blog.csdn.net/itismine/article/details/4752489" target="_blank" rel="noopener">APCS，ARM 过程调用标准(ARM Procedure Call Standard) </a></li>
+<li><a href="https://www.linuxidc.com/Linux/2013-03/81247.htm" target="_blank" rel="noopener">ARM FP寄存器及frame pointer介绍</a></li>
+<li><a href="https://www.alivepea.me/prog/how-backtrace-work/" target="_blank" rel="noopener">Stack backtrace 的实现</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/stack/" rel="tag"># stack</a>
+              <a href="/tags/backtrace/" rel="tag"># backtrace</a>
+              <a href="/tags/unwind/" rel="tag"># unwind</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2020/03/11/linux-kernel-all-syms/" rel="next" title="Linux 内核符号表的生成和查找">
+                  <i class="fa fa-chevron-left"></i> Linux 内核符号表的生成和查找
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#APCS"><span class="nav-number">1.</span> <span class="nav-text">APCS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#unwind"><span class="nav-number">2.</span> <span class="nav-text">unwind</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内核实现"><span class="nav-number">3.</span> <span class="nav-text">内核实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">4.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">437</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">58</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">459</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:48</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>
