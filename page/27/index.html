@@ -216,7 +216,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/09/10/gcc-attributes/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/09/10/attribute-aligned/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -230,7 +230,7 @@
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/2015/09/10/gcc-attributes/" class="post-title-link" itemprop="url">几个有用的gcc attribute</a>
+            <a href="/2015/09/10/attribute-aligned/" class="post-title-link" itemprop="url">\#pragma pack(n)和\_\_attribute\_\_((aligned(m)))的区别</a>
         </h1>
 
         <div class="post-meta">
@@ -247,7 +247,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-03-18 12:51:25" itemprop="dateModified" datetime="2020-03-18T12:51:25+08:00">2020-03-18</time>
+                <time title="Modified: 2020-03-18 15:51:01" itemprop="dateModified" datetime="2020-03-18T15:51:01+08:00">2020-03-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -267,14 +267,14 @@
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>5k</span>
+              <span>1.6k</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="fa fa-clock-o"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>5 mins.</span>
+              <span>1 mins.</span>
             </span>
 
         </div>
@@ -302,213 +302,49 @@ $(document).ready(function(){
 </script>
 <div id="category"></div>
 
-<h2 id="align属性"><a href="#align属性" class="headerlink" title="align属性"></a>align属性</h2><p>align属性不仅可以修饰变量，类型， 还可以修饰函数， 举个例子：</p>
-<h3 id="修饰变量"><a href="#修饰变量" class="headerlink" title="修饰变量"></a>修饰变量</h3><pre><code>int a = 0;
-
-int main(void)
-{
-    printf(&quot;a = %d\n&quot;, a);
-}</code></pre><p>用gdb看下变量a的地址：</p>
-<pre><code>(gdb) p/x &amp;a
-$1 = 0x60087c</code></pre><p>变量a地址是编译器随意生成的， 这个例子碰巧分配到了8字节对齐的位置上。<br>用align属性修饰下：</p>
-<pre><code>int a __attribute__((aligned(8))) = 0;
-
-(gdb) p/x &amp;a
-$1 = 0x600880</code></pre><p>编译器会把变量a生成在8字节对齐的内存地址上。</p>
-<h3 id="修饰类型"><a href="#修饰类型" class="headerlink" title="修饰类型"></a>修饰类型</h3><pre><code>int a __attribute__((aligned(8))) = 0;
-
-struct test {
-    int a;
-} __attribute__((aligned(8)));
-
-struct test aa;
-
-int main(void)
-{
-    printf(&quot;a = %d\n&quot;, a);
-}</code></pre><p>经过align修饰后，struct test数据结构定义的所有变量都会出现在8字节对齐的内存上。</p>
-<pre><code>(gdb) p/x &amp;aa
-$1 = 0x600888</code></pre><h3 id="修饰函数"><a href="#修饰函数" class="headerlink" title="修饰函数"></a>修饰函数</h3><pre><code>void test1(void) __attribute__((aligned(2)));
-
-void  test1(void)
-{
-    printf(&quot;hello, world.\n&quot;);
-}
-
-int main(void)
-{
-    test1();
-}</code></pre><p>经过align修饰后，函数出现在8字节对齐的内存上。</p>
-<pre><code>(gdb) p test1 
-$1 = {&lt;text variable, no debug info&gt;} 0x400538 &lt;test1&gt;</code></pre><h2 id="always-inline属性"><a href="#always-inline属性" class="headerlink" title="always_inline属性"></a>always_inline属性</h2><p>gcc有个inline关键字，可以将一个函数定义为内嵌形式：</p>
-<pre><code>static inline void test2(void);
-
-void test1(void)
-{
-    printf(&quot;hehe.\n&quot;);
-}
-
-void test2(void)
-{
-    asm(&quot;nop&quot;);
-}
-
-void test(void)
-{
-    test1();
-    test2();
-}
-
-int main(void)
-{
-    test();
-}</code></pre><p>按照inline的定义， test在调用test2函数的时候， 会直接将test2函数的代码展开在test函数内部，<br>这样就减少了一次函数调用过程， 加快了代码的执行速度， 用gdb反汇编看下：</p>
-<pre><code>(gdb) disass test
-Dump of assembler code for function test:
-0x00000000004004a8 :    push   %rbp
-0x00000000004004a9 :    mov    %rsp,%rbp
-0x00000000004004ac :    callq  0x400498 
-0x00000000004004b1 :    callq  0x4004b8 
-0x00000000004004b6 :   leaveq
-0x00000000004004b7 :   retq
-End of assembler dump.</code></pre><p>你可以看到，gcc并没有把test2函数展开，明明已经使用inline修饰了。<br>因为虽然用inline做了修饰，但是gcc会根据代码的逻辑来优化到底有没有必要使用inline代码。<br>像这种简单的代码，用inline代码效果不大，因此gcc并没有按照inline要求来生成代码。</p>
-<pre><code>static inline void test2(void) __attribute__((always_inline));
-加入always_inline属性后呢？
-(gdb) disass test
-Dump of assembler code for function test:
-0x00000000004004a8 :    push   %rbp
-0x00000000004004a9 :    mov    %rsp,%rbp
-0x00000000004004ac :    callq  0x400498 
-0x00000000004004b1 :    nop
-0x00000000004004b2 :   leaveq
-0x00000000004004b3 :   retq
-End of assembler dump.</code></pre><p>这次你会看到在调用完test1后， 直接把test2的代码， 也是nop语句加入在了test函数内。</p>
-<h2 id="constructor-amp-destructor"><a href="#constructor-amp-destructor" class="headerlink" title="constructor &amp; destructor"></a>constructor &amp; destructor</h2><p>很犀利的2个属性，用于修饰某个函数，经过constructor属性修饰过的函数，<br>可以在main函数运行前就可以先运行完毕，同理destructor在进程exit之前执行。</p>
+<h2 id="pragma-pack-n-和-attribute-aligned-m-的区别："><a href="#pragma-pack-n-和-attribute-aligned-m-的区别：" class="headerlink" title="#pragma pack(n)和__attribute__((aligned(m)))的区别："></a>#pragma pack(n)和__attribute__((aligned(m)))的区别：</h2><p>前者告诉编译器结构体或类内部的成员变量相对于第一个变量的地址的偏移量的对齐方式，<br>缺省情况下，编译器按照自然边界对齐，当变量所需的自然对齐边界比n大时，按照n对齐，<br>否则按照自然边界对齐；<br>后者告诉编译器一个结构体或者类或者联合或者一个类型的变量(对象)分配地址空间时的地址对齐方式。<br>也就是说，如果将__attribute__((aligned(m)))作用于一个类型，那么该类型的变量在分配地址空间时，<br>其存放的地址一定按照m字节对齐(m必须是2的幂次方)。<br>并且其占用的空间，即大小,也是m的整数倍，以保证在申请连续存储空间的时候，<br>每一个元素的地址也是按照m字节对齐。 __attribute__((aligned(m)))也可以作用于一个单独的变量。举例说明：</p>
 <pre><code>#include&lt;stdio.h&gt;
+#pragma pack(4)
 
-void test1(void) __attribute__((aligned(8)));
+typedef struct{
+    uint32_t f1;
+    uint8_t f2;
+    uint8_t f3;
+    uint32_t f4;
+    uint64_t f5;
+}__attribute__((aligned(1024))) ts;
 
-void  test1(void)
+int main()
 {
-    printf(&quot;hello, world.\n&quot;);
-}
+    printf(&quot;Struct size is: %d, aligned on 1024\n&quot;,sizeof(ts));
+    printf(&quot;Allocate f1 on address: 0x%x\n&quot;,&amp;(((ts*)0)-&gt;f1));
+    printf(&quot;Allocate f2 on address: 0x%x\n&quot;,&amp;(((ts*)0)-&gt;f2));
+    printf(&quot;Allocate f3 on address: 0x%x\n&quot;,&amp;(((ts*)0)-&gt;f3));
+    printf(&quot;Allocate f4 on address: 0x%x\n&quot;,&amp;(((ts*)0)-&gt;f4));
+    printf(&quot;Allocate f5 on address: 0x%x\n&quot;,&amp;(((ts*)0)-&gt;f5));
+    return 0;
+}</code></pre><p>输出：</p>
+<font color="#00FF00">
+    Struct size is: 1024, aligned on 1024
+<br/>
+</font>
+    Allocate f1 on address: 0x0
+<br/>
+<font color="#FF0000">
+    Allocate f2 on address: 0x4
+<br/>
+    Allocate f3 on address: 0x5
+<br/>
+</font>
+    Allocate f4 on address: 0x8
+<br/>
+<font color="#FF00FF">
+    Allocate f5 on address: 0xc
+<br/>
+</font>
 
-void __attribute__((constructor)) test2(void)
-{
-    printf(&quot;hehe.\n&quot;);
-}
-
-void __attribute__((destructor)) test3(void)
-{
-    printf(&quot;haha.\n&quot;);
-}
-
-int main(void)
-{
-    test1();
-}</code></pre><p>执行输出如下：</p>
-<pre><code>➜  /data/test/1  &gt; ./main 
-hehe.
-hello, world.
-haha.</code></pre><h2 id="fastcall-amp-regparm属性"><a href="#fastcall-amp-regparm属性" class="headerlink" title="fastcall &amp; regparm属性"></a>fastcall &amp; regparm属性</h2><p>在c语言中，通过函数传递参数通常使用堆栈的方式，如：<br>    test(a, b, c);<br>参数从右到左依次压入堆栈c, b, a。<br>函数执行完后，还要把这3个参数从堆栈中弹出来，如果一个函数每秒钟有上万次调用，<br>这将非常耗时，为了加快代码运行速度，gcc扩展了fastcall和regparm2个属性，<br>对于fastcall属性，一个函数的前2个参数分别通过ecx和edx来传递，剩下的则是使用堆栈来传递。<br>对于regparm，它的用法如下regparm(n), 函数的1到n个参数，分别通过eax, edx, ecx来传递，最多就使用3个寄存器，<br>其余参数通过堆栈来传递。注意这2个属性只在x86平台有效。很对编译平台fastcall默认开启。</p>
-<pre><code>int __attribute__((fastcall)) test1(int a, int b)
-{
-    return a + b;
-}
-
-int __attribute__((regparm(2))) test2(int a, int b)
-{
-    return a + b;
-}
-
-int test3(int a, int b)
-{
-    return a + b;
-}
-
-int main(void)
-{
-    test1(1, 2);
-    test2(1, 2);
-    test3(1, 2);
-}
-
-(gdb) disass test1
-Dump of assembler code for function test1:
-0x08048354 :   push   %ebp
-0x08048355 :   mov    %esp,%ebp
-0x08048357 :   sub    $0x8,%esp 在堆栈里先分配了8个字节的空间
-0x0804835a :   mov    %ecx,-0x4(%ebp) 将ecx的值放入第一个变量里
-0x0804835d :   mov    %edx,-0x8(%ebp) 将edx的值放入第二个变量里
-0x08048360 :  mov    -0x8(%ebp),%eax
-0x08048363 :  add    -0x4(%ebp),%eax
-0x08048366 :  leave
-0x08048367 :  ret
-End of assembler dump.
-
-(gdb) disass test2
-Dump of assembler code for function test2:
-0x08048368 :   push   %ebp
-0x08048369 :   mov    %esp,%ebp
-0x0804836b :   sub    $0x8,%esp
-0x0804836e :   mov    %eax,-0x4(%ebp)
-0x08048371 :   mov    %edx,-0x8(%ebp)
-0x08048374 :  mov    -0x8(%ebp),%eax
-0x08048377 :  add    -0x4(%ebp),%eax
-0x0804837a :  leave
-0x0804837b :  ret
-End of assembler dump.
-
-(gdb) disass test3
-Dump of assembler code for function test3:
-0x0804837c :   push   %ebp
-0x0804837d :   mov    %esp,%ebp
-0x0804837f :   mov    0xc(%ebp),%eax 堆栈形式来传递参数，0×c(%ebp)保存第二个参数
-0x08048382 :   add    0x8(%ebp),%eax 堆栈形式来传递参数，0×8(%ebp)保存第一个参数
-0x08048385 :   pop    %ebp
-0x08048386 :  ret
-End of assembler dump.</code></pre><h2 id="packed属性"><a href="#packed属性" class="headerlink" title="packed属性"></a>packed属性</h2><p>用于修饰struct, union, enum数据结构，看如下的例子：</p>
-<pre><code>struct test {
-    char a;
-    int b;
-};
-
-struct test1 {
-    char a;
-    int b;
-}__attribute__((packed));
-
-int main(void)
-{
-    printf(&quot;%d, %d\n&quot;, sizeof(struct test), sizeof(struct test1));
-}</code></pre><p>struct test结构，理论来说一共有1+4=5字节的大小，但是gcc默认编译出来的大小是8，也就是说char是按照4字节来分配空间的。<br>加上packed修饰后，就会按照实际的类型大小来计算。</p>
-<pre><code>➜  /data/test/1  &gt; ./main 
-8, 5</code></pre><h2 id="section属性"><a href="#section属性" class="headerlink" title="section属性"></a>section属性</h2><p>gcc编译后的二进制文件为elf格式，代码中的函数部分会默认的链接到elf文件的text section中，<br>变量则会链接到bss和data section中。如果想把代码或变量放到特定的section中，就可以使用section属性来修饰。</p>
-<pre><code>int __attribute__((section(&quot;TEST&quot;))) test1(int a, int b)
-{
-    return a + b;
-}
-
-int test2(int a, int b)
-{
-    return a + b;
-}
-
-int main(void)
-{
-    test1(1, 2);
-    test2(1, 2);
-}</code></pre><p>使用readelf来观察下test二进制格式。</p>
-<pre><code>➜  /data/test/1  &gt; readelf -S main
-[13] .text             PROGBITS         0000000000400400  00000400
-00000000000001a2  0000000000000000  AX       0     0     16
-[14] TEST              PROGBITS         00000000004005a2  000005a2
-0000000000000014  0000000000000000  AX       0     0     1</code></pre><p>文件多出了一个TEST section，它的起始地址为0x4005a2, 大小为0x14， 它的地址范围在 0x4005a2 – 0x4005b6。<br>text section的起始地址为0x400400, 大小为0x1a2， 它的地址范围在0x400400 – 0x4005a2。</p>
-<p>在来看下test1, test2符号表的地址：</p>
-<pre><code>➜  /data/test/1  &gt; readelf -s main
-57: 00000000004005a2    20 FUNC    GLOBAL DEFAULT   14 test1
-68: 00000000004004f6    20 FUNC    GLOBAL DEFAULT   13 test2</code></pre><p>可以看到test2确实被链接在text section中， 而test1链接在TEST section中。</p>
-<h2 id="PS"><a href="#PS" class="headerlink" title="PS"></a>PS</h2><p>更多关于gcc attribute的介绍请看<a href="http://gcc.gnu.org/onlinedocs/gcc-4.3.2//gcc/Variable-Attributes.html#Variable-Attributes" target="_blank" rel="noopener">gcc手册</a></p>
+<p>注意:</p>
+<p>绿色部分表明了__attribute__((aligned(1024))) 的作用<br/><br>红色部分说明#pragma pack(4)只对大小大于4的成员变量的地址偏移起作用<br/><br>紫色部分说明对于大小大于4的成员变量，其地址偏移按照4字节对齐</p>
 
       
     </div>
@@ -559,7 +395,7 @@ int main(void)
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-03-18 12:51:25" itemprop="dateModified" datetime="2020-03-18T12:51:25+08:00">2020-03-18</time>
+                <time title="Modified: 2020-03-18 15:51:01" itemprop="dateModified" datetime="2020-03-18T15:51:01+08:00">2020-03-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1072,146 +908,6 @@ $ scan-view-3.4 /tmp/scan-build-2016-06-23-125458-27549-1</code></pre>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/06/Linux-OOM-Killer/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/07/06/Linux-OOM-Killer/" class="post-title-link" itemprop="url">Linux下malloc函数和OOM Killer</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-07-07 00:00:00" itemprop="dateCreated datePublished" datetime="2015-07-07T00:00:00+08:00">2015-07-07</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-03-18 12:51:25" itemprop="dateModified" datetime="2020-03-18T12:51:25+08:00">2020-03-18</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>3.1k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>3 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<h3 id="Malloc函数和OOM-Killer"><a href="#Malloc函数和OOM-Killer" class="headerlink" title="Malloc函数和OOM Killer"></a><strong>Malloc函数和OOM Killer</strong></h3><p>Linux下malloc函数主要用来在用户空间从heap申请内存，申请成功返回指向所分配内存的指针，申请失败返回NULL。<br><strong>默认情况下，Linux内核使用“乐观的”分配内存策略</strong>，首先粗略估计系统可使用的内存数，然后分配内存，<br>但是在使用的时候才真正把这块分配的内存给你。<br>这样一来，即使用malloc申请内存没有返回NULL，你也不一定能完全使用这块内存，<br>特别是在一次或连续多次申请很多内存的时候。</p>
-<p>如果一直连续用malloc申请内存，而不真正使用，所申请的内存总数可以超过真正可以使用的内存数。<br>但是当真正使用这块内存，比如用memset或bzero函数一次性把所申请到的大块内存“使用掉”，<br>Linux系统就会Out Of Memory，这个时候OOM Killer就会kill掉用户空间的其他进程来腾出更多可使用内存。</p>
-<p>OOM Killer根据OOM score来决定kill哪个进程，OOM score可以看/proc/<PID>/oom_score，<br>score由badness函数计算得出，根据进程运行时间长短，进程优先级，进程所使用的内存数等等。<br>可以通过/proc/<PID>/oom_adj来干预计算socre，这个值的取值范围是-17～15，<br>如果是-17该进程就永远不会被kill（这个可能也和内核版本有关，不见得所有内核版本都支持，得实际试试）。</p>
-<p>“默认情况”Linux是这种做的，“默认情况”是指/proc/sys/vm/overcommit_memory为0的时候。<br>这个参数也可以调整，如果为1表示“来着不拒”，只要你malloc过来申请，我啥都不做，立马给你分配内存，<br>这样的话性能就会有大幅度的提高；<br>如果为2表示Linux会精确计算所有可使用的内存和所申请的内存，如果所申请的超过的可使用的内存数就返回NULL。<br>可使用的内存值计算方法，虚拟内存（swap）+ /proc/sys/vm/overcommit_memory（百分比） × 物理内存。<br>/proc/sys/vm/overcommit_memory默认值为50,计算起来就是50%的物理内存数。</p>
-<p>Linux自身内核会占一部分内存，还有buffer/cache所占用的内存，<br>所以实际上能被malloc申请后使用的内存并非物理内存大小，<br>demsg的输出里面包含了相关信息（如果看不到，可能是被别的信息冲掉了，重启系统，在系统起来后马上看）：</p>
-<pre><code>Memory: 2071220k/2097152k available (2122k kernel code, 24584k reserved, 884k data, 228k init, 1179584k highmem)</code></pre><h3 id="关于OOM-Killer的proc文件系统"><a href="#关于OOM-Killer的proc文件系统" class="headerlink" title="关于OOM Killer的proc文件系统"></a><strong>关于OOM Killer的proc文件系统</strong></h3><p>下面开始介绍与OOM Killer相关的proc文件系统。</p>
-<h4 id="proc-PID-oom-adj"><a href="#proc-PID-oom-adj" class="headerlink" title="/proc/PID/oom_adj"></a><strong>/proc/PID/oom_adj</strong></h4><p>为/proc/PID/oom_adj设置值就可以调整得分。<br>调整值的范围为–16~15。正的值容易被OOM Killer选定。负值可能性较低。<br>例如，当指定3时，得分就变为23倍；当指定–5时，得分就变为1/25。</p>
-<p>“–17”是一个特殊的值。如果设置为–17，就会禁止OOM Killer发出的信号（从Linux 2.6.12开始支持设置–17）。</p>
-<p>在OOM Killer运行的情况下，为了实现远程登录而想要将sshd排除在对象外时，可以执行下列命令。</p>
-<pre><code># cat /proc/&#39;cat /var/run/sshd.pid&#39;/oom_score
-15
-# echo -17 &gt;  /proc/&#39;cat /var/run/sshd.pid&#39;/oom_adj
-# tail /proc/&#39;cat /var/run/sshd.pid&#39;/oom_*
-==&gt; /proc/2278/oom_adj &lt;==
--17
-==&gt; /proc/2278/oom_score &lt;==
-0                               /*得分变成0*/</code></pre><p>从Linux 2.6.18开始可以使用/proc/PID/oom_adj。内容记载在Documentation /filesystems/proc.txt中。</p>
-<h4 id="proc-sys-vm-panic-on-oom"><a href="#proc-sys-vm-panic-on-oom" class="headerlink" title="/proc/sys/vm/panic_on_oom"></a><strong>/proc/sys/vm/panic_on_oom</strong></h4><p>将/proc/sys/vm/panic_on_oom设置为1时，在OOM Killer运行时可以不发送进程信号，而是使内核产生重大故障。</p>
-<pre><code># echo 1 &gt; /proc/sys/vm/panic_on_oom</code></pre><h4 id="proc-sys-vm-oom-kill-allocating-task"><a href="#proc-sys-vm-oom-kill-allocating-task" class="headerlink" title="/proc/sys/vm/oom_kill_allocating_task"></a><strong>/proc/sys/vm/oom_kill_allocating_task</strong></h4><p>从Linux 2.6.24开始proc文件系统就有oom_kill_allocating_task。<br>如果对此设置除0以外的值，则促使OOM Killer运行的进程自身将接收信号。此处省略对所有进程的得分计算过程。</p>
-<pre><code># echo 1 &gt; /proc/sys/vm/oom_kill_allocating_task</code></pre><p>这样就不需要参照所有进程，但是也不会考虑进程的优先级和root权限等，只发送信号。</p>
-<h4 id="proc-sys-vm-oom-dump-tasks"><a href="#proc-sys-vm-oom-dump-tasks" class="headerlink" title="/proc/sys/vm/oom_dump_tasks"></a><strong>/proc/sys/vm/oom_dump_tasks</strong></h4><p>从Linux 2.6.25开始，将oom_dump_tasks设置为除0以外的值时，在OOM Killer运行时的输出中会增加进程的列表信息。</p>
-<pre><code># echo 1 &gt; /proc/sys/vm/oom_dump_tasks</code></pre><p>列表信息显示如下，可以使用dmesg或syslog来确认。</p>
-<pre><code>[ pid ]   uid  tgid total_vm      rss cpu oom_adj name
-[    1]     0     1     2580        1   0       0 init
-[  500]     0   500     3231        0   1     -17 udevd
-[ 2736]     0  2736     1470        1   0       0 syslogd
-[ 2741]     0  2741      944        0   0       0 klogd
-[ 2765]    81  2765     5307        0   0       0 dbus-daemon
-[ 2861]     0  2861      944        0   0       0 acpid
-...
-[ 3320]     0  3320   525842   241215   1       0 stress</code></pre><h4 id="proc-PID-oom-score-adj"><a href="#proc-PID-oom-score-adj" class="headerlink" title="/proc/PID/oom_score_adj"></a><strong>/proc/PID/oom_score_adj</strong></h4><p>从Linux 2.6.36开始都安装了/proc/<PID>/oom_score_adj，<br>此后将替换为/proc/PID/oom_adj。<br>即使当前是对/proc/PID/oom_adj进行的设置，在内核内部进行变换后的值也是针对/proc/PID/oom_score_adj设置的。</p>
-<p>可以设置–1000~1000之间的值。设置为–1000时，该进程就被排除在OOM Killer强制终止的对象外。</p>
-<p>在内核2.6.36以后的版本中写入oom_adj，只会输出一次如下的信息。</p>
-<pre><code># dmesg
-.....
-udevd (60): /proc/60/oom_adj is deprecated, please use /proc/60/oom_score_adj instead.</code></pre>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/06/Linux-malloc/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1243,7 +939,7 @@ udevd (60): /proc/60/oom_adj is deprecated, please use /proc/60/oom_score_adj in
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-03-18 12:51:25" itemprop="dateModified" datetime="2020-03-18T12:51:25+08:00">2020-03-18</time>
+                <time title="Modified: 2020-03-18 15:51:01" itemprop="dateModified" datetime="2020-03-18T15:51:01+08:00">2020-03-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1362,7 +1058,7 @@ $(document).ready(function(){
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/01/grep-special/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/06/Linux-OOM-Killer/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -1376,7 +1072,147 @@ $(document).ready(function(){
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/2015/07/01/grep-special/" class="post-title-link" itemprop="url">Grep搜索特定文件</a>
+            <a href="/2015/07/06/Linux-OOM-Killer/" class="post-title-link" itemprop="url">Linux下malloc函数和OOM Killer</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-07-07 00:00:00" itemprop="dateCreated datePublished" datetime="2015-07-07T00:00:00+08:00">2015-07-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-03-18 15:51:01" itemprop="dateModified" datetime="2020-03-18T15:51:01+08:00">2020-03-18</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.1k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h3 id="Malloc函数和OOM-Killer"><a href="#Malloc函数和OOM-Killer" class="headerlink" title="Malloc函数和OOM Killer"></a><strong>Malloc函数和OOM Killer</strong></h3><p>Linux下malloc函数主要用来在用户空间从heap申请内存，申请成功返回指向所分配内存的指针，申请失败返回NULL。<br><strong>默认情况下，Linux内核使用“乐观的”分配内存策略</strong>，首先粗略估计系统可使用的内存数，然后分配内存，<br>但是在使用的时候才真正把这块分配的内存给你。<br>这样一来，即使用malloc申请内存没有返回NULL，你也不一定能完全使用这块内存，<br>特别是在一次或连续多次申请很多内存的时候。</p>
+<p>如果一直连续用malloc申请内存，而不真正使用，所申请的内存总数可以超过真正可以使用的内存数。<br>但是当真正使用这块内存，比如用memset或bzero函数一次性把所申请到的大块内存“使用掉”，<br>Linux系统就会Out Of Memory，这个时候OOM Killer就会kill掉用户空间的其他进程来腾出更多可使用内存。</p>
+<p>OOM Killer根据OOM score来决定kill哪个进程，OOM score可以看/proc/<PID>/oom_score，<br>score由badness函数计算得出，根据进程运行时间长短，进程优先级，进程所使用的内存数等等。<br>可以通过/proc/<PID>/oom_adj来干预计算socre，这个值的取值范围是-17～15，<br>如果是-17该进程就永远不会被kill（这个可能也和内核版本有关，不见得所有内核版本都支持，得实际试试）。</p>
+<p>“默认情况”Linux是这种做的，“默认情况”是指/proc/sys/vm/overcommit_memory为0的时候。<br>这个参数也可以调整，如果为1表示“来着不拒”，只要你malloc过来申请，我啥都不做，立马给你分配内存，<br>这样的话性能就会有大幅度的提高；<br>如果为2表示Linux会精确计算所有可使用的内存和所申请的内存，如果所申请的超过的可使用的内存数就返回NULL。<br>可使用的内存值计算方法，虚拟内存（swap）+ /proc/sys/vm/overcommit_memory（百分比） × 物理内存。<br>/proc/sys/vm/overcommit_memory默认值为50,计算起来就是50%的物理内存数。</p>
+<p>Linux自身内核会占一部分内存，还有buffer/cache所占用的内存，<br>所以实际上能被malloc申请后使用的内存并非物理内存大小，<br>demsg的输出里面包含了相关信息（如果看不到，可能是被别的信息冲掉了，重启系统，在系统起来后马上看）：</p>
+<pre><code>Memory: 2071220k/2097152k available (2122k kernel code, 24584k reserved, 884k data, 228k init, 1179584k highmem)</code></pre><h3 id="关于OOM-Killer的proc文件系统"><a href="#关于OOM-Killer的proc文件系统" class="headerlink" title="关于OOM Killer的proc文件系统"></a><strong>关于OOM Killer的proc文件系统</strong></h3><p>下面开始介绍与OOM Killer相关的proc文件系统。</p>
+<h4 id="proc-PID-oom-adj"><a href="#proc-PID-oom-adj" class="headerlink" title="/proc/PID/oom_adj"></a><strong>/proc/PID/oom_adj</strong></h4><p>为/proc/PID/oom_adj设置值就可以调整得分。<br>调整值的范围为–16~15。正的值容易被OOM Killer选定。负值可能性较低。<br>例如，当指定3时，得分就变为23倍；当指定–5时，得分就变为1/25。</p>
+<p>“–17”是一个特殊的值。如果设置为–17，就会禁止OOM Killer发出的信号（从Linux 2.6.12开始支持设置–17）。</p>
+<p>在OOM Killer运行的情况下，为了实现远程登录而想要将sshd排除在对象外时，可以执行下列命令。</p>
+<pre><code># cat /proc/&#39;cat /var/run/sshd.pid&#39;/oom_score
+15
+# echo -17 &gt;  /proc/&#39;cat /var/run/sshd.pid&#39;/oom_adj
+# tail /proc/&#39;cat /var/run/sshd.pid&#39;/oom_*
+==&gt; /proc/2278/oom_adj &lt;==
+-17
+==&gt; /proc/2278/oom_score &lt;==
+0                               /*得分变成0*/</code></pre><p>从Linux 2.6.18开始可以使用/proc/PID/oom_adj。内容记载在Documentation /filesystems/proc.txt中。</p>
+<h4 id="proc-sys-vm-panic-on-oom"><a href="#proc-sys-vm-panic-on-oom" class="headerlink" title="/proc/sys/vm/panic_on_oom"></a><strong>/proc/sys/vm/panic_on_oom</strong></h4><p>将/proc/sys/vm/panic_on_oom设置为1时，在OOM Killer运行时可以不发送进程信号，而是使内核产生重大故障。</p>
+<pre><code># echo 1 &gt; /proc/sys/vm/panic_on_oom</code></pre><h4 id="proc-sys-vm-oom-kill-allocating-task"><a href="#proc-sys-vm-oom-kill-allocating-task" class="headerlink" title="/proc/sys/vm/oom_kill_allocating_task"></a><strong>/proc/sys/vm/oom_kill_allocating_task</strong></h4><p>从Linux 2.6.24开始proc文件系统就有oom_kill_allocating_task。<br>如果对此设置除0以外的值，则促使OOM Killer运行的进程自身将接收信号。此处省略对所有进程的得分计算过程。</p>
+<pre><code># echo 1 &gt; /proc/sys/vm/oom_kill_allocating_task</code></pre><p>这样就不需要参照所有进程，但是也不会考虑进程的优先级和root权限等，只发送信号。</p>
+<h4 id="proc-sys-vm-oom-dump-tasks"><a href="#proc-sys-vm-oom-dump-tasks" class="headerlink" title="/proc/sys/vm/oom_dump_tasks"></a><strong>/proc/sys/vm/oom_dump_tasks</strong></h4><p>从Linux 2.6.25开始，将oom_dump_tasks设置为除0以外的值时，在OOM Killer运行时的输出中会增加进程的列表信息。</p>
+<pre><code># echo 1 &gt; /proc/sys/vm/oom_dump_tasks</code></pre><p>列表信息显示如下，可以使用dmesg或syslog来确认。</p>
+<pre><code>[ pid ]   uid  tgid total_vm      rss cpu oom_adj name
+[    1]     0     1     2580        1   0       0 init
+[  500]     0   500     3231        0   1     -17 udevd
+[ 2736]     0  2736     1470        1   0       0 syslogd
+[ 2741]     0  2741      944        0   0       0 klogd
+[ 2765]    81  2765     5307        0   0       0 dbus-daemon
+[ 2861]     0  2861      944        0   0       0 acpid
+...
+[ 3320]     0  3320   525842   241215   1       0 stress</code></pre><h4 id="proc-PID-oom-score-adj"><a href="#proc-PID-oom-score-adj" class="headerlink" title="/proc/PID/oom_score_adj"></a><strong>/proc/PID/oom_score_adj</strong></h4><p>从Linux 2.6.36开始都安装了/proc/<PID>/oom_score_adj，<br>此后将替换为/proc/PID/oom_adj。<br>即使当前是对/proc/PID/oom_adj进行的设置，在内核内部进行变换后的值也是针对/proc/PID/oom_score_adj设置的。</p>
+<p>可以设置–1000~1000之间的值。设置为–1000时，该进程就被排除在OOM Killer强制终止的对象外。</p>
+<p>在内核2.6.36以后的版本中写入oom_adj，只会输出一次如下的信息。</p>
+<pre><code># dmesg
+.....
+udevd (60): /proc/60/oom_adj is deprecated, please use /proc/60/oom_score_adj instead.</code></pre>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/01/vim-multifile/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/07/01/vim-multifile/" class="post-title-link" itemprop="url">VIM多文件查找与替换</a>
         </h1>
 
         <div class="post-meta">
@@ -1393,7 +1229,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-03-18 12:51:25" itemprop="dateModified" datetime="2020-03-18T12:51:25+08:00">2020-03-18</time>
+                <time title="Modified: 2020-03-18 15:51:01" itemprop="dateModified" datetime="2020-03-18T15:51:01+08:00">2020-03-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1401,8 +1237,14 @@ $(document).ready(function(){
               </span>
               <span class="post-meta-item-text">In</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Shell/" itemprop="url" rel="index">
-                    <span itemprop="name">Shell</span>
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Editor/" itemprop="url" rel="index">
+                    <span itemprop="name">Editor</span>
                   </a>
                 </span>
             </span>
@@ -1413,7 +1255,7 @@ $(document).ready(function(){
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>120</span>
+              <span>708</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
@@ -1432,9 +1274,22 @@ $(document).ready(function(){
     <div class="post-body" itemprop="articleBody">
 
       
-          <h3 id="Script"><a href="#Script" class="headerlink" title="Script"></a><strong>Script</strong></h3><pre><code>grep XXYYZZ * -Rn --include=&#39;*.c&#39;
-grep XXYYZZ * -Rn --include=&#39;*.h&#39;
-grep XXYYZZ * -Rn --include=&#39;*.[ch]&#39;</code></pre>
+          <h3 id="Script"><a href="#Script" class="headerlink" title="Script"></a><strong>Script</strong></h3><pre><code>find . -name &quot;*.c&quot; | xargs sed -i &quot;s/$1/$2/g&quot;</code></pre><h3 id="VIM"><a href="#VIM" class="headerlink" title="VIM"></a><strong>VIM</strong></h3><h4 id="多文件查找"><a href="#多文件查找" class="headerlink" title="多文件查找"></a><strong>多文件查找</strong></h4><h5 id="grep"><a href="#grep" class="headerlink" title="grep"></a><strong>grep</strong></h5><p>直接在vim中输入</p>
+<pre><code>:grep abc * </code></pre><p>这是直接调用unix下的grep命令 </p>
+<h5 id="vimgrep"><a href="#vimgrep" class="headerlink" title="vimgrep"></a><strong>vimgrep</strong></h5><p>基本用法就是</p>
+<pre><code>:vimgrep /匹配模式/[g][j] 要搜索的文件/范围 
+:vim[grep][!] /{pattern}/[g][j] {file} ...</code></pre><p>g 和 j 是两个可选的标志位，g表示是否把每一行的多个匹配结果都加入。j表示是否搜索完后定位到第一个匹配位置。<br>要搜索的文件可以是具体的文件路径，也可以是带通配符的路径比如 <em>.as **/</em>.as ，**表示递归所有子目录。<br>要搜索的文件和或搜索范围都可以写多个，用空格分开。 例子：</p>
+<pre><code>:vimgrep /\/ **/*.as 搜索当前目录以及所有子目录内as文件中的 &quot;flash&quot;
+:vimgrep /an error/ *.c 就是在所有的.c文件中搜索an error。
+:vimgrep/an error/* 意思是查找当前目录下的文件中的an error，不包括子目录</code></pre><h5 id="定位"><a href="#定位" class="headerlink" title="定位"></a><strong>定位</strong></h5><p>输入上述的命令后，可以像输入:make命令，那样定位匹配到的文件位置 </p>
+<pre><code>:cnext (:cn)           下一个匹配位置
+:cprevious (:cp)     上一个匹配位置
+:cwindow (:cw)     quickfix窗口，可以选择匹配的文件位置
+:cl(:clist)                查看所有匹配的位置</code></pre><h4 id="多文件替换-arg"><a href="#多文件替换-arg" class="headerlink" title="多文件替换(arg)"></a><strong>多文件替换(arg)</strong></h4><ol>
+<li>加入要处理的文件  :args *.txt</li>
+<li>输入对上述文件的动作  :argdo %s/hate/love/gc | update  （这里将hate替换成love，update表示要写入到文件中，否则只作替换而不写入）</li>
+</ol>
+
       
     </div>
 
@@ -1484,7 +1339,7 @@ grep XXYYZZ * -Rn --include=&#39;*.[ch]&#39;</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-03-18 12:51:25" itemprop="dateModified" datetime="2020-03-18T12:51:25+08:00">2020-03-18</time>
+                <time title="Modified: 2020-03-18 15:51:01" itemprop="dateModified" datetime="2020-03-18T15:51:01+08:00">2020-03-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1569,7 +1424,7 @@ doxygen -g</code></pre><h3 id="生成函数调用图"><a href="#生成函数调�
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/01/vim-multifile/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/01/grep-special/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -1583,7 +1438,7 @@ doxygen -g</code></pre><h3 id="生成函数调用图"><a href="#生成函数调�
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/2015/07/01/vim-multifile/" class="post-title-link" itemprop="url">VIM多文件查找与替换</a>
+            <a href="/2015/07/01/grep-special/" class="post-title-link" itemprop="url">Grep搜索特定文件</a>
         </h1>
 
         <div class="post-meta">
@@ -1600,7 +1455,7 @@ doxygen -g</code></pre><h3 id="生成函数调用图"><a href="#生成函数调�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-03-18 12:51:25" itemprop="dateModified" datetime="2020-03-18T12:51:25+08:00">2020-03-18</time>
+                <time title="Modified: 2020-03-18 15:51:01" itemprop="dateModified" datetime="2020-03-18T15:51:01+08:00">2020-03-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1608,14 +1463,8 @@ doxygen -g</code></pre><h3 id="生成函数调用图"><a href="#生成函数调�
               </span>
               <span class="post-meta-item-text">In</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/" itemprop="url" rel="index">
-                    <span itemprop="name">Tools</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/Editor/" itemprop="url" rel="index">
-                    <span itemprop="name">Editor</span>
+                  <a href="/categories/Shell/" itemprop="url" rel="index">
+                    <span itemprop="name">Shell</span>
                   </a>
                 </span>
             </span>
@@ -1626,7 +1475,7 @@ doxygen -g</code></pre><h3 id="生成函数调用图"><a href="#生成函数调�
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>708</span>
+              <span>120</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
@@ -1645,22 +1494,9 @@ doxygen -g</code></pre><h3 id="生成函数调用图"><a href="#生成函数调�
     <div class="post-body" itemprop="articleBody">
 
       
-          <h3 id="Script"><a href="#Script" class="headerlink" title="Script"></a><strong>Script</strong></h3><pre><code>find . -name &quot;*.c&quot; | xargs sed -i &quot;s/$1/$2/g&quot;</code></pre><h3 id="VIM"><a href="#VIM" class="headerlink" title="VIM"></a><strong>VIM</strong></h3><h4 id="多文件查找"><a href="#多文件查找" class="headerlink" title="多文件查找"></a><strong>多文件查找</strong></h4><h5 id="grep"><a href="#grep" class="headerlink" title="grep"></a><strong>grep</strong></h5><p>直接在vim中输入</p>
-<pre><code>:grep abc * </code></pre><p>这是直接调用unix下的grep命令 </p>
-<h5 id="vimgrep"><a href="#vimgrep" class="headerlink" title="vimgrep"></a><strong>vimgrep</strong></h5><p>基本用法就是</p>
-<pre><code>:vimgrep /匹配模式/[g][j] 要搜索的文件/范围 
-:vim[grep][!] /{pattern}/[g][j] {file} ...</code></pre><p>g 和 j 是两个可选的标志位，g表示是否把每一行的多个匹配结果都加入。j表示是否搜索完后定位到第一个匹配位置。<br>要搜索的文件可以是具体的文件路径，也可以是带通配符的路径比如 <em>.as **/</em>.as ，**表示递归所有子目录。<br>要搜索的文件和或搜索范围都可以写多个，用空格分开。 例子：</p>
-<pre><code>:vimgrep /\/ **/*.as 搜索当前目录以及所有子目录内as文件中的 &quot;flash&quot;
-:vimgrep /an error/ *.c 就是在所有的.c文件中搜索an error。
-:vimgrep/an error/* 意思是查找当前目录下的文件中的an error，不包括子目录</code></pre><h5 id="定位"><a href="#定位" class="headerlink" title="定位"></a><strong>定位</strong></h5><p>输入上述的命令后，可以像输入:make命令，那样定位匹配到的文件位置 </p>
-<pre><code>:cnext (:cn)           下一个匹配位置
-:cprevious (:cp)     上一个匹配位置
-:cwindow (:cw)     quickfix窗口，可以选择匹配的文件位置
-:cl(:clist)                查看所有匹配的位置</code></pre><h4 id="多文件替换-arg"><a href="#多文件替换-arg" class="headerlink" title="多文件替换(arg)"></a><strong>多文件替换(arg)</strong></h4><ol>
-<li>加入要处理的文件  :args *.txt</li>
-<li>输入对上述文件的动作  :argdo %s/hate/love/gc | update  （这里将hate替换成love，update表示要写入到文件中，否则只作替换而不写入）</li>
-</ol>
-
+          <h3 id="Script"><a href="#Script" class="headerlink" title="Script"></a><strong>Script</strong></h3><pre><code>grep XXYYZZ * -Rn --include=&#39;*.c&#39;
+grep XXYYZZ * -Rn --include=&#39;*.h&#39;
+grep XXYYZZ * -Rn --include=&#39;*.[ch]&#39;</code></pre>
       
     </div>
 
@@ -1710,7 +1546,7 @@ doxygen -g</code></pre><h3 id="生成函数调用图"><a href="#生成函数调�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-03-18 12:51:25" itemprop="dateModified" datetime="2020-03-18T12:51:25+08:00">2020-03-18</time>
+                <time title="Modified: 2020-03-18 15:51:01" itemprop="dateModified" datetime="2020-03-18T15:51:01+08:00">2020-03-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1813,7 +1649,7 @@ libelf-freebsd-dev - Development files for libelf (FreeBSD version)
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-03-18 12:51:25" itemprop="dateModified" datetime="2020-03-18T12:51:25+08:00">2020-03-18</time>
+                <time title="Modified: 2020-03-18 15:51:01" itemprop="dateModified" datetime="2020-03-18T15:51:01+08:00">2020-03-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1885,189 +1721,6 @@ libelf-freebsd-dev - Development files for libelf (FreeBSD version)
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/04/04/ecos-mem-info/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/04/04/ecos-mem-info/" class="post-title-link" itemprop="url">Ecos Mem Info[转]</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-04-05 00:00:00" itemprop="dateCreated datePublished" datetime="2015-04-05T00:00:00+08:00">2015-04-05</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-03-18 12:51:25" itemprop="dateModified" datetime="2020-03-18T12:51:25+08:00">2020-03-18</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Ecos/" itemprop="url" rel="index">
-                    <span itemprop="name">Ecos</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>3.4k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>3 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p>嵌入式系统的内存资源是非常有限的，<br>如果配置不当可导致eCos应用程序因为存储空间不足而链接失败。<br>解决这个问题的办法可以是增加更多的内存或者是减少软件对内存资源的使用，通常是后一种办法。<br>既然要减少内存使用量，那么首先要找出都是哪些变量吃光了内存，<br>就是说要对映像符号进行分析，找出最占内存的变量，<br>看看能否避免使用该变量或减少该变量的占用容量。<br>GNU工具链中的nm就是做这个事情用的，按照用户手册的说法，<br>nm是用来解析映像符号的，包括符号使用容量和所在的文件。</p>
-<h2 id="查找最占内存变量"><a href="#查找最占内存变量" class="headerlink" title="查找最占内存变量"></a><strong>查找最占内存变量</strong></h2><pre><code>$ nm --print-size --line-numbers --size-sort app.elf | grep &quot; [dDbB] &quot;  
-......  
-10004154 00000800 b var_data    /cygdrive/f/ecos/hg/packages/net/lwip_tcpip/current/src/ecos/sys_arch.c:84  
-10002fb0 00000b00 b timer_table  
-10001f98 00001000 b main_stack  
-10004994 00001800 b stack_data  /cygdrive/f/ecos/hg/packages/net/lwip_tcpip/current/src/ecos/sys_arch.c:95  
-2007c000 000018b8 b emac_ahb_ram        /cygdrive/f/ecos/hg/packages/devs/eth/arm/lpc2xxx/current/src/if_lpc2xxx.c:357  
-20080388 0000283b b memp_memory /cygdrive/f/ecos/hg/packages/net/lwip_tcpip/current/src/core/memp.c:146  </code></pre><ul>
-<li>–print-size：打印符号符号占用内存量</li>
-<li>–line-numbers：打印符号所在的源文件名及行号</li>
-<li>–size-sort：以符号占用内存量来排序</li>
-<li>app.elf：eCos应用映像文件名</li>
-<li>输出内容按列分别为：符号地址、符号占用内存量、符号类型、所在文件及行号</li>
-<li>grep的作用是过滤不需要的符号，我们这里仅需要存储在RAM中的变量，将常量和函数等过滤掉，<br>注意grep参数的引号和方括号之间有空格。<br>输出结果按照变量内容占用量排序输出，最后输出的是占用量最大的变量。<br>从上面的输出可以看出memp_memory占用的内存最多，通过文件名可以判断这是lwIP内存池，<br>修改lwIP配置减少连接数和缓存数目等可以减少该变量的内存占用量。</li>
-</ul>
-<h2 id="链接失败时的办法"><a href="#链接失败时的办法" class="headerlink" title="链接失败时的办法"></a><strong>链接失败时的办法</strong></h2><p>如果容量超限，压根就不能编译完成，也就谈不上映像文件了，<br>这时候可以修改target.ld文件，修改内存容量，内存容量可以修改成比目标机实际容量更大的值，<br>修改target.ld的目的是可以正确地生成映像文件然后使用nm来分析内存使用情况并进行调整，<br>而不是下载到目标机运行，如果target.ld设定的内存容量比目标机实际内存容量大，<br>即使下载到目标机也不能正常运行。根据nm输出结果及应用需求调整内存使用量，<br>当映像使用的内存容量小于目标机实际内存容量后，恢复target.ld的内存容量设置。</p>
-<h2 id="使用size查看总内存量"><a href="#使用size查看总内存量" class="headerlink" title="使用size查看总内存量"></a><strong>使用size查看总内存量</strong></h2><p>nm打印出每个符号占用的内存量，而size打印映像的总内存量，<br>可以使用size输出快速判断容量是否超限的问题，size还可以显示srec和ihex格式的映像容量。</p>
-<pre><code>$ size app.elf  
-text    data     bss     dec     hex filename  
-158712    1852   43503  204067   31d23 app.elf  </code></pre><h2 id="使用哪个nm？"><a href="#使用哪个nm？" class="headerlink" title="使用哪个nm？"></a><strong>使用哪个nm？</strong></h2><p>nm和size只是对ELF格式的映像文件符号和加载段进行分析，<br>因此跟硬件架构没多大关系，<br>使用nm或arm-eabi-nm的效果是一样的，如果不放心，那就用arm-eabi-nm吧，size同理。</p>
-<h2 id="nm常用参数"><a href="#nm常用参数" class="headerlink" title="nm常用参数"></a><strong>nm常用参数</strong></h2><h3 id="C-–demangle"><a href="#C-–demangle" class="headerlink" title="-C, –demangle"></a><strong>-C, –demangle</strong></h3><p>逆向解析C++符号转换，编译C++源代码时，<br>会将C++符号转换成符号汇编器要求的符号，<br>如果不对C++符号进行逆向解析，那么看到的是汇编符号而不是C++源文件中的符号名。</p>
-<p>使用该参数前，输出汇编符号，晦涩难懂</p>
-<pre><code>$ arm-eabi-nm app.elf  
-......  
-00006adc T _ZN10Cyg_Thread5delayEy  
-......  </code></pre><p>使用该参数后，输出C++符号，与源文件符号一致</p>
-<pre><code>$ arm-eabi-nm -C app.elf  
-    ......  
-00006adc T Cyg_Thread::delay(unsigned long long)  
-    ......  </code></pre><h3 id="l-–line-numbers"><a href="#l-–line-numbers" class="headerlink" title="-l, –line-numbers"></a><strong>-l, –line-numbers</strong></h3><p>输出符号所在的文件名和行号。使用该参数前</p>
-<pre><code>$ arm-eabi-nm app.elf  
-......  
-0001a0c4 T write  </code></pre><p>使用该参数后，行尾追加文件名和行号</p>
-<pre><code>$ arm-eabi-nm -l app.elf  
-......  
-0001a0c4 T write        /cygdrive/f/ecos/hg/packages/io/fileio/current/src/io.cxx:169  </code></pre><h3 id="S-–print-size"><a href="#S-–print-size" class="headerlink" title="-S, –print-size"></a><strong>-S, –print-size</strong></h3><p>输出符号占用内存量。使用该参数前</p>
-<pre><code>$ arm-eabi-nm app.elf  
-......  
-0001a0c4 T write  </code></pre><p>使用该参数后，第2列数字为符号占用内存量</p>
-<pre><code>$ arm-eabi-nm -S app.elf  
-......  
-0001a0c4 00000034 T write  </code></pre><h3 id="n-–numeric-sort"><a href="#n-–numeric-sort" class="headerlink" title="-n, –numeric-sort"></a><strong>-n, –numeric-sort</strong></h3><p>输出结果按照符号地址排序。使用该参数前</p>
-<pre><code>$ arm-eabi-nm app.elf  
-......  
-000202c8 T udp_sendto_if  
-00018ec0 t update_arp_entry  
-10004154 b var_data  
-1000497c b var_handle  
-10004954 b var_mempool  
-00009a60 T vfnprintf  
-0001a0c4 T write  </code></pre><p>使用该参数后，根据第1列数值排序</p>
-<pre><code>$ arm-eabi-nm -n app.elf  
-......  
-100070b0 A __heap1  
-10007fe0 A hal_startup_stack  
-2007c000 A __ahb_sram0_start  
-2007c000 b emac_ahb_ram  
-2007d8b8 A __ahb_sram0_end  
-20080000 A __ahb_sram1_start  
-20080000 b ram_heap  
-20080388 b memp_memory  
-20082bc3 A __ahb_sram1_end  </code></pre><h3 id="–size-sort"><a href="#–size-sort" class="headerlink" title="–size-sort"></a><strong>–size-sort</strong></h3><p>按照内存使用量排序。使用该参数前</p>
-<pre><code>$ arm-eabi-nm -S app.elf  
-......  
-10004154 00000800 b var_data  
-1000497c 00000004 b var_handle  
-10004954 00000028 b var_mempool  
-00009a60 000015f4 T vfnprintf  
-0001a0c4 00000034 T write  </code></pre><p>使用该参数后，根据第2列数值进行排序</p>
-<pre><code>$ arm-eabi-nm -S --size-sort app.elf  
-......  
-10001f98 00001000 b _ZL10main_stack  
-0001cf38 000011dc t tcp_receive  
-00009a60 000015f4 T vfnprintf  
-10004994 00001800 b stack_data  
-2007c000 000018b8 b emac_ahb_ram  
-20080388 0000283b b memp_memory </code></pre>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/04/04/ecos-cpu-load/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2099,7 +1752,7 @@ text    data     bss     dec     hex filename
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-03-18 12:51:25" itemprop="dateModified" datetime="2020-03-18T12:51:25+08:00">2020-03-18</time>
+                <time title="Modified: 2020-03-18 15:51:01" itemprop="dateModified" datetime="2020-03-18T15:51:01+08:00">2020-03-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2234,7 +1887,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-03-18 12:51:25" itemprop="dateModified" datetime="2020-03-18T12:51:25+08:00">2020-03-18</time>
+                <time title="Modified: 2020-03-18 15:51:01" itemprop="dateModified" datetime="2020-03-18T15:51:01+08:00">2020-03-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2486,6 +2139,189 @@ while(cyg_thread_get_next(&amp;thread, &amp;id))
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/04/04/ecos-mem-info/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/04/04/ecos-mem-info/" class="post-title-link" itemprop="url">Ecos Mem Info[转]</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-04-05 00:00:00" itemprop="dateCreated datePublished" datetime="2015-04-05T00:00:00+08:00">2015-04-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-03-18 15:51:01" itemprop="dateModified" datetime="2020-03-18T15:51:01+08:00">2020-03-18</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Ecos/" itemprop="url" rel="index">
+                    <span itemprop="name">Ecos</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.4k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p>嵌入式系统的内存资源是非常有限的，<br>如果配置不当可导致eCos应用程序因为存储空间不足而链接失败。<br>解决这个问题的办法可以是增加更多的内存或者是减少软件对内存资源的使用，通常是后一种办法。<br>既然要减少内存使用量，那么首先要找出都是哪些变量吃光了内存，<br>就是说要对映像符号进行分析，找出最占内存的变量，<br>看看能否避免使用该变量或减少该变量的占用容量。<br>GNU工具链中的nm就是做这个事情用的，按照用户手册的说法，<br>nm是用来解析映像符号的，包括符号使用容量和所在的文件。</p>
+<h2 id="查找最占内存变量"><a href="#查找最占内存变量" class="headerlink" title="查找最占内存变量"></a><strong>查找最占内存变量</strong></h2><pre><code>$ nm --print-size --line-numbers --size-sort app.elf | grep &quot; [dDbB] &quot;  
+......  
+10004154 00000800 b var_data    /cygdrive/f/ecos/hg/packages/net/lwip_tcpip/current/src/ecos/sys_arch.c:84  
+10002fb0 00000b00 b timer_table  
+10001f98 00001000 b main_stack  
+10004994 00001800 b stack_data  /cygdrive/f/ecos/hg/packages/net/lwip_tcpip/current/src/ecos/sys_arch.c:95  
+2007c000 000018b8 b emac_ahb_ram        /cygdrive/f/ecos/hg/packages/devs/eth/arm/lpc2xxx/current/src/if_lpc2xxx.c:357  
+20080388 0000283b b memp_memory /cygdrive/f/ecos/hg/packages/net/lwip_tcpip/current/src/core/memp.c:146  </code></pre><ul>
+<li>–print-size：打印符号符号占用内存量</li>
+<li>–line-numbers：打印符号所在的源文件名及行号</li>
+<li>–size-sort：以符号占用内存量来排序</li>
+<li>app.elf：eCos应用映像文件名</li>
+<li>输出内容按列分别为：符号地址、符号占用内存量、符号类型、所在文件及行号</li>
+<li>grep的作用是过滤不需要的符号，我们这里仅需要存储在RAM中的变量，将常量和函数等过滤掉，<br>注意grep参数的引号和方括号之间有空格。<br>输出结果按照变量内容占用量排序输出，最后输出的是占用量最大的变量。<br>从上面的输出可以看出memp_memory占用的内存最多，通过文件名可以判断这是lwIP内存池，<br>修改lwIP配置减少连接数和缓存数目等可以减少该变量的内存占用量。</li>
+</ul>
+<h2 id="链接失败时的办法"><a href="#链接失败时的办法" class="headerlink" title="链接失败时的办法"></a><strong>链接失败时的办法</strong></h2><p>如果容量超限，压根就不能编译完成，也就谈不上映像文件了，<br>这时候可以修改target.ld文件，修改内存容量，内存容量可以修改成比目标机实际容量更大的值，<br>修改target.ld的目的是可以正确地生成映像文件然后使用nm来分析内存使用情况并进行调整，<br>而不是下载到目标机运行，如果target.ld设定的内存容量比目标机实际内存容量大，<br>即使下载到目标机也不能正常运行。根据nm输出结果及应用需求调整内存使用量，<br>当映像使用的内存容量小于目标机实际内存容量后，恢复target.ld的内存容量设置。</p>
+<h2 id="使用size查看总内存量"><a href="#使用size查看总内存量" class="headerlink" title="使用size查看总内存量"></a><strong>使用size查看总内存量</strong></h2><p>nm打印出每个符号占用的内存量，而size打印映像的总内存量，<br>可以使用size输出快速判断容量是否超限的问题，size还可以显示srec和ihex格式的映像容量。</p>
+<pre><code>$ size app.elf  
+text    data     bss     dec     hex filename  
+158712    1852   43503  204067   31d23 app.elf  </code></pre><h2 id="使用哪个nm？"><a href="#使用哪个nm？" class="headerlink" title="使用哪个nm？"></a><strong>使用哪个nm？</strong></h2><p>nm和size只是对ELF格式的映像文件符号和加载段进行分析，<br>因此跟硬件架构没多大关系，<br>使用nm或arm-eabi-nm的效果是一样的，如果不放心，那就用arm-eabi-nm吧，size同理。</p>
+<h2 id="nm常用参数"><a href="#nm常用参数" class="headerlink" title="nm常用参数"></a><strong>nm常用参数</strong></h2><h3 id="C-–demangle"><a href="#C-–demangle" class="headerlink" title="-C, –demangle"></a><strong>-C, –demangle</strong></h3><p>逆向解析C++符号转换，编译C++源代码时，<br>会将C++符号转换成符号汇编器要求的符号，<br>如果不对C++符号进行逆向解析，那么看到的是汇编符号而不是C++源文件中的符号名。</p>
+<p>使用该参数前，输出汇编符号，晦涩难懂</p>
+<pre><code>$ arm-eabi-nm app.elf  
+......  
+00006adc T _ZN10Cyg_Thread5delayEy  
+......  </code></pre><p>使用该参数后，输出C++符号，与源文件符号一致</p>
+<pre><code>$ arm-eabi-nm -C app.elf  
+    ......  
+00006adc T Cyg_Thread::delay(unsigned long long)  
+    ......  </code></pre><h3 id="l-–line-numbers"><a href="#l-–line-numbers" class="headerlink" title="-l, –line-numbers"></a><strong>-l, –line-numbers</strong></h3><p>输出符号所在的文件名和行号。使用该参数前</p>
+<pre><code>$ arm-eabi-nm app.elf  
+......  
+0001a0c4 T write  </code></pre><p>使用该参数后，行尾追加文件名和行号</p>
+<pre><code>$ arm-eabi-nm -l app.elf  
+......  
+0001a0c4 T write        /cygdrive/f/ecos/hg/packages/io/fileio/current/src/io.cxx:169  </code></pre><h3 id="S-–print-size"><a href="#S-–print-size" class="headerlink" title="-S, –print-size"></a><strong>-S, –print-size</strong></h3><p>输出符号占用内存量。使用该参数前</p>
+<pre><code>$ arm-eabi-nm app.elf  
+......  
+0001a0c4 T write  </code></pre><p>使用该参数后，第2列数字为符号占用内存量</p>
+<pre><code>$ arm-eabi-nm -S app.elf  
+......  
+0001a0c4 00000034 T write  </code></pre><h3 id="n-–numeric-sort"><a href="#n-–numeric-sort" class="headerlink" title="-n, –numeric-sort"></a><strong>-n, –numeric-sort</strong></h3><p>输出结果按照符号地址排序。使用该参数前</p>
+<pre><code>$ arm-eabi-nm app.elf  
+......  
+000202c8 T udp_sendto_if  
+00018ec0 t update_arp_entry  
+10004154 b var_data  
+1000497c b var_handle  
+10004954 b var_mempool  
+00009a60 T vfnprintf  
+0001a0c4 T write  </code></pre><p>使用该参数后，根据第1列数值排序</p>
+<pre><code>$ arm-eabi-nm -n app.elf  
+......  
+100070b0 A __heap1  
+10007fe0 A hal_startup_stack  
+2007c000 A __ahb_sram0_start  
+2007c000 b emac_ahb_ram  
+2007d8b8 A __ahb_sram0_end  
+20080000 A __ahb_sram1_start  
+20080000 b ram_heap  
+20080388 b memp_memory  
+20082bc3 A __ahb_sram1_end  </code></pre><h3 id="–size-sort"><a href="#–size-sort" class="headerlink" title="–size-sort"></a><strong>–size-sort</strong></h3><p>按照内存使用量排序。使用该参数前</p>
+<pre><code>$ arm-eabi-nm -S app.elf  
+......  
+10004154 00000800 b var_data  
+1000497c 00000004 b var_handle  
+10004954 00000028 b var_mempool  
+00009a60 000015f4 T vfnprintf  
+0001a0c4 00000034 T write  </code></pre><p>使用该参数后，根据第2列数值进行排序</p>
+<pre><code>$ arm-eabi-nm -S --size-sort app.elf  
+......  
+10001f98 00001000 b _ZL10main_stack  
+0001cf38 000011dc t tcp_receive  
+00009a60 000015f4 T vfnprintf  
+10004994 00001800 b stack_data  
+2007c000 000018b8 b emac_ahb_ram  
+20080388 0000283b b memp_memory </code></pre>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/03/10/lua-run/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2517,7 +2353,7 @@ while(cyg_thread_get_next(&amp;thread, &amp;id))
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-03-18 12:51:25" itemprop="dateModified" datetime="2020-03-18T12:51:25+08:00">2020-03-18</time>
+                <time title="Modified: 2020-03-18 15:51:01" itemprop="dateModified" datetime="2020-03-18T15:51:01+08:00">2020-03-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2598,7 +2434,7 @@ $ luarocks search **</code></pre>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/03/04/cmake-02/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/03/04/cmake-03/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -2612,7 +2448,7 @@ $ luarocks search **</code></pre>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/2015/03/04/cmake-02/" class="post-title-link" itemprop="url">cmake使用</a>
+            <a href="/2015/03/04/cmake-03/" class="post-title-link" itemprop="url">cmake 常用命令</a>
         </h1>
 
         <div class="post-meta">
@@ -2629,7 +2465,7 @@ $ luarocks search **</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-03-18 12:51:25" itemprop="dateModified" datetime="2020-03-18T12:51:25+08:00">2020-03-18</time>
+                <time title="Modified: 2020-03-18 15:51:01" itemprop="dateModified" datetime="2020-03-18T15:51:01+08:00">2020-03-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2649,14 +2485,14 @@ $ luarocks search **</code></pre>
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>5.5k</span>
+              <span>1.6k</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="fa fa-clock-o"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>5 mins.</span>
+              <span>1 mins.</span>
             </span>
 
         </div>
@@ -2685,141 +2521,38 @@ $(document).ready(function(){
 <div id="category"></div>
 
 <hr>
-<h2 id="A-Basic-Starting-Point-Step1"><a href="#A-Basic-Starting-Point-Step1" class="headerlink" title="A Basic Starting Point (Step1)"></a>A Basic Starting Point (Step1)</h2><p>CMakeLists.txt文件：</p>
-<pre><code>cmake_minimum_required (VERSION 2.6)
-project (Tutorial)
-add_executable(Tutorial tutorial.cxx)</code></pre><p>cmake_minimum_required：是判断需要cmake的最小版本号。所有程序都需要这个。</p>
-<p>project:用于指定工程的名字。</p>
-<p>add_executable命令用于指定程序从哪些源文件生成。此例中 程序 Tutorial则是tutorial.cxx 源文件生成。</p>
-<p><strong>添加版本号和配置头文件：</strong></p>
-<pre><code>cmake_minimum_required (VERSION 2.6)
-project (Tutorial)
-# The version number.
-set (Tutorial_VERSION_MAJOR 1)
-set (Tutorial_VERSION_MINOR 0)
-
-# configure a header file to pass some of the CMake settings
-# to the source code
-configure_file (
-        &quot;${PROJECT_SOURCE_DIR}/TutorialConfig.h.in&quot;
-        &quot;${PROJECT_BINARY_DIR}/TutorialConfig.h&quot;
-        )
-
-# add the binary tree to the search path for include files
-# so that we will find TutorialConfig.h
-include_directories(&quot;${PROJECT_BINARY_DIR}&quot;)
-
-# add the executable
-add_executable(Tutorial tutorial.cxx)</code></pre><p>因为配置文件会被生成到二进制目录中，所以我们需要把二进制目录加入到头文件搜索路径中<br>(include），然后我们在源码目录中建立如下 ‘TutorialConfig.h.in’：</p>
-<pre><code>    // the configured options and settings for Tutorial
-    #define Tutorial_VERSION_MAJOR @Tutorial_VERSION_MAJOR@
-    #define Tutorial_VERSION_MINOR @Tutorial_VERSION_MINOR@</code></pre><p>执行cmake时，配置文件头文件中@Tutorial_VERSION_MAJOR@ 和 @Tutorial_VERSION_MINOR@的值将会被<br>CMakeLists.txt文件中指定的值所替换。然后我们可以在源文件tutorial.cxx引用这个所定义的宏：</p>
-<pre><code>fprintf(stdout,&quot;%s Version %d.%d\n&quot;,
-    argv[0],
-    Tutorial_VERSION_MAJOR,
-    Tutorial_VERSION_MINOR);
-fprintf(stdout,&quot;Usage: %s number\n&quot;,argv[0]);</code></pre><h2 id="Adding-a-Library-Step-2"><a href="#Adding-a-Library-Step-2" class="headerlink" title="Adding a Library (Step 2)"></a>Adding a Library (Step 2)</h2><p>添加一个库到工程中：</p>
-<pre><code>add_library(MathFunctions mysqrt.cxx)</code></pre><p>将mysqrt.cxx源文件打包为库文件MathFunctions，<br>使用add_subdirectory命令指示这个目录需要进行编译。<br>用include_directories命令添加MathFunctions目录，<br>是为了能让编译程序找到 mysqrt.h 头文件。<br>然后用target_link_libraries命令把生成的库链接到执行文件中：</p>
-<pre><code>#增加头文件搜索目录
-include_directories (&quot;${PROJECT_SOURCE_DIR}/MathFunctions&quot;)
-#增加子目录
-add_subdirectory (MathFunctions) 
-# 生成执行文件
-add_executable (Tutorial tutorial.cxx)
-#链接库
-target_link_libraries (Tutorial MathFunctions)</code></pre><h2 id="Installing-and-Testing-Step-3"><a href="#Installing-and-Testing-Step-3" class="headerlink" title="Installing and Testing (Step 3)"></a>Installing and Testing (Step 3)</h2><p>在工程中增加一个安装规则和测试支持。我们需要把库安装到bin目录下，把头文件安装到include下：</p>
-<pre><code>install (TARGETS MathFunctions DESTINATION bin)
-install (FILES MathFunctions.h DESTINATION include)</code></pre><p>对于这个向导程序，需要在顶层CMakeList.txt文件中增加下面行，安装执行文件和头文件。</p>
-<pre><code># 安装程序 Tutorial到安装目录的bin子目录中
-install (TARGETS Tutorial DESTINATION bin)
-#安装头文件到安装目录中的include目录中
-install (FILES &quot;${PROJECT_BINARY_DIR}/TutorialConfig.h&quot; DESTINATION include)</code></pre><p>CMake用变量CMAKE_INSTALL_PREFIX决定安装的根目录。</p>
-<h2 id="常用cmake命令"><a href="#常用cmake命令" class="headerlink" title="常用cmake命令"></a>常用cmake命令</h2><h3 id="检查CMake版本"><a href="#检查CMake版本" class="headerlink" title="检查CMake版本"></a>检查CMake版本</h3><p>cmake版本至少为2.8</p>
-<pre><code>cmake_minimum_required(VERSION 2.8)</code></pre><h3 id="定义工程名称"><a href="#定义工程名称" class="headerlink" title="定义工程名称"></a>定义工程名称</h3><p>工程名为helloworld</p>
-<pre><code>project(helloworld)</code></pre><h3 id="查找源文件"><a href="#查找源文件" class="headerlink" title="查找源文件"></a>查找源文件</h3><p>查找当前目录下所有的源文件并保存到SRC_LIST变量里</p>
-<pre><code>aux_source_directory(. SRC_LIST)</code></pre><p>查找src目录下所有以cmake开头的文件并保存到CMAKE_FILES变量里</p>
-<pre><code>file(GLOB CMAKE_FILES &quot;src/cmake*&quot;)</code></pre><p>file命令同时支持目录递归查找</p>
-<pre><code>file(GLOB_RECURSE CMAKE_FILES &quot;src/cmake*&quot;)</code></pre><p>按照官方文档的说法，不建议使用file的GLOB指令来收集工程的源文件，原文解释如下：</p>
-<p>We do not recommend using GLOB to collect a list of source files from your source tree.<br>If no CMakeLists.txt file changes when a source is added or removed<br>then the generated build system cannot know when to ask CMake to regenerate.<br>大意就是，GLOB收集的源文件增加或删除，而CMakeLists.txt没有发生修改时，CMake不能识别这些文件。<br>其实，当CMakeLists.txt使用aux_source_directory和file glob查找工程源文件时，如果添加或删除源文件，都需要重新运行CMake。</p>
-<h3 id="set命令"><a href="#set命令" class="headerlink" title="set命令"></a>set命令</h3><p>经常配合set命令使用的CMake变量，使用set(variable value)进行设置。</p>
-<ul>
-<li>CMAKE_VERBOSE_MAKEFILE on 输出详细的编译和链接信息</li>
-<li>CMAKE_CXX_COMPILER “g++” c++编译器</li>
-<li>CMAKE_CXX_FLAGS “-Wall” c++编译器参数<ul>
-<li>CMAKE_CXX_FLAGS_DEBUG debug版本对应的编译器参数</li>
-<li>CMAKE_CXX_FLAGS_RELEASE release版本对应的编译器参数</li>
-</ul>
-</li>
-<li>EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin 可执行文件的输出目录</li>
-<li>LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib 链接库的输出目录</li>
-</ul>
-<p>set命令还可以设置自定义变量，比如</p>
-<pre><code>set(MY_GREETINGS &quot;hello world&quot;)</code></pre><h3 id="包含目录和链接目录"><a href="#包含目录和链接目录" class="headerlink" title="包含目录和链接目录"></a>包含目录和链接目录</h3><p>将./include和./abc加入包含目录列表</p>
-<pre><code>include_directories(
-        ./include
-        ./abc
-        )</code></pre><p>将./lib加入编译器链接阶段的搜索目录列表</p>
-<pre><code>link_directories(
-        ./lib
-        )</code></pre><h3 id="添加生成目标"><a href="#添加生成目标" class="headerlink" title="添加生成目标"></a>添加生成目标</h3><p>使用SRC_LIST源文件列表里的文件生成一个可执行文件hello</p>
-<pre><code>add_executable(hello ${SRC_LIST})</code></pre><p>使用SRC_LIST源文件列表里的文件生成一个静态链接库libhello.a</p>
-<pre><code>add_library(hello STATIC ${SRC_LIST})</code></pre><p>使用SRC_LIST源文件列表里的文件生成一个动态链接库libhello.so</p>
-<pre><code>add_library(hello SHARED ${SRC_LIST})</code></pre><p>将若干库文件链接到生成的目标hello(libhello.a或libhello.so)</p>
-<pre><code>target_link_libraries(hello A B.a C.so)</code></pre><p><strong>需要注意的是，target_link_libraries里库文件的顺序符合gcc链接顺序的规则，<br>即被依赖的库放在依赖它的库的后面，比如上面的命令里，<br>libA.so可能依赖于libB.a和libC.so，<br>如果顺序有错，链接时会报错。<br>还有一点，B.a会告诉CMake优先使用静态链接库libB.a，<br>C.so会告诉CMake优先使用动态链接库libC.so，也可直接使用库文件的相对路径或绝对路径。</strong></p>
-<h3 id="自定义链接选项"><a href="#自定义链接选项" class="headerlink" title="自定义链接选项"></a>自定义链接选项</h3><p>有时候需要自定义链接选项，比如需要单独对B.a使用–whole-archive选项，可以</p>
-<pre><code>target_link_libraryies(hello A -Wl,--whole-archive B.a -Wl,--no-whole-archive C.so)</code></pre><h3 id="自定义Makefile目标"><a href="#自定义Makefile目标" class="headerlink" title="自定义Makefile目标"></a>自定义Makefile目标</h3><p>运行下面的whatever目标make whatever，会先创建一个目录./hello，然后将当前目录的a.txt拷贝到新建的./hello目录里。</p>
-<pre><code>add_custom_command(
-        OUTPUT ./hello/a.txt
-        COMMAND mkdir -p ./hello 
-        cp a.txt ./hello
-        DEPENDS a.txt
-        )
-add_custom_target(whatever DEPENDS ./hello/a.txt)</code></pre><p>自定义目标还可以使用add_dependencies命令加入到其他目标的依赖列表里，当执行make demo时，whatever目标会被自动调用。</p>
-<pre><code>add_executable(demo ${SRC_LIST})
-add_dependencies(demo whatever)</code></pre><h3 id="其他常用命令"><a href="#其他常用命令" class="headerlink" title="其他常用命令"></a>其他常用命令</h3><p>包含其他目录的CMakeLists.txt</p>
-<pre><code>include(/path/to/another/CMakeLists.txt)</code></pre><p>if命令</p>
-<pre><code>if(${MY_BUILD_TYPE} MATCHES &quot;debug&quot;)
-    ...
-else()
-    ...
-endif()</code></pre><p>list命令</p>
-<pre><code>list(APPEND SRC_LIST 
-        a.cpp
-        b.cpp
-    )
-
-list(REMOVE_ITEM SRC_LIST
-        a.cpp
-    )</code></pre><h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><pre><code>CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-PROJECT(demo)
-
-# add include dir
-INCLUDE_DIRECTORIES(.)
-INCLUDE_DIRECTORIES(lua/src)
-
-# add source dir
-AUX_SOURCE_DIRECTORY(lua/src/           SRCS)
-AUX_SOURCE_DIRECTORY(lua/lua-cjson-xml/ SRCS)
-
-ADD_LIBRARY(demo ${SRCS})
-
-SET(CMAKE_BUILD_TYPE &quot;Release&quot;)
-
-ADD_DEFINITIONS(-D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -Wno-deprecated-declarations )
-
-SET(CMAKE_EXE_LINKER_FLAGS &quot;--static&quot;)
-ADD_EXECUTABLE(test main.cpp)
-TARGET_LINK_LIBRARIES(A demo jansson dl pthread curl z)
-
-INSTALL(FILES demo.hpp http.hpp DESTINATION include)</code></pre><h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><p>引用文档：</p>
+<p>##Commands</p>
+<p>头文件路径，相当于编译器参数 -Idir1 -Idir2</p>
+<pre><code>INCLUDE_DIRECTORIES( &quot;dir1&quot; &quot;dir2&quot; ... )</code></pre><p>库文件路径。注意：<br>由于历史原因，相对路径会原样传递给链接器。<br>尽量使用FIND_LIBRARY而避免使用这个。</p>
+<pre><code>LINK_DIRECTORIES(&quot;dir1&quot; &quot;dir2&quot;)</code></pre><p>收集目录中的文件名并赋值给变量</p>
+<pre><code>AUX_SOURCE_DIRECTORY( “sourcedir” variable)</code></pre><p>可执行程序目标</p>
+<pre><code>ADD_EXECUTABLE</code></pre><p>库目标</p>
+<pre><code>ADD_LIBRARY</code></pre><p>自定义目标</p>
+<pre><code>ADD_CUSTOM_TARGET</code></pre><p>目标target1依赖于t2 t3</p>
+<pre><code>ADD_DEPENDENCIES( target1 t2 t3 )</code></pre><p>本意是供设置 -D… /D… 等编译预处理需要的宏定义参数，对比 REMOVE_DEFINITIONS()</p>
+<pre><code>ADD_DEFINITIONS( &quot;-Wall -ansi&quot;)</code></pre><p>设置单个目标需要链接的库</p>
+<pre><code>TARGET_LINK_LIBRARIES( target-name lib1 lib2 ...)</code></pre><p>设置所有目标需要链接的库</p>
+<pre><code>LINK_LIBRARIES( lib1 lib2 ...)</code></pre><p>设置目标的属性 OUTPUT_NAME, VERSION, ….</p>
+<pre><code>SET_TARGET_PROPERTIES( ... )</code></pre><p>打印输出信息</p>
+<pre><code>MESSAGE(...)</code></pre><p>DESTINATION 相对于 ${CMAKE_INSTALL_PREFIX}</p>
+<pre><code>INSTALL( FILES “f1” “f2”DESTINATION . )</code></pre><p>变量赋值</p>
+<pre><code>SET( VAR value [CACHE TYPE DOCSTRING [FORCE]])</code></pre><p>列表操作</p>
+<pre><code>LIST( APPEND|INSERT|LENGTH|GET| REMOVE_ITEM|REMOVE_AT|SORT ...)</code></pre><p>字符串操作</p>
+<pre><code>STRING( TOUPPER|TOLOWER|LENGTH| SUBSTRING|REPLACE|REGEX ...)</code></pre><p>转换空格分隔的字符串到列表</p>
+<pre><code>SEPARATE_ARGUMENTS( VAR )</code></pre><p>文件操作</p>
+<pre><code>FILE( WRITE|READ|APPEND|GLOB| GLOB_RECURSE|REMOVE|MAKE_DIRECTORY ...)</code></pre><p>注意 CMAKE_INCLUDE_PATH</p>
+<pre><code>FIND_FILE</code></pre><p>注意 CMAKE_INCLUDE_PATH</p>
+<pre><code>FIND_PATH</code></pre><p>注意 CMAKE_LIBRARY_PATH</p>
+<pre><code>FIND_LIBRARY
+FIND_PROGRAM</code></pre><p>注意 CMAKE_MODULE_PATH</p>
+<pre><code>FIND_PACKAGE</code></pre><p>执行外部程序</p>
+<pre><code>EXEC_PROGRAM( bin [work_dir] ARGS &lt;..&gt; [OUTPUT_VARIABLE var] [RETURN_VALUE var] )</code></pre><p>设置选项</p>
+<pre><code>OPTION( OPTION_VAR “description” [initial value] )</code></pre><p>##Ref</p>
+<p>引用文档：</p>
 <ol>
 <li><a href="http://www.cmake.org/cmake/help/v3.0/manual/cmake-language.7.html#syntax" target="_blank" rel="noopener">cmake syntax</a></li>
-<li><a href="http://www.cmake.org/cmake-tutorial/" target="_blank" rel="noopener">cmake tutorial</a></li>
 <li><a href="http://www.cmake.org/Wiki/CMake_Useful_Variables" target="_blank" rel="noopener">CMake常用变量列表</a></li>
-<li><a href="http://www.cmake.org/documentation/" target="_blank" rel="noopener">CMake文档列表</a></li>
-<li><a href="http://www.cmake.org/cmake/help/v3.0/manual/cmake-modules.7.html" target="_blank" rel="noopener">cmake modules</a></li>
-<li><a href="http://blog.atime.me/note/cmake.html" target="_blank" rel="noopener">CMake 使用总结</a></li>
-<li><a href="http://www.cnblogs.com/coderfenghc/archive/2013/01/20/2846621.html" target="_blank" rel="noopener">CMake 用法导览</a></li>
+<li><a href="http://www.cmake.org/cmake/help/v3.0/manual/cmake-commands.7.html" target="_blank" rel="noopener">cmake command</a></li>
 </ol>
 
       
@@ -2871,7 +2604,7 @@ INSTALL(FILES demo.hpp http.hpp DESTINATION include)</code></pre><h2 id="Ref"><a
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-03-18 12:51:25" itemprop="dateModified" datetime="2020-03-18T12:51:25+08:00">2020-03-18</time>
+                <time title="Modified: 2020-03-18 15:51:01" itemprop="dateModified" datetime="2020-03-18T15:51:01+08:00">2020-03-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -3006,7 +2739,7 @@ $ xclip -sel clip &lt; ~/.ssh/id_rsa.pub</code></pre>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">460</span>
+        <span class="site-state-item-count">461</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -3066,7 +2799,7 @@ $ xclip -sel clip &lt; ~/.ssh/id_rsa.pub</code></pre>
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">17:49</span>
+    <span title="Reading time total">17:51</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
   </div>
