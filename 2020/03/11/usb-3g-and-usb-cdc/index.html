@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="USB 通信设备类 USB Dongle 拨号">
+<meta property="og:type" content="article">
+<meta property="og:title" content="USB 通信设备类与 USB Dongle 拨号">
+<meta property="og:url" content="http://yoursite.com/2020/03/11/usb-3g-and-usb-cdc/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="USB 通信设备类 USB Dongle 拨号">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-03-11T01:40:47.000Z">
+<meta property="article:modified_time" content="2020-03-20T02:47:50.186Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="rndis">
+<meta property="article:tag" content="usb">
+<meta property="article:tag" content="3g">
+<meta property="article:tag" content="ppp">
+<meta property="article:tag" content="usb-cdc">
+<meta property="article:tag" content="ecm">
+<meta property="article:tag" content="mbim">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2020/03/11/usb-3g-and-usb-cdc/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>USB 通信设备类与 USB Dongle 拨号 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/03/11/usb-3g-and-usb-cdc/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          USB 通信设备类与 USB Dongle 拨号
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-03-11 09:40:47" itemprop="dateCreated datePublished" datetime="2020-03-11T09:40:47+08:00">2020-03-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-03-20 10:47:50" itemprop="dateModified" datetime="2020-03-20T10:47:50+08:00">2020-03-20</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/USB/" itemprop="url" rel="index">
+                    <span itemprop="name">USB</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>4.1k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <ul>
+<li>USB 通信设备类</li>
+<li>USB Dongle 拨号</li>
+</ul>
+<a id="more"></a>
+
+<h2 id="Defined-Class-Codes"><a href="#Defined-Class-Codes" class="headerlink" title="Defined Class Codes"></a>Defined Class Codes</h2><p><a href="https://www.usb.org/defined-class-codes" target="_blank" rel="noopener">Defined Class Codes</a></p>
+<p>例如：</p>
+<ul>
+<li><code>02h</code> <a href="https://www.usb.org/defined-class-codes#anchor_BaseClass02h" target="_blank" rel="noopener">Communications and CDC Control</a></li>
+<li><code>08h</code> <a href="https://www.usb.org/defined-class-codes#anchor_BaseClass08h" target="_blank" rel="noopener">Mass Storage</a></li>
+<li><code>09h</code> <a href="https://www.usb.org/defined-class-codes#anchor_BaseClass09h" target="_blank" rel="noopener">Hub</a></li>
+<li><code>0Ah</code> <a href="https://www.usb.org/defined-class-codes#anchor_BaseClass0Ah" target="_blank" rel="noopener">CDC-Data</a></li>
+<li><code>EFh</code> <a href="https://www.usb.org/defined-class-codes#anchor_BaseClassEFh" target="_blank" rel="noopener">Miscellaneous</a></li>
+</ul>
+<p>Linux4.9 <code>include/uapi/linux/usb/ch9.h</code> 可以看到各个定义值</p>
+<h2 id="Communications-Class-Subclass-Codes"><a href="#Communications-Class-Subclass-Codes" class="headerlink" title="Communications Class Subclass Codes"></a>Communications Class Subclass Codes</h2><p>USB 的 CDC 类是 USB 通信设备类（Communication Device Class）的简称。CDC 类是 USB 组织定义的一类专门给各种通信设备（电信通信设备和中速网络通信设备）使用的 USB 子类。</p>
+<p>具体列表见文档 Universal Serial Bus Class Definitions for Communications Devices 4.3章节：</p>
+<ul>
+<li><code>00h</code> RESERVED</li>
+<li><code>01h</code> Direct Line Control Model [USBPSTN1.2]</li>
+<li><code>02h</code> Abstract Control Model [USBPSTN1.2]</li>
+<li><code>03h</code> Telephone Control Model [USBPSTN1.2]</li>
+<li><code>04h</code> Multi-Channel Control Model [USBISDN1.2]</li>
+<li><code>05h</code> CAPI Control Model [USBISDN1.2]</li>
+<li><code>06h</code> Ethernet Networking Control Model [USBECM1.2]</li>
+<li><code>07h</code> ATM Networking Control Model [USBATM1.2]</li>
+<li><code>08h</code> Wireless Handset Control Model [USBWMC1.1]</li>
+<li><code>09h</code> Device Management [USBWMC1.1]</li>
+<li><code>0Ah</code> Mobile Direct Line Model [USBWMC1.1]</li>
+<li><code>0Bh</code> OBEX [USBWMC1.1]</li>
+<li><code>0Ch</code> Ethernet Emulation Model [USBEEM1.0]</li>
+<li><code>0Dh</code> Network Control Model [USBNCM1.0]</li>
+<li><code>0Eh</code> Mobile Broadband Interface Model [USBMBIM1.0]</li>
+<li><code>0Dh-7Fh</code> RESERVED (future use)</li>
+<li><code>80-FEh</code> RESERVED (vendor specific)</li>
+</ul>
+<h2 id="Linux4-9-内核实现"><a href="#Linux4-9-内核实现" class="headerlink" title="Linux4.9 内核实现"></a>Linux4.9 内核实现</h2><p>构造 USB 设备宏定义</p>
+<pre><code class="c">/**
+ * USB_INTERFACE_INFO - macro used to describe a class of usb interfaces
+ * @cl: bInterfaceClass value
+ * @sc: bInterfaceSubClass value
+ * @pr: bInterfaceProtocol value
+ *
+ * This macro is used to create a struct usb_device_id that matches a
+ * specific class of interfaces.
+ */
+#define USB_INTERFACE_INFO(cl, sc, pr) \
+    .match_flags = USB_DEVICE_ID_MATCH_INT_INFO, \
+    .bInterfaceClass = (cl), \
+    .bInterfaceSubClass = (sc), \
+    .bInterfaceProtocol = (pr)</code></pre>
+<p>例如：</p>
+<pre><code class="c">/* Telit LE922A6 in MBIM composition */
+{ USB_DEVICE_AND_INTERFACE_INFO(0x1bc7, 0x1041, USB_CLASS_COMM, USB_CDC_SUBCLASS_MBIM, USB_CDC_PROTO_NONE),
+  .driver_info = (unsigned long)&amp;cdc_mbim_info_avoid_altsetting_toggle,
+},
+
+{
+    USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_EEM,
+            USB_CDC_PROTO_EEM),
+    .driver_info = (unsigned long) &amp;eem_info,
+},
+
+/* Telit LE910 V2 */
+{ USB_DEVICE_AND_INTERFACE_INFO(0x1bc7, 0x0036,
+    USB_CLASS_COMM,
+    USB_CDC_SUBCLASS_NCM, USB_CDC_PROTO_NONE),
+  .driver_info = (unsigned long)&amp;wwan_noarp_info,
+},</code></pre>
+<p>内核文件</p>
+<pre><code class="shell">$ find -name &quot;cdc_*&quot;
+./include/linux/usb/cdc_ncm.h
+./drivers/net/usb/cdc_mbim.c
+./drivers/net/usb/cdc_ncm.c
+./drivers/net/usb/cdc_ether.c
+./drivers/net/usb/cdc_eem.c
+./drivers/net/usb/cdc_ether.o
+./drivers/net/usb/cdc_subset.c
+./Documentation/networking/cdc_mbim.txt</code></pre>
+<h2 id="Rndis"><a href="#Rndis" class="headerlink" title="Rndis"></a>Rndis</h2><p>在文件 <code>drivers/net/usb/rndis_host.c</code> 中发现如下代码</p>
+<pre><code class="c">static const struct usb_device_id   products [] = {
+{
+    /* 2Wire HomePortal 1000SW */
+    USB_DEVICE_AND_INTERFACE_INFO(0x1630, 0x0042,
+                      USB_CLASS_COMM, 2 /* ACM */, 0x0ff),
+    .driver_info = (unsigned long) &amp;rndis_poll_status_info,
+}, {
+    /* RNDIS is MSFT&#39;s un-official variant of CDC ACM */
+    USB_INTERFACE_INFO(USB_CLASS_COMM, 2 /* ACM */, 0x0ff),
+    .driver_info = (unsigned long) &amp;rndis_info,
+}, {
+    /* &quot;ActiveSync&quot; is an undocumented variant of RNDIS, used in WM5 */
+    USB_INTERFACE_INFO(USB_CLASS_MISC, 1, 1),
+    .driver_info = (unsigned long) &amp;rndis_poll_status_info,
+}, {
+    /* RNDIS for tethering */
+    USB_INTERFACE_INFO(USB_CLASS_WIRELESS_CONTROLLER, 1, 3),
+    .driver_info = (unsigned long) &amp;rndis_info,
+},
+    { },        // END
+};
+MODULE_DEVICE_TABLE(usb, products);</code></pre>
+<blockquote>
+<p>RNDIS是一个以太网端口 （ Ethernet port ）。最开始是微软控制的，用以取代 CDC Ethernet 的协议。Linux 支持它仅仅是因为微软不支持 CDC以太网标准。</p>
+</blockquote>
+<h2 id="USB-Dongle-拨号"><a href="#USB-Dongle-拨号" class="headerlink" title="USB Dongle 拨号"></a>USB Dongle 拨号</h2><blockquote>
+<p>Many modern (and most LTE) usb modems provide <strong>qmi, mbim, ncm, rndis</strong> protocol for connection instead of legacy <strong>ppp</strong> protocol, they are faster and better, overall recommended. For more information:</p>
+</blockquote>
+<ul>
+<li>qmi and mbim, see <a href="https://openwrt.org/docs/guide-user/network/wan/wwan/ltedongle" target="_blank" rel="noopener">How To Use LTE modem in QMI mode for WAN connection</a></li>
+<li>ncm, see <a href="https://openwrt.org/docs/guide-user/network/wan/wwan/ethernetoverusb_ncm" target="_blank" rel="noopener">How To Use LTE modem in NCM mode for WAN connection</a></li>
+<li>rndis, see <a href="https://openwrt.org/docs/guide-user/network/wan/wwan/ethernetoverusb_rndis" target="_blank" rel="noopener">How To Use LTE modem in RNDIS mode for WAN connection</a></li>
+</ul>
+<h2 id="内核设备列表"><a href="#内核设备列表" class="headerlink" title="内核设备列表"></a>内核设备列表</h2><p>USB 设备需要关心 <code>ProductID</code> 和 <code>VendorID</code>，用于表示某一种具体的设备，例如文件 <code>unusual_devs.h</code> 列举了非常规设备列表，表示这些设备需要特殊处理</p>
+<pre><code class="c">/*
+ * Reported by fangxiaozhi &lt;huananhu@huawei.com&gt;
+ * This brings the HUAWEI data card devices into multi-port mode
+ */
+UNUSUAL_DEV(  0x12d1, 0x1001, 0x0000, 0x0000,
+        &quot;HUAWEI MOBILE&quot;,
+        &quot;Mass Storage&quot;,
+        USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+        0),
+UNUSUAL_DEV(  0x12d1, 0x1003, 0x0000, 0x0000,
+        &quot;HUAWEI MOBILE&quot;,
+        &quot;Mass Storage&quot;,
+        USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+        0),</code></pre>
+<h2 id="Add-New-USB-Dongle"><a href="#Add-New-USB-Dongle" class="headerlink" title="Add New USB Dongle"></a>Add New USB Dongle</h2><p>在内核中增加普通 USB Dongle 设备，修改 <code>drivers/usb/serial/option.c</code> 中的数组 <code>option_ids</code></p>
+<pre><code class="c">{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1C0B, 0xff, 0xff, 0xff) },
+{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1C05, 0xff, 0xff, 0xff) },</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://blog.csdn.net/kangear/article/details/37605811" target="_blank" rel="noopener">USB中CDC-ECM的了解和配置</a></li>
+<li><a href="https://wenku.baidu.com/view/fd16907e011ca300a6c3903e.html" target="_blank" rel="noopener">RNDIS,ECM及MBIM报文简述</a></li>
+<li><a href="https://openwrt.org/docs/guide-user/network/wan/wwan/3gdongle" target="_blank" rel="noopener">Use 3g/UMTS USB Dongle for WAN connection</a></li>
+<li><a href="https://stackoverflow.com/questions/20299434/whats-different-in-usb-class-when-the-devices-are-modem" target="_blank" rel="noopener">What’s different in USB class when the devices are modem?</a></li>
+<li><a href="https://www.iteye.com/blog/javatome-1205027" target="_blank" rel="noopener">Linux那些事儿之我是U盘(18)</a></li>
+<li><a href="https://blog.csdn.net/cfy_phonex/article/details/22684005" target="_blank" rel="noopener">Android f_rndis 分析笔记</a></li>
+<li><a href="https://wenku.baidu.com/view/a1e2c42d4b73f242336c5fa0.html" target="_blank" rel="noopener">RNDIS原理分析</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/rndis/" rel="tag"># rndis</a>
+              <a href="/tags/usb/" rel="tag"># usb</a>
+              <a href="/tags/3g/" rel="tag"># 3g</a>
+              <a href="/tags/ppp/" rel="tag"># ppp</a>
+              <a href="/tags/usb-cdc/" rel="tag"># usb-cdc</a>
+              <a href="/tags/ecm/" rel="tag"># ecm</a>
+              <a href="/tags/mbim/" rel="tag"># mbim</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2020/03/09/linux-kernel-stack/" rel="next" title="Linux内核栈溢出检测">
+                  <i class="fa fa-chevron-left"></i> Linux内核栈溢出检测
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2020/03/11/linux-kernel-all-syms/" rel="prev" title="Linux 内核符号表的生成和查找">
+                  Linux 内核符号表的生成和查找 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Defined-Class-Codes"><span class="nav-number">1.</span> <span class="nav-text">Defined Class Codes</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Communications-Class-Subclass-Codes"><span class="nav-number">2.</span> <span class="nav-text">Communications Class Subclass Codes</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux4-9-内核实现"><span class="nav-number">3.</span> <span class="nav-text">Linux4.9 内核实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Rndis"><span class="nav-number">4.</span> <span class="nav-text">Rndis</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#USB-Dongle-拨号"><span class="nav-number">5.</span> <span class="nav-text">USB Dongle 拨号</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内核设备列表"><span class="nav-number">6.</span> <span class="nav-text">内核设备列表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Add-New-USB-Dongle"><span class="nav-number">7.</span> <span class="nav-text">Add New USB Dongle</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">8.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">439</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">59</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">464</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">17:55</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

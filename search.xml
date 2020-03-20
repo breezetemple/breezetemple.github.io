@@ -244,6 +244,166 @@ return module_address_lookup(addr, symbolsize, offset, modname,
       </tags>
   </entry>
   <entry>
+    <title>USB 通信设备类与 USB Dongle 拨号</title>
+    <url>/2020/03/11/usb-3g-and-usb-cdc/</url>
+    <content><![CDATA[<ul>
+<li>USB 通信设备类</li>
+<li>USB Dongle 拨号</li>
+</ul>
+<a id="more"></a>
+
+<h2 id="Defined-Class-Codes"><a href="#Defined-Class-Codes" class="headerlink" title="Defined Class Codes"></a>Defined Class Codes</h2><p><a href="https://www.usb.org/defined-class-codes" target="_blank" rel="noopener">Defined Class Codes</a></p>
+<p>例如：</p>
+<ul>
+<li><code>02h</code> <a href="https://www.usb.org/defined-class-codes#anchor_BaseClass02h" target="_blank" rel="noopener">Communications and CDC Control</a></li>
+<li><code>08h</code> <a href="https://www.usb.org/defined-class-codes#anchor_BaseClass08h" target="_blank" rel="noopener">Mass Storage</a></li>
+<li><code>09h</code> <a href="https://www.usb.org/defined-class-codes#anchor_BaseClass09h" target="_blank" rel="noopener">Hub</a></li>
+<li><code>0Ah</code> <a href="https://www.usb.org/defined-class-codes#anchor_BaseClass0Ah" target="_blank" rel="noopener">CDC-Data</a></li>
+<li><code>EFh</code> <a href="https://www.usb.org/defined-class-codes#anchor_BaseClassEFh" target="_blank" rel="noopener">Miscellaneous</a></li>
+</ul>
+<p>Linux4.9 <code>include/uapi/linux/usb/ch9.h</code> 可以看到各个定义值</p>
+<h2 id="Communications-Class-Subclass-Codes"><a href="#Communications-Class-Subclass-Codes" class="headerlink" title="Communications Class Subclass Codes"></a>Communications Class Subclass Codes</h2><p>USB 的 CDC 类是 USB 通信设备类（Communication Device Class）的简称。CDC 类是 USB 组织定义的一类专门给各种通信设备（电信通信设备和中速网络通信设备）使用的 USB 子类。</p>
+<p>具体列表见文档 Universal Serial Bus Class Definitions for Communications Devices 4.3章节：</p>
+<ul>
+<li><code>00h</code> RESERVED</li>
+<li><code>01h</code> Direct Line Control Model [USBPSTN1.2]</li>
+<li><code>02h</code> Abstract Control Model [USBPSTN1.2]</li>
+<li><code>03h</code> Telephone Control Model [USBPSTN1.2]</li>
+<li><code>04h</code> Multi-Channel Control Model [USBISDN1.2]</li>
+<li><code>05h</code> CAPI Control Model [USBISDN1.2]</li>
+<li><code>06h</code> Ethernet Networking Control Model [USBECM1.2]</li>
+<li><code>07h</code> ATM Networking Control Model [USBATM1.2]</li>
+<li><code>08h</code> Wireless Handset Control Model [USBWMC1.1]</li>
+<li><code>09h</code> Device Management [USBWMC1.1]</li>
+<li><code>0Ah</code> Mobile Direct Line Model [USBWMC1.1]</li>
+<li><code>0Bh</code> OBEX [USBWMC1.1]</li>
+<li><code>0Ch</code> Ethernet Emulation Model [USBEEM1.0]</li>
+<li><code>0Dh</code> Network Control Model [USBNCM1.0]</li>
+<li><code>0Eh</code> Mobile Broadband Interface Model [USBMBIM1.0]</li>
+<li><code>0Dh-7Fh</code> RESERVED (future use)</li>
+<li><code>80-FEh</code> RESERVED (vendor specific)</li>
+</ul>
+<h2 id="Linux4-9-内核实现"><a href="#Linux4-9-内核实现" class="headerlink" title="Linux4.9 内核实现"></a>Linux4.9 内核实现</h2><p>构造 USB 设备宏定义</p>
+<pre><code class="c">/**
+ * USB_INTERFACE_INFO - macro used to describe a class of usb interfaces
+ * @cl: bInterfaceClass value
+ * @sc: bInterfaceSubClass value
+ * @pr: bInterfaceProtocol value
+ *
+ * This macro is used to create a struct usb_device_id that matches a
+ * specific class of interfaces.
+ */
+#define USB_INTERFACE_INFO(cl, sc, pr) \
+    .match_flags = USB_DEVICE_ID_MATCH_INT_INFO, \
+    .bInterfaceClass = (cl), \
+    .bInterfaceSubClass = (sc), \
+    .bInterfaceProtocol = (pr)</code></pre>
+<p>例如：</p>
+<pre><code class="c">/* Telit LE922A6 in MBIM composition */
+{ USB_DEVICE_AND_INTERFACE_INFO(0x1bc7, 0x1041, USB_CLASS_COMM, USB_CDC_SUBCLASS_MBIM, USB_CDC_PROTO_NONE),
+  .driver_info = (unsigned long)&amp;cdc_mbim_info_avoid_altsetting_toggle,
+},
+
+{
+    USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_EEM,
+            USB_CDC_PROTO_EEM),
+    .driver_info = (unsigned long) &amp;eem_info,
+},
+
+/* Telit LE910 V2 */
+{ USB_DEVICE_AND_INTERFACE_INFO(0x1bc7, 0x0036,
+    USB_CLASS_COMM,
+    USB_CDC_SUBCLASS_NCM, USB_CDC_PROTO_NONE),
+  .driver_info = (unsigned long)&amp;wwan_noarp_info,
+},</code></pre>
+<p>内核文件</p>
+<pre><code class="shell">$ find -name &quot;cdc_*&quot;
+./include/linux/usb/cdc_ncm.h
+./drivers/net/usb/cdc_mbim.c
+./drivers/net/usb/cdc_ncm.c
+./drivers/net/usb/cdc_ether.c
+./drivers/net/usb/cdc_eem.c
+./drivers/net/usb/cdc_ether.o
+./drivers/net/usb/cdc_subset.c
+./Documentation/networking/cdc_mbim.txt</code></pre>
+<h2 id="Rndis"><a href="#Rndis" class="headerlink" title="Rndis"></a>Rndis</h2><p>在文件 <code>drivers/net/usb/rndis_host.c</code> 中发现如下代码</p>
+<pre><code class="c">static const struct usb_device_id   products [] = {
+{
+    /* 2Wire HomePortal 1000SW */
+    USB_DEVICE_AND_INTERFACE_INFO(0x1630, 0x0042,
+                      USB_CLASS_COMM, 2 /* ACM */, 0x0ff),
+    .driver_info = (unsigned long) &amp;rndis_poll_status_info,
+}, {
+    /* RNDIS is MSFT&#39;s un-official variant of CDC ACM */
+    USB_INTERFACE_INFO(USB_CLASS_COMM, 2 /* ACM */, 0x0ff),
+    .driver_info = (unsigned long) &amp;rndis_info,
+}, {
+    /* &quot;ActiveSync&quot; is an undocumented variant of RNDIS, used in WM5 */
+    USB_INTERFACE_INFO(USB_CLASS_MISC, 1, 1),
+    .driver_info = (unsigned long) &amp;rndis_poll_status_info,
+}, {
+    /* RNDIS for tethering */
+    USB_INTERFACE_INFO(USB_CLASS_WIRELESS_CONTROLLER, 1, 3),
+    .driver_info = (unsigned long) &amp;rndis_info,
+},
+    { },        // END
+};
+MODULE_DEVICE_TABLE(usb, products);</code></pre>
+<blockquote>
+<p>RNDIS是一个以太网端口 （ Ethernet port ）。最开始是微软控制的，用以取代 CDC Ethernet 的协议。Linux 支持它仅仅是因为微软不支持 CDC以太网标准。</p>
+</blockquote>
+<h2 id="USB-Dongle-拨号"><a href="#USB-Dongle-拨号" class="headerlink" title="USB Dongle 拨号"></a>USB Dongle 拨号</h2><blockquote>
+<p>Many modern (and most LTE) usb modems provide <strong>qmi, mbim, ncm, rndis</strong> protocol for connection instead of legacy <strong>ppp</strong> protocol, they are faster and better, overall recommended. For more information:</p>
+</blockquote>
+<ul>
+<li>qmi and mbim, see <a href="https://openwrt.org/docs/guide-user/network/wan/wwan/ltedongle" target="_blank" rel="noopener">How To Use LTE modem in QMI mode for WAN connection</a></li>
+<li>ncm, see <a href="https://openwrt.org/docs/guide-user/network/wan/wwan/ethernetoverusb_ncm" target="_blank" rel="noopener">How To Use LTE modem in NCM mode for WAN connection</a></li>
+<li>rndis, see <a href="https://openwrt.org/docs/guide-user/network/wan/wwan/ethernetoverusb_rndis" target="_blank" rel="noopener">How To Use LTE modem in RNDIS mode for WAN connection</a></li>
+</ul>
+<h2 id="内核设备列表"><a href="#内核设备列表" class="headerlink" title="内核设备列表"></a>内核设备列表</h2><p>USB 设备需要关心 <code>ProductID</code> 和 <code>VendorID</code>，用于表示某一种具体的设备，例如文件 <code>unusual_devs.h</code> 列举了非常规设备列表，表示这些设备需要特殊处理</p>
+<pre><code class="c">/*
+ * Reported by fangxiaozhi &lt;huananhu@huawei.com&gt;
+ * This brings the HUAWEI data card devices into multi-port mode
+ */
+UNUSUAL_DEV(  0x12d1, 0x1001, 0x0000, 0x0000,
+        &quot;HUAWEI MOBILE&quot;,
+        &quot;Mass Storage&quot;,
+        USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+        0),
+UNUSUAL_DEV(  0x12d1, 0x1003, 0x0000, 0x0000,
+        &quot;HUAWEI MOBILE&quot;,
+        &quot;Mass Storage&quot;,
+        USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+        0),</code></pre>
+<h2 id="Add-New-USB-Dongle"><a href="#Add-New-USB-Dongle" class="headerlink" title="Add New USB Dongle"></a>Add New USB Dongle</h2><p>在内核中增加普通 USB Dongle 设备，修改 <code>drivers/usb/serial/option.c</code> 中的数组 <code>option_ids</code></p>
+<pre><code class="c">{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1C0B, 0xff, 0xff, 0xff) },
+{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1C05, 0xff, 0xff, 0xff) },</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://blog.csdn.net/kangear/article/details/37605811" target="_blank" rel="noopener">USB中CDC-ECM的了解和配置</a></li>
+<li><a href="https://wenku.baidu.com/view/fd16907e011ca300a6c3903e.html" target="_blank" rel="noopener">RNDIS,ECM及MBIM报文简述</a></li>
+<li><a href="https://openwrt.org/docs/guide-user/network/wan/wwan/3gdongle" target="_blank" rel="noopener">Use 3g/UMTS USB Dongle for WAN connection</a></li>
+<li><a href="https://stackoverflow.com/questions/20299434/whats-different-in-usb-class-when-the-devices-are-modem" target="_blank" rel="noopener">What’s different in USB class when the devices are modem?</a></li>
+<li><a href="https://www.iteye.com/blog/javatome-1205027" target="_blank" rel="noopener">Linux那些事儿之我是U盘(18)</a></li>
+<li><a href="https://blog.csdn.net/cfy_phonex/article/details/22684005" target="_blank" rel="noopener">Android f_rndis 分析笔记</a></li>
+<li><a href="https://wenku.baidu.com/view/a1e2c42d4b73f242336c5fa0.html" target="_blank" rel="noopener">RNDIS原理分析</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+        <category>USB</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>rndis</tag>
+        <tag>usb</tag>
+        <tag>3g</tag>
+        <tag>ppp</tag>
+        <tag>usb-cdc</tag>
+        <tag>ecm</tag>
+        <tag>mbim</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Linux内核栈溢出检测</title>
     <url>/2020/03/09/linux-kernel-stack/</url>
     <content><![CDATA[<p>监测内核栈使用情况，分析 crash 问题</p>
@@ -13128,9 +13288,9 @@ pngset.c.o</code></pre>
       <tags>
         <tag>gcc</tag>
         <tag>linux</tag>
-        <tag>libnss</tag>
         <tag>static</tag>
         <tag>getaddrinfp</tag>
+        <tag>libnss</tag>
       </tags>
   </entry>
   <entry>
@@ -30730,76 +30890,6 @@ Examples, when the file name is &quot;src/version.c.gz&quot;: &gt;
       </tags>
   </entry>
   <entry>
-    <title>git通过lantern代理访问github</title>
-    <url>/2016/07/18/git-with-lantern/</url>
-    <content><![CDATA[<p>最近github可以使用ssh方式，https存在问题</p>
-<pre><code class="bash">git clone https://github.com/Valloric/YouCompleteMe.git                         
-正克隆到 &#39;YouCompleteMe&#39;...
-fatal: unable to access &#39;https://github.com/Valloric/YouCompleteMe.git/&#39;: Failed to connect to github.com port 443: 拒绝连接</code></pre>
-<p>修改为 <code>SSH</code> 方式可以解决问题 <a href="https://help.github.com/articles/changing-a-remote-s-url/" target="_blank" rel="noopener">Changing a remote’s<br>URL</a></p>
-<p>但是vim 插件安装会使用 <code>https</code> ，尝试使用代理来解决问题：</p>
-<pre><code class="bash">git config --global http.proxy 192.168.1.1:8083
-git config --global http.proxy //查询
-git config --global --unset http.proxy //取消</code></pre>
-<p>启动lantern并找到PAC文件</p>
-<pre><code class="bash">Jul 18 01:02:23.713 - 0m0s DEBUG flashlight: pac.go:155 Serving PAC file at
-http://127.0.0.1:16823/proxy_on.pac</code></pre>
-<p>打开浏览器输入该url可以得到PAC文件，如下：</p>
-<pre><code class="pac">var bypassDomains = [&#39;ss1.baidu.com&#39;, &#39;static.zhihu.com&#39;,
-    &#39;camo.githubusercontent.com&#39;, &#39;sugar.zhihu.com&#39;,
-    &#39;pagead2.googlesyndication.com&#39;, &#39;ss0.baidu.com&#39;, &#39;link.zhihu.com&#39;,
-    &#39;www.isupergeek.com&#39;, &#39;ss2.baidu.com&#39;, &#39;www.cnblogs.com&#39;, &#39;blog.marchtea.com&#39;,
-    &#39;secure.gravatar.com&#39;, &#39;ocsp.startssl.com&#39;, &#39;pic2.zhimg.com&#39;,
-    &#39;static.cnblogs.com&#39;, &#39;www.baidu.com&#39;, &#39;www.googletagservices.com&#39;,
-    &#39;ss3.baidu.com&#39;, &#39;code.jquery.com&#39;, &#39;gn.symcd.com&#39;, &#39;www.zhihu.com&#39;,
-    &#39;ssum-sec.casalemedia.com&#39;, &#39;zhstatic.zhihu.com&#39;, &#39;tpc.googlesyndication.com&#39;,
-    &#39;sp2.baidu.com&#39;, &#39;ocsp.digicert.com&#39;, &#39;sp0.baidu.com&#39;,
-    &#39;zhihu-web-analytics.zhihu.com&#39;, &#39;engine.adzerk.net&#39;, &#39;pic1.zhimg.com&#39;,
-    &#39;collector.githubapp.com&#39;, &#39;api.ad.cnblogs.com&#39;, &#39;sync.xmarks.com&#39;,
-    &#39;sp1.baidu.com&#39;, &#39;avatars3.githubusercontent.com&#39;, &#39;pic4.zhimg.com&#39;,
-    &#39;cloud.xmarks.com&#39;, &#39;pixel.quantserve.com&#39;, &#39;stats.g.doubleclick.net&#39;];
-    function FindProxyForURL(url, host) {
-        if (isPlainHostName(host) // including localhost
-                || shExpMatch(host, &quot;*.local&quot;)) {
-            return &quot;DIRECT&quot;;
-        }
-        // only checks plain IP addresses to avoid leaking domain name
-        if (/^[0-9.]+$/.test(host)) {
-            if (isInNet(host, &quot;10.0.0.0&quot;, &quot;255.0.0.0&quot;) ||
-                isInNet(host, &quot;172.16.0.0&quot;, &quot;255.240.0.0&quot;) ||
-                isInNet(host, &quot;192.168.0.0&quot;, &quot;255.255.0.0&quot;) ||
-                isInNet(host, &quot;127.0.0.0&quot;, &quot;255.255.255.0&quot;)) {
-                return &quot;DIRECT&quot;;
-            }
-        }
-        // Lantern desktop version proxies only http(s) and ws(s)
-        if (url.substring(0, 4) != &#39;http&#39; &amp;&amp; (url.substring(0, 2) != &#39;ws&#39;)) {
-            return &quot;DIRECT&quot;;
-        }
-        for (var d in bypassDomains) {
-            if (host == bypassDomains[d]) {
-                return &quot;DIRECT&quot;;
-            }
-        }
-        return &quot;PROXY 127.0.0.1:8787; DIRECT&quot;;
-}</code></pre>
-<p>最后一行代理地址 <code>http://127.0.0.1:8787</code><br>获取了代理地址后就可以设置git的代理了，shell脚本如下：</p>
-<pre><code class="bash">    git config --global http.proxy 127.0.0.1:8787
-    git config --global https.proxy 127.0.0.1:8787</code></pre>
-<hr>
-]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Git</category>
-      </categories>
-      <tags>
-        <tag>github</tag>
-        <tag>git</tag>
-        <tag>lantern</tag>
-        <tag>proxy</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>vim插件YouCompleteMe安装</title>
     <url>/2016/07/18/vim-ycm/</url>
     <content><![CDATA[<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p><a href="https://github.com/Valloric/YouCompleteMe#ubuntu-linux-x64" target="_blank" rel="noopener">Ubuntu Linux x64</a></p>
@@ -30996,6 +31086,76 @@ def FlagsForFile( filename ):
       <tags>
         <tag>vim</tag>
         <tag>youcompleteme</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>git通过lantern代理访问github</title>
+    <url>/2016/07/18/git-with-lantern/</url>
+    <content><![CDATA[<p>最近github可以使用ssh方式，https存在问题</p>
+<pre><code class="bash">git clone https://github.com/Valloric/YouCompleteMe.git                         
+正克隆到 &#39;YouCompleteMe&#39;...
+fatal: unable to access &#39;https://github.com/Valloric/YouCompleteMe.git/&#39;: Failed to connect to github.com port 443: 拒绝连接</code></pre>
+<p>修改为 <code>SSH</code> 方式可以解决问题 <a href="https://help.github.com/articles/changing-a-remote-s-url/" target="_blank" rel="noopener">Changing a remote’s<br>URL</a></p>
+<p>但是vim 插件安装会使用 <code>https</code> ，尝试使用代理来解决问题：</p>
+<pre><code class="bash">git config --global http.proxy 192.168.1.1:8083
+git config --global http.proxy //查询
+git config --global --unset http.proxy //取消</code></pre>
+<p>启动lantern并找到PAC文件</p>
+<pre><code class="bash">Jul 18 01:02:23.713 - 0m0s DEBUG flashlight: pac.go:155 Serving PAC file at
+http://127.0.0.1:16823/proxy_on.pac</code></pre>
+<p>打开浏览器输入该url可以得到PAC文件，如下：</p>
+<pre><code class="pac">var bypassDomains = [&#39;ss1.baidu.com&#39;, &#39;static.zhihu.com&#39;,
+    &#39;camo.githubusercontent.com&#39;, &#39;sugar.zhihu.com&#39;,
+    &#39;pagead2.googlesyndication.com&#39;, &#39;ss0.baidu.com&#39;, &#39;link.zhihu.com&#39;,
+    &#39;www.isupergeek.com&#39;, &#39;ss2.baidu.com&#39;, &#39;www.cnblogs.com&#39;, &#39;blog.marchtea.com&#39;,
+    &#39;secure.gravatar.com&#39;, &#39;ocsp.startssl.com&#39;, &#39;pic2.zhimg.com&#39;,
+    &#39;static.cnblogs.com&#39;, &#39;www.baidu.com&#39;, &#39;www.googletagservices.com&#39;,
+    &#39;ss3.baidu.com&#39;, &#39;code.jquery.com&#39;, &#39;gn.symcd.com&#39;, &#39;www.zhihu.com&#39;,
+    &#39;ssum-sec.casalemedia.com&#39;, &#39;zhstatic.zhihu.com&#39;, &#39;tpc.googlesyndication.com&#39;,
+    &#39;sp2.baidu.com&#39;, &#39;ocsp.digicert.com&#39;, &#39;sp0.baidu.com&#39;,
+    &#39;zhihu-web-analytics.zhihu.com&#39;, &#39;engine.adzerk.net&#39;, &#39;pic1.zhimg.com&#39;,
+    &#39;collector.githubapp.com&#39;, &#39;api.ad.cnblogs.com&#39;, &#39;sync.xmarks.com&#39;,
+    &#39;sp1.baidu.com&#39;, &#39;avatars3.githubusercontent.com&#39;, &#39;pic4.zhimg.com&#39;,
+    &#39;cloud.xmarks.com&#39;, &#39;pixel.quantserve.com&#39;, &#39;stats.g.doubleclick.net&#39;];
+    function FindProxyForURL(url, host) {
+        if (isPlainHostName(host) // including localhost
+                || shExpMatch(host, &quot;*.local&quot;)) {
+            return &quot;DIRECT&quot;;
+        }
+        // only checks plain IP addresses to avoid leaking domain name
+        if (/^[0-9.]+$/.test(host)) {
+            if (isInNet(host, &quot;10.0.0.0&quot;, &quot;255.0.0.0&quot;) ||
+                isInNet(host, &quot;172.16.0.0&quot;, &quot;255.240.0.0&quot;) ||
+                isInNet(host, &quot;192.168.0.0&quot;, &quot;255.255.0.0&quot;) ||
+                isInNet(host, &quot;127.0.0.0&quot;, &quot;255.255.255.0&quot;)) {
+                return &quot;DIRECT&quot;;
+            }
+        }
+        // Lantern desktop version proxies only http(s) and ws(s)
+        if (url.substring(0, 4) != &#39;http&#39; &amp;&amp; (url.substring(0, 2) != &#39;ws&#39;)) {
+            return &quot;DIRECT&quot;;
+        }
+        for (var d in bypassDomains) {
+            if (host == bypassDomains[d]) {
+                return &quot;DIRECT&quot;;
+            }
+        }
+        return &quot;PROXY 127.0.0.1:8787; DIRECT&quot;;
+}</code></pre>
+<p>最后一行代理地址 <code>http://127.0.0.1:8787</code><br>获取了代理地址后就可以设置git的代理了，shell脚本如下：</p>
+<pre><code class="bash">    git config --global http.proxy 127.0.0.1:8787
+    git config --global https.proxy 127.0.0.1:8787</code></pre>
+<hr>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Git</category>
+      </categories>
+      <tags>
+        <tag>github</tag>
+        <tag>git</tag>
+        <tag>lantern</tag>
+        <tag>proxy</tag>
       </tags>
   </entry>
   <entry>
@@ -31681,27 +31841,6 @@ def FlagsForFile( filename ):
       </tags>
   </entry>
   <entry>
-    <title>python crawling</title>
-    <url>/2016/06/23/python-crawling/</url>
-    <content><![CDATA[<hr>
-<ol>
-<li><a href="http://www.tuicool.com/articles/vIJzUv" target="_blank" rel="noopener">Python爬虫框架-Scrapy中文文档翻译计划</a></li>
-<li><a href="https://github.com/marchtea/scrapy_doc_chs" target="_blank" rel="noopener">marchtea/scrapy_doc_chs</a></li>
-<li><a href="https://github.com/marchtea/mdtogh" target="_blank" rel="noopener">marchtea/mdtogh</a></li>
-<li><a href="http://cuiqingcai.com/1052.html" target="_blank" rel="noopener">Python爬虫学习系列教程</a></li>
-</ol>
-<hr>
-]]></content>
-      <categories>
-        <category>Python</category>
-      </categories>
-      <tags>
-        <tag>python</tag>
-        <tag>webs</tag>
-        <tag>crawler</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>python资源列表</title>
     <url>/2016/06/23/awesome-python/</url>
     <content><![CDATA[<ol>
@@ -31720,55 +31859,24 @@ def FlagsForFile( filename ):
       </tags>
   </entry>
   <entry>
-    <title>使用clang-format格式化你的代码</title>
-    <url>/2016/06/22/clang-format/</url>
-    <content><![CDATA[<ul>
-<li>toc<br>{:toc}</li>
-</ul>
-<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>clang-format是一个格式化代码的工具, 支持多种代码风格。有两种方式使用：</p>
-<p>安装：</p>
-<pre><code class="bash">sudo apt-get install clang-format</code></pre>
-<ul>
-<li>vim插件</li>
-</ul>
-<pre><code class="vimrc">Bundle &#39;rhysd/vim-clang-format&#39;                                                                                                   
-
-let g:clang_format#style_options = {
-    \ &quot;AccessModifierOffset&quot; : -4,
-    \ &quot;AllowShortIfStatementsOnASingleLine&quot; : &quot;true&quot;,
-    \ &quot;AlwaysBreakTemplateDeclarations&quot; : &quot;true&quot;,
-    \ &quot;Standard&quot; : &quot;C++11&quot;}</code></pre>
-<p><code>clang_format#style_options</code> 可以在<a href="http://clang.llvm.org/docs/ClangFormatStyleOptions.html" target="_blank" rel="noopener">Clang-Format Style Options</a>查找配置</p>
-<ul>
-<li>直接使用Clang-Format</li>
-</ul>
-<p>在 <code>.vimrc</code> 中映射快捷键</p>
-<pre><code class="vimrc">map &lt;C-K&gt; :pyf &lt;path-to-this-file&gt;/clang-format.py&lt;cr&gt;
-imap &lt;C-K&gt; &lt;c-o&gt;:pyf &lt;path-to-this-file&gt;/clang-format.py&lt;cr&gt;</code></pre>
-<p>需要在目录下建一个名为.clang-format的文件, 通过</p>
-<pre><code class="bash">clang-format -style=llvm -dump-config &gt; .clang-format</code></pre>
-<p>可以获得一个模板 .clang-format 文件, 根据自己的需求修改即可</p>
-<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p>获得模板</p>
-<pre><code class="bash">clang-format -style=llvm -dump-config &gt; .clang-format</code></pre>
-<p>修改参考<a href="http://clang.llvm.org/docs/ClangFormatStyleOptions.html" target="_blank" rel="noopener">options</a></p>
-<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ol>
-<li><a href="http://hokein.me/2016/01/30/clang-format/" target="_blank" rel="noopener">使用clang-format格式化你的代码</a></li>
-<li><a href="http://clang.llvm.org/docs/ClangFormatStyleOptions.html" target="_blank" rel="noopener">Clang-Format Style Options</a></li>
-<li><a href="http://qiufeng.me/xcode-format" target="_blank" rel="noopener">Objective-C代码自动格式化</a></li>
-<li><a href="http://clang.llvm.org/docs/ClangFormatStyleOptions.html" target="_blank" rel="noopener">Clang-Format Style Options</a></li>
-<li><a href="https://github.com/rhysd/vim-clang-format" target="_blank" rel="noopener">rhysd/vim-clang-format</a></li>
-<li><a href="http://clang.llvm.org/docs/ClangFormat.html#vim-integration" target="_blank" rel="noopener">Vim Integration</a></li>
+    <title>python crawling</title>
+    <url>/2016/06/23/python-crawling/</url>
+    <content><![CDATA[<hr>
+<ol>
+<li><a href="http://www.tuicool.com/articles/vIJzUv" target="_blank" rel="noopener">Python爬虫框架-Scrapy中文文档翻译计划</a></li>
+<li><a href="https://github.com/marchtea/scrapy_doc_chs" target="_blank" rel="noopener">marchtea/scrapy_doc_chs</a></li>
+<li><a href="https://github.com/marchtea/mdtogh" target="_blank" rel="noopener">marchtea/mdtogh</a></li>
+<li><a href="http://cuiqingcai.com/1052.html" target="_blank" rel="noopener">Python爬虫学习系列教程</a></li>
 </ol>
 <hr>
 ]]></content>
       <categories>
-        <category>C</category>
+        <category>Python</category>
       </categories>
       <tags>
-        <tag>tools</tag>
-        <tag>vim</tag>
-        <tag>style</tag>
-        <tag>clang-format</tag>
+        <tag>python</tag>
+        <tag>webs</tag>
+        <tag>crawler</tag>
       </tags>
   </entry>
   <entry>
@@ -32050,6 +32158,58 @@ traceroute to www.baidu.com (115.239.210.27), 30 hops max, 60 byte packets
       </tags>
   </entry>
   <entry>
+    <title>使用clang-format格式化你的代码</title>
+    <url>/2016/06/22/clang-format/</url>
+    <content><![CDATA[<ul>
+<li>toc<br>{:toc}</li>
+</ul>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>clang-format是一个格式化代码的工具, 支持多种代码风格。有两种方式使用：</p>
+<p>安装：</p>
+<pre><code class="bash">sudo apt-get install clang-format</code></pre>
+<ul>
+<li>vim插件</li>
+</ul>
+<pre><code class="vimrc">Bundle &#39;rhysd/vim-clang-format&#39;                                                                                                   
+
+let g:clang_format#style_options = {
+    \ &quot;AccessModifierOffset&quot; : -4,
+    \ &quot;AllowShortIfStatementsOnASingleLine&quot; : &quot;true&quot;,
+    \ &quot;AlwaysBreakTemplateDeclarations&quot; : &quot;true&quot;,
+    \ &quot;Standard&quot; : &quot;C++11&quot;}</code></pre>
+<p><code>clang_format#style_options</code> 可以在<a href="http://clang.llvm.org/docs/ClangFormatStyleOptions.html" target="_blank" rel="noopener">Clang-Format Style Options</a>查找配置</p>
+<ul>
+<li>直接使用Clang-Format</li>
+</ul>
+<p>在 <code>.vimrc</code> 中映射快捷键</p>
+<pre><code class="vimrc">map &lt;C-K&gt; :pyf &lt;path-to-this-file&gt;/clang-format.py&lt;cr&gt;
+imap &lt;C-K&gt; &lt;c-o&gt;:pyf &lt;path-to-this-file&gt;/clang-format.py&lt;cr&gt;</code></pre>
+<p>需要在目录下建一个名为.clang-format的文件, 通过</p>
+<pre><code class="bash">clang-format -style=llvm -dump-config &gt; .clang-format</code></pre>
+<p>可以获得一个模板 .clang-format 文件, 根据自己的需求修改即可</p>
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p>获得模板</p>
+<pre><code class="bash">clang-format -style=llvm -dump-config &gt; .clang-format</code></pre>
+<p>修改参考<a href="http://clang.llvm.org/docs/ClangFormatStyleOptions.html" target="_blank" rel="noopener">options</a></p>
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ol>
+<li><a href="http://hokein.me/2016/01/30/clang-format/" target="_blank" rel="noopener">使用clang-format格式化你的代码</a></li>
+<li><a href="http://clang.llvm.org/docs/ClangFormatStyleOptions.html" target="_blank" rel="noopener">Clang-Format Style Options</a></li>
+<li><a href="http://qiufeng.me/xcode-format" target="_blank" rel="noopener">Objective-C代码自动格式化</a></li>
+<li><a href="http://clang.llvm.org/docs/ClangFormatStyleOptions.html" target="_blank" rel="noopener">Clang-Format Style Options</a></li>
+<li><a href="https://github.com/rhysd/vim-clang-format" target="_blank" rel="noopener">rhysd/vim-clang-format</a></li>
+<li><a href="http://clang.llvm.org/docs/ClangFormat.html#vim-integration" target="_blank" rel="noopener">Vim Integration</a></li>
+</ol>
+<hr>
+]]></content>
+      <categories>
+        <category>C</category>
+      </categories>
+      <tags>
+        <tag>vim</tag>
+        <tag>tools</tag>
+        <tag>style</tag>
+        <tag>clang-format</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>C/C++推荐工具</title>
     <url>/2016/06/21/c-c++-tools/</url>
     <content><![CDATA[<h2 id="编辑器"><a href="#编辑器" class="headerlink" title="编辑器"></a>编辑器</h2><ul>
@@ -32125,8 +32285,8 @@ traceroute to www.baidu.com (115.239.210.27), 30 hops max, 60 byte packets
         <category>C</category>
       </categories>
       <tags>
-        <tag>tools</tag>
         <tag>sdk</tag>
+        <tag>tools</tag>
         <tag>editor</tag>
         <tag>analyser</tag>
       </tags>
@@ -32410,6 +32570,71 @@ $(document).ready(function(){
       </tags>
   </entry>
   <entry>
+    <title>程序员必备的代码审查（Code Review）清单</title>
+    <url>/2016/05/08/code-review-list/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p>软件工程学院的研究表明，程序员们会犯15-20种常见的错误。<br>所以，通过把这些错误加入到检查清单当中，你可以确保不论什么时候，<br>只要这些错误发生了，你就能发现它们，并且可以帮助你杜绝这些错误。</p>
+<p>为了帮助你开始创建一个清单，这里列出了一些典型的内容：代码审查清单。</p>
+<h2 id="常规项"><a href="#常规项" class="headerlink" title="常规项"></a><strong>常规项</strong></h2><ul>
+<li>代码能够工作么？它有没有实现预期的功能，逻辑是否正确等。</li>
+<li>所有的代码是否简单易懂？</li>
+<li>代码符合你所遵循的编程规范么？这通常包括大括号的位置，变量名和函数名，行的长度，缩进，格式和注释。</li>
+<li>是否存在多余的或是重复的代码？</li>
+<li>代码是否尽可能的模块化了？</li>
+<li>是否有可以被替换的全局变量？</li>
+<li>是否有被注释掉的代码？</li>
+<li>循环是否设置了长度和正确的终止条件？</li>
+<li>是否有可以被库函数替代的代码？</li>
+<li>是否有可以删除的日志或调试代码？</li>
+</ul>
+<h2 id="安全"><a href="#安全" class="headerlink" title="安全"></a><strong>安全</strong></h2><ul>
+<li>所有的数据输入是否都进行了检查（检测正确的类型，长度，格式和范围）并且进行了编码？</li>
+<li>在哪里使用了第三方工具，返回的错误是否被捕获？</li>
+<li>输出的值是否进行了检查并且编码？</li>
+<li>无效的参数值是否能够处理？</li>
+</ul>
+<h2 id="文档"><a href="#文档" class="headerlink" title="文档"></a><strong>文档</strong></h2><ul>
+<li>是否有注释，并且描述了代码的意图？</li>
+<li>所有的函数都有注释吗？</li>
+<li>对非常规行为和边界情况处理是否有描述？</li>
+<li>第三方库的使用和函数是否有文档？</li>
+<li>数据结构和计量单位是否进行了解释？</li>
+<li>是否有未完成的代码？如果是的话，是不是应该移除，或者用合适的标记进行标记比如‘TODO’？</li>
+</ul>
+<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a><strong>测试</strong></h2><ul>
+<li>代码是否可以测试？比如，不要添加太多的或是隐藏的依赖关系，不能够初始化对象，测试框架可以使用方法等。</li>
+<li>是否存在测试，它们是否可以被理解？比如，至少达到你满意的代码覆盖(code coverage)。</li>
+<li>单元测试是否真正的测试了代码是否可以完成预期的功能？</li>
+<li>是否检查了数组的“越界“错误？</li>
+<li>是否有可以被已经存在的API所替代的测试代码？</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a><strong>总结</strong></h2><p>你同样需要把特定语言中有可能引起错误的问题添加到清单中。</p>
+<p>这个清单故意没有详尽的列出所有可能会发生的错误。<br>你不希望你的清单是这样的，太长了以至于从来没人会去用它。仅仅包含常见的问题会比较好。</p>
+<h2 id="优化你的清单"><a href="#优化你的清单" class="headerlink" title="优化你的清单"></a><strong>优化你的清单</strong></h2><p>把使用清单作为你的起点，针对特定的使用案例，你需要对其进行优化。<br>一个比较棒的方式就是让你的团队记录下那些在代码审查过程中临时发现的问题，<br>有了这些数据，你就能够确定你的团队常犯的错误，然后你就可以量身定制一个审查清单。<br>确保你删除了那些没有出现过的错误。（你也可以保留那些出现概率很小，但是非常关键的项目，比如安全相关的问题）。</p>
+<h2 id="得到认可并且保持更新"><a href="#得到认可并且保持更新" class="headerlink" title="得到认可并且保持更新"></a><strong>得到认可并且保持更新</strong></h2><p>基本规则是，清单上的任何条目都必须明确，而且，如果可能的话，对于一些条目你可以对其进行二元判定。<br>这样可以防止判断的不一致。和你的团队分享这份清单并且让他们认同你清单的内容是个好主意。<br>同样的，要定期检查你的清单，以确保各条目仍然是有意义的。</p>
+<p>有了一个好的清单，可以提高你在代码审查过程中发现的缺陷个数。<br>这可以帮助你提高代码标准，避免质量参差不齐的代码审查。</p>
+<ol>
+<li><a href="http://blog.jobbole.com/83595/" target="_blank" rel="noopener">程序员必备的代码审查清单</a></li>
+</ol>
+]]></content>
+  </entry>
+  <entry>
     <title>网络基本功系列：总目录</title>
     <url>/2016/05/08/network-basic-information/</url>
     <content><![CDATA[<script type="text/javascript">
@@ -32475,71 +32700,6 @@ $(document).ready(function(){
         <tag>tcpdump</tag>
         <tag>wireshark</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>程序员必备的代码审查（Code Review）清单</title>
-    <url>/2016/05/08/code-review-list/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p>软件工程学院的研究表明，程序员们会犯15-20种常见的错误。<br>所以，通过把这些错误加入到检查清单当中，你可以确保不论什么时候，<br>只要这些错误发生了，你就能发现它们，并且可以帮助你杜绝这些错误。</p>
-<p>为了帮助你开始创建一个清单，这里列出了一些典型的内容：代码审查清单。</p>
-<h2 id="常规项"><a href="#常规项" class="headerlink" title="常规项"></a><strong>常规项</strong></h2><ul>
-<li>代码能够工作么？它有没有实现预期的功能，逻辑是否正确等。</li>
-<li>所有的代码是否简单易懂？</li>
-<li>代码符合你所遵循的编程规范么？这通常包括大括号的位置，变量名和函数名，行的长度，缩进，格式和注释。</li>
-<li>是否存在多余的或是重复的代码？</li>
-<li>代码是否尽可能的模块化了？</li>
-<li>是否有可以被替换的全局变量？</li>
-<li>是否有被注释掉的代码？</li>
-<li>循环是否设置了长度和正确的终止条件？</li>
-<li>是否有可以被库函数替代的代码？</li>
-<li>是否有可以删除的日志或调试代码？</li>
-</ul>
-<h2 id="安全"><a href="#安全" class="headerlink" title="安全"></a><strong>安全</strong></h2><ul>
-<li>所有的数据输入是否都进行了检查（检测正确的类型，长度，格式和范围）并且进行了编码？</li>
-<li>在哪里使用了第三方工具，返回的错误是否被捕获？</li>
-<li>输出的值是否进行了检查并且编码？</li>
-<li>无效的参数值是否能够处理？</li>
-</ul>
-<h2 id="文档"><a href="#文档" class="headerlink" title="文档"></a><strong>文档</strong></h2><ul>
-<li>是否有注释，并且描述了代码的意图？</li>
-<li>所有的函数都有注释吗？</li>
-<li>对非常规行为和边界情况处理是否有描述？</li>
-<li>第三方库的使用和函数是否有文档？</li>
-<li>数据结构和计量单位是否进行了解释？</li>
-<li>是否有未完成的代码？如果是的话，是不是应该移除，或者用合适的标记进行标记比如‘TODO’？</li>
-</ul>
-<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a><strong>测试</strong></h2><ul>
-<li>代码是否可以测试？比如，不要添加太多的或是隐藏的依赖关系，不能够初始化对象，测试框架可以使用方法等。</li>
-<li>是否存在测试，它们是否可以被理解？比如，至少达到你满意的代码覆盖(code coverage)。</li>
-<li>单元测试是否真正的测试了代码是否可以完成预期的功能？</li>
-<li>是否检查了数组的“越界“错误？</li>
-<li>是否有可以被已经存在的API所替代的测试代码？</li>
-</ul>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a><strong>总结</strong></h2><p>你同样需要把特定语言中有可能引起错误的问题添加到清单中。</p>
-<p>这个清单故意没有详尽的列出所有可能会发生的错误。<br>你不希望你的清单是这样的，太长了以至于从来没人会去用它。仅仅包含常见的问题会比较好。</p>
-<h2 id="优化你的清单"><a href="#优化你的清单" class="headerlink" title="优化你的清单"></a><strong>优化你的清单</strong></h2><p>把使用清单作为你的起点，针对特定的使用案例，你需要对其进行优化。<br>一个比较棒的方式就是让你的团队记录下那些在代码审查过程中临时发现的问题，<br>有了这些数据，你就能够确定你的团队常犯的错误，然后你就可以量身定制一个审查清单。<br>确保你删除了那些没有出现过的错误。（你也可以保留那些出现概率很小，但是非常关键的项目，比如安全相关的问题）。</p>
-<h2 id="得到认可并且保持更新"><a href="#得到认可并且保持更新" class="headerlink" title="得到认可并且保持更新"></a><strong>得到认可并且保持更新</strong></h2><p>基本规则是，清单上的任何条目都必须明确，而且，如果可能的话，对于一些条目你可以对其进行二元判定。<br>这样可以防止判断的不一致。和你的团队分享这份清单并且让他们认同你清单的内容是个好主意。<br>同样的，要定期检查你的清单，以确保各条目仍然是有意义的。</p>
-<p>有了一个好的清单，可以提高你在代码审查过程中发现的缺陷个数。<br>这可以帮助你提高代码标准，避免质量参差不齐的代码审查。</p>
-<ol>
-<li><a href="http://blog.jobbole.com/83595/" target="_blank" rel="noopener">程序员必备的代码审查清单</a></li>
-</ol>
-]]></content>
   </entry>
   <entry>
     <title>git中的撤销操作</title>
@@ -32886,8 +33046,8 @@ $(document).ready(function(){
         <category>Editor</category>
       </categories>
       <tags>
-        <tag>tools</tag>
         <tag>vim</tag>
+        <tag>tools</tag>
       </tags>
   </entry>
   <entry>
@@ -33053,6 +33213,37 @@ for(int i = 200; i &lt; N; i++)
       </tags>
   </entry>
   <entry>
+    <title>Git详解系列</title>
+    <url>/2016/04/20/git-lists/</url>
+    <content><![CDATA[<h2 id=""><a href="#" class="headerlink" title=""></a></h2><ol start="0">
+<li><a href="https://github.com/GitbookIO/git/blob/master/zh/SUMMARY.md" target="_blank" rel="noopener">Scott Chacon’s book: Pro Git</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328069609436.html" target="_blank" rel="noopener">Git详解之一 Git起步</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328069733264.html" target="_blank" rel="noopener">Git详解之二 Git基础</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328069889514.html" target="_blank" rel="noopener">Git详解之三 Git分支</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328069988843.html" target="_blank" rel="noopener">Git详解之四 服务器上的Git</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328070090108.html" target="_blank" rel="noopener">Git详解之五 分布式Git</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328070367499.html" target="_blank" rel="noopener">Git详解之六 Git工具</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328070404827.html" target="_blank" rel="noopener">Git详解之七 自定义Git</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328070454218.html" target="_blank" rel="noopener">Git详解之八 Git与其他系统</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328070620202.html" target="_blank" rel="noopener">Git详解之九 Git内部原理</a></li>
+</ol>
+<p>##</p>
+<ol>
+<li><a href="http://www.open-open.com/lib/view/open1427092544277.html" target="_blank" rel="noopener">Git 基本原理与常用命令</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1449149989405.html" target="_blank" rel="noopener">高质量的Git中文教程</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1402748724087.html" target="_blank" rel="noopener">Git远程操作详解</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Git</category>
+      </categories>
+      <tags>
+        <tag>git</tag>
+        <tag>webs</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>git pull与git fetch区别</title>
     <url>/2016/04/20/git-pull-and-fetch/</url>
     <content><![CDATA[<p>Git中从远程的分支获取最新的版本到本地有这样2个命令：</p>
@@ -33088,34 +33279,60 @@ git merge</code></pre><p>在实际使用中，git fetch更安全一些<br>因为
       </tags>
   </entry>
   <entry>
-    <title>Git详解系列</title>
-    <url>/2016/04/20/git-lists/</url>
-    <content><![CDATA[<h2 id=""><a href="#" class="headerlink" title=""></a></h2><ol start="0">
-<li><a href="https://github.com/GitbookIO/git/blob/master/zh/SUMMARY.md" target="_blank" rel="noopener">Scott Chacon’s book: Pro Git</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328069609436.html" target="_blank" rel="noopener">Git详解之一 Git起步</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328069733264.html" target="_blank" rel="noopener">Git详解之二 Git基础</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328069889514.html" target="_blank" rel="noopener">Git详解之三 Git分支</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328069988843.html" target="_blank" rel="noopener">Git详解之四 服务器上的Git</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328070090108.html" target="_blank" rel="noopener">Git详解之五 分布式Git</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328070367499.html" target="_blank" rel="noopener">Git详解之六 Git工具</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328070404827.html" target="_blank" rel="noopener">Git详解之七 自定义Git</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328070454218.html" target="_blank" rel="noopener">Git详解之八 Git与其他系统</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328070620202.html" target="_blank" rel="noopener">Git详解之九 Git内部原理</a></li>
-</ol>
-<p>##</p>
+    <title>Pandoc 实现 markdown 多格式自由转换</title>
+    <url>/2016/04/18/markdown-to-html/</url>
+    <content><![CDATA[<p>Pandoc 是由 John MacFarlane 开发的标记语言转换工具，可实现不同标记语言间的格式转换</p>
+<a id="more"></a>
+
+<h2 id="pandoc安装"><a href="#pandoc安装" class="headerlink" title="pandoc安装"></a>pandoc安装</h2><ul>
+<li><a href="https://github.com/jgm/pandoc" target="_blank" rel="noopener">GitHub</a></li>
+<li><a href="https://github.com/jgm/pandoc/blob/master/INSTALL.md" target="_blank" rel="noopener">Installing pandoc</a></li>
+<li><a href="https://github.com/jgm/pandoc/releases/tag/2.9.2" target="_blank" rel="noopener">Latest release</a></li>
+</ul>
+<p>除了各个操作系统软件仓库之外可以使用 <code>Haskell</code> 平台安装</p>
+<pre><code class="bash">cabal update
+cabal install pandoc</code></pre>
+<p>或安装包</p>
+<pre><code class="bash">sudo dpkg -i $DEB</code></pre>
+<h2 id="用法"><a href="#用法" class="headerlink" title="用法"></a>用法</h2><p><a href="https://pandoc.org/MANUAL.html" target="_blank" rel="noopener">Pandoc User’s Guide</a></p>
+<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><p><a href="https://pandoc.org/demos.html" target="_blank" rel="noopener">Examples</a></p>
 <ol>
-<li><a href="http://www.open-open.com/lib/view/open1427092544277.html" target="_blank" rel="noopener">Git 基本原理与常用命令</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1449149989405.html" target="_blank" rel="noopener">高质量的Git中文教程</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1402748724087.html" target="_blank" rel="noopener">Git远程操作详解</a></li>
+<li>HTML fragment:<pre><code>pandoc MANUAL.txt -o example1.html</code></pre></li>
+<li>Standalone HTML file:<pre><code>pandoc -s MANUAL.txt -o example2.html</code></pre></li>
+<li>HTML with table of contents, CSS, and custom footer:<pre><code>pandoc -s --toc -c pandoc.css -A footer.html MANUAL.txt -o example3.html</code></pre></li>
+<li>LaTeX:<pre><code>pandoc -s MANUAL.txt -o example4.tex</code></pre></li>
+<li>From LaTeX to markdown:<pre><code>pandoc -s example4.tex -o example5.text</code></pre></li>
+<li>Man page:<pre><code>pandoc -s -t man pandoc.1.md -o example10.1</code></pre></li>
+<li>Converting a web page to markdown:<pre><code>pandoc -s -r html http://www.gnu.org/software/make/ -o example12.text</code></pre></li>
+<li>From markdown to PDF:<pre><code>pandoc MANUAL.txt --pdf-engine=xelatex -o example13.pdf</code></pre></li>
+<li>HTML slide shows: DZSlides演示框架幻灯片<pre><code>pandoc -s --mathml -i -t dzslides SLIDES -o example16a.html
+pandoc -s --webtex -i -t slidy SLIDES -o example16b.html
+pandoc -s --mathjax -i -t revealjs SLIDES -o example16d.html</code></pre></li>
+<li>TeX math in HTML:<pre><code>pandoc math.text -s -o mathDefault.html
+pandoc math.text -s --mathml  -o mathMathML.html
+pandoc math.text -s --webtex  -o mathWebTeX.html
+pandoc math.text -s --mathjax -o mathMathJax.html
+pandoc math.text -s --katex   -o mathKaTeX.html</code></pre></li>
+<li>Word docx:<pre><code>pandoc -s MANUAL.txt -o example29.docx</code></pre></li>
+<li>LaTeX math to docx:<pre><code>pandoc -s math.tex -o example30.docx</code></pre></li>
+<li>DocBook to markdown:<pre><code>pandoc -f docbook -t markdown -s howto.xml -o example31.text</code></pre></li>
+<li>Docx with a reference docx:<pre><code>pandoc --reference-doc twocolumns.docx -o UsersGuide.docx MANUAL.txt</code></pre></li>
+</ol>
+<h2 id="Pandoc-编辑器"><a href="#Pandoc-编辑器" class="headerlink" title="Pandoc 编辑器"></a>Pandoc 编辑器</h2><p><a href="https://github.com/vim-pandoc/vim-pandoc" target="_blank" rel="noopener">vim-pandoc</a><br><a href="https://github.com/textmate/textmate" target="_blank" rel="noopener">textmate osx</a></p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://www.yangzhiping.com/tech/pandoc.html" target="_blank" rel="noopener">Markdown写作进阶：Pandoc入门浅谈</a></li>
+<li><a href="https://zh.wikipedia.org/wiki/Pandoc" target="_blank" rel="noopener">Pandoc</a></li>
 </ol>
 ]]></content>
       <categories>
         <category>Tools</category>
-        <category>Git</category>
+        <category>Markdown</category>
       </categories>
       <tags>
-        <tag>git</tag>
-        <tag>webs</tag>
+        <tag>tools</tag>
+        <tag>markdown</tag>
+        <tag>html</tag>
+        <tag>pandoc</tag>
       </tags>
   </entry>
   <entry>
@@ -33188,63 +33405,6 @@ commit1: add test1.c</code></pre><p><strong>运行git st， 没有任何变化�
       </categories>
       <tags>
         <tag>git</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Pandoc 实现 markdown 多格式自由转换</title>
-    <url>/2016/04/18/markdown-to-html/</url>
-    <content><![CDATA[<p>Pandoc 是由 John MacFarlane 开发的标记语言转换工具，可实现不同标记语言间的格式转换</p>
-<a id="more"></a>
-
-<h2 id="pandoc安装"><a href="#pandoc安装" class="headerlink" title="pandoc安装"></a>pandoc安装</h2><ul>
-<li><a href="https://github.com/jgm/pandoc" target="_blank" rel="noopener">GitHub</a></li>
-<li><a href="https://github.com/jgm/pandoc/blob/master/INSTALL.md" target="_blank" rel="noopener">Installing pandoc</a></li>
-<li><a href="https://github.com/jgm/pandoc/releases/tag/2.9.2" target="_blank" rel="noopener">Latest release</a></li>
-</ul>
-<p>除了各个操作系统软件仓库之外可以使用 <code>Haskell</code> 平台安装</p>
-<pre><code class="bash">cabal update
-cabal install pandoc</code></pre>
-<p>或安装包</p>
-<pre><code class="bash">sudo dpkg -i $DEB</code></pre>
-<h2 id="用法"><a href="#用法" class="headerlink" title="用法"></a>用法</h2><p><a href="https://pandoc.org/MANUAL.html" target="_blank" rel="noopener">Pandoc User’s Guide</a></p>
-<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><p><a href="https://pandoc.org/demos.html" target="_blank" rel="noopener">Examples</a></p>
-<ol>
-<li>HTML fragment:<pre><code>pandoc MANUAL.txt -o example1.html</code></pre></li>
-<li>Standalone HTML file:<pre><code>pandoc -s MANUAL.txt -o example2.html</code></pre></li>
-<li>HTML with table of contents, CSS, and custom footer:<pre><code>pandoc -s --toc -c pandoc.css -A footer.html MANUAL.txt -o example3.html</code></pre></li>
-<li>LaTeX:<pre><code>pandoc -s MANUAL.txt -o example4.tex</code></pre></li>
-<li>From LaTeX to markdown:<pre><code>pandoc -s example4.tex -o example5.text</code></pre></li>
-<li>Man page:<pre><code>pandoc -s -t man pandoc.1.md -o example10.1</code></pre></li>
-<li>Converting a web page to markdown:<pre><code>pandoc -s -r html http://www.gnu.org/software/make/ -o example12.text</code></pre></li>
-<li>From markdown to PDF:<pre><code>pandoc MANUAL.txt --pdf-engine=xelatex -o example13.pdf</code></pre></li>
-<li>HTML slide shows: DZSlides演示框架幻灯片<pre><code>pandoc -s --mathml -i -t dzslides SLIDES -o example16a.html
-pandoc -s --webtex -i -t slidy SLIDES -o example16b.html
-pandoc -s --mathjax -i -t revealjs SLIDES -o example16d.html</code></pre></li>
-<li>TeX math in HTML:<pre><code>pandoc math.text -s -o mathDefault.html
-pandoc math.text -s --mathml  -o mathMathML.html
-pandoc math.text -s --webtex  -o mathWebTeX.html
-pandoc math.text -s --mathjax -o mathMathJax.html
-pandoc math.text -s --katex   -o mathKaTeX.html</code></pre></li>
-<li>Word docx:<pre><code>pandoc -s MANUAL.txt -o example29.docx</code></pre></li>
-<li>LaTeX math to docx:<pre><code>pandoc -s math.tex -o example30.docx</code></pre></li>
-<li>DocBook to markdown:<pre><code>pandoc -f docbook -t markdown -s howto.xml -o example31.text</code></pre></li>
-<li>Docx with a reference docx:<pre><code>pandoc --reference-doc twocolumns.docx -o UsersGuide.docx MANUAL.txt</code></pre></li>
-</ol>
-<h2 id="Pandoc-编辑器"><a href="#Pandoc-编辑器" class="headerlink" title="Pandoc 编辑器"></a>Pandoc 编辑器</h2><p><a href="https://github.com/vim-pandoc/vim-pandoc" target="_blank" rel="noopener">vim-pandoc</a><br><a href="https://github.com/textmate/textmate" target="_blank" rel="noopener">textmate osx</a></p>
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="https://www.yangzhiping.com/tech/pandoc.html" target="_blank" rel="noopener">Markdown写作进阶：Pandoc入门浅谈</a></li>
-<li><a href="https://zh.wikipedia.org/wiki/Pandoc" target="_blank" rel="noopener">Pandoc</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Markdown</category>
-      </categories>
-      <tags>
-        <tag>tools</tag>
-        <tag>markdown</tag>
-        <tag>html</tag>
-        <tag>pandoc</tag>
       </tags>
   </entry>
   <entry>
@@ -33386,220 +33546,6 @@ install : *.a
         <tag>shell</tag>
         <tag>gcc</tag>
         <tag>makefile</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Git 工作流程[转载]</title>
-    <url>/2016/02/23/git-workflow/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<p>作者： 阮一峰<br>日期： 2015年12月24日<br><a href="http://www.ruanyifeng.com/blog/2015/12/git-workflow.html" target="_blank" rel="noopener">原文</a></p>
-<p>Git 作为一个源码管理系统，不可避免涉及到多人协作。<br>协作必须有一个规范的工作流程，让大家有效地合作，使得项目井井有条地发展下去。<br>“工作流程”在英语里，叫做”workflow”或者”flow”，原意是水流，比喻项目像水流那样，顺畅、自然地向前流动，不会发生冲击、对撞、甚至漩涡。</p>
-<p><img src="/images/git/git_workflow.png" alt="Git Workflow" title="git workflow"></p>
-<p>本文介绍三种广泛使用的工作流程：</p>
-<ul>
-<li><strong>Git flow</strong></li>
-<li><strong>Github flow</strong></li>
-<li><strong>Gitlab flow</strong></li>
-</ul>
-<p>如果你对Git还不是很熟悉，可以先阅读下面的文章。</p>
-<ul>
-<li><a href="http://www.ruanyifeng.com/blog/2015/08/git-use-process.html" target="_blank" rel="noopener">《Git 使用规范流程》</a></li>
-<li><a href="http://www.ruanyifeng.com/blog/2015/12/git-cheat-sheet.html" target="_blank" rel="noopener">《常用 Git 命令清单》</a></li>
-<li><a href="http://www.ruanyifeng.com/blog/2014/06/git_remote.html" target="_blank" rel="noopener">《Git 远程操作详解》</a></li>
-</ul>
-<h2 id="功能驱动"><a href="#功能驱动" class="headerlink" title="功能驱动"></a>功能驱动</h2><p>本文的三种工作流程，有一个共同点：都采用<a href="https://en.wikipedia.org/wiki/Feature-driven_development" target="_blank" rel="noopener">“功能驱动式开发”</a>（Feature-driven development，简称FDD）。</p>
-<p>它指的是，需求是开发的起点，先有需求再有功能分支（feature branch）或者补丁分支（hotfix branch）。<br>完成开发后，该分支就合并到主分支，然后被删除。</p>
-<h2 id="Git-flow"><a href="#Git-flow" class="headerlink" title="Git flow"></a>Git flow</h2><p>最早诞生、并得到广泛采用的一种工作流程，就是Git flow 。</p>
-<h3 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h3><p>它最主要的特点有两个。</p>
-<p><img src="/images/git/gitflow.png" alt="gitflow" title="gitflow"></p>
-<p>首先，项目存在两个长期分支。</p>
-<ul>
-<li><strong>主分支master</strong></li>
-<li><strong>开发分支develop</strong></li>
-</ul>
-<p>前者用于存放对外发布的版本，任何时候在这个分支拿到的，都是稳定的分布版；后者用于日常开发，存放最新的开发版。</p>
-<p>其次，项目存在三种短期分支。</p>
-<ul>
-<li><strong>功能分支（feature branch）</strong></li>
-<li><strong>补丁分支（hotfix branch）</strong></li>
-<li><strong>预发分支（release branch）</strong></li>
-</ul>
-<p>一旦完成开发，它们就会被合并进develop或master，然后被删除。<br>Git flow 的详细介绍，请阅读我翻译的中文版<a href="http://www.ruanyifeng.com/blog/2012/07/git.html" target="_blank" rel="noopener">《Git 分支管理策略》</a>。</p>
-<h3 id="评价"><a href="#评价" class="headerlink" title="评价"></a>评价</h3><p>Git flow的优点是清晰可控，缺点是相对复杂，需要同时维护两个长期分支。<br>大多数工具都将master当作默认分支，可是开发是在develop分支进行的，这导致经常要切换分支，非常烦人。<br>更大问题在于，这个模式是基于”版本发布”的，目标是一段时间以后产出一个新版本。<br>但是，很多网站项目是”持续发布”，代码一有变动，就部署一次。<br>这时，master分支和develop分支的差别不大，没必要维护两个长期分支。</p>
-<h2 id="Github-flow"><a href="#Github-flow" class="headerlink" title="Github flow"></a>Github flow</h2><p>Github flow 是Git flow的简化版，专门配合”持续发布”。它是 Github.com 使用的工作流程。</p>
-<h3 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h3><p>它只有一个长期分支，就是master，因此用起来非常简单。<br>官方推荐的<a href="https://guides.github.com/introduction/flow/index.html" target="_blank" rel="noopener">流程</a>如下。</p>
-<p><img src="/images/git/github_flow.png" alt="github flow" title="github flow"></p>
-<ol>
-<li>根据需求，从master拉出新分支，不区分功能分支或补丁分支。</li>
-<li>新分支开发完成后，或者需要讨论的时候，就向master发起一个<a href="https://help.github.com/articles/using-pull-requests/" target="_blank" rel="noopener">pull request</a>（简称PR）。</li>
-<li>Pull Request既是一个通知，让别人注意到你的请求，又是一种对话机制，大家一起评审和讨论你的代码。对话过程中，你还可以不断提交代码。</li>
-<li>你的Pull Request被接受，合并进master，重新部署后，原来你拉出来的那个分支就被删除。（先部署再合并也可。）</li>
-</ol>
-<h3 id="评价-1"><a href="#评价-1" class="headerlink" title="评价"></a>评价</h3><p>Github flow 的最大优点就是简单，对于”持续发布”的产品，可以说是最合适的流程。<br>问题在于它的假设：master分支的更新与产品的发布是一致的。也就是说，master分支的最新代码，默认就是当前的线上代码。<br>可是，有些时候并非如此，代码合并进入master分支，并不代表它就能立刻发布。<br>比如，苹果商店的APP提交审核以后，等一段时间才能上架。<br>这时，如果还有新的代码提交，master分支就会与刚发布的版本不一致。<br>另一个例子是，有些公司有发布窗口，只有指定时间才能发布，这也会导致线上版本落后于master分支。<br>上面这种情况，只有master一个主分支就不够用了。<br>通常，你不得不在master分支以外，另外新建一个production分支跟踪线上版本。</p>
-<h2 id="Gitlab-flow"><a href="#Gitlab-flow" class="headerlink" title="Gitlab flow"></a>Gitlab flow</h2><p>Gitlab flow 是 Git flow 与 Github flow 的综合。<br>它吸取了两者的优点，既有适应不同开发环境的弹性，又有单一主分支的简单和便利。<br>它是 Gitlab.com 推荐的做法。</p>
-<h3 id="上游优先"><a href="#上游优先" class="headerlink" title="上游优先"></a>上游优先</h3><p>Gitlab flow 的最大原则叫做”上游优先”（upsteam first），即只存在一个主分支master，它是所有其他分支的”上游”。<br>只有上游分支采纳的代码变化，才能应用到其他分支。</p>
-<p><a href="https://www.chromium.org/chromium-os/chromiumos-design-docs/upstream-first" target="_blank" rel="noopener">Chromium项目</a>就是一个例子，<br>它明确规定，上游分支依次为：</p>
-<ul>
-<li><strong>Linus Torvalds的分支</strong></li>
-<li><strong>子系统（比如netdev）的分支</strong></li>
-<li><strong>设备厂商（比如三星）的分支</strong></li>
-</ul>
-<h3 id="持续发布"><a href="#持续发布" class="headerlink" title="持续发布"></a>持续发布</h3><p>Gitlab flow 分成两种情况，适应不同的开发流程。</p>
-<p><img src="/images/git/gitlab_flow1.png" alt="gitlab flow" title="gitlab flow"></p>
-<p>对于”持续发布”的项目，它建议在master分支以外，再建立不同的环境分支。<br>比如，”开发环境”的分支是master，”预发环境”的分支是pre-production，”生产环境”的分支是production。</p>
-<p>开发分支是预发分支的”上游”，预发分支又是生产分支的”上游”。<br>代码的变化，必须由”上游”向”下游”发展。<br>比如，生产环境出现了bug，这时就要新建一个功能分支，先把它合并到master，确认没有问题，<br>再cherry-pick到pre-production，这一步也没有问题，才进入production。<br>只有紧急情况，才允许跳过上游，直接合并到下游分支。</p>
-<h3 id="版本发布"><a href="#版本发布" class="headerlink" title="版本发布"></a>版本发布</h3><p><img src="/images/git/gitlab_release.png" alt="gitlab release" title="gitlab release"></p>
-<p>对于”版本发布”的项目，建议的做法是每一个稳定版本，都要从master分支拉出一个分支，比如2-3-stable、2-4-stable等等。<br>以后，只有修补bug，才允许将代码合并到这些分支，并且此时要更新小版本号。</p>
-<h2 id="一些小技巧"><a href="#一些小技巧" class="headerlink" title="一些小技巧"></a>一些小技巧</h2><h3 id="Pull-Request"><a href="#Pull-Request" class="headerlink" title="Pull Request"></a>Pull Request</h3><p><img src="/images/git/merge.png" alt="merge" title="merge"></p>
-<p>功能分支合并进master分支，必须通过Pull Request（Gitlab里面叫做 Merge Request）。</p>
-<p><img src="/images/git/request.png" alt="request" title="request"></p>
-<p>前面说过，Pull Request本质是一种对话机制，你可以在提交的时候，<br>@相关<a href="https://github.com/blog/1004-mention-autocompletion" target="_blank" rel="noopener">人员</a>或<a href="https://github.com/blog/1121-introducing-team-mentions" target="_blank" rel="noopener">团队</a>，引起他们的注意。</p>
-<h3 id="Protected-branch"><a href="#Protected-branch" class="headerlink" title="Protected branch"></a>Protected branch</h3><p>master分支应该受到保护，不是每个人都可以修改这个分支，以及拥有审批 Pull Request 的权力。</p>
-<p><a href="https://help.github.com/articles/about-protected-branches/" target="_blank" rel="noopener">Github</a><br>和 <a href="http://doc.gitlab.com/ce/permissions/permissions.html" target="_blank" rel="noopener">Gitlab</a> 都提供”保护分支”（Protected branch）这个功能。</p>
-<h3 id="Issue"><a href="#Issue" class="headerlink" title="Issue"></a>Issue</h3><p>Issue 用于 Bug追踪和需求管理。建议先新建 Issue，再新建对应的功能分支。功能分支总是为了解决一个或多个 Issue。<br>功能分支的名称，可以与issue的名字保持一致，并且以issue的编号起首，比如”15-require-a-password-to-change-it”。</p>
-<p>开发完成后，在提交说明里面，可以写上”fixes #14”或者”closes #67”。<br>Github规定，只要commit message里面有下面这些<a href="https://help.github.com/articles/closing-issues-via-commit-messages/" target="_blank" rel="noopener">动词</a> + 编号，<br>就会关闭对应的issue。</p>
-<ul>
-<li>close</li>
-<li>closes</li>
-<li>closed</li>
-<li>fix</li>
-<li>fixes</li>
-<li>fixed</li>
-<li>resolve</li>
-<li>resolves</li>
-<li>resolved</li>
-</ul>
-<p>这种方式还可以一次关闭多个issue，或者关闭其他代码库的issue，格式是username/repository#issue_number。<br>Pull Request被接受以后，issue关闭，原始分支就应该删除。如果以后该issue重新打开，新分支可以复用原来的名字。</p>
-<h3 id="Merge节点"><a href="#Merge节点" class="headerlink" title="Merge节点"></a>Merge节点</h3><p>Git有两种合并：一种是”直进式合并”（fast forward），不生成单独的合并节点；<br>另一种是”非直进式合并”（none fast-forword），会生成单独节点。</p>
-<p>前者不利于保持commit信息的清晰，也不利于以后的回滚，建议总是采用后者（即使用–no-ff参数）。<br>只要发生合并，就要有一个单独的合并节点。</p>
-<h3 id="Squash-多个commit"><a href="#Squash-多个commit" class="headerlink" title="Squash 多个commit"></a>Squash 多个commit</h3><p>为了便于他人阅读你的提交，也便于cherry-pick或撤销代码变化，在发起Pull Request之前，应该把多个commit合并成一个。<br>（前提是，该分支只有你一个人开发，且没有跟master合并过。）</p>
-<p>这可以采用rebase命令附带的squash操作，具体方法请参考我写的<a href="http://www.ruanyifeng.com/blog/2015/08/git-use-process.html" target="_blank" rel="noopener">《Git 使用规范流程》</a>。</p>
-]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Git</category>
-      </categories>
-      <tags>
-        <tag>git</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Git 远程操作详解[转载]</title>
-    <url>/2016/02/23/git-remote/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<p>作者： 阮一峰<br>日期： 2014年6月12日<br><a href="http://www.ruanyifeng.com/blog/2014/06/git_remote.html" target="_blank" rel="noopener">原文</a></p>
-<p>Git是目前最流行的版本管理系统，学会Git几乎成了开发者的必备技能。<br>Git有很多优势，其中之一就是远程操作非常简便。本文详细介绍5个Git命令，它们的概念和用法，理解了这些内容，你就会完全掌握Git远程操作。</p>
-<ul>
-<li><strong>git clone</strong></li>
-<li><strong>git remote</strong></li>
-<li><strong>git fetch</strong></li>
-<li><strong>git pull</strong></li>
-<li><strong>git push</strong></li>
-</ul>
-<p>本文针对初级用户，从最简单的讲起，但是需要读者对Git的基本用法有所了解。<br>同时，本文覆盖了上面5个命令的几乎所有的常用用法，所以对于熟练用户也有参考价值。</p>
-<p><img src="/images/git/git_remote.jpg" alt="Git Remote" title="git remote"></p>
-<h2 id="git-clone"><a href="#git-clone" class="headerlink" title="git clone"></a><strong>git clone</strong></h2><p>远程操作的第一步，通常是从远程主机克隆一个版本库，这时就要用到git clone命令。</p>
-<pre><code>$ git clone &lt;版本库的网址&gt;</code></pre><p>比如，克隆jQuery的版本库。</p>
-<pre><code>$ git clone https://github.com/jquery/jquery.git</code></pre><p>该命令会在本地主机生成一个目录，与远程主机的版本库同名。如果要指定不同的目录名，可以将目录名作为git clone命令的第二个参数。</p>
-<pre><code>$ git clone &lt;版本库的网址&gt; &lt;本地目录名&gt;</code></pre><p>git clone支持多种协议，除了HTTP(s)以外，还支持SSH、Git、本地文件协议等，下面是一些例子。</p>
-<pre><code>$ git clone http[s]://example.com/path/to/repo.git/
-$ git clone ssh://example.com/path/to/repo.git/
-$ git clone git://example.com/path/to/repo.git/
-$ git clone /opt/git/project.git 
-$ git clone file:///opt/git/project.git
-$ git clone ftp[s]://example.com/path/to/repo.git/
-$ git clone rsync://example.com/path/to/repo.git/</code></pre><p>SSH协议还有另一种写法。</p>
-<pre><code>$ git clone [user@]example.com:path/to/repo.git/</code></pre><p>通常来说，Git协议下载速度最快，SSH协议用于需要用户认证的场合。各种协议优劣的详细讨论请参考官方文档。</p>
-<h2 id="git-remote"><a href="#git-remote" class="headerlink" title="git remote"></a><strong>git remote</strong></h2><p>为了便于管理，Git要求每个远程主机都必须指定一个主机名。git remote命令就用于管理主机名。<br>不带选项的时候，git remote命令列出所有远程主机。</p>
-<pre><code>$ git remote
-origin</code></pre><p>使用-v选项，可以参看远程主机的网址。</p>
-<pre><code>$ git remote -v
-origin  git@github.com:jquery/jquery.git (fetch)
-origin  git@github.com:jquery/jquery.git (push)</code></pre><p>上面命令表示，当前只有一台远程主机，叫做origin，以及它的网址。<br>克隆版本库的时候，所使用的远程主机自动被Git命名为origin。如果想用其他的主机名，需要用git clone命令的-o选项指定。</p>
-<pre><code>$ git clone -o jQuery https://github.com/jquery/jquery.git
-$ git remote
-jQuery</code></pre><p>上面命令表示，克隆的时候，指定远程主机叫做jQuery。</p>
-<p>git remote show命令加上主机名，可以查看该主机的详细信息。</p>
-<pre><code>$ git remote show &lt;主机名&gt;</code></pre><p>git remote add命令用于添加远程主机。</p>
-<pre><code>$ git remote add &lt;主机名&gt; &lt;网址&gt;</code></pre><p>git remote rm命令用于删除远程主机。</p>
-<pre><code>$ git remote rm &lt;主机名&gt;</code></pre><p>git remote rename命令用于远程主机的改名。</p>
-<pre><code>$ git remote rename &lt;原主机名&gt; &lt;新主机名&gt;</code></pre><h2 id="git-fetch"><a href="#git-fetch" class="headerlink" title="git fetch"></a><strong>git fetch</strong></h2><p>一旦远程主机的版本库有了更新（Git术语叫做commit），需要将这些更新取回本地，这时就要用到git fetch命令。</p>
-<pre><code>$ git fetch &lt;远程主机名&gt;</code></pre><p>上面命令将某个远程主机的更新，全部取回本地。<br>git fetch命令通常用来查看其他人的进程，因为它取回的代码对你本地的开发代码没有影响。<br>默认情况下，git fetch取回所有分支（branch）的更新。如果只想取回特定分支的更新，可以指定分支名。</p>
-<pre><code>$ git fetch &lt;远程主机名&gt; &lt;分支名&gt;</code></pre><p>比如，取回origin主机的master分支。</p>
-<pre><code>$ git fetch origin master</code></pre><p>所取回的更新，在本地主机上要用”远程主机名/分支名”的形式读取。比如origin主机的master，就要用origin/master读取。<br>git branch命令的-r选项，可以用来查看远程分支，-a选项查看所有分支。</p>
-<pre><code>$ git branch -r
-origin/master
-
-$ git branch -a
-* master
-  remotes/origin/master</code></pre><p>上面命令表示，本地主机的当前分支是master，远程分支是origin/master。<br>取回远程主机的更新以后，可以在它的基础上，使用git checkout命令创建一个新的分支。</p>
-<pre><code>$ git checkout -b newBrach origin/master</code></pre><p>上面命令表示，在origin/master的基础上，创建一个新分支。<br>此外，也可以使用git merge命令或者git rebase命令，在本地分支上合并远程分支。</p>
-<pre><code>$ git merge origin/master
-$ git rebase origin/master</code></pre><p>上面命令表示在当前分支上，合并origin/master。</p>
-<h2 id="git-pull"><a href="#git-pull" class="headerlink" title="git pull"></a><strong>git pull</strong></h2><p>git pull命令的作用是，取回远程主机某个分支的更新，再与本地的指定分支合并。它的完整格式稍稍有点复杂。</p>
-<pre><code>$ git pull &lt;远程主机名&gt; &lt;远程分支名&gt;:&lt;本地分支名&gt;</code></pre><p>比如，取回origin主机的next分支，与本地的master分支合并，需要写成下面这样。</p>
-<pre><code>$ git pull origin next:master</code></pre><p>如果远程分支是与当前分支合并，则冒号后面的部分可以省略。</p>
-<pre><code>$ git pull origin next</code></pre><p>上面命令表示，取回origin/next分支，再与当前分支合并。实质上，这等同于先做git fetch，再做git merge。</p>
-<pre><code>$ git fetch origin
-$ git merge origin/next</code></pre><p>在某些场合，Git会自动在本地分支与远程分支之间，建立一种追踪关系（tracking）。<br>比如，在git clone的时候，所有本地分支默认与远程主机的同名分支，建立追踪关系，<br>也就是说，本地的master分支自动”追踪”origin/master分支。<br>Git也允许手动建立追踪关系。</p>
-<pre><code>git branch --set-upstream master origin/next</code></pre><p>上面命令指定master分支追踪origin/next分支。<br><strong>如果当前分支与远程分支存在追踪关系，git pull就可以省略远程分支名。</strong></p>
-<pre><code>$ git pull origin</code></pre><p>上面命令表示，本地的当前分支自动与对应的origin主机”追踪分支”（remote-tracking branch）进行合并。<br>如果当前分支只有一个追踪分支，连远程主机名都可以省略。</p>
-<pre><code>$ git pull</code></pre><p>上面命令表示，当前分支自动与唯一一个追踪分支进行合并。<br>如果合并需要采用rebase模式，可以使用–rebase选项。</p>
-<pre><code>$ git pull --rebase &lt;远程主机名&gt; &lt;远程分支名&gt;:&lt;本地分支名&gt;</code></pre><p>如果远程主机删除了某个分支，默认情况下，git pull 不会在拉取远程分支的时候，删除对应的本地分支。<br>这是为了防止，由于其他人操作了远程主机，导致git pull不知不觉删除了本地分支。<br>但是，你可以改变这个行为，加上参数 -p 就会在本地删除远程已经删除的分支。</p>
-<pre><code>$ git pull -p
-# 等同于下面的命令
-$ git fetch --prune origin 
-$ git fetch -p</code></pre><h2 id="git-push"><a href="#git-push" class="headerlink" title="git push"></a><strong>git push</strong></h2><p>git push命令用于将本地分支的更新，推送到远程主机。它的格式与git pull命令相仿。</p>
-<pre><code>$ git push &lt;远程主机名&gt; &lt;本地分支名&gt;:&lt;远程分支名&gt;</code></pre><p>注意，分支推送顺序的写法是&lt;来源地&gt;:&lt;目的地&gt;，所以git pull是&lt;远程分支&gt;:&lt;本地分支&gt;，而git push是&lt;本地分支&gt;:&lt;远程分支&gt;。<br>如果省略远程分支名，则表示将本地分支推送与之存在”追踪关系”的远程分支（通常两者同名），如果该远程分支不存在，则会被新建。</p>
-<pre><code>$ git push origin master</code></pre><p>上面命令表示，将本地的master分支推送到origin主机的master分支。如果后者不存在，则会被新建。<br>如果省略本地分支名，则表示删除指定的远程分支，因为这等同于推送一个空的本地分支到远程分支。</p>
-<pre><code>$ git push origin :master
-# 等同于
-$ git push origin --delete master</code></pre><p>上面命令表示删除origin主机的master分支。<br>如果当前分支与远程分支之间存在追踪关系，则本地分支和远程分支都可以省略。</p>
-<pre><code>$ git push origin</code></pre><p>上面命令表示，将当前分支推送到origin主机的对应分支。<br>如果当前分支只有一个追踪分支，那么主机名都可以省略。</p>
-<pre><code>$ git push</code></pre><p>如果当前分支与多个主机存在追踪关系，则可以使用-u选项指定一个默认主机，这样后面就可以不加任何参数使用git push。</p>
-<pre><code>$ git push -u origin master</code></pre><p>上面命令将本地的master分支推送到origin主机，同时指定origin为默认主机，后面就可以不加任何参数使用git push了。<br>不带任何参数的git push，默认只推送当前分支，这叫做simple方式。<br>此外，还有一种matching方式，会推送所有有对应的远程分支的本地分支。<br>Git 2.0版本之前，默认采用matching方法，现在改为默认采用simple方式。如果要修改这个设置，可以采用git config命令。</p>
-<pre><code>$ git config --global push.default matching
-# 或者
-$ git config --global push.default simple</code></pre><p>还有一种情况，就是不管是否存在对应的远程分支，将本地的所有分支都推送到远程主机，这时需要使用–all选项。</p>
-<pre><code>$ git push --all origin</code></pre><p>上面命令表示，将所有本地分支都推送到origin主机。<br>如果远程主机的版本比本地版本更新，推送时Git会报错，要求先在本地做git pull合并差异，然后再推送到远程主机。<br>这时，如果你一定要推送，可以使用–force选项。</p>
-<pre><code>$ git push --force origin </code></pre><p>上面命令使用–force选项，结果导致远程主机上更新的版本被覆盖。<br>除非你很确定要这样做，否则应该尽量避免使用–force选项。<br>最后，git push不会推送标签（tag），除非使用–tags选项。</p>
-<pre><code>$ git push origin --tags</code></pre>]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Git</category>
-      </categories>
-      <tags>
-        <tag>git</tag>
       </tags>
   </entry>
   <entry>
@@ -33942,6 +33888,220 @@ $ git reset --keep [commit]
 # 后者的所有变化都将被前者抵消，并且应用到当前分支
 $ git revert [commit]</code></pre><h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><pre><code># 生成一个可供发布的压缩包
 $ git archive</code></pre>]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Git</category>
+      </categories>
+      <tags>
+        <tag>git</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Git 工作流程[转载]</title>
+    <url>/2016/02/23/git-workflow/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<p>作者： 阮一峰<br>日期： 2015年12月24日<br><a href="http://www.ruanyifeng.com/blog/2015/12/git-workflow.html" target="_blank" rel="noopener">原文</a></p>
+<p>Git 作为一个源码管理系统，不可避免涉及到多人协作。<br>协作必须有一个规范的工作流程，让大家有效地合作，使得项目井井有条地发展下去。<br>“工作流程”在英语里，叫做”workflow”或者”flow”，原意是水流，比喻项目像水流那样，顺畅、自然地向前流动，不会发生冲击、对撞、甚至漩涡。</p>
+<p><img src="/images/git/git_workflow.png" alt="Git Workflow" title="git workflow"></p>
+<p>本文介绍三种广泛使用的工作流程：</p>
+<ul>
+<li><strong>Git flow</strong></li>
+<li><strong>Github flow</strong></li>
+<li><strong>Gitlab flow</strong></li>
+</ul>
+<p>如果你对Git还不是很熟悉，可以先阅读下面的文章。</p>
+<ul>
+<li><a href="http://www.ruanyifeng.com/blog/2015/08/git-use-process.html" target="_blank" rel="noopener">《Git 使用规范流程》</a></li>
+<li><a href="http://www.ruanyifeng.com/blog/2015/12/git-cheat-sheet.html" target="_blank" rel="noopener">《常用 Git 命令清单》</a></li>
+<li><a href="http://www.ruanyifeng.com/blog/2014/06/git_remote.html" target="_blank" rel="noopener">《Git 远程操作详解》</a></li>
+</ul>
+<h2 id="功能驱动"><a href="#功能驱动" class="headerlink" title="功能驱动"></a>功能驱动</h2><p>本文的三种工作流程，有一个共同点：都采用<a href="https://en.wikipedia.org/wiki/Feature-driven_development" target="_blank" rel="noopener">“功能驱动式开发”</a>（Feature-driven development，简称FDD）。</p>
+<p>它指的是，需求是开发的起点，先有需求再有功能分支（feature branch）或者补丁分支（hotfix branch）。<br>完成开发后，该分支就合并到主分支，然后被删除。</p>
+<h2 id="Git-flow"><a href="#Git-flow" class="headerlink" title="Git flow"></a>Git flow</h2><p>最早诞生、并得到广泛采用的一种工作流程，就是Git flow 。</p>
+<h3 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h3><p>它最主要的特点有两个。</p>
+<p><img src="/images/git/gitflow.png" alt="gitflow" title="gitflow"></p>
+<p>首先，项目存在两个长期分支。</p>
+<ul>
+<li><strong>主分支master</strong></li>
+<li><strong>开发分支develop</strong></li>
+</ul>
+<p>前者用于存放对外发布的版本，任何时候在这个分支拿到的，都是稳定的分布版；后者用于日常开发，存放最新的开发版。</p>
+<p>其次，项目存在三种短期分支。</p>
+<ul>
+<li><strong>功能分支（feature branch）</strong></li>
+<li><strong>补丁分支（hotfix branch）</strong></li>
+<li><strong>预发分支（release branch）</strong></li>
+</ul>
+<p>一旦完成开发，它们就会被合并进develop或master，然后被删除。<br>Git flow 的详细介绍，请阅读我翻译的中文版<a href="http://www.ruanyifeng.com/blog/2012/07/git.html" target="_blank" rel="noopener">《Git 分支管理策略》</a>。</p>
+<h3 id="评价"><a href="#评价" class="headerlink" title="评价"></a>评价</h3><p>Git flow的优点是清晰可控，缺点是相对复杂，需要同时维护两个长期分支。<br>大多数工具都将master当作默认分支，可是开发是在develop分支进行的，这导致经常要切换分支，非常烦人。<br>更大问题在于，这个模式是基于”版本发布”的，目标是一段时间以后产出一个新版本。<br>但是，很多网站项目是”持续发布”，代码一有变动，就部署一次。<br>这时，master分支和develop分支的差别不大，没必要维护两个长期分支。</p>
+<h2 id="Github-flow"><a href="#Github-flow" class="headerlink" title="Github flow"></a>Github flow</h2><p>Github flow 是Git flow的简化版，专门配合”持续发布”。它是 Github.com 使用的工作流程。</p>
+<h3 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h3><p>它只有一个长期分支，就是master，因此用起来非常简单。<br>官方推荐的<a href="https://guides.github.com/introduction/flow/index.html" target="_blank" rel="noopener">流程</a>如下。</p>
+<p><img src="/images/git/github_flow.png" alt="github flow" title="github flow"></p>
+<ol>
+<li>根据需求，从master拉出新分支，不区分功能分支或补丁分支。</li>
+<li>新分支开发完成后，或者需要讨论的时候，就向master发起一个<a href="https://help.github.com/articles/using-pull-requests/" target="_blank" rel="noopener">pull request</a>（简称PR）。</li>
+<li>Pull Request既是一个通知，让别人注意到你的请求，又是一种对话机制，大家一起评审和讨论你的代码。对话过程中，你还可以不断提交代码。</li>
+<li>你的Pull Request被接受，合并进master，重新部署后，原来你拉出来的那个分支就被删除。（先部署再合并也可。）</li>
+</ol>
+<h3 id="评价-1"><a href="#评价-1" class="headerlink" title="评价"></a>评价</h3><p>Github flow 的最大优点就是简单，对于”持续发布”的产品，可以说是最合适的流程。<br>问题在于它的假设：master分支的更新与产品的发布是一致的。也就是说，master分支的最新代码，默认就是当前的线上代码。<br>可是，有些时候并非如此，代码合并进入master分支，并不代表它就能立刻发布。<br>比如，苹果商店的APP提交审核以后，等一段时间才能上架。<br>这时，如果还有新的代码提交，master分支就会与刚发布的版本不一致。<br>另一个例子是，有些公司有发布窗口，只有指定时间才能发布，这也会导致线上版本落后于master分支。<br>上面这种情况，只有master一个主分支就不够用了。<br>通常，你不得不在master分支以外，另外新建一个production分支跟踪线上版本。</p>
+<h2 id="Gitlab-flow"><a href="#Gitlab-flow" class="headerlink" title="Gitlab flow"></a>Gitlab flow</h2><p>Gitlab flow 是 Git flow 与 Github flow 的综合。<br>它吸取了两者的优点，既有适应不同开发环境的弹性，又有单一主分支的简单和便利。<br>它是 Gitlab.com 推荐的做法。</p>
+<h3 id="上游优先"><a href="#上游优先" class="headerlink" title="上游优先"></a>上游优先</h3><p>Gitlab flow 的最大原则叫做”上游优先”（upsteam first），即只存在一个主分支master，它是所有其他分支的”上游”。<br>只有上游分支采纳的代码变化，才能应用到其他分支。</p>
+<p><a href="https://www.chromium.org/chromium-os/chromiumos-design-docs/upstream-first" target="_blank" rel="noopener">Chromium项目</a>就是一个例子，<br>它明确规定，上游分支依次为：</p>
+<ul>
+<li><strong>Linus Torvalds的分支</strong></li>
+<li><strong>子系统（比如netdev）的分支</strong></li>
+<li><strong>设备厂商（比如三星）的分支</strong></li>
+</ul>
+<h3 id="持续发布"><a href="#持续发布" class="headerlink" title="持续发布"></a>持续发布</h3><p>Gitlab flow 分成两种情况，适应不同的开发流程。</p>
+<p><img src="/images/git/gitlab_flow1.png" alt="gitlab flow" title="gitlab flow"></p>
+<p>对于”持续发布”的项目，它建议在master分支以外，再建立不同的环境分支。<br>比如，”开发环境”的分支是master，”预发环境”的分支是pre-production，”生产环境”的分支是production。</p>
+<p>开发分支是预发分支的”上游”，预发分支又是生产分支的”上游”。<br>代码的变化，必须由”上游”向”下游”发展。<br>比如，生产环境出现了bug，这时就要新建一个功能分支，先把它合并到master，确认没有问题，<br>再cherry-pick到pre-production，这一步也没有问题，才进入production。<br>只有紧急情况，才允许跳过上游，直接合并到下游分支。</p>
+<h3 id="版本发布"><a href="#版本发布" class="headerlink" title="版本发布"></a>版本发布</h3><p><img src="/images/git/gitlab_release.png" alt="gitlab release" title="gitlab release"></p>
+<p>对于”版本发布”的项目，建议的做法是每一个稳定版本，都要从master分支拉出一个分支，比如2-3-stable、2-4-stable等等。<br>以后，只有修补bug，才允许将代码合并到这些分支，并且此时要更新小版本号。</p>
+<h2 id="一些小技巧"><a href="#一些小技巧" class="headerlink" title="一些小技巧"></a>一些小技巧</h2><h3 id="Pull-Request"><a href="#Pull-Request" class="headerlink" title="Pull Request"></a>Pull Request</h3><p><img src="/images/git/merge.png" alt="merge" title="merge"></p>
+<p>功能分支合并进master分支，必须通过Pull Request（Gitlab里面叫做 Merge Request）。</p>
+<p><img src="/images/git/request.png" alt="request" title="request"></p>
+<p>前面说过，Pull Request本质是一种对话机制，你可以在提交的时候，<br>@相关<a href="https://github.com/blog/1004-mention-autocompletion" target="_blank" rel="noopener">人员</a>或<a href="https://github.com/blog/1121-introducing-team-mentions" target="_blank" rel="noopener">团队</a>，引起他们的注意。</p>
+<h3 id="Protected-branch"><a href="#Protected-branch" class="headerlink" title="Protected branch"></a>Protected branch</h3><p>master分支应该受到保护，不是每个人都可以修改这个分支，以及拥有审批 Pull Request 的权力。</p>
+<p><a href="https://help.github.com/articles/about-protected-branches/" target="_blank" rel="noopener">Github</a><br>和 <a href="http://doc.gitlab.com/ce/permissions/permissions.html" target="_blank" rel="noopener">Gitlab</a> 都提供”保护分支”（Protected branch）这个功能。</p>
+<h3 id="Issue"><a href="#Issue" class="headerlink" title="Issue"></a>Issue</h3><p>Issue 用于 Bug追踪和需求管理。建议先新建 Issue，再新建对应的功能分支。功能分支总是为了解决一个或多个 Issue。<br>功能分支的名称，可以与issue的名字保持一致，并且以issue的编号起首，比如”15-require-a-password-to-change-it”。</p>
+<p>开发完成后，在提交说明里面，可以写上”fixes #14”或者”closes #67”。<br>Github规定，只要commit message里面有下面这些<a href="https://help.github.com/articles/closing-issues-via-commit-messages/" target="_blank" rel="noopener">动词</a> + 编号，<br>就会关闭对应的issue。</p>
+<ul>
+<li>close</li>
+<li>closes</li>
+<li>closed</li>
+<li>fix</li>
+<li>fixes</li>
+<li>fixed</li>
+<li>resolve</li>
+<li>resolves</li>
+<li>resolved</li>
+</ul>
+<p>这种方式还可以一次关闭多个issue，或者关闭其他代码库的issue，格式是username/repository#issue_number。<br>Pull Request被接受以后，issue关闭，原始分支就应该删除。如果以后该issue重新打开，新分支可以复用原来的名字。</p>
+<h3 id="Merge节点"><a href="#Merge节点" class="headerlink" title="Merge节点"></a>Merge节点</h3><p>Git有两种合并：一种是”直进式合并”（fast forward），不生成单独的合并节点；<br>另一种是”非直进式合并”（none fast-forword），会生成单独节点。</p>
+<p>前者不利于保持commit信息的清晰，也不利于以后的回滚，建议总是采用后者（即使用–no-ff参数）。<br>只要发生合并，就要有一个单独的合并节点。</p>
+<h3 id="Squash-多个commit"><a href="#Squash-多个commit" class="headerlink" title="Squash 多个commit"></a>Squash 多个commit</h3><p>为了便于他人阅读你的提交，也便于cherry-pick或撤销代码变化，在发起Pull Request之前，应该把多个commit合并成一个。<br>（前提是，该分支只有你一个人开发，且没有跟master合并过。）</p>
+<p>这可以采用rebase命令附带的squash操作，具体方法请参考我写的<a href="http://www.ruanyifeng.com/blog/2015/08/git-use-process.html" target="_blank" rel="noopener">《Git 使用规范流程》</a>。</p>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Git</category>
+      </categories>
+      <tags>
+        <tag>git</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Git 远程操作详解[转载]</title>
+    <url>/2016/02/23/git-remote/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<p>作者： 阮一峰<br>日期： 2014年6月12日<br><a href="http://www.ruanyifeng.com/blog/2014/06/git_remote.html" target="_blank" rel="noopener">原文</a></p>
+<p>Git是目前最流行的版本管理系统，学会Git几乎成了开发者的必备技能。<br>Git有很多优势，其中之一就是远程操作非常简便。本文详细介绍5个Git命令，它们的概念和用法，理解了这些内容，你就会完全掌握Git远程操作。</p>
+<ul>
+<li><strong>git clone</strong></li>
+<li><strong>git remote</strong></li>
+<li><strong>git fetch</strong></li>
+<li><strong>git pull</strong></li>
+<li><strong>git push</strong></li>
+</ul>
+<p>本文针对初级用户，从最简单的讲起，但是需要读者对Git的基本用法有所了解。<br>同时，本文覆盖了上面5个命令的几乎所有的常用用法，所以对于熟练用户也有参考价值。</p>
+<p><img src="/images/git/git_remote.jpg" alt="Git Remote" title="git remote"></p>
+<h2 id="git-clone"><a href="#git-clone" class="headerlink" title="git clone"></a><strong>git clone</strong></h2><p>远程操作的第一步，通常是从远程主机克隆一个版本库，这时就要用到git clone命令。</p>
+<pre><code>$ git clone &lt;版本库的网址&gt;</code></pre><p>比如，克隆jQuery的版本库。</p>
+<pre><code>$ git clone https://github.com/jquery/jquery.git</code></pre><p>该命令会在本地主机生成一个目录，与远程主机的版本库同名。如果要指定不同的目录名，可以将目录名作为git clone命令的第二个参数。</p>
+<pre><code>$ git clone &lt;版本库的网址&gt; &lt;本地目录名&gt;</code></pre><p>git clone支持多种协议，除了HTTP(s)以外，还支持SSH、Git、本地文件协议等，下面是一些例子。</p>
+<pre><code>$ git clone http[s]://example.com/path/to/repo.git/
+$ git clone ssh://example.com/path/to/repo.git/
+$ git clone git://example.com/path/to/repo.git/
+$ git clone /opt/git/project.git 
+$ git clone file:///opt/git/project.git
+$ git clone ftp[s]://example.com/path/to/repo.git/
+$ git clone rsync://example.com/path/to/repo.git/</code></pre><p>SSH协议还有另一种写法。</p>
+<pre><code>$ git clone [user@]example.com:path/to/repo.git/</code></pre><p>通常来说，Git协议下载速度最快，SSH协议用于需要用户认证的场合。各种协议优劣的详细讨论请参考官方文档。</p>
+<h2 id="git-remote"><a href="#git-remote" class="headerlink" title="git remote"></a><strong>git remote</strong></h2><p>为了便于管理，Git要求每个远程主机都必须指定一个主机名。git remote命令就用于管理主机名。<br>不带选项的时候，git remote命令列出所有远程主机。</p>
+<pre><code>$ git remote
+origin</code></pre><p>使用-v选项，可以参看远程主机的网址。</p>
+<pre><code>$ git remote -v
+origin  git@github.com:jquery/jquery.git (fetch)
+origin  git@github.com:jquery/jquery.git (push)</code></pre><p>上面命令表示，当前只有一台远程主机，叫做origin，以及它的网址。<br>克隆版本库的时候，所使用的远程主机自动被Git命名为origin。如果想用其他的主机名，需要用git clone命令的-o选项指定。</p>
+<pre><code>$ git clone -o jQuery https://github.com/jquery/jquery.git
+$ git remote
+jQuery</code></pre><p>上面命令表示，克隆的时候，指定远程主机叫做jQuery。</p>
+<p>git remote show命令加上主机名，可以查看该主机的详细信息。</p>
+<pre><code>$ git remote show &lt;主机名&gt;</code></pre><p>git remote add命令用于添加远程主机。</p>
+<pre><code>$ git remote add &lt;主机名&gt; &lt;网址&gt;</code></pre><p>git remote rm命令用于删除远程主机。</p>
+<pre><code>$ git remote rm &lt;主机名&gt;</code></pre><p>git remote rename命令用于远程主机的改名。</p>
+<pre><code>$ git remote rename &lt;原主机名&gt; &lt;新主机名&gt;</code></pre><h2 id="git-fetch"><a href="#git-fetch" class="headerlink" title="git fetch"></a><strong>git fetch</strong></h2><p>一旦远程主机的版本库有了更新（Git术语叫做commit），需要将这些更新取回本地，这时就要用到git fetch命令。</p>
+<pre><code>$ git fetch &lt;远程主机名&gt;</code></pre><p>上面命令将某个远程主机的更新，全部取回本地。<br>git fetch命令通常用来查看其他人的进程，因为它取回的代码对你本地的开发代码没有影响。<br>默认情况下，git fetch取回所有分支（branch）的更新。如果只想取回特定分支的更新，可以指定分支名。</p>
+<pre><code>$ git fetch &lt;远程主机名&gt; &lt;分支名&gt;</code></pre><p>比如，取回origin主机的master分支。</p>
+<pre><code>$ git fetch origin master</code></pre><p>所取回的更新，在本地主机上要用”远程主机名/分支名”的形式读取。比如origin主机的master，就要用origin/master读取。<br>git branch命令的-r选项，可以用来查看远程分支，-a选项查看所有分支。</p>
+<pre><code>$ git branch -r
+origin/master
+
+$ git branch -a
+* master
+  remotes/origin/master</code></pre><p>上面命令表示，本地主机的当前分支是master，远程分支是origin/master。<br>取回远程主机的更新以后，可以在它的基础上，使用git checkout命令创建一个新的分支。</p>
+<pre><code>$ git checkout -b newBrach origin/master</code></pre><p>上面命令表示，在origin/master的基础上，创建一个新分支。<br>此外，也可以使用git merge命令或者git rebase命令，在本地分支上合并远程分支。</p>
+<pre><code>$ git merge origin/master
+$ git rebase origin/master</code></pre><p>上面命令表示在当前分支上，合并origin/master。</p>
+<h2 id="git-pull"><a href="#git-pull" class="headerlink" title="git pull"></a><strong>git pull</strong></h2><p>git pull命令的作用是，取回远程主机某个分支的更新，再与本地的指定分支合并。它的完整格式稍稍有点复杂。</p>
+<pre><code>$ git pull &lt;远程主机名&gt; &lt;远程分支名&gt;:&lt;本地分支名&gt;</code></pre><p>比如，取回origin主机的next分支，与本地的master分支合并，需要写成下面这样。</p>
+<pre><code>$ git pull origin next:master</code></pre><p>如果远程分支是与当前分支合并，则冒号后面的部分可以省略。</p>
+<pre><code>$ git pull origin next</code></pre><p>上面命令表示，取回origin/next分支，再与当前分支合并。实质上，这等同于先做git fetch，再做git merge。</p>
+<pre><code>$ git fetch origin
+$ git merge origin/next</code></pre><p>在某些场合，Git会自动在本地分支与远程分支之间，建立一种追踪关系（tracking）。<br>比如，在git clone的时候，所有本地分支默认与远程主机的同名分支，建立追踪关系，<br>也就是说，本地的master分支自动”追踪”origin/master分支。<br>Git也允许手动建立追踪关系。</p>
+<pre><code>git branch --set-upstream master origin/next</code></pre><p>上面命令指定master分支追踪origin/next分支。<br><strong>如果当前分支与远程分支存在追踪关系，git pull就可以省略远程分支名。</strong></p>
+<pre><code>$ git pull origin</code></pre><p>上面命令表示，本地的当前分支自动与对应的origin主机”追踪分支”（remote-tracking branch）进行合并。<br>如果当前分支只有一个追踪分支，连远程主机名都可以省略。</p>
+<pre><code>$ git pull</code></pre><p>上面命令表示，当前分支自动与唯一一个追踪分支进行合并。<br>如果合并需要采用rebase模式，可以使用–rebase选项。</p>
+<pre><code>$ git pull --rebase &lt;远程主机名&gt; &lt;远程分支名&gt;:&lt;本地分支名&gt;</code></pre><p>如果远程主机删除了某个分支，默认情况下，git pull 不会在拉取远程分支的时候，删除对应的本地分支。<br>这是为了防止，由于其他人操作了远程主机，导致git pull不知不觉删除了本地分支。<br>但是，你可以改变这个行为，加上参数 -p 就会在本地删除远程已经删除的分支。</p>
+<pre><code>$ git pull -p
+# 等同于下面的命令
+$ git fetch --prune origin 
+$ git fetch -p</code></pre><h2 id="git-push"><a href="#git-push" class="headerlink" title="git push"></a><strong>git push</strong></h2><p>git push命令用于将本地分支的更新，推送到远程主机。它的格式与git pull命令相仿。</p>
+<pre><code>$ git push &lt;远程主机名&gt; &lt;本地分支名&gt;:&lt;远程分支名&gt;</code></pre><p>注意，分支推送顺序的写法是&lt;来源地&gt;:&lt;目的地&gt;，所以git pull是&lt;远程分支&gt;:&lt;本地分支&gt;，而git push是&lt;本地分支&gt;:&lt;远程分支&gt;。<br>如果省略远程分支名，则表示将本地分支推送与之存在”追踪关系”的远程分支（通常两者同名），如果该远程分支不存在，则会被新建。</p>
+<pre><code>$ git push origin master</code></pre><p>上面命令表示，将本地的master分支推送到origin主机的master分支。如果后者不存在，则会被新建。<br>如果省略本地分支名，则表示删除指定的远程分支，因为这等同于推送一个空的本地分支到远程分支。</p>
+<pre><code>$ git push origin :master
+# 等同于
+$ git push origin --delete master</code></pre><p>上面命令表示删除origin主机的master分支。<br>如果当前分支与远程分支之间存在追踪关系，则本地分支和远程分支都可以省略。</p>
+<pre><code>$ git push origin</code></pre><p>上面命令表示，将当前分支推送到origin主机的对应分支。<br>如果当前分支只有一个追踪分支，那么主机名都可以省略。</p>
+<pre><code>$ git push</code></pre><p>如果当前分支与多个主机存在追踪关系，则可以使用-u选项指定一个默认主机，这样后面就可以不加任何参数使用git push。</p>
+<pre><code>$ git push -u origin master</code></pre><p>上面命令将本地的master分支推送到origin主机，同时指定origin为默认主机，后面就可以不加任何参数使用git push了。<br>不带任何参数的git push，默认只推送当前分支，这叫做simple方式。<br>此外，还有一种matching方式，会推送所有有对应的远程分支的本地分支。<br>Git 2.0版本之前，默认采用matching方法，现在改为默认采用simple方式。如果要修改这个设置，可以采用git config命令。</p>
+<pre><code>$ git config --global push.default matching
+# 或者
+$ git config --global push.default simple</code></pre><p>还有一种情况，就是不管是否存在对应的远程分支，将本地的所有分支都推送到远程主机，这时需要使用–all选项。</p>
+<pre><code>$ git push --all origin</code></pre><p>上面命令表示，将所有本地分支都推送到origin主机。<br>如果远程主机的版本比本地版本更新，推送时Git会报错，要求先在本地做git pull合并差异，然后再推送到远程主机。<br>这时，如果你一定要推送，可以使用–force选项。</p>
+<pre><code>$ git push --force origin </code></pre><p>上面命令使用–force选项，结果导致远程主机上更新的版本被覆盖。<br>除非你很确定要这样做，否则应该尽量避免使用–force选项。<br>最后，git push不会推送标签（tag），除非使用–tags选项。</p>
+<pre><code>$ git push origin --tags</code></pre>]]></content>
       <categories>
         <category>Tools</category>
         <category>Git</category>
@@ -35700,95 +35860,6 @@ from PIL import ImageTk</code></pre>]]></content>
       </tags>
   </entry>
   <entry>
-    <title>shell提取文件扩展名或文件名</title>
-    <url>/2015/10/27/shell-name-suffix/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p>在shell中用于提取文件名或后缀，需要用到以下几个操作符： <strong>%、%%、#、##</strong></p>
-<h2 id="和-操作符"><a href="#和-操作符" class="headerlink" title="% 和 %% 操作符"></a><strong>% 和 %% 操作符</strong></h2><p>用法：</p>
-<pre><code>${VAR%.*}
-${VAR%%.*}</code></pre><p><strong>${VAR%.*}</strong>含义：从<strong>$VAR</strong>中<strong>删除</strong>位于 <strong>%</strong> 右侧的通配符左右匹配的字符串，<strong>通配符从右向左进行匹配</strong>。</p>
-<ul>
-<li><strong>% 属于非贪婪操作符</strong>，从右向左匹配最短结果</li>
-<li><strong>%% 属于贪婪操作符</strong>，从右向左匹配符合条件的最长字符串</li>
-</ul>
-<p>示例如下：</p>
-<pre><code>file=&quot;abc.c&quot;
-name=${file%.*}
-echo file name is: $name
-
-输出结果：
-file name is: abc</code></pre><p>变量 name 赋值abc.c，那么通配符从右向左就会匹配到 .c，所有从 $VAR 中删除匹配结果。</p>
-<pre><code>file=&quot;text.gif.bak.2012&quot;
-name=${file%.*}
-name2=${file%%.*}
-echo file name is: $name
-echo file name is: $name2
-
-输出结果：
-file name is: text.gif.bak    //使用 %
-file name is: text            //使用 %%</code></pre><p>操作符 %% 使用 .* 从右向左贪婪匹配到 .gif.bak.2012</p>
-<h2 id="和-操作符-1"><a href="#和-操作符-1" class="headerlink" title="# 和 ## 操作符"></a><strong># 和 ## 操作符</strong></h2><p>用法：</p>
-<pre><code>${VAR#*.}
-${VAR##*.}</code></pre><p><strong>${VAR#*.}</strong> 含义：从 <strong>$VAR</strong> 中<strong>删除</strong>位于 <strong>#</strong> 右侧的通配符所匹配的字符串，<strong>通配符是左向右进行匹配</strong>。</p>
-<ul>
-<li><strong># 属于非贪婪操作符</strong>，从左向右匹配最短结果</li>
-<li><strong>## 属于贪婪操作符</strong>，从左向右匹配符合条件的最长字符串</li>
-</ul>
-<p>符示例：</p>
-<pre><code>file=&quot;text.gif&quot;
-suffix=${file#*.}
-echo suffix is: $suffix
-
-输出结果：
-suffix is: gif
-
-
-file=&quot;text.gif.bak.2012.txt&quot;
-suffix=${file#*.}
-suffix2=${file##*.}
-echo suffix is: $suffix
-echo suffix is: $suffix2
-
-输出结果：
-suffix is: text.gif.bak.2012     //使用 #
-suffix2 is: txt                  //使用 ##</code></pre><p>操作符 ## 使用 *. 从左向右贪婪匹配到 text.gif.bak.2012</p>
-<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><pre><code>url=&quot;www.baidu.com&quot;
-
-echo ${url%.*}      #移除 .* 所匹配的最右边的内容。
-www.baidu
-
-echo ${url%%.*}     #将从右边开始一直匹配到最左边的 *. 移除，贪婪操作符。
-www
-
-echo ${url#*.}      #移除 *. 所有匹配的最左边的内容。
-baidu.com
-
-echo ${url##*.}     #将从左边开始一直匹配到最右边的 *. 移除，贪婪操作符。
-com</code></pre>]]></content>
-      <categories>
-        <category>Shell</category>
-      </categories>
-      <tags>
-        <tag>shell</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>shell脚本的命令行选项解析</title>
     <url>/2015/10/27/shell-getopts/</url>
     <content><![CDATA[<script type="text/javascript">
@@ -35909,6 +35980,95 @@ test1 test2 test3       $@
 test1                   file
 test2
 test3</code></pre>]]></content>
+      <categories>
+        <category>Shell</category>
+      </categories>
+      <tags>
+        <tag>shell</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>shell提取文件扩展名或文件名</title>
+    <url>/2015/10/27/shell-name-suffix/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p>在shell中用于提取文件名或后缀，需要用到以下几个操作符： <strong>%、%%、#、##</strong></p>
+<h2 id="和-操作符"><a href="#和-操作符" class="headerlink" title="% 和 %% 操作符"></a><strong>% 和 %% 操作符</strong></h2><p>用法：</p>
+<pre><code>${VAR%.*}
+${VAR%%.*}</code></pre><p><strong>${VAR%.*}</strong>含义：从<strong>$VAR</strong>中<strong>删除</strong>位于 <strong>%</strong> 右侧的通配符左右匹配的字符串，<strong>通配符从右向左进行匹配</strong>。</p>
+<ul>
+<li><strong>% 属于非贪婪操作符</strong>，从右向左匹配最短结果</li>
+<li><strong>%% 属于贪婪操作符</strong>，从右向左匹配符合条件的最长字符串</li>
+</ul>
+<p>示例如下：</p>
+<pre><code>file=&quot;abc.c&quot;
+name=${file%.*}
+echo file name is: $name
+
+输出结果：
+file name is: abc</code></pre><p>变量 name 赋值abc.c，那么通配符从右向左就会匹配到 .c，所有从 $VAR 中删除匹配结果。</p>
+<pre><code>file=&quot;text.gif.bak.2012&quot;
+name=${file%.*}
+name2=${file%%.*}
+echo file name is: $name
+echo file name is: $name2
+
+输出结果：
+file name is: text.gif.bak    //使用 %
+file name is: text            //使用 %%</code></pre><p>操作符 %% 使用 .* 从右向左贪婪匹配到 .gif.bak.2012</p>
+<h2 id="和-操作符-1"><a href="#和-操作符-1" class="headerlink" title="# 和 ## 操作符"></a><strong># 和 ## 操作符</strong></h2><p>用法：</p>
+<pre><code>${VAR#*.}
+${VAR##*.}</code></pre><p><strong>${VAR#*.}</strong> 含义：从 <strong>$VAR</strong> 中<strong>删除</strong>位于 <strong>#</strong> 右侧的通配符所匹配的字符串，<strong>通配符是左向右进行匹配</strong>。</p>
+<ul>
+<li><strong># 属于非贪婪操作符</strong>，从左向右匹配最短结果</li>
+<li><strong>## 属于贪婪操作符</strong>，从左向右匹配符合条件的最长字符串</li>
+</ul>
+<p>符示例：</p>
+<pre><code>file=&quot;text.gif&quot;
+suffix=${file#*.}
+echo suffix is: $suffix
+
+输出结果：
+suffix is: gif
+
+
+file=&quot;text.gif.bak.2012.txt&quot;
+suffix=${file#*.}
+suffix2=${file##*.}
+echo suffix is: $suffix
+echo suffix is: $suffix2
+
+输出结果：
+suffix is: text.gif.bak.2012     //使用 #
+suffix2 is: txt                  //使用 ##</code></pre><p>操作符 ## 使用 *. 从左向右贪婪匹配到 text.gif.bak.2012</p>
+<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><pre><code>url=&quot;www.baidu.com&quot;
+
+echo ${url%.*}      #移除 .* 所匹配的最右边的内容。
+www.baidu
+
+echo ${url%%.*}     #将从右边开始一直匹配到最左边的 *. 移除，贪婪操作符。
+www
+
+echo ${url#*.}      #移除 *. 所有匹配的最左边的内容。
+baidu.com
+
+echo ${url##*.}     #将从左边开始一直匹配到最右边的 *. 移除，贪婪操作符。
+com</code></pre>]]></content>
       <categories>
         <category>Shell</category>
       </categories>
@@ -37574,6 +37734,69 @@ $ scan-view-3.4 /tmp/scan-build-2016-06-23-125458-27549-1</code></pre>
       </tags>
   </entry>
   <entry>
+    <title>Linux下malloc函数和OOM Killer</title>
+    <url>/2015/07/06/Linux-OOM-Killer/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h3 id="Malloc函数和OOM-Killer"><a href="#Malloc函数和OOM-Killer" class="headerlink" title="Malloc函数和OOM Killer"></a><strong>Malloc函数和OOM Killer</strong></h3><p>Linux下malloc函数主要用来在用户空间从heap申请内存，申请成功返回指向所分配内存的指针，申请失败返回NULL。<br><strong>默认情况下，Linux内核使用“乐观的”分配内存策略</strong>，首先粗略估计系统可使用的内存数，然后分配内存，<br>但是在使用的时候才真正把这块分配的内存给你。<br>这样一来，即使用malloc申请内存没有返回NULL，你也不一定能完全使用这块内存，<br>特别是在一次或连续多次申请很多内存的时候。</p>
+<p>如果一直连续用malloc申请内存，而不真正使用，所申请的内存总数可以超过真正可以使用的内存数。<br>但是当真正使用这块内存，比如用memset或bzero函数一次性把所申请到的大块内存“使用掉”，<br>Linux系统就会Out Of Memory，这个时候OOM Killer就会kill掉用户空间的其他进程来腾出更多可使用内存。</p>
+<p>OOM Killer根据OOM score来决定kill哪个进程，OOM score可以看/proc/<PID>/oom_score，<br>score由badness函数计算得出，根据进程运行时间长短，进程优先级，进程所使用的内存数等等。<br>可以通过/proc/<PID>/oom_adj来干预计算socre，这个值的取值范围是-17～15，<br>如果是-17该进程就永远不会被kill（这个可能也和内核版本有关，不见得所有内核版本都支持，得实际试试）。</p>
+<p>“默认情况”Linux是这种做的，“默认情况”是指/proc/sys/vm/overcommit_memory为0的时候。<br>这个参数也可以调整，如果为1表示“来着不拒”，只要你malloc过来申请，我啥都不做，立马给你分配内存，<br>这样的话性能就会有大幅度的提高；<br>如果为2表示Linux会精确计算所有可使用的内存和所申请的内存，如果所申请的超过的可使用的内存数就返回NULL。<br>可使用的内存值计算方法，虚拟内存（swap）+ /proc/sys/vm/overcommit_memory（百分比） × 物理内存。<br>/proc/sys/vm/overcommit_memory默认值为50,计算起来就是50%的物理内存数。</p>
+<p>Linux自身内核会占一部分内存，还有buffer/cache所占用的内存，<br>所以实际上能被malloc申请后使用的内存并非物理内存大小，<br>demsg的输出里面包含了相关信息（如果看不到，可能是被别的信息冲掉了，重启系统，在系统起来后马上看）：</p>
+<pre><code>Memory: 2071220k/2097152k available (2122k kernel code, 24584k reserved, 884k data, 228k init, 1179584k highmem)</code></pre><h3 id="关于OOM-Killer的proc文件系统"><a href="#关于OOM-Killer的proc文件系统" class="headerlink" title="关于OOM Killer的proc文件系统"></a><strong>关于OOM Killer的proc文件系统</strong></h3><p>下面开始介绍与OOM Killer相关的proc文件系统。</p>
+<h4 id="proc-PID-oom-adj"><a href="#proc-PID-oom-adj" class="headerlink" title="/proc/PID/oom_adj"></a><strong>/proc/PID/oom_adj</strong></h4><p>为/proc/PID/oom_adj设置值就可以调整得分。<br>调整值的范围为–16~15。正的值容易被OOM Killer选定。负值可能性较低。<br>例如，当指定3时，得分就变为23倍；当指定–5时，得分就变为1/25。</p>
+<p>“–17”是一个特殊的值。如果设置为–17，就会禁止OOM Killer发出的信号（从Linux 2.6.12开始支持设置–17）。</p>
+<p>在OOM Killer运行的情况下，为了实现远程登录而想要将sshd排除在对象外时，可以执行下列命令。</p>
+<pre><code># cat /proc/&#39;cat /var/run/sshd.pid&#39;/oom_score
+15
+# echo -17 &gt;  /proc/&#39;cat /var/run/sshd.pid&#39;/oom_adj
+# tail /proc/&#39;cat /var/run/sshd.pid&#39;/oom_*
+==&gt; /proc/2278/oom_adj &lt;==
+-17
+==&gt; /proc/2278/oom_score &lt;==
+0                               /*得分变成0*/</code></pre><p>从Linux 2.6.18开始可以使用/proc/PID/oom_adj。内容记载在Documentation /filesystems/proc.txt中。</p>
+<h4 id="proc-sys-vm-panic-on-oom"><a href="#proc-sys-vm-panic-on-oom" class="headerlink" title="/proc/sys/vm/panic_on_oom"></a><strong>/proc/sys/vm/panic_on_oom</strong></h4><p>将/proc/sys/vm/panic_on_oom设置为1时，在OOM Killer运行时可以不发送进程信号，而是使内核产生重大故障。</p>
+<pre><code># echo 1 &gt; /proc/sys/vm/panic_on_oom</code></pre><h4 id="proc-sys-vm-oom-kill-allocating-task"><a href="#proc-sys-vm-oom-kill-allocating-task" class="headerlink" title="/proc/sys/vm/oom_kill_allocating_task"></a><strong>/proc/sys/vm/oom_kill_allocating_task</strong></h4><p>从Linux 2.6.24开始proc文件系统就有oom_kill_allocating_task。<br>如果对此设置除0以外的值，则促使OOM Killer运行的进程自身将接收信号。此处省略对所有进程的得分计算过程。</p>
+<pre><code># echo 1 &gt; /proc/sys/vm/oom_kill_allocating_task</code></pre><p>这样就不需要参照所有进程，但是也不会考虑进程的优先级和root权限等，只发送信号。</p>
+<h4 id="proc-sys-vm-oom-dump-tasks"><a href="#proc-sys-vm-oom-dump-tasks" class="headerlink" title="/proc/sys/vm/oom_dump_tasks"></a><strong>/proc/sys/vm/oom_dump_tasks</strong></h4><p>从Linux 2.6.25开始，将oom_dump_tasks设置为除0以外的值时，在OOM Killer运行时的输出中会增加进程的列表信息。</p>
+<pre><code># echo 1 &gt; /proc/sys/vm/oom_dump_tasks</code></pre><p>列表信息显示如下，可以使用dmesg或syslog来确认。</p>
+<pre><code>[ pid ]   uid  tgid total_vm      rss cpu oom_adj name
+[    1]     0     1     2580        1   0       0 init
+[  500]     0   500     3231        0   1     -17 udevd
+[ 2736]     0  2736     1470        1   0       0 syslogd
+[ 2741]     0  2741      944        0   0       0 klogd
+[ 2765]    81  2765     5307        0   0       0 dbus-daemon
+[ 2861]     0  2861      944        0   0       0 acpid
+...
+[ 3320]     0  3320   525842   241215   1       0 stress</code></pre><h4 id="proc-PID-oom-score-adj"><a href="#proc-PID-oom-score-adj" class="headerlink" title="/proc/PID/oom_score_adj"></a><strong>/proc/PID/oom_score_adj</strong></h4><p>从Linux 2.6.36开始都安装了/proc/<PID>/oom_score_adj，<br>此后将替换为/proc/PID/oom_adj。<br>即使当前是对/proc/PID/oom_adj进行的设置，在内核内部进行变换后的值也是针对/proc/PID/oom_score_adj设置的。</p>
+<p>可以设置–1000~1000之间的值。设置为–1000时，该进程就被排除在OOM Killer强制终止的对象外。</p>
+<p>在内核2.6.36以后的版本中写入oom_adj，只会输出一次如下的信息。</p>
+<pre><code># dmesg
+.....
+udevd (60): /proc/60/oom_adj is deprecated, please use /proc/60/oom_score_adj instead.</code></pre>]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>malloc</tag>
+        <tag>OOM Killer</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>linux内存分配原理（brk和mmap）（转载）</title>
     <url>/2015/07/06/Linux-malloc/</url>
     <content><![CDATA[<script type="text/javascript">
@@ -37646,97 +37869,6 @@ $(document).ready(function(){
       </tags>
   </entry>
   <entry>
-    <title>Linux下malloc函数和OOM Killer</title>
-    <url>/2015/07/06/Linux-OOM-Killer/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<h3 id="Malloc函数和OOM-Killer"><a href="#Malloc函数和OOM-Killer" class="headerlink" title="Malloc函数和OOM Killer"></a><strong>Malloc函数和OOM Killer</strong></h3><p>Linux下malloc函数主要用来在用户空间从heap申请内存，申请成功返回指向所分配内存的指针，申请失败返回NULL。<br><strong>默认情况下，Linux内核使用“乐观的”分配内存策略</strong>，首先粗略估计系统可使用的内存数，然后分配内存，<br>但是在使用的时候才真正把这块分配的内存给你。<br>这样一来，即使用malloc申请内存没有返回NULL，你也不一定能完全使用这块内存，<br>特别是在一次或连续多次申请很多内存的时候。</p>
-<p>如果一直连续用malloc申请内存，而不真正使用，所申请的内存总数可以超过真正可以使用的内存数。<br>但是当真正使用这块内存，比如用memset或bzero函数一次性把所申请到的大块内存“使用掉”，<br>Linux系统就会Out Of Memory，这个时候OOM Killer就会kill掉用户空间的其他进程来腾出更多可使用内存。</p>
-<p>OOM Killer根据OOM score来决定kill哪个进程，OOM score可以看/proc/<PID>/oom_score，<br>score由badness函数计算得出，根据进程运行时间长短，进程优先级，进程所使用的内存数等等。<br>可以通过/proc/<PID>/oom_adj来干预计算socre，这个值的取值范围是-17～15，<br>如果是-17该进程就永远不会被kill（这个可能也和内核版本有关，不见得所有内核版本都支持，得实际试试）。</p>
-<p>“默认情况”Linux是这种做的，“默认情况”是指/proc/sys/vm/overcommit_memory为0的时候。<br>这个参数也可以调整，如果为1表示“来着不拒”，只要你malloc过来申请，我啥都不做，立马给你分配内存，<br>这样的话性能就会有大幅度的提高；<br>如果为2表示Linux会精确计算所有可使用的内存和所申请的内存，如果所申请的超过的可使用的内存数就返回NULL。<br>可使用的内存值计算方法，虚拟内存（swap）+ /proc/sys/vm/overcommit_memory（百分比） × 物理内存。<br>/proc/sys/vm/overcommit_memory默认值为50,计算起来就是50%的物理内存数。</p>
-<p>Linux自身内核会占一部分内存，还有buffer/cache所占用的内存，<br>所以实际上能被malloc申请后使用的内存并非物理内存大小，<br>demsg的输出里面包含了相关信息（如果看不到，可能是被别的信息冲掉了，重启系统，在系统起来后马上看）：</p>
-<pre><code>Memory: 2071220k/2097152k available (2122k kernel code, 24584k reserved, 884k data, 228k init, 1179584k highmem)</code></pre><h3 id="关于OOM-Killer的proc文件系统"><a href="#关于OOM-Killer的proc文件系统" class="headerlink" title="关于OOM Killer的proc文件系统"></a><strong>关于OOM Killer的proc文件系统</strong></h3><p>下面开始介绍与OOM Killer相关的proc文件系统。</p>
-<h4 id="proc-PID-oom-adj"><a href="#proc-PID-oom-adj" class="headerlink" title="/proc/PID/oom_adj"></a><strong>/proc/PID/oom_adj</strong></h4><p>为/proc/PID/oom_adj设置值就可以调整得分。<br>调整值的范围为–16~15。正的值容易被OOM Killer选定。负值可能性较低。<br>例如，当指定3时，得分就变为23倍；当指定–5时，得分就变为1/25。</p>
-<p>“–17”是一个特殊的值。如果设置为–17，就会禁止OOM Killer发出的信号（从Linux 2.6.12开始支持设置–17）。</p>
-<p>在OOM Killer运行的情况下，为了实现远程登录而想要将sshd排除在对象外时，可以执行下列命令。</p>
-<pre><code># cat /proc/&#39;cat /var/run/sshd.pid&#39;/oom_score
-15
-# echo -17 &gt;  /proc/&#39;cat /var/run/sshd.pid&#39;/oom_adj
-# tail /proc/&#39;cat /var/run/sshd.pid&#39;/oom_*
-==&gt; /proc/2278/oom_adj &lt;==
--17
-==&gt; /proc/2278/oom_score &lt;==
-0                               /*得分变成0*/</code></pre><p>从Linux 2.6.18开始可以使用/proc/PID/oom_adj。内容记载在Documentation /filesystems/proc.txt中。</p>
-<h4 id="proc-sys-vm-panic-on-oom"><a href="#proc-sys-vm-panic-on-oom" class="headerlink" title="/proc/sys/vm/panic_on_oom"></a><strong>/proc/sys/vm/panic_on_oom</strong></h4><p>将/proc/sys/vm/panic_on_oom设置为1时，在OOM Killer运行时可以不发送进程信号，而是使内核产生重大故障。</p>
-<pre><code># echo 1 &gt; /proc/sys/vm/panic_on_oom</code></pre><h4 id="proc-sys-vm-oom-kill-allocating-task"><a href="#proc-sys-vm-oom-kill-allocating-task" class="headerlink" title="/proc/sys/vm/oom_kill_allocating_task"></a><strong>/proc/sys/vm/oom_kill_allocating_task</strong></h4><p>从Linux 2.6.24开始proc文件系统就有oom_kill_allocating_task。<br>如果对此设置除0以外的值，则促使OOM Killer运行的进程自身将接收信号。此处省略对所有进程的得分计算过程。</p>
-<pre><code># echo 1 &gt; /proc/sys/vm/oom_kill_allocating_task</code></pre><p>这样就不需要参照所有进程，但是也不会考虑进程的优先级和root权限等，只发送信号。</p>
-<h4 id="proc-sys-vm-oom-dump-tasks"><a href="#proc-sys-vm-oom-dump-tasks" class="headerlink" title="/proc/sys/vm/oom_dump_tasks"></a><strong>/proc/sys/vm/oom_dump_tasks</strong></h4><p>从Linux 2.6.25开始，将oom_dump_tasks设置为除0以外的值时，在OOM Killer运行时的输出中会增加进程的列表信息。</p>
-<pre><code># echo 1 &gt; /proc/sys/vm/oom_dump_tasks</code></pre><p>列表信息显示如下，可以使用dmesg或syslog来确认。</p>
-<pre><code>[ pid ]   uid  tgid total_vm      rss cpu oom_adj name
-[    1]     0     1     2580        1   0       0 init
-[  500]     0   500     3231        0   1     -17 udevd
-[ 2736]     0  2736     1470        1   0       0 syslogd
-[ 2741]     0  2741      944        0   0       0 klogd
-[ 2765]    81  2765     5307        0   0       0 dbus-daemon
-[ 2861]     0  2861      944        0   0       0 acpid
-...
-[ 3320]     0  3320   525842   241215   1       0 stress</code></pre><h4 id="proc-PID-oom-score-adj"><a href="#proc-PID-oom-score-adj" class="headerlink" title="/proc/PID/oom_score_adj"></a><strong>/proc/PID/oom_score_adj</strong></h4><p>从Linux 2.6.36开始都安装了/proc/<PID>/oom_score_adj，<br>此后将替换为/proc/PID/oom_adj。<br>即使当前是对/proc/PID/oom_adj进行的设置，在内核内部进行变换后的值也是针对/proc/PID/oom_score_adj设置的。</p>
-<p>可以设置–1000~1000之间的值。设置为–1000时，该进程就被排除在OOM Killer强制终止的对象外。</p>
-<p>在内核2.6.36以后的版本中写入oom_adj，只会输出一次如下的信息。</p>
-<pre><code># dmesg
-.....
-udevd (60): /proc/60/oom_adj is deprecated, please use /proc/60/oom_score_adj instead.</code></pre>]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>malloc</tag>
-        <tag>OOM Killer</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>VIM多文件查找与替换</title>
-    <url>/2015/07/01/vim-multifile/</url>
-    <content><![CDATA[<h3 id="Script"><a href="#Script" class="headerlink" title="Script"></a><strong>Script</strong></h3><pre><code>find . -name &quot;*.c&quot; | xargs sed -i &quot;s/$1/$2/g&quot;</code></pre><h3 id="VIM"><a href="#VIM" class="headerlink" title="VIM"></a><strong>VIM</strong></h3><h4 id="多文件查找"><a href="#多文件查找" class="headerlink" title="多文件查找"></a><strong>多文件查找</strong></h4><h5 id="grep"><a href="#grep" class="headerlink" title="grep"></a><strong>grep</strong></h5><p>直接在vim中输入</p>
-<pre><code>:grep abc * </code></pre><p>这是直接调用unix下的grep命令 </p>
-<h5 id="vimgrep"><a href="#vimgrep" class="headerlink" title="vimgrep"></a><strong>vimgrep</strong></h5><p>基本用法就是</p>
-<pre><code>:vimgrep /匹配模式/[g][j] 要搜索的文件/范围 
-:vim[grep][!] /{pattern}/[g][j] {file} ...</code></pre><p>g 和 j 是两个可选的标志位，g表示是否把每一行的多个匹配结果都加入。j表示是否搜索完后定位到第一个匹配位置。<br>要搜索的文件可以是具体的文件路径，也可以是带通配符的路径比如 <em>.as **/</em>.as ，**表示递归所有子目录。<br>要搜索的文件和或搜索范围都可以写多个，用空格分开。 例子：</p>
-<pre><code>:vimgrep /\/ **/*.as 搜索当前目录以及所有子目录内as文件中的 &quot;flash&quot;
-:vimgrep /an error/ *.c 就是在所有的.c文件中搜索an error。
-:vimgrep/an error/* 意思是查找当前目录下的文件中的an error，不包括子目录</code></pre><h5 id="定位"><a href="#定位" class="headerlink" title="定位"></a><strong>定位</strong></h5><p>输入上述的命令后，可以像输入:make命令，那样定位匹配到的文件位置 </p>
-<pre><code>:cnext (:cn)           下一个匹配位置
-:cprevious (:cp)     上一个匹配位置
-:cwindow (:cw)     quickfix窗口，可以选择匹配的文件位置
-:cl(:clist)                查看所有匹配的位置</code></pre><h4 id="多文件替换-arg"><a href="#多文件替换-arg" class="headerlink" title="多文件替换(arg)"></a><strong>多文件替换(arg)</strong></h4><ol>
-<li>加入要处理的文件  :args *.txt</li>
-<li>输入对上述文件的动作  :argdo %s/hate/love/gc | update  （这里将hate替换成love，update表示要写入到文件中，否则只作替换而不写入）</li>
-</ol>
-]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Editor</category>
-      </categories>
-      <tags>
-        <tag>grep</tag>
-        <tag>vim</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Ubuntu下使用Doxygen和graphviz来产生源代码函数调用图</title>
     <url>/2015/07/01/doxygen-graphviz/</url>
     <content><![CDATA[<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a><strong>安装</strong></h3><pre><code>sudo apt-get install doxygen doxygen-doc doxygen-gui graphviz
@@ -37768,6 +37900,34 @@ doxygen -g</code></pre><h3 id="生成函数调用图"><a href="#生成函数调�
       <tags>
         <tag>Doxygen</tag>
         <tag>Graphviz</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>VIM多文件查找与替换</title>
+    <url>/2015/07/01/vim-multifile/</url>
+    <content><![CDATA[<h3 id="Script"><a href="#Script" class="headerlink" title="Script"></a><strong>Script</strong></h3><pre><code>find . -name &quot;*.c&quot; | xargs sed -i &quot;s/$1/$2/g&quot;</code></pre><h3 id="VIM"><a href="#VIM" class="headerlink" title="VIM"></a><strong>VIM</strong></h3><h4 id="多文件查找"><a href="#多文件查找" class="headerlink" title="多文件查找"></a><strong>多文件查找</strong></h4><h5 id="grep"><a href="#grep" class="headerlink" title="grep"></a><strong>grep</strong></h5><p>直接在vim中输入</p>
+<pre><code>:grep abc * </code></pre><p>这是直接调用unix下的grep命令 </p>
+<h5 id="vimgrep"><a href="#vimgrep" class="headerlink" title="vimgrep"></a><strong>vimgrep</strong></h5><p>基本用法就是</p>
+<pre><code>:vimgrep /匹配模式/[g][j] 要搜索的文件/范围 
+:vim[grep][!] /{pattern}/[g][j] {file} ...</code></pre><p>g 和 j 是两个可选的标志位，g表示是否把每一行的多个匹配结果都加入。j表示是否搜索完后定位到第一个匹配位置。<br>要搜索的文件可以是具体的文件路径，也可以是带通配符的路径比如 <em>.as **/</em>.as ，**表示递归所有子目录。<br>要搜索的文件和或搜索范围都可以写多个，用空格分开。 例子：</p>
+<pre><code>:vimgrep /\/ **/*.as 搜索当前目录以及所有子目录内as文件中的 &quot;flash&quot;
+:vimgrep /an error/ *.c 就是在所有的.c文件中搜索an error。
+:vimgrep/an error/* 意思是查找当前目录下的文件中的an error，不包括子目录</code></pre><h5 id="定位"><a href="#定位" class="headerlink" title="定位"></a><strong>定位</strong></h5><p>输入上述的命令后，可以像输入:make命令，那样定位匹配到的文件位置 </p>
+<pre><code>:cnext (:cn)           下一个匹配位置
+:cprevious (:cp)     上一个匹配位置
+:cwindow (:cw)     quickfix窗口，可以选择匹配的文件位置
+:cl(:clist)                查看所有匹配的位置</code></pre><h4 id="多文件替换-arg"><a href="#多文件替换-arg" class="headerlink" title="多文件替换(arg)"></a><strong>多文件替换(arg)</strong></h4><ol>
+<li>加入要处理的文件  :args *.txt</li>
+<li>输入对上述文件的动作  :argdo %s/hate/love/gc | update  （这里将hate替换成love，update表示要写入到文件中，否则只作替换而不写入）</li>
+</ol>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Editor</category>
+      </categories>
+      <tags>
+        <tag>grep</tag>
+        <tag>vim</tag>
       </tags>
   </entry>
   <entry>
@@ -37870,64 +38030,6 @@ $ csky-elf-objdump -h -t output/out.elf</code></pre>
         <tag>debug</tag>
         <tag>nm</tag>
         <tag>tools</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Ecos Cpu Load[转]</title>
-    <url>/2015/04/04/ecos-cpu-load/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p>cpuload组件包提供了一种估算CPU负载的方式。它可以估算最近0.1秒、1秒和10秒内的CPU负载百分比。</p>
-<h3 id="负载测量API"><a href="#负载测量API" class="headerlink" title="负载测量API"></a><strong>负载测量API</strong></h3><p>首先，必须在被测目标机上对测量算法进行校准，一旦校准完成后就可以开始测量。<br>测量是一个连续过程，因此总是提供最近的测量数据，测量过程可以根据需要随时停止。<br>一旦开始测量过程，就可以获取测量结果。</p>
-<p>需要注意的是：如果目标机或CPU执行任何节能措施，例如降低时钟频率或者挂起CPU等，<br>这些节能措施将干扰CPU负载测量，在这种情况下，测量结果是未定义的。<br>Synthetic Target就是这样的情况之一。阅读本文后续实现细节章节可以了解更多。</p>
-<p>『译注』Cortex-M架构的默认实现会在执行空闲任务时挂起CPU，<br>因此默认情况下，测量结果并非是实际的CPU负载，<br>需要重定义HAL_IDLE_THREAD_ACTION宏取消空闲时挂起，<br>HAL_IDLE_THREAD_ACTION宏的默认实现位于hal/cortexm/arch/<version>/include/hal_arch.h:336。</p>
-<p>负载测量不支持SMP系统，仅支持单CPU系统。</p>
-<p>负载测量API可以在cyg/cpuload/cpuload.h中找到。</p>
-<p>『译注』源代码位于services/cpuload</p>
-<h4 id="cyg-cpuload-calibrate"><a href="#cyg-cpuload-calibrate" class="headerlink" title="cyg_cpuload_calibrate"></a><strong>cyg_cpuload_calibrate</strong></h4><p>这个函数用来校准CPU负载测量算法。它执行一次特别的测量过程确定空闲时的CPU性能。</p>
-<pre><code>void cyg_cpuload_calibrate(cyg_uint32* calibration);  </code></pre><p>该函数通过calibration指针返回校准值。<br>这个函数是非常特别的，为了获得正确的校准结果需要满足若干条件。<br>该函数使用了2个最高线程优先级，当该函数被使用时，其它线程不能使用这两个优先级。<br>调用该函数时，内核调度器必须已经启动而且调度器未加锁。<br>该函数将花费0.1秒的时间完成校准操作，在这0.1秒校准期间不能有任何其它线程执行。</p>
-<p>『译注』这个函数使用了线程优先级1和2，为了获得正确的测量结果，<br>其它线程不能使用优先级1和2。eCos的最高线程优先级是0，如果有优先级为0的线程，<br>必须保证在校准过程该线程处于挂起状态，<br>否则校准过程可能被优先级为0的线程抢占而导致错误的校准结果。</p>
-<p>『译注』该函数将会创建一个线程，线程堆栈大小为CYGNUM_HAL_STACK_SIZE_MINIMUM，<br>在Cortex-M架构下约1.5KB，该线程仅在校准过程执行一次，<br>随后被删除永远都不会再执行，如果目标机内存非常有限，<br>应当知晓CPU负载测量校准时使用了1.5KB的堆栈空间。</p>
-<h4 id="cyg-cpuload-create"><a href="#cyg-cpuload-create" class="headerlink" title="cyg_cpuload_create"></a><strong>cyg_cpuload_create</strong></h4><p>这个函数启动CPU负载测量。</p>
-<pre><code>void cyg_cpuload_create(cyg_cpuload_t* cpuload,  
-        cyg_uint32 calibrate,  
-        cyg_handle_t* handle);  </code></pre><p>调用该函数启动测量过程，handle返回操作句柄，通过该句柄可以读取测量结果以及停止测量过程。</p>
-<h4 id="cyg-cpuload-delete"><a href="#cyg-cpuload-delete" class="headerlink" title="cyg_cpuload_delete"></a><strong>cyg_cpuload_delete</strong></h4><p>这个函数停止CPU负载测量。</p>
-<pre><code>void cyg_cpuload_delete(cyg_handle_t handle);  </code></pre><p>handle必须是cyg_cpuload_create函数返回的操作句柄。</p>
-<h4 id="cyg-cpuload-get"><a href="#cyg-cpuload-get" class="headerlink" title="cyg_cpuload_get"></a><strong>cyg_cpuload_get</strong></h4><p>这个函数返回最近的测量结果。</p>
-<pre><code>void cyg_cpuload_get(cyg_handle_t handle,  
-        cyg_uint32* average_point1s,  
-        cyg_uint32* average_1s,  
-        cyg_uint32* average_10s);  </code></pre><p>handle必须是cyg_cpuload_create函数返回的操作句柄。<br>最近0.1秒、1秒和10秒的负载测量结果通过average_point1s、average_1s和average_10s返回。</p>
-<h3 id="实现细节"><a href="#实现细节" class="headerlink" title="实现细节"></a><strong>实现细节</strong></h3><p>这一节给出一些测量过程的实现细节，这些细节可以帮助我们理解测量结果的意义。<br>当没有其它线程可以执行时，eCos将执行空闲线程，空闲线程总是可执行的而且使用最低线程优先级。<br>空闲线程只做一点点事情，它有一个永远都不会退出的循环，每次循环将idle_thread_loops变量加1，<br>然后调用HAL_IDLE_THREAD_ACTION宏。<br>CPU负载测量算法就是使用了idle_thread_loops变量，<br>测量算法周期性地检查idle_thread_loops变量，并记录前后两次检查的差值，<br>系统越空这个差值就越大，通过这个简单的手段就可以确定系统的负载。</p>
-<p>cyg_cpuload_calibrate函数执行空闲任务0.1秒，<br>从而确定系统空闲0.1秒的时间内idle_thread_loops会被累加多少次。<br>cyg_cpuload_create函数启动一个闹钟，这个闹钟每隔0.1秒调用回调函数，<br>回调函数计算idle_thread_loops从上次检查到本次检查的差值，然后根据这个差值以及校准值计算出CPU负载。<br>回调函数用新的计算结果更新cyg_cpuload结构，<br>0.1秒负载只是简单地复制最近的测量结果，然后通过一个简单的滤波计算1秒和10秒负载。<br>由于舍入误差的存在，即使系统满负载，1秒和10秒测量值也永远都不会达到100%，通常看到的是99%。</p>
-<p>如前所述，电源管理代码将干扰上述测量结果。<br>CPU负载测量的基本假设是：空闲线程可以无障碍地运行，而且运行条件与校准时的运行条件保持一致。<br>如果降低CPU时钟频率，那么空闲线程的计数器累加速率将变慢，<br>因此CPU负载测量结果值将偏高，如果CPU被完全挂起，那么CPU负载测量结果将是100%。</p>
-<h3 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a><strong>Ref</strong></h3><ol>
-<li><a href="http://ecos.sourceware.org/docs-3.0/ref/cpuload-functions.html" target="_blank" rel="noopener">Chapter 68. CPU Load Measurements</a></li>
-<li><a href="http://ecos.sourceware.org/docs-3.0/ref/ecos-ref.html" target="_blank" rel="noopener">eCos Reference Manual</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Ecos</category>
-      </categories>
-      <tags>
-        <tag>ecos</tag>
-        <tag>cpu load</tag>
       </tags>
   </entry>
   <entry>
@@ -38244,6 +38346,64 @@ text    data     bss     dec     hex filename
       </tags>
   </entry>
   <entry>
+    <title>Ecos Cpu Load[转]</title>
+    <url>/2015/04/04/ecos-cpu-load/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p>cpuload组件包提供了一种估算CPU负载的方式。它可以估算最近0.1秒、1秒和10秒内的CPU负载百分比。</p>
+<h3 id="负载测量API"><a href="#负载测量API" class="headerlink" title="负载测量API"></a><strong>负载测量API</strong></h3><p>首先，必须在被测目标机上对测量算法进行校准，一旦校准完成后就可以开始测量。<br>测量是一个连续过程，因此总是提供最近的测量数据，测量过程可以根据需要随时停止。<br>一旦开始测量过程，就可以获取测量结果。</p>
+<p>需要注意的是：如果目标机或CPU执行任何节能措施，例如降低时钟频率或者挂起CPU等，<br>这些节能措施将干扰CPU负载测量，在这种情况下，测量结果是未定义的。<br>Synthetic Target就是这样的情况之一。阅读本文后续实现细节章节可以了解更多。</p>
+<p>『译注』Cortex-M架构的默认实现会在执行空闲任务时挂起CPU，<br>因此默认情况下，测量结果并非是实际的CPU负载，<br>需要重定义HAL_IDLE_THREAD_ACTION宏取消空闲时挂起，<br>HAL_IDLE_THREAD_ACTION宏的默认实现位于hal/cortexm/arch/<version>/include/hal_arch.h:336。</p>
+<p>负载测量不支持SMP系统，仅支持单CPU系统。</p>
+<p>负载测量API可以在cyg/cpuload/cpuload.h中找到。</p>
+<p>『译注』源代码位于services/cpuload</p>
+<h4 id="cyg-cpuload-calibrate"><a href="#cyg-cpuload-calibrate" class="headerlink" title="cyg_cpuload_calibrate"></a><strong>cyg_cpuload_calibrate</strong></h4><p>这个函数用来校准CPU负载测量算法。它执行一次特别的测量过程确定空闲时的CPU性能。</p>
+<pre><code>void cyg_cpuload_calibrate(cyg_uint32* calibration);  </code></pre><p>该函数通过calibration指针返回校准值。<br>这个函数是非常特别的，为了获得正确的校准结果需要满足若干条件。<br>该函数使用了2个最高线程优先级，当该函数被使用时，其它线程不能使用这两个优先级。<br>调用该函数时，内核调度器必须已经启动而且调度器未加锁。<br>该函数将花费0.1秒的时间完成校准操作，在这0.1秒校准期间不能有任何其它线程执行。</p>
+<p>『译注』这个函数使用了线程优先级1和2，为了获得正确的测量结果，<br>其它线程不能使用优先级1和2。eCos的最高线程优先级是0，如果有优先级为0的线程，<br>必须保证在校准过程该线程处于挂起状态，<br>否则校准过程可能被优先级为0的线程抢占而导致错误的校准结果。</p>
+<p>『译注』该函数将会创建一个线程，线程堆栈大小为CYGNUM_HAL_STACK_SIZE_MINIMUM，<br>在Cortex-M架构下约1.5KB，该线程仅在校准过程执行一次，<br>随后被删除永远都不会再执行，如果目标机内存非常有限，<br>应当知晓CPU负载测量校准时使用了1.5KB的堆栈空间。</p>
+<h4 id="cyg-cpuload-create"><a href="#cyg-cpuload-create" class="headerlink" title="cyg_cpuload_create"></a><strong>cyg_cpuload_create</strong></h4><p>这个函数启动CPU负载测量。</p>
+<pre><code>void cyg_cpuload_create(cyg_cpuload_t* cpuload,  
+        cyg_uint32 calibrate,  
+        cyg_handle_t* handle);  </code></pre><p>调用该函数启动测量过程，handle返回操作句柄，通过该句柄可以读取测量结果以及停止测量过程。</p>
+<h4 id="cyg-cpuload-delete"><a href="#cyg-cpuload-delete" class="headerlink" title="cyg_cpuload_delete"></a><strong>cyg_cpuload_delete</strong></h4><p>这个函数停止CPU负载测量。</p>
+<pre><code>void cyg_cpuload_delete(cyg_handle_t handle);  </code></pre><p>handle必须是cyg_cpuload_create函数返回的操作句柄。</p>
+<h4 id="cyg-cpuload-get"><a href="#cyg-cpuload-get" class="headerlink" title="cyg_cpuload_get"></a><strong>cyg_cpuload_get</strong></h4><p>这个函数返回最近的测量结果。</p>
+<pre><code>void cyg_cpuload_get(cyg_handle_t handle,  
+        cyg_uint32* average_point1s,  
+        cyg_uint32* average_1s,  
+        cyg_uint32* average_10s);  </code></pre><p>handle必须是cyg_cpuload_create函数返回的操作句柄。<br>最近0.1秒、1秒和10秒的负载测量结果通过average_point1s、average_1s和average_10s返回。</p>
+<h3 id="实现细节"><a href="#实现细节" class="headerlink" title="实现细节"></a><strong>实现细节</strong></h3><p>这一节给出一些测量过程的实现细节，这些细节可以帮助我们理解测量结果的意义。<br>当没有其它线程可以执行时，eCos将执行空闲线程，空闲线程总是可执行的而且使用最低线程优先级。<br>空闲线程只做一点点事情，它有一个永远都不会退出的循环，每次循环将idle_thread_loops变量加1，<br>然后调用HAL_IDLE_THREAD_ACTION宏。<br>CPU负载测量算法就是使用了idle_thread_loops变量，<br>测量算法周期性地检查idle_thread_loops变量，并记录前后两次检查的差值，<br>系统越空这个差值就越大，通过这个简单的手段就可以确定系统的负载。</p>
+<p>cyg_cpuload_calibrate函数执行空闲任务0.1秒，<br>从而确定系统空闲0.1秒的时间内idle_thread_loops会被累加多少次。<br>cyg_cpuload_create函数启动一个闹钟，这个闹钟每隔0.1秒调用回调函数，<br>回调函数计算idle_thread_loops从上次检查到本次检查的差值，然后根据这个差值以及校准值计算出CPU负载。<br>回调函数用新的计算结果更新cyg_cpuload结构，<br>0.1秒负载只是简单地复制最近的测量结果，然后通过一个简单的滤波计算1秒和10秒负载。<br>由于舍入误差的存在，即使系统满负载，1秒和10秒测量值也永远都不会达到100%，通常看到的是99%。</p>
+<p>如前所述，电源管理代码将干扰上述测量结果。<br>CPU负载测量的基本假设是：空闲线程可以无障碍地运行，而且运行条件与校准时的运行条件保持一致。<br>如果降低CPU时钟频率，那么空闲线程的计数器累加速率将变慢，<br>因此CPU负载测量结果值将偏高，如果CPU被完全挂起，那么CPU负载测量结果将是100%。</p>
+<h3 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a><strong>Ref</strong></h3><ol>
+<li><a href="http://ecos.sourceware.org/docs-3.0/ref/cpuload-functions.html" target="_blank" rel="noopener">Chapter 68. CPU Load Measurements</a></li>
+<li><a href="http://ecos.sourceware.org/docs-3.0/ref/ecos-ref.html" target="_blank" rel="noopener">eCos Reference Manual</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Ecos</category>
+      </categories>
+      <tags>
+        <tag>ecos</tag>
+        <tag>cpu load</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Linux lua及依赖库安装</title>
     <url>/2015/03/10/lua-run/</url>
     <content><![CDATA[<p>lua5.2暂时不使用，使用lua5.1+luarocks</p>
@@ -38275,92 +38435,6 @@ $ luarocks search **</code></pre>]]></content>
       </categories>
       <tags>
         <tag>lua</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>cmake 常用命令</title>
-    <url>/2015/03/04/cmake-03/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p>##Commands</p>
-<p>头文件路径，相当于编译器参数 -Idir1 -Idir2</p>
-<pre><code>INCLUDE_DIRECTORIES( &quot;dir1&quot; &quot;dir2&quot; ... )</code></pre><p>库文件路径。注意：<br>由于历史原因，相对路径会原样传递给链接器。<br>尽量使用FIND_LIBRARY而避免使用这个。</p>
-<pre><code>LINK_DIRECTORIES(&quot;dir1&quot; &quot;dir2&quot;)</code></pre><p>收集目录中的文件名并赋值给变量</p>
-<pre><code>AUX_SOURCE_DIRECTORY( “sourcedir” variable)</code></pre><p>可执行程序目标</p>
-<pre><code>ADD_EXECUTABLE</code></pre><p>库目标</p>
-<pre><code>ADD_LIBRARY</code></pre><p>自定义目标</p>
-<pre><code>ADD_CUSTOM_TARGET</code></pre><p>目标target1依赖于t2 t3</p>
-<pre><code>ADD_DEPENDENCIES( target1 t2 t3 )</code></pre><p>本意是供设置 -D… /D… 等编译预处理需要的宏定义参数，对比 REMOVE_DEFINITIONS()</p>
-<pre><code>ADD_DEFINITIONS( &quot;-Wall -ansi&quot;)</code></pre><p>设置单个目标需要链接的库</p>
-<pre><code>TARGET_LINK_LIBRARIES( target-name lib1 lib2 ...)</code></pre><p>设置所有目标需要链接的库</p>
-<pre><code>LINK_LIBRARIES( lib1 lib2 ...)</code></pre><p>设置目标的属性 OUTPUT_NAME, VERSION, ….</p>
-<pre><code>SET_TARGET_PROPERTIES( ... )</code></pre><p>打印输出信息</p>
-<pre><code>MESSAGE(...)</code></pre><p>DESTINATION 相对于 ${CMAKE_INSTALL_PREFIX}</p>
-<pre><code>INSTALL( FILES “f1” “f2”DESTINATION . )</code></pre><p>变量赋值</p>
-<pre><code>SET( VAR value [CACHE TYPE DOCSTRING [FORCE]])</code></pre><p>列表操作</p>
-<pre><code>LIST( APPEND|INSERT|LENGTH|GET| REMOVE_ITEM|REMOVE_AT|SORT ...)</code></pre><p>字符串操作</p>
-<pre><code>STRING( TOUPPER|TOLOWER|LENGTH| SUBSTRING|REPLACE|REGEX ...)</code></pre><p>转换空格分隔的字符串到列表</p>
-<pre><code>SEPARATE_ARGUMENTS( VAR )</code></pre><p>文件操作</p>
-<pre><code>FILE( WRITE|READ|APPEND|GLOB| GLOB_RECURSE|REMOVE|MAKE_DIRECTORY ...)</code></pre><p>注意 CMAKE_INCLUDE_PATH</p>
-<pre><code>FIND_FILE</code></pre><p>注意 CMAKE_INCLUDE_PATH</p>
-<pre><code>FIND_PATH</code></pre><p>注意 CMAKE_LIBRARY_PATH</p>
-<pre><code>FIND_LIBRARY
-FIND_PROGRAM</code></pre><p>注意 CMAKE_MODULE_PATH</p>
-<pre><code>FIND_PACKAGE</code></pre><p>执行外部程序</p>
-<pre><code>EXEC_PROGRAM( bin [work_dir] ARGS &lt;..&gt; [OUTPUT_VARIABLE var] [RETURN_VALUE var] )</code></pre><p>设置选项</p>
-<pre><code>OPTION( OPTION_VAR “description” [initial value] )</code></pre><p>##Ref</p>
-<p>引用文档：</p>
-<ol>
-<li><a href="http://www.cmake.org/cmake/help/v3.0/manual/cmake-language.7.html#syntax" target="_blank" rel="noopener">cmake syntax</a></li>
-<li><a href="http://www.cmake.org/Wiki/CMake_Useful_Variables" target="_blank" rel="noopener">CMake常用变量列表</a></li>
-<li><a href="http://www.cmake.org/cmake/help/v3.0/manual/cmake-commands.7.html" target="_blank" rel="noopener">cmake command</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>cmake</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>github push避免输入用户名和密码</title>
-    <url>/2015/03/04/git-push/</url>
-    <content><![CDATA[<p>github上传代码时，每次都需要输入用户名和密码，原因是使用了https方式进行push：</p>
-<pre><code>$ git clone https://github.com/breezetemple/breezetemple.github.com.git</code></pre><p>使用以下命令更换为使用ssh方式：</p>
-<pre><code>$ git remote -v
-origin  https://github.com/breezetemple/breezetemple.github.com.git (fetch)
-origin  https://github.com/breezetemple/breezetemple.github.com.git (push)
-$ git remote rm origin
-$ git remote add origin git@github.com:breezetemple/breezetemple.github.com.git
-$ git push origin master 
-Everything up-to-date</code></pre><p>或者使用如下命令初始化：</p>
-<pre><code>git clone git@github.com:breezetemple/breezetemple.github.com.git</code></pre><p>另外，需要将ssh pub key上传到github：</p>
-<pre><code>$ ls ~/.ssh/id_rsa.pub                
-/home/yanwzh/.ssh/id_rsa.pub
-$ xclip -sel clip &lt; ~/.ssh/id_rsa.pub</code></pre>]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>GitHub</category>
-      </categories>
-      <tags>
-        <tag>github</tag>
-        <tag>git</tag>
       </tags>
   </entry>
   <entry>
@@ -38525,6 +38599,92 @@ INSTALL(FILES demo.hpp http.hpp DESTINATION include)</code></pre><h2 id="Ref"><a
       </categories>
       <tags>
         <tag>cmake</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>cmake 常用命令</title>
+    <url>/2015/03/04/cmake-03/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p>##Commands</p>
+<p>头文件路径，相当于编译器参数 -Idir1 -Idir2</p>
+<pre><code>INCLUDE_DIRECTORIES( &quot;dir1&quot; &quot;dir2&quot; ... )</code></pre><p>库文件路径。注意：<br>由于历史原因，相对路径会原样传递给链接器。<br>尽量使用FIND_LIBRARY而避免使用这个。</p>
+<pre><code>LINK_DIRECTORIES(&quot;dir1&quot; &quot;dir2&quot;)</code></pre><p>收集目录中的文件名并赋值给变量</p>
+<pre><code>AUX_SOURCE_DIRECTORY( “sourcedir” variable)</code></pre><p>可执行程序目标</p>
+<pre><code>ADD_EXECUTABLE</code></pre><p>库目标</p>
+<pre><code>ADD_LIBRARY</code></pre><p>自定义目标</p>
+<pre><code>ADD_CUSTOM_TARGET</code></pre><p>目标target1依赖于t2 t3</p>
+<pre><code>ADD_DEPENDENCIES( target1 t2 t3 )</code></pre><p>本意是供设置 -D… /D… 等编译预处理需要的宏定义参数，对比 REMOVE_DEFINITIONS()</p>
+<pre><code>ADD_DEFINITIONS( &quot;-Wall -ansi&quot;)</code></pre><p>设置单个目标需要链接的库</p>
+<pre><code>TARGET_LINK_LIBRARIES( target-name lib1 lib2 ...)</code></pre><p>设置所有目标需要链接的库</p>
+<pre><code>LINK_LIBRARIES( lib1 lib2 ...)</code></pre><p>设置目标的属性 OUTPUT_NAME, VERSION, ….</p>
+<pre><code>SET_TARGET_PROPERTIES( ... )</code></pre><p>打印输出信息</p>
+<pre><code>MESSAGE(...)</code></pre><p>DESTINATION 相对于 ${CMAKE_INSTALL_PREFIX}</p>
+<pre><code>INSTALL( FILES “f1” “f2”DESTINATION . )</code></pre><p>变量赋值</p>
+<pre><code>SET( VAR value [CACHE TYPE DOCSTRING [FORCE]])</code></pre><p>列表操作</p>
+<pre><code>LIST( APPEND|INSERT|LENGTH|GET| REMOVE_ITEM|REMOVE_AT|SORT ...)</code></pre><p>字符串操作</p>
+<pre><code>STRING( TOUPPER|TOLOWER|LENGTH| SUBSTRING|REPLACE|REGEX ...)</code></pre><p>转换空格分隔的字符串到列表</p>
+<pre><code>SEPARATE_ARGUMENTS( VAR )</code></pre><p>文件操作</p>
+<pre><code>FILE( WRITE|READ|APPEND|GLOB| GLOB_RECURSE|REMOVE|MAKE_DIRECTORY ...)</code></pre><p>注意 CMAKE_INCLUDE_PATH</p>
+<pre><code>FIND_FILE</code></pre><p>注意 CMAKE_INCLUDE_PATH</p>
+<pre><code>FIND_PATH</code></pre><p>注意 CMAKE_LIBRARY_PATH</p>
+<pre><code>FIND_LIBRARY
+FIND_PROGRAM</code></pre><p>注意 CMAKE_MODULE_PATH</p>
+<pre><code>FIND_PACKAGE</code></pre><p>执行外部程序</p>
+<pre><code>EXEC_PROGRAM( bin [work_dir] ARGS &lt;..&gt; [OUTPUT_VARIABLE var] [RETURN_VALUE var] )</code></pre><p>设置选项</p>
+<pre><code>OPTION( OPTION_VAR “description” [initial value] )</code></pre><p>##Ref</p>
+<p>引用文档：</p>
+<ol>
+<li><a href="http://www.cmake.org/cmake/help/v3.0/manual/cmake-language.7.html#syntax" target="_blank" rel="noopener">cmake syntax</a></li>
+<li><a href="http://www.cmake.org/Wiki/CMake_Useful_Variables" target="_blank" rel="noopener">CMake常用变量列表</a></li>
+<li><a href="http://www.cmake.org/cmake/help/v3.0/manual/cmake-commands.7.html" target="_blank" rel="noopener">cmake command</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>cmake</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>github push避免输入用户名和密码</title>
+    <url>/2015/03/04/git-push/</url>
+    <content><![CDATA[<p>github上传代码时，每次都需要输入用户名和密码，原因是使用了https方式进行push：</p>
+<pre><code>$ git clone https://github.com/breezetemple/breezetemple.github.com.git</code></pre><p>使用以下命令更换为使用ssh方式：</p>
+<pre><code>$ git remote -v
+origin  https://github.com/breezetemple/breezetemple.github.com.git (fetch)
+origin  https://github.com/breezetemple/breezetemple.github.com.git (push)
+$ git remote rm origin
+$ git remote add origin git@github.com:breezetemple/breezetemple.github.com.git
+$ git push origin master 
+Everything up-to-date</code></pre><p>或者使用如下命令初始化：</p>
+<pre><code>git clone git@github.com:breezetemple/breezetemple.github.com.git</code></pre><p>另外，需要将ssh pub key上传到github：</p>
+<pre><code>$ ls ~/.ssh/id_rsa.pub                
+/home/yanwzh/.ssh/id_rsa.pub
+$ xclip -sel clip &lt; ~/.ssh/id_rsa.pub</code></pre>]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>GitHub</category>
+      </categories>
+      <tags>
+        <tag>github</tag>
+        <tag>git</tag>
       </tags>
   </entry>
   <entry>
@@ -38873,36 +39033,6 @@ end</code></pre><p>上面的例子含义：当x&gt;0时，在foo函数处停下�
       </tags>
   </entry>
   <entry>
-    <title>并行计算初识</title>
-    <url>/2014/12/15/parallel-computing/</url>
-    <content><![CDATA[<ul>
-<li><strong>MPI</strong>:英文全称是Message Passing Interface，这个就很明了了，信息传递接口，是独立于语言的通信协议（标准），是一个库。<br>MPI的实现有MPICH，MPI-1，MPI-2等等</li>
-<li><strong>openMPI</strong>：英文全称是open Message Passing Interface。openMPI是MPI的一种实现，一种库项目</li>
-<li><strong>OpenMP</strong>：英文全称是Open Multiprocessing，一种应用程序界面（API，即Application Program Interface），<br>是一种并行的实现和方法，也可以认为是共享存储结构上的一种编程模型，<br>可用于共享内存并行系统的多线程程序设计的一套指导性注释（Compiler Directive）。</li>
-</ul>
-<p>在当前的并行机子中，openMP和openMPI都是需要的（从上面的各自概念可以看出），<br>openMP用于本地的并行计算（共享内存内存架构），<br>支持目前所有平台上的c,fortran等的共享内存式并行计算，<br>它相当于是给出了一个让并行编程更加容易实现的模型，<br>而openMPI则是用于机器之间的通信（分布式内存架构）。</p>
-<h3 id="OpenMP"><a href="#OpenMP" class="headerlink" title="OpenMP"></a><strong>OpenMP</strong></h3><p>简单。不用大改源程序，直接加#pragma就行了。<br>只适用于共享式内存。比如一台电脑，4核cpu共享16G内存，可以用Openmp启动4核同时计算。</p>
-<p>OpenMP:线程级（并行粒度）；共享存储；隐式（数据分配方式）；可扩展性差；</p>
-<h3 id="MPI"><a href="#MPI" class="headerlink" title="MPI"></a><strong>MPI</strong></h3><p>稍复杂。需要重新设计程序，学习成本稍高。</p>
-<p>MPI：进程级；分布式存储；显式；可扩展性好。</p>
-<p><strong>OpenMP采用共享存储，意味着它只适应于SMP,DSM机器，不适合于集群。MPI虽适合于各种机器，但它的编程模型复杂</strong></p>
-<p>在并行计算领域内，主要的并行编程模型有三类模型：<br>数据并行、消息传递、共享变量。<br>其中基于消息传递的 MPI 编程模型和基于共享变量的 OpenMP 编程模型是最为流行的并行编程模型。<br>openmp比较简单，修改现有的大段代码也容易。<br>基本上openmp只要在已有程序基础上根据需要加并行语句即可。<br>而mpi有时甚至需要从基本设计思路上重写整个程序，调试也困难得多，涉及到局域网通信这一不确定的因素。<br>不过，openmp虽然简单却只能用于单机多CPU/多核并行，mpi才是用于多主机超级计算机集群的强悍工具，当然复杂。</p>
-<h3 id="MPI＝message-passing-interface"><a href="#MPI＝message-passing-interface" class="headerlink" title="MPI＝message passing interface"></a><strong>MPI＝message passing interface</strong></h3><p>在分布式内存（distributed-memory）之间实现信息通讯的一种 规范/标准/协议（standard）。<br>它是一个库，不是一门语言。可以被fortran，c，c++等调用。<br>MPI 允许静态任务调度，显示并行提供了良好的性能和移植性，用 MPI 编写的程序可直接在多核集群上运行。<br>在集群系统中，集群的各节点之间可以采用 MPI 编程模型进行程序设计，<br>每个节点都有自己的内存，可以对本地的指令和数据直接进行访问，<br>各节点之间通过互联网络进行消息传递，这样设计具有很好的可移植性，<br>完备的异步通信功能，较强的可扩展性等优点。<br>MPI 模型存在一些不足，包括：程序的分解、开发和调试相对困难，<br>而且通常要求对代码做大量的改动；<br>通信会造成很大的开销，为了最小化延迟，通常需要大的代码粒度；<br>细粒度的并行会引发大量的通信；动态负载平衡困难；并行化改进需要大量地修改原有的串行代码，调试难度比较大</p>
-<h3 id="MPICH和OpenMPI"><a href="#MPICH和OpenMPI" class="headerlink" title="MPICH和OpenMPI"></a><strong>MPICH和OpenMPI</strong></h3><p>它们都是采用MPI标准，在并行计算中，实现节点间通信的开源软件。各自有各自的函数，指令和库。</p>
-<p>Reference:</p>
-<p>They are two implementations of the MPI standard.<br>In the late 90s and early 2000s, there were many different MPI implementations,<br>and the implementors started to realize they were all re-inventing the wheel;<br>there was something of a consolidation.<br>The LAM/MPI team joined with the LA/MPI, FT-MPI, and eventually PACX-MPI teams to develop OpenMPI.<br>LAM MPI stopped being developed in 2007.<br>The code base for OpenMPI was completely new,<br>but it brought in ideas and techniques from all the different teams.</p>
-<p>Currently, the two major open-source MPI implementation code-bases are OpenMPI and MPICH2.</p>
-<p>而MPICH2是MPICH的一个版本。</p>
-<p>有的计算机厂商，也会针对旗下机型特点，自主开发基于MPICH的MPI软件，从而使机器的并行计算效率得以提高。</p>
-<h3 id="OpenMP-1"><a href="#OpenMP-1" class="headerlink" title="OpenMP"></a><strong>OpenMP</strong></h3><p>在节点内（多核 SMP）执行的基于共享内存的编程模型。</p>
-<p>OpenMP是针对单主机上多核/多CPU并行计算而设计的工具，<br>换句话说，OpenMP更适合单台计算机共享内存结构上的并行计算。<br>由于使用线程间共享内存的方式协调并行计算，<br>它在多核/多CPU结构上的效率很高、内存开销小、编程语句简洁直观，<br>因此编程容易、编译器实现也容易（现在最新版的C、C++、Fortran编译器基本上都内置OpenMP支持）。<br>不过OpenMP最大的缺点是只能在单台主机上工作，不能用于多台主机间的并行计算</p>
-<p>MPI 负责节点之间的通信（集群系统中的单个计算机通常称为节点）<br>OpenMP负责节点中多核CPU的计算<br>CUDA负责节点中gpu上的计算</p>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-  </entry>
-  <entry>
     <title>异步非阻塞I/O</title>
     <url>/2014/12/15/aio/</url>
     <content><![CDATA[<script type="text/javascript">
@@ -38991,6 +39121,51 @@ struct aiocb {
       <tags>
         <tag>I/O</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>并行计算初识</title>
+    <url>/2014/12/15/parallel-computing/</url>
+    <content><![CDATA[<ul>
+<li><strong>MPI</strong>:英文全称是Message Passing Interface，这个就很明了了，信息传递接口，是独立于语言的通信协议（标准），是一个库。<br>MPI的实现有MPICH，MPI-1，MPI-2等等</li>
+<li><strong>openMPI</strong>：英文全称是open Message Passing Interface。openMPI是MPI的一种实现，一种库项目</li>
+<li><strong>OpenMP</strong>：英文全称是Open Multiprocessing，一种应用程序界面（API，即Application Program Interface），<br>是一种并行的实现和方法，也可以认为是共享存储结构上的一种编程模型，<br>可用于共享内存并行系统的多线程程序设计的一套指导性注释（Compiler Directive）。</li>
+</ul>
+<p>在当前的并行机子中，openMP和openMPI都是需要的（从上面的各自概念可以看出），<br>openMP用于本地的并行计算（共享内存内存架构），<br>支持目前所有平台上的c,fortran等的共享内存式并行计算，<br>它相当于是给出了一个让并行编程更加容易实现的模型，<br>而openMPI则是用于机器之间的通信（分布式内存架构）。</p>
+<h3 id="OpenMP"><a href="#OpenMP" class="headerlink" title="OpenMP"></a><strong>OpenMP</strong></h3><p>简单。不用大改源程序，直接加#pragma就行了。<br>只适用于共享式内存。比如一台电脑，4核cpu共享16G内存，可以用Openmp启动4核同时计算。</p>
+<p>OpenMP:线程级（并行粒度）；共享存储；隐式（数据分配方式）；可扩展性差；</p>
+<h3 id="MPI"><a href="#MPI" class="headerlink" title="MPI"></a><strong>MPI</strong></h3><p>稍复杂。需要重新设计程序，学习成本稍高。</p>
+<p>MPI：进程级；分布式存储；显式；可扩展性好。</p>
+<p><strong>OpenMP采用共享存储，意味着它只适应于SMP,DSM机器，不适合于集群。MPI虽适合于各种机器，但它的编程模型复杂</strong></p>
+<p>在并行计算领域内，主要的并行编程模型有三类模型：<br>数据并行、消息传递、共享变量。<br>其中基于消息传递的 MPI 编程模型和基于共享变量的 OpenMP 编程模型是最为流行的并行编程模型。<br>openmp比较简单，修改现有的大段代码也容易。<br>基本上openmp只要在已有程序基础上根据需要加并行语句即可。<br>而mpi有时甚至需要从基本设计思路上重写整个程序，调试也困难得多，涉及到局域网通信这一不确定的因素。<br>不过，openmp虽然简单却只能用于单机多CPU/多核并行，mpi才是用于多主机超级计算机集群的强悍工具，当然复杂。</p>
+<h3 id="MPI＝message-passing-interface"><a href="#MPI＝message-passing-interface" class="headerlink" title="MPI＝message passing interface"></a><strong>MPI＝message passing interface</strong></h3><p>在分布式内存（distributed-memory）之间实现信息通讯的一种 规范/标准/协议（standard）。<br>它是一个库，不是一门语言。可以被fortran，c，c++等调用。<br>MPI 允许静态任务调度，显示并行提供了良好的性能和移植性，用 MPI 编写的程序可直接在多核集群上运行。<br>在集群系统中，集群的各节点之间可以采用 MPI 编程模型进行程序设计，<br>每个节点都有自己的内存，可以对本地的指令和数据直接进行访问，<br>各节点之间通过互联网络进行消息传递，这样设计具有很好的可移植性，<br>完备的异步通信功能，较强的可扩展性等优点。<br>MPI 模型存在一些不足，包括：程序的分解、开发和调试相对困难，<br>而且通常要求对代码做大量的改动；<br>通信会造成很大的开销，为了最小化延迟，通常需要大的代码粒度；<br>细粒度的并行会引发大量的通信；动态负载平衡困难；并行化改进需要大量地修改原有的串行代码，调试难度比较大</p>
+<h3 id="MPICH和OpenMPI"><a href="#MPICH和OpenMPI" class="headerlink" title="MPICH和OpenMPI"></a><strong>MPICH和OpenMPI</strong></h3><p>它们都是采用MPI标准，在并行计算中，实现节点间通信的开源软件。各自有各自的函数，指令和库。</p>
+<p>Reference:</p>
+<p>They are two implementations of the MPI standard.<br>In the late 90s and early 2000s, there were many different MPI implementations,<br>and the implementors started to realize they were all re-inventing the wheel;<br>there was something of a consolidation.<br>The LAM/MPI team joined with the LA/MPI, FT-MPI, and eventually PACX-MPI teams to develop OpenMPI.<br>LAM MPI stopped being developed in 2007.<br>The code base for OpenMPI was completely new,<br>but it brought in ideas and techniques from all the different teams.</p>
+<p>Currently, the two major open-source MPI implementation code-bases are OpenMPI and MPICH2.</p>
+<p>而MPICH2是MPICH的一个版本。</p>
+<p>有的计算机厂商，也会针对旗下机型特点，自主开发基于MPICH的MPI软件，从而使机器的并行计算效率得以提高。</p>
+<h3 id="OpenMP-1"><a href="#OpenMP-1" class="headerlink" title="OpenMP"></a><strong>OpenMP</strong></h3><p>在节点内（多核 SMP）执行的基于共享内存的编程模型。</p>
+<p>OpenMP是针对单主机上多核/多CPU并行计算而设计的工具，<br>换句话说，OpenMP更适合单台计算机共享内存结构上的并行计算。<br>由于使用线程间共享内存的方式协调并行计算，<br>它在多核/多CPU结构上的效率很高、内存开销小、编程语句简洁直观，<br>因此编程容易、编译器实现也容易（现在最新版的C、C++、Fortran编译器基本上都内置OpenMP支持）。<br>不过OpenMP最大的缺点是只能在单台主机上工作，不能用于多台主机间的并行计算</p>
+<p>MPI 负责节点之间的通信（集群系统中的单个计算机通常称为节点）<br>OpenMP负责节点中多核CPU的计算<br>CUDA负责节点中gpu上的计算</p>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>Linux系统调用</title>
+    <url>/2014/12/14/Linux-system-programming-syscall/</url>
+    <content><![CDATA[<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<p>计算机系统内存分为系统空间和用户空间。通常，用户是不能够直接访问系统空间、调用系统函数的，<br>但用户可以通过<strong>系统调用</strong>进入内核空间，获取内核服务。</p>
+<p>用户进程对系统函数的成功调用，将进行相应的用户空间到系统空间的转换。<br>进入内核后，不同的系统调用会找到各自对应的内核函数入口地址，<strong>由内核函数提供服务</strong>。</p>
+<p>以调用系统调用fork()来分析如下：</p>
+<p><img src="http://images.51cto.com/files/uploadimg/20090603/163946908.jpg" alt="fork()系统调用"></p>
+<p>从图中我们可以看出，调用fork()实际上是调用了中断0x80，通过事先初始化好的IDT，<br>程序转移到了_system_call，最终通过一个函数指针数组sys_call_table[]转化成了调用sys_fork()。</p>
+<p>系统调用起到了连接用户进程和操作系统的桥梁作用，由于桥两端处于不同的态，因此需要使用中断来过渡。</p>
+]]></content>
+      <categories>
+        <category>Linux System Programming</category>
+      </categories>
   </entry>
   <entry>
     <title>动态库的显式调用</title>
@@ -39219,21 +39394,6 @@ int shutdown(int sockfd, int how);</code></pre><p>bind函数使用通用地址�
         <tag>socket</tag>
         <tag>network</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>Linux系统调用</title>
-    <url>/2014/12/14/Linux-system-programming-syscall/</url>
-    <content><![CDATA[<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
-<p>计算机系统内存分为系统空间和用户空间。通常，用户是不能够直接访问系统空间、调用系统函数的，<br>但用户可以通过<strong>系统调用</strong>进入内核空间，获取内核服务。</p>
-<p>用户进程对系统函数的成功调用，将进行相应的用户空间到系统空间的转换。<br>进入内核后，不同的系统调用会找到各自对应的内核函数入口地址，<strong>由内核函数提供服务</strong>。</p>
-<p>以调用系统调用fork()来分析如下：</p>
-<p><img src="http://images.51cto.com/files/uploadimg/20090603/163946908.jpg" alt="fork()系统调用"></p>
-<p>从图中我们可以看出，调用fork()实际上是调用了中断0x80，通过事先初始化好的IDT，<br>程序转移到了_system_call，最终通过一个函数指针数组sys_call_table[]转化成了调用sys_fork()。</p>
-<p>系统调用起到了连接用户进程和操作系统的桥梁作用，由于桥两端处于不同的态，因此需要使用中断来过渡。</p>
-]]></content>
-      <categories>
-        <category>Linux System Programming</category>
-      </categories>
   </entry>
   <entry>
     <title>GCC静态库链接顺序</title>
@@ -39751,6 +39911,35 @@ echo</code></pre>]]></content>
       </tags>
   </entry>
   <entry>
+    <title>RGB 颜色空间显示</title>
+    <url>/2014/11/18/rgb/</url>
+    <content><![CDATA[<p>代码如下，实现RGB颜色空间的显示：</p>
+<pre><code>for(r = 0 ; r &lt; 0xFF; r++)
+{   
+    for(g = 0 ; g &lt; 0xFF; g++)
+    {   
+        for(b = 0 ; b &lt; 0xFF; b++)                                                                                         
+        {   
+            count++;
+
+            printf(&quot;\e]4;60;rgb:%d/%d/%d\e\\\e[38;5;60m 0x%02x%02x%02x██████\e[m&quot;, r, g, b, r, g, b); 
+
+            if(count%8 == 0)
+                printf(&quot;\n&quot;);
+        }   
+    }   
+}   </code></pre><p>shell中如下进行显示：</p>
+<pre><code>$ echo -en &#39;\e]4;60;rgb:ff/ff/ff\e\\\e[38;5;60m = ██ \e[m\n&#39;</code></pre><p>可以方便进行RGB颜色的查询</p>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>color</tag>
+        <tag>shell</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>6442-YCbCr转换为565-RGB</title>
     <url>/2014/11/18/ycbcr2rgb/</url>
     <content><![CDATA[<p>如下代码实现YCbCr(6:4:4:2)到RGB(5:6:6)的转换：</p>
@@ -39805,35 +39994,6 @@ echo</code></pre>]]></content>
       </categories>
       <tags>
         <tag>color</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>RGB 颜色空间显示</title>
-    <url>/2014/11/18/rgb/</url>
-    <content><![CDATA[<p>代码如下，实现RGB颜色空间的显示：</p>
-<pre><code>for(r = 0 ; r &lt; 0xFF; r++)
-{   
-    for(g = 0 ; g &lt; 0xFF; g++)
-    {   
-        for(b = 0 ; b &lt; 0xFF; b++)                                                                                         
-        {   
-            count++;
-
-            printf(&quot;\e]4;60;rgb:%d/%d/%d\e\\\e[38;5;60m 0x%02x%02x%02x██████\e[m&quot;, r, g, b, r, g, b); 
-
-            if(count%8 == 0)
-                printf(&quot;\n&quot;);
-        }   
-    }   
-}   </code></pre><p>shell中如下进行显示：</p>
-<pre><code>$ echo -en &#39;\e]4;60;rgb:ff/ff/ff\e\\\e[38;5;60m = ██ \e[m\n&#39;</code></pre><p>可以方便进行RGB颜色的查询</p>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>color</tag>
-        <tag>shell</tag>
       </tags>
   </entry>
   <entry>
@@ -41900,80 +42060,6 @@ int main(void)
       </tags>
   </entry>
   <entry>
-    <title>Linux系统编程-基本概念</title>
-    <url>/2014/10/20/Linux-system-programming/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
-<h2 id="Linux系统编程的基础"><a href="#Linux系统编程的基础" class="headerlink" title="Linux系统编程的基础"></a><strong>Linux系统编程的基础</strong></h2><ul>
-<li><strong>系统调用</strong>，系统编程始于系统调用，也终于系统调用。syscall是为了从操作系统请求一些服务或资源发起的函数调用。</li>
-<li><strong>C库</strong>，是UNIX应用程序的核心。在现代Linux系统中，C库由GNU libc提供，简称glibc。<br>glibc中除了标准C库之外，还提供了系统调用封装、线程支持和基本应用工具。</li>
-<li><strong>C编译器</strong>，标准C编译器是由GNU编译工具集（GNU Compiler Collection，gcc）提供的。</li>
-</ul>
-<h2 id="Linux编程的概念"><a href="#Linux编程的概念" class="headerlink" title="Linux编程的概念"></a><strong>Linux编程的概念</strong></h2><h3 id="文件和文件系统"><a href="#文件和文件系统" class="headerlink" title="文件和文件系统"></a><strong>文件和文件系统</strong></h3><p>文件是Linux系统中最基础最重要的抽象。Linux遵循一切皆文件的理念。因此，很多交互是通过读写文件来完成。</p>
-<p>文件必须先打开才能访问。打开方式有只读、只写和读写模式。文件打开之后是通过<strong>唯一描述符</strong>来引用，<br>在Linux内核中，文件用一个整数表示（C语言的int类型），称为<strong>文件描述符</strong>（file descriptor，简称fd）。<br>文件描述符在用户空间共享，用户程序通过文件描述符可以直接访问文件。<br><strong>Linux系统编程的大部分工作都会涉及打开、操纵、关闭以及其他文件描述符操作。</strong></p>
-<ul>
-<li>普通文件（regular files），包含以字节流（线性数据）组织的数据。</li>
-<li>目录和链接（diectory and link），目录是可读名称（文件名）到索引编号之间的映射。名称和索引节点之间的配对称为链接。</li>
-<li>硬链接（hard links），不同名称的多个链接映射到同一个索引节点时，称该链接为硬链接</li>
-<li>符号链接（symbolic links），类似于普通文件，有自己的索引节点和数据块，包含要链接文件的绝对路径。</li>
-<li>特殊文件（special file），指以文件来表示的内核对象。Linux只支持以下四种设备：<ul>
-<li>块设备文件</li>
-<li>字符设备文件</li>
-<li>命名管道（named pipes），通常称为FIFO，是以文件描述符作为通信信道的进程间通信（IPC）机制</li>
-<li>UNIX域套接字（socket），进程间通信的高级形式</li>
-</ul>
-</li>
-<li>文件系统和命名空间，Linux提供全局统一的文件和命名空间</li>
-</ul>
-<h3 id="进程"><a href="#进程" class="headerlink" title="进程"></a><strong>进程</strong></h3><p>进程是执行时的目标代码：活动的、正在运行的程序。但不仅仅包含目标代码，它还包含数据、资源、状态和虚拟计算机。</p>
-<p>进程的生命周期从可执行代码开始，在Linux下，最常见的格式称为“可执行和可链接格式（Executable and Linkable Format，ELF）”。<br>包含多个元数据、多个代码段和数据段。代码段是线性目标代码块，可以加载到线性内存块中。</p>
-<p>最重要和通用的段是文本段、数据段和bss段。</p>
-<ul>
-<li>文本段，包含可执行代码和只读数据如常量</li>
-<li>数据段，包含初始化的数据</li>
-<li>bss段，包含未初始化的全局数据。<strong>因为C标准规定C变量的默认值为0，因此没有必要在磁盘上将0保存到目标代码中。<br>相反的，根据目标代码可以很容易列举出bss段中未初始化的变量，内核在加载到内存时可以映射bss段中的全0页面，<br>bss段的设计完全出于性能优化。bss是block started by symbol的简称。</strong></li>
-</ul>
-<h4 id="线程"><a href="#线程" class="headerlink" title="线程"></a><strong>线程</strong></h4><p>每个进程包含一个或多个<strong>执行线程</strong>（通常简称线程threads）。线程是进程内的活动单元。</p>
-<p>线程包括栈、处理器状态、目标代码的当前位置（pc）。进程的其他部分由所有线程共享，最主要的是进程地址空间。</p>
-<p>在用户空间，Linux依据POSIX 1003.1c实现线程模型（称为Pthreads）。目前Linux线程实现称为POSIX Threading Library（NPTL）。</p>
-<h4 id="进程层次结构"><a href="#进程层次结构" class="headerlink" title="进程层次结构"></a><strong>进程层次结构</strong></h4><p>每个进程都有唯一的正整数标识，称为进程ID（pid）。在Linux中，进程有严格的层次结构，即进程树。<br>进程树的根是第一个进程，称为init进程，通常是init程序。新的进程通过调用fork()创建，原进程称为父进程，<br>fork()创建的新进程为子进程。当进程结束时，并不会立即从系统中删除。相反地，内核将在内存中保存该进程的部分内容，<br>允许父进程查询其状态，这被称为<strong>等待终止进程</strong>。一旦父进程确认某个子进程已经终止，该子进程就会完全被删除。</p>
-<h3 id="信号"><a href="#信号" class="headerlink" title="信号"></a><strong>信号</strong></h3><p>信号是一种单向异步通知机制。信号可能从内核发送到进程，也可能从进程发送到内核，或者进程发送给自己。<br>信号一般用于通知进程发生了某些事件，如段错误或按下ctrl-C。</p>
-<h3 id="进程间通信"><a href="#进程间通信" class="headerlink" title="进程间通信"></a><strong>进程间通信</strong></h3><p>允许进程间交换信息并通知彼此所发生的事件是操作系统最重要的工作之一。Linux支持的进程间通信机制包括：</p>
-<ul>
-<li>管道</li>
-<li>命名管道</li>
-<li>信号量</li>
-<li>消息队列</li>
-<li>共享内存</li>
-<li>快速用户空间互斥（futex）</li>
-</ul>
-<h3 id="头文件"><a href="#头文件" class="headerlink" title="头文件"></a><strong>头文件</strong></h3><p>内核本身和glibc提供大量用于系统编程的头文件，包括标准C库（&lt;string.h&gt;）以及一些UNIX（&lt;unistd.h&gt;）</p>
-<h3 id="错误处理"><a href="#错误处理" class="headerlink" title="错误处理"></a><strong>错误处理</strong></h3><p>在系统编程中，错误是通过函数返回值和errno描述。glibc为库函数和系统调用提供<strong>透明errno</strong>支持。<br>变量errno在&lt;errno.h&gt;中定义如下：<br>    extern int errno;</p>
-]]></content>
-      <categories>
-        <category>Linux System Programming</category>
-      </categories>
-      <tags>
-        <tag>System Programming</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Linux系统编程-文件I/O</title>
     <url>/2014/10/20/Linux-system-programming-02/</url>
     <content><![CDATA[<script type="text/javascript">
@@ -42118,6 +42204,80 @@ int truncate(const char *path, off_t len);</code></pre><p>这两个系统调用�
       </categories>
       <tags>
         <tag>I/O</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Linux系统编程-基本概念</title>
+    <url>/2014/10/20/Linux-system-programming/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<h2 id="Linux系统编程的基础"><a href="#Linux系统编程的基础" class="headerlink" title="Linux系统编程的基础"></a><strong>Linux系统编程的基础</strong></h2><ul>
+<li><strong>系统调用</strong>，系统编程始于系统调用，也终于系统调用。syscall是为了从操作系统请求一些服务或资源发起的函数调用。</li>
+<li><strong>C库</strong>，是UNIX应用程序的核心。在现代Linux系统中，C库由GNU libc提供，简称glibc。<br>glibc中除了标准C库之外，还提供了系统调用封装、线程支持和基本应用工具。</li>
+<li><strong>C编译器</strong>，标准C编译器是由GNU编译工具集（GNU Compiler Collection，gcc）提供的。</li>
+</ul>
+<h2 id="Linux编程的概念"><a href="#Linux编程的概念" class="headerlink" title="Linux编程的概念"></a><strong>Linux编程的概念</strong></h2><h3 id="文件和文件系统"><a href="#文件和文件系统" class="headerlink" title="文件和文件系统"></a><strong>文件和文件系统</strong></h3><p>文件是Linux系统中最基础最重要的抽象。Linux遵循一切皆文件的理念。因此，很多交互是通过读写文件来完成。</p>
+<p>文件必须先打开才能访问。打开方式有只读、只写和读写模式。文件打开之后是通过<strong>唯一描述符</strong>来引用，<br>在Linux内核中，文件用一个整数表示（C语言的int类型），称为<strong>文件描述符</strong>（file descriptor，简称fd）。<br>文件描述符在用户空间共享，用户程序通过文件描述符可以直接访问文件。<br><strong>Linux系统编程的大部分工作都会涉及打开、操纵、关闭以及其他文件描述符操作。</strong></p>
+<ul>
+<li>普通文件（regular files），包含以字节流（线性数据）组织的数据。</li>
+<li>目录和链接（diectory and link），目录是可读名称（文件名）到索引编号之间的映射。名称和索引节点之间的配对称为链接。</li>
+<li>硬链接（hard links），不同名称的多个链接映射到同一个索引节点时，称该链接为硬链接</li>
+<li>符号链接（symbolic links），类似于普通文件，有自己的索引节点和数据块，包含要链接文件的绝对路径。</li>
+<li>特殊文件（special file），指以文件来表示的内核对象。Linux只支持以下四种设备：<ul>
+<li>块设备文件</li>
+<li>字符设备文件</li>
+<li>命名管道（named pipes），通常称为FIFO，是以文件描述符作为通信信道的进程间通信（IPC）机制</li>
+<li>UNIX域套接字（socket），进程间通信的高级形式</li>
+</ul>
+</li>
+<li>文件系统和命名空间，Linux提供全局统一的文件和命名空间</li>
+</ul>
+<h3 id="进程"><a href="#进程" class="headerlink" title="进程"></a><strong>进程</strong></h3><p>进程是执行时的目标代码：活动的、正在运行的程序。但不仅仅包含目标代码，它还包含数据、资源、状态和虚拟计算机。</p>
+<p>进程的生命周期从可执行代码开始，在Linux下，最常见的格式称为“可执行和可链接格式（Executable and Linkable Format，ELF）”。<br>包含多个元数据、多个代码段和数据段。代码段是线性目标代码块，可以加载到线性内存块中。</p>
+<p>最重要和通用的段是文本段、数据段和bss段。</p>
+<ul>
+<li>文本段，包含可执行代码和只读数据如常量</li>
+<li>数据段，包含初始化的数据</li>
+<li>bss段，包含未初始化的全局数据。<strong>因为C标准规定C变量的默认值为0，因此没有必要在磁盘上将0保存到目标代码中。<br>相反的，根据目标代码可以很容易列举出bss段中未初始化的变量，内核在加载到内存时可以映射bss段中的全0页面，<br>bss段的设计完全出于性能优化。bss是block started by symbol的简称。</strong></li>
+</ul>
+<h4 id="线程"><a href="#线程" class="headerlink" title="线程"></a><strong>线程</strong></h4><p>每个进程包含一个或多个<strong>执行线程</strong>（通常简称线程threads）。线程是进程内的活动单元。</p>
+<p>线程包括栈、处理器状态、目标代码的当前位置（pc）。进程的其他部分由所有线程共享，最主要的是进程地址空间。</p>
+<p>在用户空间，Linux依据POSIX 1003.1c实现线程模型（称为Pthreads）。目前Linux线程实现称为POSIX Threading Library（NPTL）。</p>
+<h4 id="进程层次结构"><a href="#进程层次结构" class="headerlink" title="进程层次结构"></a><strong>进程层次结构</strong></h4><p>每个进程都有唯一的正整数标识，称为进程ID（pid）。在Linux中，进程有严格的层次结构，即进程树。<br>进程树的根是第一个进程，称为init进程，通常是init程序。新的进程通过调用fork()创建，原进程称为父进程，<br>fork()创建的新进程为子进程。当进程结束时，并不会立即从系统中删除。相反地，内核将在内存中保存该进程的部分内容，<br>允许父进程查询其状态，这被称为<strong>等待终止进程</strong>。一旦父进程确认某个子进程已经终止，该子进程就会完全被删除。</p>
+<h3 id="信号"><a href="#信号" class="headerlink" title="信号"></a><strong>信号</strong></h3><p>信号是一种单向异步通知机制。信号可能从内核发送到进程，也可能从进程发送到内核，或者进程发送给自己。<br>信号一般用于通知进程发生了某些事件，如段错误或按下ctrl-C。</p>
+<h3 id="进程间通信"><a href="#进程间通信" class="headerlink" title="进程间通信"></a><strong>进程间通信</strong></h3><p>允许进程间交换信息并通知彼此所发生的事件是操作系统最重要的工作之一。Linux支持的进程间通信机制包括：</p>
+<ul>
+<li>管道</li>
+<li>命名管道</li>
+<li>信号量</li>
+<li>消息队列</li>
+<li>共享内存</li>
+<li>快速用户空间互斥（futex）</li>
+</ul>
+<h3 id="头文件"><a href="#头文件" class="headerlink" title="头文件"></a><strong>头文件</strong></h3><p>内核本身和glibc提供大量用于系统编程的头文件，包括标准C库（&lt;string.h&gt;）以及一些UNIX（&lt;unistd.h&gt;）</p>
+<h3 id="错误处理"><a href="#错误处理" class="headerlink" title="错误处理"></a><strong>错误处理</strong></h3><p>在系统编程中，错误是通过函数返回值和errno描述。glibc为库函数和系统调用提供<strong>透明errno</strong>支持。<br>变量errno在&lt;errno.h&gt;中定义如下：<br>    extern int errno;</p>
+]]></content>
+      <categories>
+        <category>Linux System Programming</category>
+      </categories>
+      <tags>
+        <tag>System Programming</tag>
       </tags>
   </entry>
   <entry>
