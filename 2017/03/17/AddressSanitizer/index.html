@@ -59,7 +59,7 @@
 <meta property="og:description" content="AddressSanitizer (aka ASan) is a memory error detector for C&#x2F;C++. It finds:  Use after free (dangling pointer dereference) Heap buffer overflow Stack buffer overflow Global buffer overflow Use after r">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2017-03-17T06:31:23.000Z">
-<meta property="article:modified_time" content="2020-03-27T08:01:36.237Z">
+<meta property="article:modified_time" content="2020-03-27T08:05:34.052Z">
 <meta property="article:author" content="Breeze.Temple">
 <meta property="article:tag" content="gcc">
 <meta property="article:tag" content="AddressSanitizer">
@@ -250,7 +250,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-03-27 16:01:36" itemprop="dateModified" datetime="2020-03-27T16:01:36+08:00">2020-03-27</time>
+                <time title="Modified: 2020-03-27 16:05:34" itemprop="dateModified" datetime="2020-03-27T16:05:34+08:00">2020-03-27</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -283,14 +283,14 @@
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>287</span>
+              <span>2.2k</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="fa fa-clock-o"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
+              <span>2 mins.</span>
             </span>
 
         </div>
@@ -315,7 +315,62 @@
 </ul>
 <a id="more"></a>
 
+<p>在编译器标志中增加一个参数 <code>-fsanitize=address</code>，增加 <code>-ggdb</code> 输出信息更丰富</p>
+<pre><code class="c">int main()
+{
+    int a[2] = {1, 0};
+    int b = a[2];
+}</code></pre>
+<p>输出如下</p>
+<pre><code class="shell">$ gcc -fsanitize=address -ggdb -o test test.c
+$ ./test
+=================================================================
+==18256==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x7ffcc339d108 at pc 0x561625653aa9 bp 0x7ffcc339d0c0 sp 0x7ffcc339d0b0
+READ of size 4 at 0x7ffcc339d108 thread T0
+    #0 0x561625653aa8 in main /data/test.c:4
+    #1 0x7f75ff18fb96 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x21b96)
+    #2 0x561625653899 in _start (/data/test+0x899)
 
+Address 0x7ffcc339d108 is located in stack of thread T0 at offset 40 in frame
+    #0 0x561625653989 in main /data/test.c:2
+
+  This frame has 1 object(s):
+    [32, 40) &#39;a&#39; &lt;== Memory access at offset 40 overflows this variable
+HINT: this may be a false positive if your program uses some custom stack unwind mechanism or swapcontext
+      (longjmp and C++ exceptions *are* supported)
+SUMMARY: AddressSanitizer: stack-buffer-overflow /data/test.c:4 in main
+Shadow bytes around the buggy address:
+  0x10001866b9d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x10001866b9e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x10001866b9f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x10001866ba00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x10001866ba10: 00 00 00 00 00 00 00 00 00 00 00 00 f1 f1 f1 f1
+=&gt;0x10001866ba20: 00[f2]f2 f2 00 00 00 00 00 00 00 00 00 00 00 00
+  0x10001866ba30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x10001866ba40: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x10001866ba50: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x10001866ba60: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x10001866ba70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==18256==ABORTING</code></pre>
 <h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
 <li><a href="https://github.com/google/sanitizers/wiki/AddressSanitizer" target="_blank" rel="noopener">AddressSanitizer</a></li>
 <li><a href="https://github.com/google/sanitizers/wiki/AddressSanitizerFlags" target="_blank" rel="noopener">AddressSanitizerFlags</a></li>
@@ -476,7 +531,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">17:56</span>
+    <span title="Reading time total">17:57</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
   </div>
