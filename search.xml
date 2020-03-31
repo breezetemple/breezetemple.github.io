@@ -1,6 +1,154 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>scrapy使用</title>
+    <url>/2020/03/30/python-scrapy/</url>
+    <content><![CDATA[<p>使用 <a href="https://scrapy-chs.readthedocs.io/zh_CN/1.0/index.html" target="_blank" rel="noopener">scrapy</a> 爬虫框架编写爬虫</p>
+<a id="more"></a>
+
+<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><ul>
+<li>安装 <code>pip3 install scrapy --user</code></li>
+<li>css 选择器 <a href="http://www.ruanyifeng.com/blog/2009/03/css_selectors.html" target="_blank" rel="noopener">CSS选择器笔记</a></li>
+<li>xpath 选择器 <a href="https://www.jianshu.com/p/539356db0c0c" target="_blank" rel="noopener">scrapy提取数据之：xpath选择器</a></li>
+</ul>
+<h2 id="调试"><a href="#调试" class="headerlink" title="调试"></a>调试</h2><p>使用 <code>scrapy shell urls</code> 进行调试</p>
+<ol>
+<li>配置默认请求头<pre><code>&gt;&gt;&gt; settings.DEFAULT_REQUEST_HEADERS = {
+ &#39;Accept&#39;: &#39;text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8&#39;,
+ &#39;Accept-Language&#39;: &#39;en&#39;,
+ &#39;user-agent&#39;: &#39;Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 \
+ (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36&#39;
+}</code></pre></li>
+<li>使用 <code>fetch(urls)</code> 命令来抓取测试的页面，解析为 <code>response</code></li>
+<li>使用 <code>response.css</code> 分析页面</li>
+</ol>
+<h2 id="新建项目"><a href="#新建项目" class="headerlink" title="新建项目"></a>新建项目</h2><ol>
+<li><code>scrapy startproject projectname</code> 新建项目</li>
+<li><code>scrapy genspider demo demo.com</code> 新建爬虫</li>
+</ol>
+<pre><code class="shell">$ scrapy startproject Demo
+New Scrapy project &#39;Demo&#39;, using template directory &#39;~/.local/lib/python3.6/site-packages/scrapy/templates/project&#39;, created in:
+    ~/python/crawler/scrapy/Demo
+
+You can start your first spider with:
+    cd Demo
+    scrapy genspider example example.com
+
+$ cd Demo
+$ scrapy genspider demo demo.com
+$ tree
+.
+├── Demo
+│   ├── __init__.py
+│   ├── items.py
+│   ├── middlewares.py
+│   ├── pipelines.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-36.pyc
+│   │   └── settings.cpython-36.pyc
+│   ├── settings.py
+│   └── spiders
+│       ├── demo.py
+│       ├── __init__.py
+│       └── __pycache__
+│           └── __init__.cpython-36.pyc
+└── scrapy.cfg
+
+4 directories, 11 files</code></pre>
+<ul>
+<li><code>items.py</code> 数据模型文件</li>
+<li><code>middlewares.py</code> 中间件文件，配置所有中间件</li>
+<li><code>pipelines.py</code> 管道文件，用于处理数据输出</li>
+<li><code>settings.py</code> 配置文件</li>
+<li><code>demo.py</code> 爬虫文件</li>
+<li><code>scrapy.cfg</code> 整个Scrapy的配置文件，由Scrapy自动生成</li>
+</ul>
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p>配置文件 <code>settings.py</code></p>
+<ol>
+<li><code>LOG_LEVEL = &#39;WARNING&#39;</code> 输出级别</li>
+<li><code>ROBOTSTXT_OBEY = False</code></li>
+<li><code>FEED_EXPORT_ENCODING = &#39;utf-8&#39;</code> 支持中文</li>
+</ol>
+<h2 id="爬虫实现"><a href="#爬虫实现" class="headerlink" title="爬虫实现"></a>爬虫实现</h2><p>生成的爬虫文件如下</p>
+<pre><code class="python"># -*- coding: utf-8 -*-
+import scrapy
+
+
+class DemoSpider(scrapy.Spider):
+    name = &#39;demo&#39;
+    allowed_domains = [&#39;demo.com&#39;]
+    start_urls = [&#39;http://demo.com/&#39;]
+
+    def parse(self, response):
+        pass</code></pre>
+<p>所有的 Spider 类都必须得继承 scrapy.Spider，其中 <code>name</code>、<code>start_urls</code> 以及 <code>parse</code> 成员方法是每个 Spider 类必须要声明的。详细见<a href="https://docs.scrapy.org/en/latest/topics/spiders.html?highlight=Spider#spiders" target="_blank" rel="noopener">Spider</a></p>
+<p>需要定义 <code>start_urls</code> 或者重写 <code>start_requests</code> 方法，两者都必须是可迭代对象</p>
+<pre><code class="python">class Demo(scrapy.Spider):
+    name = &quot;demo&quot;
+    allowed_domains = [&quot;demo.com&quot;]
+
+    def start_requests(self):
+        yield Request(url=&#39;https://demo.com/p/&#39;, headers=headers, callback=self.parse_rank)
+
+    def parse_rank(self, response):
+        for item in response.css(&#39;article&gt;a&#39;):
+            name = item.css(&#39;.post-card-title::text&#39;).get()
+            link = item.css(&#39;::attr(href)&#39;).get()
+            print(&quot;\033[1;31m[%s]: %s\033[0m\n&quot; % (name, link))
+            yield Request(url=link, headers=headers, callback=self.parse_one)
+
+        next_page = response.css(&#39;ol&gt;li.next&#39;).css(&#39;a::attr(href)&#39;).get()
+        if next_page:
+            print(&quot;%s&quot; % next_page)
+            yield Request(next_page, callback=self.parse_rank)
+
+    def parse_one(self, response):
+        for src in response.css(&#39;div#post[role=main] p img::attr(src)&#39;).getall():
+            print(&quot;\033[1;32m%s\n\033[0m&quot; % src)
+            item = HaosuItem()
+            item[&#39;src&#39;] = src
+            yield item</code></pre>
+<blockquote>
+<p>所有具备解析功能的函数都应该返回 Item 或 Requests</p>
+</blockquote>
+<h2 id="数据定义"><a href="#数据定义" class="headerlink" title="数据定义"></a>数据定义</h2><p>在 <code>item.py</code> 中定义数据模型</p>
+<pre><code>class HaosuItem(scrapy.Item):
+    # define the fields for your item here like:
+    src = scrapy.Field()
+    pass</code></pre><p>数据填充并返回 <code>item</code> 见上述函数 <code>parse_one</code></p>
+<h2 id="图片下载"><a href="#图片下载" class="headerlink" title="图片下载"></a>图片下载</h2><p>Scrapy 提供了一个 item pipeline 用于下载</p>
+<pre><code class="python">from scrapy.pipelines.images import ImagesPipeline
+import scrapy
+
+
+class HaosuPipeline(ImagesPipeline):
+
+    def get_media_requests(self, item, info):
+        yield scrapy.Request(item[&#39;src&#39;])</code></pre>
+<p>从 <code>item</code> 中获取下载地址并下载，修改 <code>setting.py</code> 开启管道</p>
+<pre><code>ITEM_PIPELINES = {
+    &#39;haosu.pipelines.HaosuPipeline&#39;: 5,
+}
+IMAGES_STORE = &#39;image&#39;</code></pre><h2 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h2><pre><code class="shell">$ scrapy crawl demo</code></pre>
+<h2 id="Scrapy-体系结构"><a href="#Scrapy-体系结构" class="headerlink" title="Scrapy 体系结构"></a>Scrapy 体系结构</h2><ul>
+<li><a href="https://docs.scrapy.org/en/latest/topics/architecture.html" target="_blank" rel="noopener">Architecture overview</a></li>
+</ul>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://juejin.im/post/5cfc6f716fb9a07ea7130308" target="_blank" rel="noopener">Scrapy简明教程</a></li>
+<li><a href="https://docs.scrapy.org/en/latest/index.html" target="_blank" rel="noopener">Scrapy 2.0 documentation</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Python</category>
+        <category>Spider</category>
+      </categories>
+      <tags>
+        <tag>python</tag>
+        <tag>spider</tag>
+        <tag>scrapy</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>GitHub 搜索技巧</title>
     <url>/2020/03/25/searching-on-github/</url>
     <content><![CDATA[<p>GitHub 搜索技巧，用于准确搜索到相关资源</p>
