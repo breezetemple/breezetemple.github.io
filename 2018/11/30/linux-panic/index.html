@@ -59,7 +59,7 @@
 <meta property="og:description" content="根据 Kernel Panic 信息分析定位问题">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2018-11-30T05:26:36.000Z">
-<meta property="article:modified_time" content="2020-04-07T03:28:44.035Z">
+<meta property="article:modified_time" content="2020-04-07T04:41:36.149Z">
 <meta property="article:author" content="Breeze.Temple">
 <meta property="article:tag" content="ld">
 <meta property="article:tag" content="linux">
@@ -251,7 +251,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-04-07 11:28:44" itemprop="dateModified" datetime="2020-04-07T11:28:44+08:00">2020-04-07</time>
+                <time title="Modified: 2020-04-07 12:41:36" itemprop="dateModified" datetime="2020-04-07T12:41:36+08:00">2020-04-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -284,7 +284,7 @@
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>556</span>
+              <span>605</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
@@ -309,7 +309,7 @@
 <h2 id="定位方法"><a href="#定位方法" class="headerlink" title="定位方法"></a>定位方法</h2><p>包括内核模块、内核以及应用。</p>
 <h3 id="内核"><a href="#内核" class="headerlink" title="内核"></a>内核</h3><p>出错地址为内核地址不需要计算偏移，可以直接使用</p>
 <ol>
-<li><code>addr2line</code><pre><code class="shell">$ addr2line -f -e vmlinux 0xc062f2a0
+<li>addr2line<pre><code class="shell">$ addr2line -f -e vmlinux 0xc062f2a0
 ieee80211_send_deauth_disassoc
 .tmp_kallsyms2.o:?</code></pre>
 </li>
@@ -319,16 +319,19 @@ ieee80211_send_deauth_disassoc in section .text
 (gdb) info line *0xc062f2a0
 No line number information available for address 0xc062f2a0 &lt;ieee80211_send_deauth_disassoc&gt;</code></pre>
 </li>
+<li>objdump<pre><code class="shell">$ objdump -S -l -z -j .text vmlinux &gt; 1</code></pre>
+</li>
 </ol>
 <h3 id="内核模块"><a href="#内核模块" class="headerlink" title="内核模块"></a>内核模块</h3><p>使用 <code>lsmod</code> 可以获取内核模块起始地址和大小，落入这个区间的内核地址需要减去内核模块基地址，获取偏移地址</p>
 <ol>
-<li><code>addr2line</code> 同上</li>
+<li>addr2line 同上</li>
 <li>gdb info 首先生成模块可调试文件<ul>
 <li><code>-g</code> 编译生成 .o 文件</li>
 <li><code>ld -r -d -o hello.ko.debug hello.o</code></li>
 <li><code>gdb hello.ko.debug</code></li>
 </ul>
 </li>
+<li>objdump 同上</li>
 </ol>
 <h3 id="应用"><a href="#应用" class="headerlink" title="应用"></a>应用</h3><p>调试应用需要打开 <code>CONFIG_DEBUG_USER</code> 以及配置 <code>user_debug=0xff</code></p>
 <h2 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h2><p><a href="https://blog.csdn.net/varistor/article/details/50462252" target="_blank" rel="noopener">linux panic 问题定位</a></p>

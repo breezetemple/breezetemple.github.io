@@ -13338,6 +13338,204 @@ int main(void)
       </tags>
   </entry>
   <entry>
+    <title>Movian Plugin Development</title>
+    <url>/2018/01/10/movian-plugin-development/</url>
+    <content><![CDATA[<p>Movian Development</p>
+<a id="more"></a>
+
+<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
+<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
+<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
+<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
+<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
+<pre><code class="json">{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;apiversion&quot;: 1,
+  &quot;id&quot;: &quot;headweb&quot;,
+  &quot;file&quot;: &quot;headweb.js&quot;,
+  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
+  &quot;version&quot;: &quot;1.5.3&quot;,
+  &quot;author&quot;: &quot;Andreas Öman&quot;,
+  &quot;title&quot;: &quot;Headweb&quot;,
+  &quot;icon&quot;: &quot;headweb_square.png&quot;,
+  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
+  &quot;category&quot;: &quot;video&quot;,
+  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
+  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
+}</code></pre>
+<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
+<ul>
+<li>ecmascript - loads the plugin using Duktape.</li>
+<li>views - used for user interface (screen keyboard plugin)</li>
+</ul>
+<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
+<ul>
+<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
+<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
+</ul>
+<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
+<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
+<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
+<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
+<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
+<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
+<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
+<ul>
+<li>“tv” - online TV</li>
+<li>“video” - streaming video</li>
+<li>“music” - streaming music</li>
+<li>“glwview” - UI extentions</li>
+<li>“subtitles” - subtitles</li>
+<li>“glwosk” - on screen keyboard</li>
+</ul>
+<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
+<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
+<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
+<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
+<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
+<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
+<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
+<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
+<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
+<pre><code>{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;file&quot;: &quot;testplugin.js&quot;,
+  &quot;id&quot;: &quot;testplugin&quot;
+}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
+<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
+  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
+})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
+<pre><code>(function(plugin) {
+  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
+    showtime.print(&quot;I was called&quot;);
+  })
+})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
+<p><code>somafa</code> 中的 <code>start URI</code></p>
+<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
+...
+}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
+<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
+<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
+<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
+<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
+<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
+<ul>
+<li>Direct URL</li>
+<li>Via a video page</li>
+</ul>
+<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
+<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
+<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
+<p>To use it first do:</p>
+<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
+      <categories>
+        <category>Movian</category>
+      </categories>
+      <tags>
+        <tag>movian</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>vim-highlight-syntax</title>
+    <url>/2017/12/19/vim-highlight-syntax/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
+<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
+<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
+<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
+<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
+<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
+<pre><code>:syntax
+--- 语法项目 ---
+cLabel         xxx default case
+cStructure     xxx union struct typedef enum
+cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
+                   _Thread_local auto
+cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
+cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
+cStatement     xxx return goto asm continue break
+                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
+<p><code>:help group-name</code></p>
+<pre><code>:help group-name
+
+(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
+
+        *Comment        any comment
+
+        *Constant       any constant
+         String         a string constant: &quot;this is a string&quot;
+         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
+         Number         a number constant: 234, 0xff
+         Boolean        a boolean constant: TRUE, false
+         Float          a floating point constant: 2.3e10
+
+        *Identifier     any variable name
+         Function       function name (also: methods for classes)
+        *Statement      any statement
+         Conditional    if, then, else, endif, switch, etc.
+         Repeat         for, do, while, etc.
+         Label          case, default, etc.
+         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
+         Keyword        any other keyword
+         Exception      try, catch, throw
+
+        *PreProc        generic Preprocessor
+         Include        preprocessor #include
+         Define         preprocessor #define
+         Macro          same as Define
+         PreCondit      preprocessor #if, #else, #endif, etc.
+
+        *Type           int, long, char, etc.
+         StorageClass   static, register, volatile, etc.
+         Structure      struct, union, enum, etc.
+         Typedef        A typedef
+
+        *Special        any special symbol
+         SpecialChar    special character in a constant
+         Tag            you can use CTRL-] on this
+         Delimiter      character that needs attention
+         SpecialComment special things inside a comment
+         Debug          debugging statements
+
+        *Underlined     text that stands out, HTML links
+
+        *Ignore         left blank, hidden  hl-Ignore
+
+        *Error          any erroneous construct
+        *Todo           anything that needs extra attention; mostly the
+                        keywords TODO FIXME and XXX</code></pre>]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Editor</category>
+      </categories>
+      <tags>
+        <tag>vim</tag>
+        <tag>highlight</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>proc-pid-intro</title>
+    <url>/2017/12/14/proc-pid-intro/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
+<li><a href="https://github.com/NanXiao/gnu-linux-proc-pid-intro" target="_blank" rel="noopener">GNU/Linux下的/proc/[pid]目录下的文件分析</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>proc</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>回收 fork() 的子进程</title>
     <url>/2018/08/21/fork-and-zombie-process/</url>
     <content><![CDATA[<p>使用 <code>fork()</code> 函数派生出多个子进程来并行执行程序的不同代码块，是一种常用的编程泛型。但是，在使用 <code>fork()</code> 函数时若处理不当，很容易产生僵尸进程。</p>
@@ -14800,204 +14998,6 @@ $ ./configure --enable-opensslextra --enable-des3 --enable-dh --enable-ecc --ena
       </tags>
   </entry>
   <entry>
-    <title>vim-highlight-syntax</title>
-    <url>/2017/12/19/vim-highlight-syntax/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
-<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
-<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
-<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
-<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
-<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
-<pre><code>:syntax
---- 语法项目 ---
-cLabel         xxx default case
-cStructure     xxx union struct typedef enum
-cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
-                   _Thread_local auto
-cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
-cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
-cStatement     xxx return goto asm continue break
-                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
-<p><code>:help group-name</code></p>
-<pre><code>:help group-name
-
-(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
-
-        *Comment        any comment
-
-        *Constant       any constant
-         String         a string constant: &quot;this is a string&quot;
-         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
-         Number         a number constant: 234, 0xff
-         Boolean        a boolean constant: TRUE, false
-         Float          a floating point constant: 2.3e10
-
-        *Identifier     any variable name
-         Function       function name (also: methods for classes)
-        *Statement      any statement
-         Conditional    if, then, else, endif, switch, etc.
-         Repeat         for, do, while, etc.
-         Label          case, default, etc.
-         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
-         Keyword        any other keyword
-         Exception      try, catch, throw
-
-        *PreProc        generic Preprocessor
-         Include        preprocessor #include
-         Define         preprocessor #define
-         Macro          same as Define
-         PreCondit      preprocessor #if, #else, #endif, etc.
-
-        *Type           int, long, char, etc.
-         StorageClass   static, register, volatile, etc.
-         Structure      struct, union, enum, etc.
-         Typedef        A typedef
-
-        *Special        any special symbol
-         SpecialChar    special character in a constant
-         Tag            you can use CTRL-] on this
-         Delimiter      character that needs attention
-         SpecialComment special things inside a comment
-         Debug          debugging statements
-
-        *Underlined     text that stands out, HTML links
-
-        *Ignore         left blank, hidden  hl-Ignore
-
-        *Error          any erroneous construct
-        *Todo           anything that needs extra attention; mostly the
-                        keywords TODO FIXME and XXX</code></pre>]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Editor</category>
-      </categories>
-      <tags>
-        <tag>vim</tag>
-        <tag>highlight</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Movian Plugin Development</title>
-    <url>/2018/01/10/movian-plugin-development/</url>
-    <content><![CDATA[<p>Movian Development</p>
-<a id="more"></a>
-
-<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
-<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
-<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
-<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
-<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
-<pre><code class="json">{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;apiversion&quot;: 1,
-  &quot;id&quot;: &quot;headweb&quot;,
-  &quot;file&quot;: &quot;headweb.js&quot;,
-  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
-  &quot;version&quot;: &quot;1.5.3&quot;,
-  &quot;author&quot;: &quot;Andreas Öman&quot;,
-  &quot;title&quot;: &quot;Headweb&quot;,
-  &quot;icon&quot;: &quot;headweb_square.png&quot;,
-  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
-  &quot;category&quot;: &quot;video&quot;,
-  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
-  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
-}</code></pre>
-<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
-<ul>
-<li>ecmascript - loads the plugin using Duktape.</li>
-<li>views - used for user interface (screen keyboard plugin)</li>
-</ul>
-<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
-<ul>
-<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
-<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
-</ul>
-<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
-<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
-<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
-<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
-<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
-<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
-<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
-<ul>
-<li>“tv” - online TV</li>
-<li>“video” - streaming video</li>
-<li>“music” - streaming music</li>
-<li>“glwview” - UI extentions</li>
-<li>“subtitles” - subtitles</li>
-<li>“glwosk” - on screen keyboard</li>
-</ul>
-<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
-<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
-<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
-<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
-<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
-<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
-<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
-<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
-<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
-<pre><code>{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;file&quot;: &quot;testplugin.js&quot;,
-  &quot;id&quot;: &quot;testplugin&quot;
-}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
-<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
-  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
-})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
-<pre><code>(function(plugin) {
-  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
-    showtime.print(&quot;I was called&quot;);
-  })
-})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
-<p><code>somafa</code> 中的 <code>start URI</code></p>
-<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
-...
-}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
-<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
-<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
-<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
-<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
-<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
-<ul>
-<li>Direct URL</li>
-<li>Via a video page</li>
-</ul>
-<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
-<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
-<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
-<p>To use it first do:</p>
-<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
-      <categories>
-        <category>Movian</category>
-      </categories>
-      <tags>
-        <tag>movian</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>proc-pid-intro</title>
-    <url>/2017/12/14/proc-pid-intro/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
-<li><a href="https://github.com/NanXiao/gnu-linux-proc-pid-intro" target="_blank" rel="noopener">GNU/Linux下的/proc/[pid]目录下的文件分析</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>proc</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>线程条件变量</title>
     <url>/2018/10/26/pthread-cond/</url>
     <content><![CDATA[<p><strong>线程条件变量与互斥锁不同，条件变量是用来等待而不是用来上锁的。</strong><br><strong>条件变量用来自动阻塞一个线程，直到某特殊情况发生为止。通常条件变量和互斥锁同时使用。</strong></p>
@@ -15930,6 +15930,48 @@ networking/nslookup.c:202:     * after getaddrinfo (in server_print). This repor
       </tags>
   </entry>
   <entry>
+    <title>嵌入式 Linux 系统支持 GSM/3G</title>
+    <url>/2018/11/13/linux-kernel-support-GSM/</url>
+    <content><![CDATA[<p>编译 <code>Linux Kernel</code> 支持 <code>GSM/3G/4G</code></p>
+<a id="more"></a>
+
+<h2 id="Linux-内核选项"><a href="#Linux-内核选项" class="headerlink" title="Linux 内核选项"></a>Linux 内核选项</h2><p>Linux Version: v4.9.22</p>
+<p>内核配置保证打开如下选项</p>
+<pre><code>Device Drivers  ---&gt;
+   [*] Network device support  ---&gt;
+        &lt;*&gt;   PPP (point-to-point protocol) support
+        &lt; &gt;     PPP BSD-Compress compression
+        &lt; &gt;     PPP Deflate compression
+        [*]     PPP filtering
+        &lt; &gt;     PPP MPPE compression (encryption)
+        [*]     PPP multilink support
+        &lt; &gt;     PPP over Ethernet
+        &lt; &gt;     PPP support for async serial ports
+        &lt; &gt;     PPP support for sync tty ports
+   [*] USB support  ---&gt;
+        &lt;*&gt;   USB Serial Converter support  ---&gt;
+            &lt;*&gt;   USB driver for GSM and CDMA modems</code></pre><p>工作之后有如下错误信息</p>
+<pre><code>Couldn&#39;t set tty to PPP discipline: Invalid argument</code></pre><p>参考文章 <a href="http://pptpclient.sourceforge.net/howto-diagnosis.phtml" target="_blank" rel="noopener">PPTP Client</a></p>
+<p>打开选项 <code>CONFIG_PPP_ASYNC</code></p>
+<p>注意其中 <code>compression</code> 为压缩选项</p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://pptpclient.sourceforge.net/howto-diagnosis.phtml" target="_blank" rel="noopener">PPTP Client</a></li>
+<li><a href="https://www.toradex.com/zh-cn/blog/how-to-use-gsm-3g-4g-in-embedded-linux-systems" target="_blank" rel="noopener">如何在嵌入式 Linux 系统中使用 GSM/3G/4G 模块</a></li>
+<li><a href="https://www.linuxjournal.com/article/2109" target="_blank" rel="noopener">A 10-Minute Guide for Using PPP to Connect Linux to the Internet</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>3g</tag>
+        <tag>gsm</tag>
+        <tag>4g</tag>
+        <tag>ppp</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>静态编译使用 getaddrinfo 出现警告及动态静态混合使用</title>
     <url>/2018/11/12/statically-linked-binary-that-uses-getaddrinfo/</url>
     <content><![CDATA[<p>使用 <code>-static</code> 编译出现以下警告</p>
@@ -16018,48 +16060,6 @@ pngset.c.o</code></pre>
         <tag>libnss</tag>
         <tag>static</tag>
         <tag>getaddrinfp</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>嵌入式 Linux 系统支持 GSM/3G</title>
-    <url>/2018/11/13/linux-kernel-support-GSM/</url>
-    <content><![CDATA[<p>编译 <code>Linux Kernel</code> 支持 <code>GSM/3G/4G</code></p>
-<a id="more"></a>
-
-<h2 id="Linux-内核选项"><a href="#Linux-内核选项" class="headerlink" title="Linux 内核选项"></a>Linux 内核选项</h2><p>Linux Version: v4.9.22</p>
-<p>内核配置保证打开如下选项</p>
-<pre><code>Device Drivers  ---&gt;
-   [*] Network device support  ---&gt;
-        &lt;*&gt;   PPP (point-to-point protocol) support
-        &lt; &gt;     PPP BSD-Compress compression
-        &lt; &gt;     PPP Deflate compression
-        [*]     PPP filtering
-        &lt; &gt;     PPP MPPE compression (encryption)
-        [*]     PPP multilink support
-        &lt; &gt;     PPP over Ethernet
-        &lt; &gt;     PPP support for async serial ports
-        &lt; &gt;     PPP support for sync tty ports
-   [*] USB support  ---&gt;
-        &lt;*&gt;   USB Serial Converter support  ---&gt;
-            &lt;*&gt;   USB driver for GSM and CDMA modems</code></pre><p>工作之后有如下错误信息</p>
-<pre><code>Couldn&#39;t set tty to PPP discipline: Invalid argument</code></pre><p>参考文章 <a href="http://pptpclient.sourceforge.net/howto-diagnosis.phtml" target="_blank" rel="noopener">PPTP Client</a></p>
-<p>打开选项 <code>CONFIG_PPP_ASYNC</code></p>
-<p>注意其中 <code>compression</code> 为压缩选项</p>
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="http://pptpclient.sourceforge.net/howto-diagnosis.phtml" target="_blank" rel="noopener">PPTP Client</a></li>
-<li><a href="https://www.toradex.com/zh-cn/blog/how-to-use-gsm-3g-4g-in-embedded-linux-systems" target="_blank" rel="noopener">如何在嵌入式 Linux 系统中使用 GSM/3G/4G 模块</a></li>
-<li><a href="https://www.linuxjournal.com/article/2109" target="_blank" rel="noopener">A 10-Minute Guide for Using PPP to Connect Linux to the Internet</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>3g</tag>
-        <tag>gsm</tag>
-        <tag>4g</tag>
-        <tag>ppp</tag>
       </tags>
   </entry>
   <entry>
@@ -17091,7 +17091,7 @@ av 2552573 3 - Live 0xbf000000 (O)</code></pre>
 <h2 id="定位方法"><a href="#定位方法" class="headerlink" title="定位方法"></a>定位方法</h2><p>包括内核模块、内核以及应用。</p>
 <h3 id="内核"><a href="#内核" class="headerlink" title="内核"></a>内核</h3><p>出错地址为内核地址不需要计算偏移，可以直接使用</p>
 <ol>
-<li><code>addr2line</code><pre><code class="shell">$ addr2line -f -e vmlinux 0xc062f2a0
+<li>addr2line<pre><code class="shell">$ addr2line -f -e vmlinux 0xc062f2a0
 ieee80211_send_deauth_disassoc
 .tmp_kallsyms2.o:?</code></pre>
 </li>
@@ -17101,16 +17101,19 @@ ieee80211_send_deauth_disassoc in section .text
 (gdb) info line *0xc062f2a0
 No line number information available for address 0xc062f2a0 &lt;ieee80211_send_deauth_disassoc&gt;</code></pre>
 </li>
+<li>objdump<pre><code class="shell">$ objdump -S -l -z -j .text vmlinux &gt; 1</code></pre>
+</li>
 </ol>
 <h3 id="内核模块"><a href="#内核模块" class="headerlink" title="内核模块"></a>内核模块</h3><p>使用 <code>lsmod</code> 可以获取内核模块起始地址和大小，落入这个区间的内核地址需要减去内核模块基地址，获取偏移地址</p>
 <ol>
-<li><code>addr2line</code> 同上</li>
+<li>addr2line 同上</li>
 <li>gdb info 首先生成模块可调试文件<ul>
 <li><code>-g</code> 编译生成 .o 文件</li>
 <li><code>ld -r -d -o hello.ko.debug hello.o</code></li>
 <li><code>gdb hello.ko.debug</code></li>
 </ul>
 </li>
+<li>objdump 同上</li>
 </ol>
 <h3 id="应用"><a href="#应用" class="headerlink" title="应用"></a>应用</h3><p>调试应用需要打开 <code>CONFIG_DEBUG_USER</code> 以及配置 <code>user_debug=0xff</code></p>
 <h2 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h2><p><a href="https://blog.csdn.net/varistor/article/details/50462252" target="_blank" rel="noopener">linux panic 问题定位</a></p>
@@ -19266,6 +19269,214 @@ NONE  /mnt  ramfs</code></pre><p>可以看到内存文件系统<code>ramfs</code
       </tags>
   </entry>
   <entry>
+    <title>Linux 定时器</title>
+    <url>/2019/07/15/linux-timer/</url>
+    <content><![CDATA[<p><code>time api</code>使用，定时器管理</p>
+<ul>
+<li><code>clock_gettime</code></li>
+<li><code>timespec_to_timeval</code></li>
+<li><code>timeradd</code></li>
+<li><code>timersub</code></li>
+<li><code>timercmp</code></li>
+</ul>
+<a id="more"></a>
+
+<h2 id="struct"><a href="#struct" class="headerlink" title="struct"></a>struct</h2><pre><code class="c">enum
+{
+    DSMCC_TIMEOUT_DSI,
+    DSMCC_TIMEOUT_DII,
+    DSMCC_TIMEOUT_MODULE,
+    DSMCC_TIMEOUT_NEXTBLOCK
+};
+
+struct dsmcc_timeout
+{
+    struct dsmcc_object_carousel *carousel;  /*&lt; carousel this timeout applies to */
+    int                           type;      /*&lt; type of timeout */
+    uint16_t                      module_id; /*&lt; module ID, for type == DSMCC_TIMEOUT_MODULE or DSMCC_TIMEOUT_NEXTBLOCK */
+    struct timeval                abstime;   /*&lt; absolute time */
+
+    struct dsmcc_timeout *next;
+};</code></pre>
+<h2 id="add-remove"><a href="#add-remove" class="headerlink" title="add/remove"></a>add/remove</h2><pre><code class="c">void dsmcc_timeout_remove(struct dsmcc_object_carousel *carousel, int type, uint16_t module_id)
+{
+    struct dsmcc_timeout *current, *prev;
+
+    current = carousel-&gt;state-&gt;timeouts;
+    prev = NULL;
+    while (current)
+    {
+        int match = current-&gt;carousel == carousel &amp;&amp; current-&gt;type == type;
+        if (type == DSMCC_TIMEOUT_MODULE || type == DSMCC_TIMEOUT_NEXTBLOCK)
+            match &amp;= current-&gt;module_id == module_id;
+        if (match)
+        {
+            if (prev)
+                prev-&gt;next = current-&gt;next;
+            else
+                carousel-&gt;state-&gt;timeouts = current-&gt;next;
+            free(current);
+            return;
+        }
+        prev = current;
+        current = current-&gt;next;
+    }
+}
+
+void dsmcc_timeout_set(struct dsmcc_object_carousel *carousel, int type, uint16_t module_id, uint32_t delay_us)
+{
+    struct dsmcc_timeout *timeout;
+    struct dsmcc_timeout *current, *next;
+    struct timeval now, delay;
+    struct timespec ts;
+
+    dsmcc_timeout_remove(carousel, type, module_id);
+
+    if (!delay_us)
+        return;
+
+    DSMCC_DEBUG(&quot;Adding timeout for carousel 0x%08x type %d module id 0x%04hhx delay %uus&quot;, carousel-&gt;cid, type, module_id, delay_us);
+
+    timeout = malloc(sizeof(struct dsmcc_timeout));
+    timeout-&gt;carousel = carousel;
+    timeout-&gt;type = type;
+    timeout-&gt;module_id = module_id;
+
+    clock_gettime(CLOCK_REALTIME, &amp;ts);
+    timespec_to_timeval(&amp;ts, &amp;now);
+
+    delay.tv_sec = delay_us / 1000000;
+    delay.tv_usec = delay_us - delay.tv_sec * 1000000;
+    timeradd(&amp;now, &amp;delay, &amp;timeout-&gt;abstime);
+
+    current = NULL;
+    next = carousel-&gt;state-&gt;timeouts;
+    while (next &amp;&amp; timercmp(&amp;next-&gt;abstime, &amp;timeout-&gt;abstime, &lt;))
+    {
+        current = next;
+        next = current-&gt;next;
+    }
+    timeout-&gt;next = next;
+    if (current)
+        current-&gt;next = timeout;
+    else
+        carousel-&gt;state-&gt;timeouts = timeout;
+}</code></pre>
+<h2 id="timer"><a href="#timer" class="headerlink" title="timer"></a>timer</h2><pre><code class="c">struct dsmcc_timeout *prevtimeout, *timeout, *nexttimeout;
+
+DSMCC_DEBUG(&quot;Current timeouts:&quot;);
+timeout = state-&gt;timeouts;
+prevtimeout = NULL;
+while (timeout)
+{
+    struct timeval curtime;
+
+    clock_gettime(CLOCK_REALTIME, &amp;ts);
+    timespec_to_timeval(&amp;ts, &amp;curtime);
+
+    if (dsmcc_log_enabled(DSMCC_LOG_DEBUG))
+    {
+        struct timeval waittime;
+        timersub(&amp;timeout-&gt;abstime, &amp;curtime, &amp;waittime);
+        DSMCC_DEBUG(&quot;CID 0x%08x DELAY %d.%06d TYPE %d MODULE_ID 0x%04hhx&quot;, timeout-&gt;carousel-&gt;cid, waittime.tv_sec, waittime.tv_usec,&gt;
+    }
+
+    nexttimeout = timeout-&gt;next;
+    if (timercmp(&amp;timeout-&gt;abstime, &amp;curtime, &lt;))
+    {
+        dsmcc_object_carousel_set_status(timeout-&gt;carousel, DSMCC_STATUS_TIMEDOUT);
+        dsmcc_filecache_notify_status(timeout-&gt;carousel, NULL);
+
+        /* remove timeout */
+        if (prevtimeout)
+            prevtimeout-&gt;next = timeout-&gt;next;
+        else
+            state-&gt;timeouts = timeout-&gt;next;
+        free(timeout);
+    }
+    timeout = nexttimeout;
+}</code></pre>
+<h2 id="api"><a href="#api" class="headerlink" title="api"></a>api</h2><p>头文件<code>sys/time.h</code>定义</p>
+<p><strong><code>Unix/Linux</code>都是采用<code>UTC（Universal Coordinated Time）</code>，<code>1970.1.1</code>到现在的秒数，采用<code>time_t（long int）</code>存储。</strong></p>
+<p>时间结构体包括<code>time_t</code>, <code>timeval</code>, <code>time_spec</code>，精度越来越高</p>
+<pre><code class="c">typedef long time_t</code></pre>
+<p>表示为从<code>UTC(coordinated universal time)</code>时间<code>1970 年 1 月 1 日 00 时 00 分 00 秒</code>( 也称为 Linux 系统的 Epoch 时间 ) 到当前时刻的秒数，<strong>只是精确到秒</strong></p>
+<pre><code class="c">struct timeval
+{
+    time_t  tv_sec; // 秒 s
+    long    tv_usec;// 微秒 us
+};</code></pre>
+<p><strong>精确到微秒</strong></p>
+<pre><code class="c">struct timespec
+{
+    long int tv_sec;    // 秒 s
+    long int tv_nsec;   // 纳秒 ns
+};</code></pre>
+<p><strong>精确到纳秒</strong></p>
+<h3 id="clock-gettime"><a href="#clock-gettime" class="headerlink" title="clock_gettime"></a>clock_gettime</h3><pre><code class="c">#include &lt;time.h&gt;
+
+struct timespec {
+    time_t   tv_sec;        /* seconds */
+    long     tv_nsec;       /* nanoseconds */
+};
+
+int clock_gettime(clockid_t clk_id, struct timespec *tp);</code></pre>
+<p><code>clk_id</code>常用：</p>
+<ol>
+<li><code>CLOCK_REALTIME</code>, 系统实时时间，随系统实时时间改变而改变，即从<code>UTC1970-1-1 0:0:0</code>开始计时，中间时刻如果系统时间被用户改成其他，则对应的时间相应改变</li>
+<li><code>CLOCK_MONOTONIC</code>, 从系统启动这一刻起开始计时，不受系统时间被用户改变的影响</li>
+</ol>
+<h3 id="timespec-to-timeval"><a href="#timespec-to-timeval" class="headerlink" title="timespec_to_timeval"></a>timespec_to_timeval</h3><p><code>struct timespec</code>与<code>struct timespec</code>之间的转换</p>
+<pre><code class="c">/* Macros for converting between `struct timeval&#39; and `struct timespec&#39;.  */
+# define TIMEVAL_TO_TIMESPEC(tv, ts) {                                   \
+        (ts)-&gt;tv_sec = (tv)-&gt;tv_sec;                                    \
+        (ts)-&gt;tv_nsec = (tv)-&gt;tv_usec * 1000;                           \
+}
+# define TIMESPEC_TO_TIMEVAL(tv, ts) {                                   \
+        (tv)-&gt;tv_sec = (ts)-&gt;tv_sec;                                    \
+        (tv)-&gt;tv_usec = (ts)-&gt;tv_nsec / 1000;                           \
+}</code></pre>
+<h3 id="timeval-运算"><a href="#timeval-运算" class="headerlink" title="timeval 运算"></a>timeval 运算</h3><p>在<code>sys/time.h</code>中定义了如下运算</p>
+<pre><code class="c">/* Convenience macros for operations on timevals.
+   NOTE: `timercmp&#39; does not work for &gt;= or &lt;=.  */
+# define timerisset(tvp)    ((tvp)-&gt;tv_sec || (tvp)-&gt;tv_usec)
+# define timerclear(tvp)    ((tvp)-&gt;tv_sec = (tvp)-&gt;tv_usec = 0)
+# define timercmp(a, b, CMP)                              \
+  (((a)-&gt;tv_sec == (b)-&gt;tv_sec) ?                         \
+   ((a)-&gt;tv_usec CMP (b)-&gt;tv_usec) :                          \
+   ((a)-&gt;tv_sec CMP (b)-&gt;tv_sec))
+# define timeradd(a, b, result)                           \
+  do {                                        \
+    (result)-&gt;tv_sec = (a)-&gt;tv_sec + (b)-&gt;tv_sec;                 \
+    (result)-&gt;tv_usec = (a)-&gt;tv_usec + (b)-&gt;tv_usec;                  \
+    if ((result)-&gt;tv_usec &gt;= 1000000)                         \
+      {                                       \
+    ++(result)-&gt;tv_sec;                           \
+    (result)-&gt;tv_usec -= 1000000;                         \
+      }                                       \
+  } while (0)
+# define timersub(a, b, result)                           \
+  do {                                        \
+    (result)-&gt;tv_sec = (a)-&gt;tv_sec - (b)-&gt;tv_sec;                 \
+    (result)-&gt;tv_usec = (a)-&gt;tv_usec - (b)-&gt;tv_usec;                  \
+    if ((result)-&gt;tv_usec &lt; 0) {                          \
+      --(result)-&gt;tv_sec;                             \
+      (result)-&gt;tv_usec += 1000000;                       \
+    }                                         \
+  } while (0)</code></pre>
+]]></content>
+      <categories>
+        <category>Linux</category>
+        <category>Time</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>timer</tag>
+        <tag>time</tag>
+        <tag>dsmcc</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>理解编程语言中的数据类型</title>
     <url>/2019/07/18/type-of-data/</url>
     <content><![CDATA[<p><a href="http://www.ruanyifeng.com/blog/2009/05/data_types_and_json.html" target="_blank" rel="noopener">数据类型和 Json 格式</a></p>
@@ -20285,214 +20496,6 @@ $ ~/.acme.sh/acme.sh --installcert -d mydomain.me --fullchainpath /etc/v2ray/v2r
       </tags>
   </entry>
   <entry>
-    <title>Linux 定时器</title>
-    <url>/2019/07/15/linux-timer/</url>
-    <content><![CDATA[<p><code>time api</code>使用，定时器管理</p>
-<ul>
-<li><code>clock_gettime</code></li>
-<li><code>timespec_to_timeval</code></li>
-<li><code>timeradd</code></li>
-<li><code>timersub</code></li>
-<li><code>timercmp</code></li>
-</ul>
-<a id="more"></a>
-
-<h2 id="struct"><a href="#struct" class="headerlink" title="struct"></a>struct</h2><pre><code class="c">enum
-{
-    DSMCC_TIMEOUT_DSI,
-    DSMCC_TIMEOUT_DII,
-    DSMCC_TIMEOUT_MODULE,
-    DSMCC_TIMEOUT_NEXTBLOCK
-};
-
-struct dsmcc_timeout
-{
-    struct dsmcc_object_carousel *carousel;  /*&lt; carousel this timeout applies to */
-    int                           type;      /*&lt; type of timeout */
-    uint16_t                      module_id; /*&lt; module ID, for type == DSMCC_TIMEOUT_MODULE or DSMCC_TIMEOUT_NEXTBLOCK */
-    struct timeval                abstime;   /*&lt; absolute time */
-
-    struct dsmcc_timeout *next;
-};</code></pre>
-<h2 id="add-remove"><a href="#add-remove" class="headerlink" title="add/remove"></a>add/remove</h2><pre><code class="c">void dsmcc_timeout_remove(struct dsmcc_object_carousel *carousel, int type, uint16_t module_id)
-{
-    struct dsmcc_timeout *current, *prev;
-
-    current = carousel-&gt;state-&gt;timeouts;
-    prev = NULL;
-    while (current)
-    {
-        int match = current-&gt;carousel == carousel &amp;&amp; current-&gt;type == type;
-        if (type == DSMCC_TIMEOUT_MODULE || type == DSMCC_TIMEOUT_NEXTBLOCK)
-            match &amp;= current-&gt;module_id == module_id;
-        if (match)
-        {
-            if (prev)
-                prev-&gt;next = current-&gt;next;
-            else
-                carousel-&gt;state-&gt;timeouts = current-&gt;next;
-            free(current);
-            return;
-        }
-        prev = current;
-        current = current-&gt;next;
-    }
-}
-
-void dsmcc_timeout_set(struct dsmcc_object_carousel *carousel, int type, uint16_t module_id, uint32_t delay_us)
-{
-    struct dsmcc_timeout *timeout;
-    struct dsmcc_timeout *current, *next;
-    struct timeval now, delay;
-    struct timespec ts;
-
-    dsmcc_timeout_remove(carousel, type, module_id);
-
-    if (!delay_us)
-        return;
-
-    DSMCC_DEBUG(&quot;Adding timeout for carousel 0x%08x type %d module id 0x%04hhx delay %uus&quot;, carousel-&gt;cid, type, module_id, delay_us);
-
-    timeout = malloc(sizeof(struct dsmcc_timeout));
-    timeout-&gt;carousel = carousel;
-    timeout-&gt;type = type;
-    timeout-&gt;module_id = module_id;
-
-    clock_gettime(CLOCK_REALTIME, &amp;ts);
-    timespec_to_timeval(&amp;ts, &amp;now);
-
-    delay.tv_sec = delay_us / 1000000;
-    delay.tv_usec = delay_us - delay.tv_sec * 1000000;
-    timeradd(&amp;now, &amp;delay, &amp;timeout-&gt;abstime);
-
-    current = NULL;
-    next = carousel-&gt;state-&gt;timeouts;
-    while (next &amp;&amp; timercmp(&amp;next-&gt;abstime, &amp;timeout-&gt;abstime, &lt;))
-    {
-        current = next;
-        next = current-&gt;next;
-    }
-    timeout-&gt;next = next;
-    if (current)
-        current-&gt;next = timeout;
-    else
-        carousel-&gt;state-&gt;timeouts = timeout;
-}</code></pre>
-<h2 id="timer"><a href="#timer" class="headerlink" title="timer"></a>timer</h2><pre><code class="c">struct dsmcc_timeout *prevtimeout, *timeout, *nexttimeout;
-
-DSMCC_DEBUG(&quot;Current timeouts:&quot;);
-timeout = state-&gt;timeouts;
-prevtimeout = NULL;
-while (timeout)
-{
-    struct timeval curtime;
-
-    clock_gettime(CLOCK_REALTIME, &amp;ts);
-    timespec_to_timeval(&amp;ts, &amp;curtime);
-
-    if (dsmcc_log_enabled(DSMCC_LOG_DEBUG))
-    {
-        struct timeval waittime;
-        timersub(&amp;timeout-&gt;abstime, &amp;curtime, &amp;waittime);
-        DSMCC_DEBUG(&quot;CID 0x%08x DELAY %d.%06d TYPE %d MODULE_ID 0x%04hhx&quot;, timeout-&gt;carousel-&gt;cid, waittime.tv_sec, waittime.tv_usec,&gt;
-    }
-
-    nexttimeout = timeout-&gt;next;
-    if (timercmp(&amp;timeout-&gt;abstime, &amp;curtime, &lt;))
-    {
-        dsmcc_object_carousel_set_status(timeout-&gt;carousel, DSMCC_STATUS_TIMEDOUT);
-        dsmcc_filecache_notify_status(timeout-&gt;carousel, NULL);
-
-        /* remove timeout */
-        if (prevtimeout)
-            prevtimeout-&gt;next = timeout-&gt;next;
-        else
-            state-&gt;timeouts = timeout-&gt;next;
-        free(timeout);
-    }
-    timeout = nexttimeout;
-}</code></pre>
-<h2 id="api"><a href="#api" class="headerlink" title="api"></a>api</h2><p>头文件<code>sys/time.h</code>定义</p>
-<p><strong><code>Unix/Linux</code>都是采用<code>UTC（Universal Coordinated Time）</code>，<code>1970.1.1</code>到现在的秒数，采用<code>time_t（long int）</code>存储。</strong></p>
-<p>时间结构体包括<code>time_t</code>, <code>timeval</code>, <code>time_spec</code>，精度越来越高</p>
-<pre><code class="c">typedef long time_t</code></pre>
-<p>表示为从<code>UTC(coordinated universal time)</code>时间<code>1970 年 1 月 1 日 00 时 00 分 00 秒</code>( 也称为 Linux 系统的 Epoch 时间 ) 到当前时刻的秒数，<strong>只是精确到秒</strong></p>
-<pre><code class="c">struct timeval
-{
-    time_t  tv_sec; // 秒 s
-    long    tv_usec;// 微秒 us
-};</code></pre>
-<p><strong>精确到微秒</strong></p>
-<pre><code class="c">struct timespec
-{
-    long int tv_sec;    // 秒 s
-    long int tv_nsec;   // 纳秒 ns
-};</code></pre>
-<p><strong>精确到纳秒</strong></p>
-<h3 id="clock-gettime"><a href="#clock-gettime" class="headerlink" title="clock_gettime"></a>clock_gettime</h3><pre><code class="c">#include &lt;time.h&gt;
-
-struct timespec {
-    time_t   tv_sec;        /* seconds */
-    long     tv_nsec;       /* nanoseconds */
-};
-
-int clock_gettime(clockid_t clk_id, struct timespec *tp);</code></pre>
-<p><code>clk_id</code>常用：</p>
-<ol>
-<li><code>CLOCK_REALTIME</code>, 系统实时时间，随系统实时时间改变而改变，即从<code>UTC1970-1-1 0:0:0</code>开始计时，中间时刻如果系统时间被用户改成其他，则对应的时间相应改变</li>
-<li><code>CLOCK_MONOTONIC</code>, 从系统启动这一刻起开始计时，不受系统时间被用户改变的影响</li>
-</ol>
-<h3 id="timespec-to-timeval"><a href="#timespec-to-timeval" class="headerlink" title="timespec_to_timeval"></a>timespec_to_timeval</h3><p><code>struct timespec</code>与<code>struct timespec</code>之间的转换</p>
-<pre><code class="c">/* Macros for converting between `struct timeval&#39; and `struct timespec&#39;.  */
-# define TIMEVAL_TO_TIMESPEC(tv, ts) {                                   \
-        (ts)-&gt;tv_sec = (tv)-&gt;tv_sec;                                    \
-        (ts)-&gt;tv_nsec = (tv)-&gt;tv_usec * 1000;                           \
-}
-# define TIMESPEC_TO_TIMEVAL(tv, ts) {                                   \
-        (tv)-&gt;tv_sec = (ts)-&gt;tv_sec;                                    \
-        (tv)-&gt;tv_usec = (ts)-&gt;tv_nsec / 1000;                           \
-}</code></pre>
-<h3 id="timeval-运算"><a href="#timeval-运算" class="headerlink" title="timeval 运算"></a>timeval 运算</h3><p>在<code>sys/time.h</code>中定义了如下运算</p>
-<pre><code class="c">/* Convenience macros for operations on timevals.
-   NOTE: `timercmp&#39; does not work for &gt;= or &lt;=.  */
-# define timerisset(tvp)    ((tvp)-&gt;tv_sec || (tvp)-&gt;tv_usec)
-# define timerclear(tvp)    ((tvp)-&gt;tv_sec = (tvp)-&gt;tv_usec = 0)
-# define timercmp(a, b, CMP)                              \
-  (((a)-&gt;tv_sec == (b)-&gt;tv_sec) ?                         \
-   ((a)-&gt;tv_usec CMP (b)-&gt;tv_usec) :                          \
-   ((a)-&gt;tv_sec CMP (b)-&gt;tv_sec))
-# define timeradd(a, b, result)                           \
-  do {                                        \
-    (result)-&gt;tv_sec = (a)-&gt;tv_sec + (b)-&gt;tv_sec;                 \
-    (result)-&gt;tv_usec = (a)-&gt;tv_usec + (b)-&gt;tv_usec;                  \
-    if ((result)-&gt;tv_usec &gt;= 1000000)                         \
-      {                                       \
-    ++(result)-&gt;tv_sec;                           \
-    (result)-&gt;tv_usec -= 1000000;                         \
-      }                                       \
-  } while (0)
-# define timersub(a, b, result)                           \
-  do {                                        \
-    (result)-&gt;tv_sec = (a)-&gt;tv_sec - (b)-&gt;tv_sec;                 \
-    (result)-&gt;tv_usec = (a)-&gt;tv_usec - (b)-&gt;tv_usec;                  \
-    if ((result)-&gt;tv_usec &lt; 0) {                          \
-      --(result)-&gt;tv_sec;                             \
-      (result)-&gt;tv_usec += 1000000;                       \
-    }                                         \
-  } while (0)</code></pre>
-]]></content>
-      <categories>
-        <category>Linux</category>
-        <category>Time</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>timer</tag>
-        <tag>time</tag>
-        <tag>dsmcc</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>v2ray 配置 TLS</title>
     <url>/2019/10/08/v2ray-with-tls/</url>
     <content><![CDATA[<p>配置 <code>v2ray TLS</code> 工作模式</p>
@@ -20697,6 +20700,292 @@ $ ~/.acme.sh/acme.sh --installcert -d mydomain.me --fullchainpath /etc/v2ray/v2r
         <tag>acme.sh</tag>
         <tag>nginx</tag>
         <tag>caddy</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>strftime 转换控制符</title>
+    <url>/2019/10/09/strftime-options/</url>
+    <content><![CDATA[<p><code>strftime</code> 按照指定格式输出时间字符串</p>
+<a id="more"></a>
+
+<h2 id="时间戳"><a href="#时间戳" class="headerlink" title="时间戳"></a>时间戳</h2><p>时间戳 <code>time_t timestamp</code> 是从 <code>1970-01-01 00:00:00</code> 到目前计时时间的秒数</p>
+<h2 id="strftime"><a href="#strftime" class="headerlink" title="strftime"></a>strftime</h2><p>常用选项</p>
+<style>
+table th:first-of-type {
+    width: 200px;
+}
+</style>
+
+<table>
+<thead>
+<tr>
+<th>转换控制符</th>
+<th>输出</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>%a</td>
+<td>星期几的简写形式</td>
+</tr>
+<tr>
+<td>%a</td>
+<td>星期几的简写形式</td>
+</tr>
+<tr>
+<td>%A</td>
+<td>星期几的全称</td>
+</tr>
+<tr>
+<td>%b</td>
+<td>月份的简写形式</td>
+</tr>
+<tr>
+<td>%B</td>
+<td>月份的全称</td>
+</tr>
+<tr>
+<td>%c</td>
+<td>日期和时间</td>
+</tr>
+<tr>
+<td>%d</td>
+<td>月份中的日期，0-31</td>
+</tr>
+<tr>
+<td>%H</td>
+<td>小时，00-23</td>
+</tr>
+<tr>
+<td>%I</td>
+<td>12 进制小时钟点，01-12</td>
+</tr>
+<tr>
+<td>%j</td>
+<td>年份中的日期，001-366</td>
+</tr>
+<tr>
+<td>%m</td>
+<td>年份中的月份，01-12</td>
+</tr>
+<tr>
+<td>%M</td>
+<td>分，00-59</td>
+</tr>
+<tr>
+<td>%p</td>
+<td>上午或下午</td>
+</tr>
+<tr>
+<td>%S</td>
+<td>秒，00-60</td>
+</tr>
+<tr>
+<td>%u</td>
+<td>星期几，1-7</td>
+</tr>
+<tr>
+<td>%w</td>
+<td>星期几，0-6</td>
+</tr>
+<tr>
+<td>%x</td>
+<td>当地格式的日期</td>
+</tr>
+<tr>
+<td>%X</td>
+<td>当地格式的时间</td>
+</tr>
+<tr>
+<td>%y</td>
+<td>年份中的最后两位数，00-99</td>
+</tr>
+<tr>
+<td>%Y</td>
+<td>年</td>
+</tr>
+<tr>
+<td>%Z</td>
+<td>地理时区名称</td>
+</tr>
+</tbody></table>
+<p>需要注意 <code>%Z</code> 某些 c 库未支持</p>
+<h2 id="source-code"><a href="#source-code" class="headerlink" title="source code"></a>source code</h2><pre><code class="c">struct tm *p = gmtime(&amp;utc_time);
+strftime(data, sizeof(data), &quot;%a %b %d %H:%M:%S %Z %Y&quot;, p);
+// Tue Mar 06 12:33:45 CST 2001
+strftime(data, sizeof(data), &quot;%A, %b %d, %X %z %Y&quot;, p);
+// Tuesday, Mar 06, 12:33:45 +0000 2001
+strftime(data, sizeof(data), &quot;%A, %b %d, %X %Z %Y&quot;, p);
+// Tuesday, Mar 06, 12:33:45 CST 2001</code></pre>
+]]></content>
+      <categories>
+        <category>C</category>
+        <category>Functions</category>
+      </categories>
+      <tags>
+        <tag>time</tag>
+        <tag>timezone</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Docker 安装</title>
+    <url>/2019/10/10/how-to-install-docker/</url>
+    <content><![CDATA[<p>ubuntu 18.04 安装 Docker CE</p>
+<a id="more"></a>
+
+<h2 id="Docker-介绍"><a href="#Docker-介绍" class="headerlink" title="Docker 介绍"></a>Docker 介绍</h2><p>Linux 虚拟化技术：Linux 容器 - Linux Containers - <code>LXC</code>。<br><strong>Linux 容器不是模拟一个完整的操作系统，而是对进程进行隔离，是进程级。</strong><br>Docker 属于 Linux 容器的一种封装，提供简单易用的容器使用接口。</p>
+<h2 id="卸载旧版本"><a href="#卸载旧版本" class="headerlink" title="卸载旧版本"></a>卸载旧版本</h2><p>如安装过 Docker 先卸载，旧版本称为 docker 或 docker-engine</p>
+<pre><code class="shell">$ sudo apt-get remove docker docker-engine docker.io containerd runc</code></pre>
+<p>目录 <code>/var/lib/docker/</code> 下的内容不会删除，其中包含 images、containers、volumes、networks 等</p>
+<h2 id="安装-Docker-CE"><a href="#安装-Docker-CE" class="headerlink" title="安装 Docker CE"></a>安装 Docker CE</h2><p>存在两个版本：</p>
+<ul>
+<li>社区版（ <code>Community Edition</code>，缩写为 <code>CE</code> ）</li>
+<li>企业版（ <code>Enterprise Edition</code>，缩写为 <code>EE</code> ）</li>
+</ul>
+<p><a href="https://docs.docker.com/install/linux/docker-ce/ubuntu/" target="_blank" rel="noopener">官方安装指导</a></p>
+<ul>
+<li>更新系统<blockquote>
+<p><code>sudo apt update</code></p>
+</blockquote>
+</li>
+<li>安装软件包以允许 <code>apt</code> 通过 HTTPS 使用存储库<blockquote>
+<p><code>sudo apt-get install apt-transport-https ca-certificates curl gnupg-agent software-properties-common</code></p>
+</blockquote>
+</li>
+<li>添加 Docker 的官方 GPG 密钥<blockquote>
+<p><code>curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -</code></p>
+</blockquote>
+</li>
+<li>验证密钥<blockquote>
+<p><code>sudo apt-key fingerprint 0EBFCD88</code></p>
+</blockquote>
+</li>
+<li>设定稳定存储库<blockquote>
+<p><code>sudo add-apt-repository &quot;deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable&quot;</code></p>
+</blockquote>
+</li>
+<li>安装 Docker CE<blockquote>
+<p><code>sudo apt update</code><br><code>sudo apt-get install docker-ce docker-ce-cli containerd.io</code></p>
+</blockquote>
+</li>
+<li>验证<blockquote>
+<p><code>sudo docker version</code></p>
+</blockquote>
+</li>
+</ul>
+<h2 id="添加用户组"><a href="#添加用户组" class="headerlink" title="添加用户组"></a>添加用户组</h2><p>为了避免每次命令都输入 <code>sudo</code>，可以把用户加入 docker 用户组，<a href="https://docs.docker.com/install/linux/linux-postinstall/#manage-docker-as-a-non-root-user" target="_blank" rel="noopener">官方文档</a></p>
+<pre><code class="shell">$ sudo groupadd docker
+$ sudo usermod -aG docker $USER
+$ newgrp docker
+$ docker run hello-world</code></pre>
+<h2 id="Docker-服务"><a href="#Docker-服务" class="headerlink" title="Docker 服务"></a>Docker 服务</h2><p>运行 Docker 时需要本机有 Docker 服务。<a href="https://docs.docker.com/config/daemon/systemd/" target="_blank" rel="noopener">官方文档</a></p>
+<pre><code class="shell">$ sudo systemctl start docker
+$ sudo systemctl status docker</code></pre>
+<h2 id="测试-hello-world"><a href="#测试-hello-world" class="headerlink" title="测试 hello-world"></a>测试 hello-world</h2><pre><code class="shell">$ docker image pull library/hello-world
+$ docker run hello-world
+$ docker images</code></pre>
+]]></content>
+      <categories>
+        <category>Linux</category>
+        <category>Docker</category>
+      </categories>
+      <tags>
+        <tag>ubuntu</tag>
+        <tag>docker</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Markdown 中文排版指南</title>
+    <url>/2019/10/11/chinese-copywriting-guidelines/</url>
+    <content><![CDATA[<p>中文排版指南及 Markdown + Vim 工具</p>
+<a id="more"></a>
+
+<p>整理自如下指南：<br><a href="https://github.com/mzlogin/chinese-copywriting-guidelines" target="_blank" rel="noopener">中文排版指南</a><br><a href="http://lujianan.com/2017/01/20/markdown-standard/" target="_blank" rel="noopener">Markdown 中文技术文档的写作规范</a></p>
+<p>工具<br><a href="https://github.com/hotoo/pangu.vim" target="_blank" rel="noopener">「盘古之白」</a></p>
+<h2 id="标题"><a href="#标题" class="headerlink" title="标题"></a>标题</h2><ul>
+<li>文章标题使用<strong>一级标题</strong></li>
+<li>文章顶层标题使用<strong>二级标题</strong></li>
+<li>每个小节的标题使用<strong>三级标题</strong></li>
+<li>进一步分层组织时使用<strong>四级标题</strong></li>
+<li>尽量少用<strong>五级标题和六级标题</strong>，考虑用有序列表和无序列表代替</li>
+<li>标题要避免孤立编号（即同级标题只有一个）</li>
+<li>下级标题不重复上一级标题的内容</li>
+</ul>
+<h2 id="全角与半角"><a href="#全角与半角" class="headerlink" title="全角与半角"></a>全角与半角</h2><ul>
+<li>使用全角中文标点</li>
+<li>遇到完整的英文整句、特殊名词，其內容使用半角标点</li>
+</ul>
+<h2 id="空格"><a href="#空格" class="headerlink" title="空格"></a>空格</h2><ul>
+<li>中英文之间需要增加空格<blockquote>
+<p>在 LeanCloud 上，数据存储是围绕 AVObject 进行的。</p>
+</blockquote>
+</li>
+<li>中文与数字之间需要增加空格<blockquote>
+<p>今天出去买菜花了 5000 元。</p>
+</blockquote>
+</li>
+<li>数字与单位之间无需增加空格<blockquote>
+<p>我家的光纤入户宽带有 10Gbps，SSD 一共有 10TB。<br>今天是 233° 的高温。</p>
+</blockquote>
+</li>
+<li>全角标点与其他字符之间不加空格<blockquote>
+<p>刚刚买了一部 iPhone，好开心！</p>
+</blockquote>
+</li>
+</ul>
+<h2 id="名词"><a href="#名词" class="headerlink" title="名词"></a>名词</h2><ul>
+<li>专有名词使用正确的大小写<blockquote>
+<p>我们的客户有 GitHub、Foursquare、Microsoft Corporation、Google、Facebook, Inc.。</p>
+</blockquote>
+</li>
+<li>不要使用不地道的缩写<blockquote>
+<p>我们需要一位熟悉 JavaScript、HTML5，至少理解一种框架（如 Backbone.js、AngularJS、React 等）的前端开发者。</p>
+</blockquote>
+</li>
+<li>在提到了 <code>专有名词和特殊名词</code> 时、或者需要 <code>着重强调的词汇</code> 时，在前后添加 半角空格 分词，或者使用 <code>行内代码块</code></li>
+<li>第一次出现英文词汇时，在括号中给出中文标注。此后再次出现时，直接使用英文缩写即可<blockquote>
+<p>IOC（International Olympic Committee，国际奥林匹克委员会）。这样定义后，便可以直接使用“IOC”了。</p>
+</blockquote>
+</li>
+</ul>
+<h2 id="文本"><a href="#文本" class="headerlink" title="文本"></a>文本</h2><ul>
+<li>正文段落之间用一个空行来分隔</li>
+<li>需要强调某处内容时使用<strong>粗体</strong></li>
+<li>中文排版中不使用<em>斜体</em></li>
+<li>英文排版中可用斜体表达强调，或表示书名、题目</li>
+</ul>
+<h2 id="标点符号"><a href="#标点符号" class="headerlink" title="标点符号"></a>标点符号</h2><ul>
+<li>不重复使用标点符号</li>
+<li>在中文输入法状态下，可使用「Shift + 6」输入省略号<blockquote>
+<p>……</p>
+</blockquote>
+</li>
+<li>在中文输入法状态下，可使用「Shift + -」输入破折号<blockquote>
+<p>破折号，标示语段中某些成分的注释、补充说明或语音、意义的变化。——《标点符号用法》</p>
+</blockquote>
+</li>
+<li>数字使用半角字符</li>
+</ul>
+<h2 id="写作规范"><a href="#写作规范" class="headerlink" title="写作规范"></a>写作规范</h2><ul>
+<li>避免使用长句</li>
+<li>尽量使用简单句和并列句</li>
+<li>尽量不使用被动语态，改为使用主动语态</li>
+<li>不使用非正式的语言风格</li>
+<li>用对“的”、“地”、“得”<blockquote>
+<p>她露出了开心的笑容。（形容词＋的＋名词）<br>她开心地笑了。（副词＋地＋动词）<br>她笑得很开心。（动词＋得＋副词）</p>
+</blockquote>
+</li>
+<li>名词前不要使用过多的形容词</li>
+<li>尽量使用肯定句表达，不使用否定句表达</li>
+<li>避免使用双重否定句</li>
+</ul>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Markdown</category>
+      </categories>
+      <tags>
+        <tag>vim</tag>
+        <tag>chinese</tag>
       </tags>
   </entry>
   <entry>
@@ -22934,292 +23223,6 @@ IMAGES_STORE = &#39;image&#39;</code></pre><h2 id="启动"><a href="#启动" cla
         <tag>python</tag>
         <tag>spider</tag>
         <tag>scrapy</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>strftime 转换控制符</title>
-    <url>/2019/10/09/strftime-options/</url>
-    <content><![CDATA[<p><code>strftime</code> 按照指定格式输出时间字符串</p>
-<a id="more"></a>
-
-<h2 id="时间戳"><a href="#时间戳" class="headerlink" title="时间戳"></a>时间戳</h2><p>时间戳 <code>time_t timestamp</code> 是从 <code>1970-01-01 00:00:00</code> 到目前计时时间的秒数</p>
-<h2 id="strftime"><a href="#strftime" class="headerlink" title="strftime"></a>strftime</h2><p>常用选项</p>
-<style>
-table th:first-of-type {
-    width: 200px;
-}
-</style>
-
-<table>
-<thead>
-<tr>
-<th>转换控制符</th>
-<th>输出</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>%a</td>
-<td>星期几的简写形式</td>
-</tr>
-<tr>
-<td>%a</td>
-<td>星期几的简写形式</td>
-</tr>
-<tr>
-<td>%A</td>
-<td>星期几的全称</td>
-</tr>
-<tr>
-<td>%b</td>
-<td>月份的简写形式</td>
-</tr>
-<tr>
-<td>%B</td>
-<td>月份的全称</td>
-</tr>
-<tr>
-<td>%c</td>
-<td>日期和时间</td>
-</tr>
-<tr>
-<td>%d</td>
-<td>月份中的日期，0-31</td>
-</tr>
-<tr>
-<td>%H</td>
-<td>小时，00-23</td>
-</tr>
-<tr>
-<td>%I</td>
-<td>12 进制小时钟点，01-12</td>
-</tr>
-<tr>
-<td>%j</td>
-<td>年份中的日期，001-366</td>
-</tr>
-<tr>
-<td>%m</td>
-<td>年份中的月份，01-12</td>
-</tr>
-<tr>
-<td>%M</td>
-<td>分，00-59</td>
-</tr>
-<tr>
-<td>%p</td>
-<td>上午或下午</td>
-</tr>
-<tr>
-<td>%S</td>
-<td>秒，00-60</td>
-</tr>
-<tr>
-<td>%u</td>
-<td>星期几，1-7</td>
-</tr>
-<tr>
-<td>%w</td>
-<td>星期几，0-6</td>
-</tr>
-<tr>
-<td>%x</td>
-<td>当地格式的日期</td>
-</tr>
-<tr>
-<td>%X</td>
-<td>当地格式的时间</td>
-</tr>
-<tr>
-<td>%y</td>
-<td>年份中的最后两位数，00-99</td>
-</tr>
-<tr>
-<td>%Y</td>
-<td>年</td>
-</tr>
-<tr>
-<td>%Z</td>
-<td>地理时区名称</td>
-</tr>
-</tbody></table>
-<p>需要注意 <code>%Z</code> 某些 c 库未支持</p>
-<h2 id="source-code"><a href="#source-code" class="headerlink" title="source code"></a>source code</h2><pre><code class="c">struct tm *p = gmtime(&amp;utc_time);
-strftime(data, sizeof(data), &quot;%a %b %d %H:%M:%S %Z %Y&quot;, p);
-// Tue Mar 06 12:33:45 CST 2001
-strftime(data, sizeof(data), &quot;%A, %b %d, %X %z %Y&quot;, p);
-// Tuesday, Mar 06, 12:33:45 +0000 2001
-strftime(data, sizeof(data), &quot;%A, %b %d, %X %Z %Y&quot;, p);
-// Tuesday, Mar 06, 12:33:45 CST 2001</code></pre>
-]]></content>
-      <categories>
-        <category>C</category>
-        <category>Functions</category>
-      </categories>
-      <tags>
-        <tag>timezone</tag>
-        <tag>time</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Docker 安装</title>
-    <url>/2019/10/10/how-to-install-docker/</url>
-    <content><![CDATA[<p>ubuntu 18.04 安装 Docker CE</p>
-<a id="more"></a>
-
-<h2 id="Docker-介绍"><a href="#Docker-介绍" class="headerlink" title="Docker 介绍"></a>Docker 介绍</h2><p>Linux 虚拟化技术：Linux 容器 - Linux Containers - <code>LXC</code>。<br><strong>Linux 容器不是模拟一个完整的操作系统，而是对进程进行隔离，是进程级。</strong><br>Docker 属于 Linux 容器的一种封装，提供简单易用的容器使用接口。</p>
-<h2 id="卸载旧版本"><a href="#卸载旧版本" class="headerlink" title="卸载旧版本"></a>卸载旧版本</h2><p>如安装过 Docker 先卸载，旧版本称为 docker 或 docker-engine</p>
-<pre><code class="shell">$ sudo apt-get remove docker docker-engine docker.io containerd runc</code></pre>
-<p>目录 <code>/var/lib/docker/</code> 下的内容不会删除，其中包含 images、containers、volumes、networks 等</p>
-<h2 id="安装-Docker-CE"><a href="#安装-Docker-CE" class="headerlink" title="安装 Docker CE"></a>安装 Docker CE</h2><p>存在两个版本：</p>
-<ul>
-<li>社区版（ <code>Community Edition</code>，缩写为 <code>CE</code> ）</li>
-<li>企业版（ <code>Enterprise Edition</code>，缩写为 <code>EE</code> ）</li>
-</ul>
-<p><a href="https://docs.docker.com/install/linux/docker-ce/ubuntu/" target="_blank" rel="noopener">官方安装指导</a></p>
-<ul>
-<li>更新系统<blockquote>
-<p><code>sudo apt update</code></p>
-</blockquote>
-</li>
-<li>安装软件包以允许 <code>apt</code> 通过 HTTPS 使用存储库<blockquote>
-<p><code>sudo apt-get install apt-transport-https ca-certificates curl gnupg-agent software-properties-common</code></p>
-</blockquote>
-</li>
-<li>添加 Docker 的官方 GPG 密钥<blockquote>
-<p><code>curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -</code></p>
-</blockquote>
-</li>
-<li>验证密钥<blockquote>
-<p><code>sudo apt-key fingerprint 0EBFCD88</code></p>
-</blockquote>
-</li>
-<li>设定稳定存储库<blockquote>
-<p><code>sudo add-apt-repository &quot;deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable&quot;</code></p>
-</blockquote>
-</li>
-<li>安装 Docker CE<blockquote>
-<p><code>sudo apt update</code><br><code>sudo apt-get install docker-ce docker-ce-cli containerd.io</code></p>
-</blockquote>
-</li>
-<li>验证<blockquote>
-<p><code>sudo docker version</code></p>
-</blockquote>
-</li>
-</ul>
-<h2 id="添加用户组"><a href="#添加用户组" class="headerlink" title="添加用户组"></a>添加用户组</h2><p>为了避免每次命令都输入 <code>sudo</code>，可以把用户加入 docker 用户组，<a href="https://docs.docker.com/install/linux/linux-postinstall/#manage-docker-as-a-non-root-user" target="_blank" rel="noopener">官方文档</a></p>
-<pre><code class="shell">$ sudo groupadd docker
-$ sudo usermod -aG docker $USER
-$ newgrp docker
-$ docker run hello-world</code></pre>
-<h2 id="Docker-服务"><a href="#Docker-服务" class="headerlink" title="Docker 服务"></a>Docker 服务</h2><p>运行 Docker 时需要本机有 Docker 服务。<a href="https://docs.docker.com/config/daemon/systemd/" target="_blank" rel="noopener">官方文档</a></p>
-<pre><code class="shell">$ sudo systemctl start docker
-$ sudo systemctl status docker</code></pre>
-<h2 id="测试-hello-world"><a href="#测试-hello-world" class="headerlink" title="测试 hello-world"></a>测试 hello-world</h2><pre><code class="shell">$ docker image pull library/hello-world
-$ docker run hello-world
-$ docker images</code></pre>
-]]></content>
-      <categories>
-        <category>Linux</category>
-        <category>Docker</category>
-      </categories>
-      <tags>
-        <tag>ubuntu</tag>
-        <tag>docker</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Markdown 中文排版指南</title>
-    <url>/2019/10/11/chinese-copywriting-guidelines/</url>
-    <content><![CDATA[<p>中文排版指南及 Markdown + Vim 工具</p>
-<a id="more"></a>
-
-<p>整理自如下指南：<br><a href="https://github.com/mzlogin/chinese-copywriting-guidelines" target="_blank" rel="noopener">中文排版指南</a><br><a href="http://lujianan.com/2017/01/20/markdown-standard/" target="_blank" rel="noopener">Markdown 中文技术文档的写作规范</a></p>
-<p>工具<br><a href="https://github.com/hotoo/pangu.vim" target="_blank" rel="noopener">「盘古之白」</a></p>
-<h2 id="标题"><a href="#标题" class="headerlink" title="标题"></a>标题</h2><ul>
-<li>文章标题使用<strong>一级标题</strong></li>
-<li>文章顶层标题使用<strong>二级标题</strong></li>
-<li>每个小节的标题使用<strong>三级标题</strong></li>
-<li>进一步分层组织时使用<strong>四级标题</strong></li>
-<li>尽量少用<strong>五级标题和六级标题</strong>，考虑用有序列表和无序列表代替</li>
-<li>标题要避免孤立编号（即同级标题只有一个）</li>
-<li>下级标题不重复上一级标题的内容</li>
-</ul>
-<h2 id="全角与半角"><a href="#全角与半角" class="headerlink" title="全角与半角"></a>全角与半角</h2><ul>
-<li>使用全角中文标点</li>
-<li>遇到完整的英文整句、特殊名词，其內容使用半角标点</li>
-</ul>
-<h2 id="空格"><a href="#空格" class="headerlink" title="空格"></a>空格</h2><ul>
-<li>中英文之间需要增加空格<blockquote>
-<p>在 LeanCloud 上，数据存储是围绕 AVObject 进行的。</p>
-</blockquote>
-</li>
-<li>中文与数字之间需要增加空格<blockquote>
-<p>今天出去买菜花了 5000 元。</p>
-</blockquote>
-</li>
-<li>数字与单位之间无需增加空格<blockquote>
-<p>我家的光纤入户宽带有 10Gbps，SSD 一共有 10TB。<br>今天是 233° 的高温。</p>
-</blockquote>
-</li>
-<li>全角标点与其他字符之间不加空格<blockquote>
-<p>刚刚买了一部 iPhone，好开心！</p>
-</blockquote>
-</li>
-</ul>
-<h2 id="名词"><a href="#名词" class="headerlink" title="名词"></a>名词</h2><ul>
-<li>专有名词使用正确的大小写<blockquote>
-<p>我们的客户有 GitHub、Foursquare、Microsoft Corporation、Google、Facebook, Inc.。</p>
-</blockquote>
-</li>
-<li>不要使用不地道的缩写<blockquote>
-<p>我们需要一位熟悉 JavaScript、HTML5，至少理解一种框架（如 Backbone.js、AngularJS、React 等）的前端开发者。</p>
-</blockquote>
-</li>
-<li>在提到了 <code>专有名词和特殊名词</code> 时、或者需要 <code>着重强调的词汇</code> 时，在前后添加 半角空格 分词，或者使用 <code>行内代码块</code></li>
-<li>第一次出现英文词汇时，在括号中给出中文标注。此后再次出现时，直接使用英文缩写即可<blockquote>
-<p>IOC（International Olympic Committee，国际奥林匹克委员会）。这样定义后，便可以直接使用“IOC”了。</p>
-</blockquote>
-</li>
-</ul>
-<h2 id="文本"><a href="#文本" class="headerlink" title="文本"></a>文本</h2><ul>
-<li>正文段落之间用一个空行来分隔</li>
-<li>需要强调某处内容时使用<strong>粗体</strong></li>
-<li>中文排版中不使用<em>斜体</em></li>
-<li>英文排版中可用斜体表达强调，或表示书名、题目</li>
-</ul>
-<h2 id="标点符号"><a href="#标点符号" class="headerlink" title="标点符号"></a>标点符号</h2><ul>
-<li>不重复使用标点符号</li>
-<li>在中文输入法状态下，可使用「Shift + 6」输入省略号<blockquote>
-<p>……</p>
-</blockquote>
-</li>
-<li>在中文输入法状态下，可使用「Shift + -」输入破折号<blockquote>
-<p>破折号，标示语段中某些成分的注释、补充说明或语音、意义的变化。——《标点符号用法》</p>
-</blockquote>
-</li>
-<li>数字使用半角字符</li>
-</ul>
-<h2 id="写作规范"><a href="#写作规范" class="headerlink" title="写作规范"></a>写作规范</h2><ul>
-<li>避免使用长句</li>
-<li>尽量使用简单句和并列句</li>
-<li>尽量不使用被动语态，改为使用主动语态</li>
-<li>不使用非正式的语言风格</li>
-<li>用对“的”、“地”、“得”<blockquote>
-<p>她露出了开心的笑容。（形容词＋的＋名词）<br>她开心地笑了。（副词＋地＋动词）<br>她笑得很开心。（动词＋得＋副词）</p>
-</blockquote>
-</li>
-<li>名词前不要使用过多的形容词</li>
-<li>尽量使用肯定句表达，不使用否定句表达</li>
-<li>避免使用双重否定句</li>
-</ul>
-]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Markdown</category>
-      </categories>
-      <tags>
-        <tag>vim</tag>
-        <tag>chinese</tag>
       </tags>
   </entry>
   <entry>
@@ -26423,190 +26426,6 @@ net.core.wmem_max = 16777216</code></pre><p>一般来说，<strong>理论上的R
         <tag>network</tag>
         <tag>tcp</tag>
         <tag>udp</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>逐行处理内存文本及正则表达式元字符列表</title>
-    <url>/2015/11/18/deal-with-file-by-line/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<h2 id="文本内容"><a href="#文本内容" class="headerlink" title="文本内容"></a>文本内容</h2><pre><code>P:013.0:E:11054:H:27500:5DDC29D54BE4D7:F3381AD050DE3A
-P:091.5:E:03960:H:29700:DAE69F8B6E0106:E0DE2F8903AE55
-P:105.5:E:03960:H:27500:CEF7CE422FF89E:E42DB81767E02E
-P:166.0:E:03760:V:27690:7199819B0CF04F:7EE0F00CFFBF66
-P:138.0:E:03703:V:04444:AD5CDBA991505A:1E1376FD07FB13
-P:166.0:E:03830:H:14000:956D98AD9E6E84:842F2801182286</code></pre><p>或者：</p>
-<pre><code>B:042.0:E:11919:V:24444:00012:1000000000000000:TRT3
-B:042.0:E:11954:A:08800:00001:1111110011111800:EINTERCOM
-B:042.0:E:11953:A:02980:00001:1212123312121233:
-B:042.0:E:11996:V:27500:00300:A33130046167824A:Sci-Tech TV
-B:042.0:E:12015:H:27500:00009:1000001010000010:Teledunya 3D
-B:042.0:E:12130:V:27500:00024:1000000000000000:Radio Migros
-B:042.0:E:12130:V:27500:00025:1000000000000000:Radio Tansas</code></pre><h2 id="逐行读取文本strsep"><a href="#逐行读取文本strsep" class="headerlink" title="逐行读取文本strsep"></a>逐行读取文本strsep</h2><pre><code>char *tok = NULL;
-for (tok = strsep(&amp;p, &quot;\n&quot;); tok != NULL; tok = strsep(&amp;p, &quot;\n&quot;))
-{
-    printf(&quot;\033[33m%s\n\033[0m&quot;, tok);
-    //TODO
-}</code></pre><h2 id="处理单行格式化文本sscanf"><a href="#处理单行格式化文本sscanf" class="headerlink" title="处理单行格式化文本sscanf"></a>处理单行格式化文本sscanf</h2><p>sscanf() - 从一个字符串中读进与指定格式相符的数据.　函数原型:</p>
-<pre><code>int sscanf( string str, string fmt, mixed var1, mixed var2 ...  );
-int scanf( const char \*format [,argument]...  );</code></pre><p>说明：</p>
-<p>sscanf与scanf类似，都是用于输入的，只是后者以屏幕(stdin)为输入源，前者以固定字符串为输入源。<br>其中的format可以是一个或多个 %[*] [width] [{h | l | I64 | L}]type | ‘ ‘ | ‘\t’ | ‘\n’ | 非%符号：</p>
-<ol>
-<li>* 亦可用于格式中, (即 %*d 和 %*s) 加了星号 (*) 表示跳过此数据不读入. (也就是不把此数据读入参数中)</li>
-<li>{a|b|c}表示a,b,c中选一，[d],表示可以有d也可以没有d。</li>
-<li>width表示读取宽度。</li>
-<li>{h | l | I64 | L}:参数的size,通常h表示单字节size，I表示2字节size,L表示4字节size(double例外),l64表示8字节size。</li>
-<li>type :这就很多了，就是%s,%d,%c之类。</li>
-<li>特别的：%*[width] [{h | l | I64 | L}]type 表示满足该条件的被过滤掉，不会向目标参数中写入值</li>
-</ol>
-<p>支持集合操作：</p>
-<ol>
-<li>%[a-z] 表示匹配a到z中任意字符，贪婪性(尽可能多的匹配)</li>
-<li>%[A-Z] 表示匹配A到Z中任意字符，贪婪性(尽可能多的匹配)</li>
-<li>%[aB’] 匹配a、B、’中一员，贪婪性</li>
-<li>%[^a] 匹配非a的任意字符，贪婪性</li>
-</ol>
-<p>注意：在读入的字符串是空字符串时，sscanf函数并不改变待读入到的字符串的值。</p>
-<p><strong>针对格式化文本的处理：</strong></p>
-<pre><code>char longitude[6] = {0};
-char direction = 0;
-char frequency[6] = {0};
-char polar = 0;
-char symbol[6] = {0};
-char sid[6] = {0};
-char data0[EMU_KEY_STR_LEN] = {0};
-char data1[EMU_KEY_STR_LEN] = {0};
-
-if (type == 0)
-{
-    //B:004.0:W:11389:A:27500:00011:1A2B3C81C3B2A116:RTR                  
-    sscanf(tok, &quot;%*1c:%5c:%1c:%5c:%1c:%5c:%5c:%16c:%16c&quot;,
-            longitude, &amp;direction, frequency, &amp;polar, symbol, sid, data0, data1);
-}
-else
-{ 
-    //P:105.5:E:03960:H:27500:CEF7CE422FF89E:E42DB81767E02E
-    sscanf(tok, &quot;%*1c:%5c:%1c:%5c:%1c:%5c:%14c:%14c&quot;,
-            longitude, &amp;direction, frequency, &amp;polar, symbol, data0, data1);
-}
-pMinifs-&gt;symbol_rate = atoi(symbol);
-.
-.
-.</code></pre><p>注意：<strong>%s与%c的区别，注意buf的长度包含字符串结束符‘\0’，长度如果不对，后续处理可能出现问题。</strong></p>
-<h2 id="强制内存转换处理格式化文本"><a href="#强制内存转换处理格式化文本" class="headerlink" title="强制内存转换处理格式化文本"></a>强制内存转换处理格式化文本</h2><p>针对格式化文本还有一种内存强制转换的处理方式：</p>
-<pre><code>struct DevData{
-    char tag[2];
-    char longitude[6];
-    char direction[2];
-    char frequency[6];
-    char polar[2];
-    char symbol_rate[6];
-    char service_id[6];
-    char key[KEY_STR_LEN+1];
-    char prog_name[PROG_NAME_LENTH];
-    char line_feed[2];//tail(0x0d0a or 0x0a)
-} __attribute__((packed));
-
-//获取文件数据
-fd = fopen(path, &quot;r&quot;);
-p = (char *)mallocz(size);
-fseek(fd, 0, SEEK_SET);
-fread(fd, p, 1, size);
-
-//强制转换
-struct DevData *pRootData=NULL;
-for(i=0;i&lt;total_num;i++)
-{
-    pRootData = (struct DevData*)p1;
-    .
-    .
-    //处理当前结构体pRootData，并获得偏移量用来取下一个结构体数据
-    memset(atoi_buf,0,sizeof(atoi_buf));
-    memcpy(atoi_buf,pRootData-&gt;symbol_rate,sizeof(pRootData-&gt;symbol_rate)-1);
-    pMinifs-&gt;symbol_rate = atoi(atoi_buf);
-    .
-    p1 += offset;
-}</code></pre><h2 id="正则表达式"><a href="#正则表达式" class="headerlink" title="正则表达式"></a>正则表达式</h2><h3 id="特殊字符"><a href="#特殊字符" class="headerlink" title="特殊字符"></a><strong>特殊字符</strong></h3><h4 id=""><a href="#" class="headerlink" title="\"></a>\</h4><p>转义字符，将下一字符标记为特殊字符、文本、反向引用或八进制转义符</p>
-<pre><code>&#39;\n&#39;匹配换行，
-&#39;\\&#39;匹配&#39;\&#39;</code></pre><h4 id="-1"><a href="#-1" class="headerlink" title="^"></a>^</h4><p>匹配搜索字符串开始的位置。如果标志中包括 m（多行搜索）字符，^ 还将匹配 \n 或 \r 后面的位置。<br>如果将 ^ 用作括号表达式中的第一个字符，则会对字符集求反。</p>
-<pre><code>^\d{3} 与搜索字符串开始处的 3 个数字匹配。
-[^abc] 与除 a、b 和 c 以外的任何字符匹配。</code></pre><h4 id="-2"><a href="#-2" class="headerlink" title="$"></a>$</h4><p>匹配搜索字符串结尾的位置。 如果标志中包括 m（多行搜索）字符，^ 还将匹配 \n 或 \r 前面的位置。</p>
-<pre><code>\d{3}$ 与搜索字符串结尾处的 3 个数字匹配。</code></pre><h4 id="-3"><a href="#-3" class="headerlink" title="*"></a>*</h4><p>零次或多次匹配前面的字符或子表达式。等效于 {0,}。</p>
-<pre><code>zo\* 与“z”和“zoo”匹配。</code></pre><h4 id="-4"><a href="#-4" class="headerlink" title="+"></a>+</h4><p>一次或多次匹配前面的字符或子表达式。 等效于 {1,}。</p>
-<pre><code>zo+ 与“zo”和“zoo”匹配，但与“z”不匹配。</code></pre><h4 id="-5"><a href="#-5" class="headerlink" title="?"></a>?</h4><p>零次或一次匹配前面的字符或子表达式。 等效于 {0,1}。<br>当 ? 紧随任何其他限定符（*、+、?、{n}、{n,} 或 {n,m}）之后时，匹配模式是非贪婪的。<br>非贪婪模式匹配搜索到的、尽可能少的字符串， 而默认的贪婪模式匹配搜索到的、尽可能多的字符串。</p>
-<pre><code>zo? 与“z”和“zo”匹配，但与“zoo”不匹配。
-o+? 只与“oooo”中的单个“o”匹配，而 o+ 与所有“o”匹配。
-do(es)? 与“do”或“does”中的“do”匹配。</code></pre><h4 id="-6"><a href="#-6" class="headerlink" title="."></a>.</h4><p>匹配除换行符 \n 之外的任何单个字符。 若要匹配包括 \n 在内的任意字符，请使用诸如 [\s\S] 之类的模式。</p>
-<pre><code>a.c 与“abc”、“a1c”和“a-c”匹配</code></pre><h4 id="-7"><a href="#-7" class="headerlink" title="[]"></a>[]</h4><p>标记括号表达式的开始和结尾。</p>
-<pre><code>[1-4] 与“1”、“2”、“3”或“4”匹配。 [^aAeEiIoOuU] 与任何非元音字符匹配</code></pre><h4 id="-8"><a href="#-8" class="headerlink" title="{}"></a>{}</h4><p>标记限定符表达式的开始和结尾。</p>
-<pre><code>a{2,3} 与“aa”和“aaa”匹配</code></pre><h4 id="-9"><a href="#-9" class="headerlink" title="()"></a>()</h4><p>标记子表达式的开始和结尾。 可以保存子表达式以备将来之用。</p>
-<pre><code>A(\d) 与“A0”至“A9”匹配。 保存该数字以备将来之用</code></pre><h4 id="-10"><a href="#-10" class="headerlink" title="|"></a>|</h4><p>指示在两个或多个项之间进行选择。</p>
-<pre><code>z|food 与“z”或“food”匹配。 (z|f)ood 与“zood”或“food”匹配</code></pre><h3 id="元字符"><a href="#元字符" class="headerlink" title="元字符"></a>元字符</h3><h4 id="b"><a href="#b" class="headerlink" title="\b"></a>\b</h4><p>与一个字边界匹配；即字与空格间的位置。</p>
-<pre><code>er\b 与“never”中的“er”匹配，但与“verb”中的“er”不匹配</code></pre><h4 id="B"><a href="#B" class="headerlink" title="\B"></a>\B</h4><p>非边界字匹配。</p>
-<pre><code>er\B 与“verb”中的“er”匹配，但与“never”中的“er”不匹配</code></pre><h4 id="d"><a href="#d" class="headerlink" title="\d"></a>\d</h4><p>数字字符匹配。 等效于 [0-9]。</p>
-<pre><code>在搜索字符串“12 345”中，\d{2} 与“12”和“34”匹配。 \d 与“1”、“2”、“3”、“4”和“5”匹配。</code></pre><h4 id="D"><a href="#D" class="headerlink" title="\D"></a>\D</h4><p>非数字字符匹配。 等效于 [^0-9]。</p>
-<pre><code>\D+ 与“abc123 def”中的“abc”和“def”匹配。</code></pre><h4 id="w"><a href="#w" class="headerlink" title="\w"></a>\w</h4><p>与以下任意字符匹配：A-Z、a-z、0-9 和下划线。 等效于 [A-Za-z0-9_]。</p>
-<pre><code>在搜索字符串“The quick brown fox…”中，\w+ 与“The”、“quick”、“brown”和“fox”匹配。</code></pre><h4 id="W"><a href="#W" class="headerlink" title="\W"></a>\W</h4><p>与除 A-Z、a-z、0-9 和下划线以外的任意字符匹配。 等效于 [^A-Za-z0-9_]。</p>
-<pre><code>在搜索字符串“The quick brown fox…”中，\W+ 与“…”和所有空格匹配。</code></pre><h4 id="xyz"><a href="#xyz" class="headerlink" title="[xyz]"></a>[xyz]</h4><p>字符集。 与任何一个指定字符匹配。</p>
-<pre><code>[abc] 与“plain”中的“a”匹配。</code></pre><h4 id="xyz-1"><a href="#xyz-1" class="headerlink" title="[^xyz]"></a>[^xyz]</h4><p>反向字符集。 与未指定的任何字符匹配。</p>
-<pre><code>[^abc] 与“plain”中的“p”、“l”、“i”和“n”匹配。</code></pre><h4 id="a-z"><a href="#a-z" class="headerlink" title="[a-z]"></a>[a-z]</h4><p>字符范围。 匹配指定范围内的任何字符。</p>
-<pre><code>[a-z] 与“a”到“z”范围内的任何小写字母字符匹配。</code></pre><h4 id="a-z-1"><a href="#a-z-1" class="headerlink" title="[^a-z]"></a>[^a-z]</h4><p>反向字符范围。 与不在指定范围内的任何字符匹配。</p>
-<pre><code>[^a-z] 与不在范围“a”到“z”内的任何字符匹配。</code></pre><h4 id="n"><a href="#n" class="headerlink" title="{n}"></a>{n}</h4><p>正好匹配 n 次。 n 是非负整数。</p>
-<pre><code>o{2} 与“Bob”中的“o”不匹配，但与“food”中的两个“o”匹配。</code></pre><h4 id="n-1"><a href="#n-1" class="headerlink" title="{n,}"></a>{n,}</h4><p>至少匹配 n 次。 n 是非负整数。</p>
-<pre><code>* 与 {0,} 相等。
-+ 与 {1,} 相等。
-o{2,} 与“Bob”中的“o”不匹配，但与“foooood”中的所有“o”匹配。</code></pre><h4 id="n-m"><a href="#n-m" class="headerlink" title="{n,m}"></a>{n,m}</h4><p>匹配至少 n 次，至多 m 次。 n 和 m 是非负整数，其中 n &lt;= m。 逗号和数字之间不能有空格。</p>
-<pre><code>? 与 {0,1} 相等。
-在搜索字符串“1234567”中，\d{1,3} 与“123”、“456”和“7”匹配。</code></pre><h4 id="pattern"><a href="#pattern" class="headerlink" title="(pattern)"></a>(pattern)</h4><p>与pattern 匹配并保存匹配项。 若要匹配括号字符 (  )，请使用“(”或者“)”。</p>
-<pre><code>(Chapter|Section) [1-9] 与“Chapter 5”匹配，保存“Chapter”以备将来之用。</code></pre><h4 id="pattern-1"><a href="#pattern-1" class="headerlink" title="(?:pattern)"></a>(?:pattern)</h4><p>与pattern 匹配，但不保存匹配项；即不会存储匹配项以备将来之用。 这对于用“or”字符 (|) 组合模式部件的情况很有用。</p>
-<pre><code>industr(?:y|ies) 与 industry|industries 相等。</code></pre><h4 id="pattern-2"><a href="#pattern-2" class="headerlink" title="(?=pattern)"></a>(?=pattern)</h4><p>正预测先行。 找到一个匹配项后，将在匹配文本之前开始搜索下一个匹配项。 不会保存匹配项以备将来之用。</p>
-<pre><code>^(?=.\*\d).{4,8}$ 对密码应用以下限制：其长度必须介于 4 到 8 个字符之间，并且必须至少包含一个数字。</code></pre><p>在该模式中，.*\d 查找后跟有数字的任意多个字符。 对于搜索字符串“abc3qr”，这与“abc3”匹配。<br>从该匹配项之前（而不是之后）开始，.{4,8} 与包含 4-8 个字符的字符串匹配。 这与“abc3qr”匹配。<br>^ 和 $ 指定搜索字符串的开始和结束位置。 这将在搜索字符串包含匹配字符之外的任何字符时阻止匹配。</p>
-<h4 id="pattern-3"><a href="#pattern-3" class="headerlink" title="(?!pattern)"></a>(?!pattern)</h4><p>负预测先行。 匹配与模式 不匹配的搜索字符串。 找到一个匹配项后，将在匹配文本之前开始搜索下一个匹配项。 不会保存匹配项以备将来之用。</p>
-<pre><code>\b(?!th)\w+\b 与不以“th”开头的单词匹配。</code></pre><p>在该模式中，\b 与一个字边界匹配。 对于搜索字符串“ quick ”，这与第一个空格匹配。 (?!th) 与非“th”字符串匹配。 这与“qu”匹配。<br>从该匹配项开始，\w+ 与一个字匹配。 这与“quick”匹配。</p>
-<h4 id="cx"><a href="#cx" class="headerlink" title="\cx"></a>\cx</h4><p>匹配 x 指示的控制字符。 x 的值必须在 A-Z 或 a-z 范围内。 如果不是这样，则假定 c 就是文本“c”字符本身。</p>
-<pre><code>\cM 与 Ctrl+M 或一个回车符匹配。</code></pre><h4 id="xn"><a href="#xn" class="headerlink" title="\xn"></a>\xn</h4><p>匹配 n，此处的 n 是一个十六进制转义码。<br>十六进制转义码必须正好是两位数长。 允许在正则表达式中使用 ASCII 代码。</p>
-<pre><code>\x41 与“A”匹配。 \x041 等效于后跟有“1”的“\x04”（因为 n 必须正好是两位数）。</code></pre><h4 id="num"><a href="#num" class="headerlink" title="\num"></a>\num</h4><p>匹配 num，此处的 num 是一个正整数。 这是对已保存的匹配项的引用。</p>
-<pre><code>(.)\1 与两个连续的相同字符匹配。</code></pre><h4 id="n-2"><a href="#n-2" class="headerlink" title="\n"></a>\n</h4><p>标识一个八进制转义码或反向引用。 如果 \n 前面至少有 n 个捕获子表达式，那么 n 是反向引用。<br>否则，如果 n 是八进制数 (0-7)，那么 n 是八进制转义码。</p>
-<pre><code>(\d)\1 与两个连续的相同数字匹配。</code></pre><h4 id="nm"><a href="#nm" class="headerlink" title="\nm"></a>\nm</h4><p>标识一个八进制转义码或反向引用。 如果 \nm 前面至少有 nm 个捕获子表达式，那么 nm 是反向引用。<br>如果 \nm 前面至少有 n 个捕获子表达式，则 n 是反向引用，后面跟有文本 m。<br>如果上述情况都不存在，当 n 和 m 是八进制数字 (0-7) 时，\nm 匹配八进制转义码 nm。</p>
-<pre><code>\11 与制表符匹配。</code></pre><h4 id="nml"><a href="#nml" class="headerlink" title="\nml"></a>\nml</h4><p>当 n 是八进制数字 (0-3)，m 和 l 是八进制数字 (0-7) 时，匹配八进制转义码 nml。</p>
-<pre><code>\011 与制表符匹配。</code></pre><h4 id="un"><a href="#un" class="headerlink" title="\un"></a>\un</h4><p>匹配 n，其中 n 是以四位十六进制数表示的 Unicode 字符。</p>
-<pre><code>\u00A9 与版权符号 (©) 匹配。</code></pre><h3 id="非打印字符"><a href="#非打印字符" class="headerlink" title="非打印字符"></a>非打印字符</h3><ul>
-<li>\f 换页符。 \x0c 和 \cL</li>
-<li>\n 换行符。 \x0a 和 \cJ</li>
-<li>\r 回车符。 \x0d 和 \cM</li>
-<li>\s 任何空白字符。 其中包括空格、制表符和换页符。 [ \f\n\r\t\v ]</li>
-<li>\S 任何非空白字符。 [^ \f\n\r\t\v]</li>
-<li>\t Tab 字符。 \x09 和 \cI</li>
-<li>\v 垂直制表符。 \x0b 和 \cK</li>
-</ul>
-<ol>
-<li><a href="http://blog.chinaunix.net/uid-26284412-id-3189214.html" target="_blank" rel="noopener">sscanf的高级用法</a></li>
-<li><a href="http://www.cnblogs.com/lyq105/archive/2009/11/28/1612677.html" target="_blank" rel="noopener">C语言函数sscanf()的用法</a></li>
-<li><a href="http://www.kryptosx.info/archives/60.html" target="_blank" rel="noopener">scanf的正则表达式总结</a></li>
-<li><a href="http://blog.csdn.net/tujiaw/article/details/6139896" target="_blank" rel="noopener">scanf、sscanf中的正则表达式</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>C</category>
-      </categories>
-      <tags>
-        <tag>regexp</tag>
-        <tag>doline</tag>
-        <tag>sscanf</tag>
       </tags>
   </entry>
   <entry>
@@ -30762,6 +30581,190 @@ UseTab: Never
       </tags>
   </entry>
   <entry>
+    <title>逐行处理内存文本及正则表达式元字符列表</title>
+    <url>/2015/11/18/deal-with-file-by-line/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h2 id="文本内容"><a href="#文本内容" class="headerlink" title="文本内容"></a>文本内容</h2><pre><code>P:013.0:E:11054:H:27500:5DDC29D54BE4D7:F3381AD050DE3A
+P:091.5:E:03960:H:29700:DAE69F8B6E0106:E0DE2F8903AE55
+P:105.5:E:03960:H:27500:CEF7CE422FF89E:E42DB81767E02E
+P:166.0:E:03760:V:27690:7199819B0CF04F:7EE0F00CFFBF66
+P:138.0:E:03703:V:04444:AD5CDBA991505A:1E1376FD07FB13
+P:166.0:E:03830:H:14000:956D98AD9E6E84:842F2801182286</code></pre><p>或者：</p>
+<pre><code>B:042.0:E:11919:V:24444:00012:1000000000000000:TRT3
+B:042.0:E:11954:A:08800:00001:1111110011111800:EINTERCOM
+B:042.0:E:11953:A:02980:00001:1212123312121233:
+B:042.0:E:11996:V:27500:00300:A33130046167824A:Sci-Tech TV
+B:042.0:E:12015:H:27500:00009:1000001010000010:Teledunya 3D
+B:042.0:E:12130:V:27500:00024:1000000000000000:Radio Migros
+B:042.0:E:12130:V:27500:00025:1000000000000000:Radio Tansas</code></pre><h2 id="逐行读取文本strsep"><a href="#逐行读取文本strsep" class="headerlink" title="逐行读取文本strsep"></a>逐行读取文本strsep</h2><pre><code>char *tok = NULL;
+for (tok = strsep(&amp;p, &quot;\n&quot;); tok != NULL; tok = strsep(&amp;p, &quot;\n&quot;))
+{
+    printf(&quot;\033[33m%s\n\033[0m&quot;, tok);
+    //TODO
+}</code></pre><h2 id="处理单行格式化文本sscanf"><a href="#处理单行格式化文本sscanf" class="headerlink" title="处理单行格式化文本sscanf"></a>处理单行格式化文本sscanf</h2><p>sscanf() - 从一个字符串中读进与指定格式相符的数据.　函数原型:</p>
+<pre><code>int sscanf( string str, string fmt, mixed var1, mixed var2 ...  );
+int scanf( const char \*format [,argument]...  );</code></pre><p>说明：</p>
+<p>sscanf与scanf类似，都是用于输入的，只是后者以屏幕(stdin)为输入源，前者以固定字符串为输入源。<br>其中的format可以是一个或多个 %[*] [width] [{h | l | I64 | L}]type | ‘ ‘ | ‘\t’ | ‘\n’ | 非%符号：</p>
+<ol>
+<li>* 亦可用于格式中, (即 %*d 和 %*s) 加了星号 (*) 表示跳过此数据不读入. (也就是不把此数据读入参数中)</li>
+<li>{a|b|c}表示a,b,c中选一，[d],表示可以有d也可以没有d。</li>
+<li>width表示读取宽度。</li>
+<li>{h | l | I64 | L}:参数的size,通常h表示单字节size，I表示2字节size,L表示4字节size(double例外),l64表示8字节size。</li>
+<li>type :这就很多了，就是%s,%d,%c之类。</li>
+<li>特别的：%*[width] [{h | l | I64 | L}]type 表示满足该条件的被过滤掉，不会向目标参数中写入值</li>
+</ol>
+<p>支持集合操作：</p>
+<ol>
+<li>%[a-z] 表示匹配a到z中任意字符，贪婪性(尽可能多的匹配)</li>
+<li>%[A-Z] 表示匹配A到Z中任意字符，贪婪性(尽可能多的匹配)</li>
+<li>%[aB’] 匹配a、B、’中一员，贪婪性</li>
+<li>%[^a] 匹配非a的任意字符，贪婪性</li>
+</ol>
+<p>注意：在读入的字符串是空字符串时，sscanf函数并不改变待读入到的字符串的值。</p>
+<p><strong>针对格式化文本的处理：</strong></p>
+<pre><code>char longitude[6] = {0};
+char direction = 0;
+char frequency[6] = {0};
+char polar = 0;
+char symbol[6] = {0};
+char sid[6] = {0};
+char data0[EMU_KEY_STR_LEN] = {0};
+char data1[EMU_KEY_STR_LEN] = {0};
+
+if (type == 0)
+{
+    //B:004.0:W:11389:A:27500:00011:1A2B3C81C3B2A116:RTR                  
+    sscanf(tok, &quot;%*1c:%5c:%1c:%5c:%1c:%5c:%5c:%16c:%16c&quot;,
+            longitude, &amp;direction, frequency, &amp;polar, symbol, sid, data0, data1);
+}
+else
+{ 
+    //P:105.5:E:03960:H:27500:CEF7CE422FF89E:E42DB81767E02E
+    sscanf(tok, &quot;%*1c:%5c:%1c:%5c:%1c:%5c:%14c:%14c&quot;,
+            longitude, &amp;direction, frequency, &amp;polar, symbol, data0, data1);
+}
+pMinifs-&gt;symbol_rate = atoi(symbol);
+.
+.
+.</code></pre><p>注意：<strong>%s与%c的区别，注意buf的长度包含字符串结束符‘\0’，长度如果不对，后续处理可能出现问题。</strong></p>
+<h2 id="强制内存转换处理格式化文本"><a href="#强制内存转换处理格式化文本" class="headerlink" title="强制内存转换处理格式化文本"></a>强制内存转换处理格式化文本</h2><p>针对格式化文本还有一种内存强制转换的处理方式：</p>
+<pre><code>struct DevData{
+    char tag[2];
+    char longitude[6];
+    char direction[2];
+    char frequency[6];
+    char polar[2];
+    char symbol_rate[6];
+    char service_id[6];
+    char key[KEY_STR_LEN+1];
+    char prog_name[PROG_NAME_LENTH];
+    char line_feed[2];//tail(0x0d0a or 0x0a)
+} __attribute__((packed));
+
+//获取文件数据
+fd = fopen(path, &quot;r&quot;);
+p = (char *)mallocz(size);
+fseek(fd, 0, SEEK_SET);
+fread(fd, p, 1, size);
+
+//强制转换
+struct DevData *pRootData=NULL;
+for(i=0;i&lt;total_num;i++)
+{
+    pRootData = (struct DevData*)p1;
+    .
+    .
+    //处理当前结构体pRootData，并获得偏移量用来取下一个结构体数据
+    memset(atoi_buf,0,sizeof(atoi_buf));
+    memcpy(atoi_buf,pRootData-&gt;symbol_rate,sizeof(pRootData-&gt;symbol_rate)-1);
+    pMinifs-&gt;symbol_rate = atoi(atoi_buf);
+    .
+    p1 += offset;
+}</code></pre><h2 id="正则表达式"><a href="#正则表达式" class="headerlink" title="正则表达式"></a>正则表达式</h2><h3 id="特殊字符"><a href="#特殊字符" class="headerlink" title="特殊字符"></a><strong>特殊字符</strong></h3><h4 id=""><a href="#" class="headerlink" title="\"></a>\</h4><p>转义字符，将下一字符标记为特殊字符、文本、反向引用或八进制转义符</p>
+<pre><code>&#39;\n&#39;匹配换行，
+&#39;\\&#39;匹配&#39;\&#39;</code></pre><h4 id="-1"><a href="#-1" class="headerlink" title="^"></a>^</h4><p>匹配搜索字符串开始的位置。如果标志中包括 m（多行搜索）字符，^ 还将匹配 \n 或 \r 后面的位置。<br>如果将 ^ 用作括号表达式中的第一个字符，则会对字符集求反。</p>
+<pre><code>^\d{3} 与搜索字符串开始处的 3 个数字匹配。
+[^abc] 与除 a、b 和 c 以外的任何字符匹配。</code></pre><h4 id="-2"><a href="#-2" class="headerlink" title="$"></a>$</h4><p>匹配搜索字符串结尾的位置。 如果标志中包括 m（多行搜索）字符，^ 还将匹配 \n 或 \r 前面的位置。</p>
+<pre><code>\d{3}$ 与搜索字符串结尾处的 3 个数字匹配。</code></pre><h4 id="-3"><a href="#-3" class="headerlink" title="*"></a>*</h4><p>零次或多次匹配前面的字符或子表达式。等效于 {0,}。</p>
+<pre><code>zo\* 与“z”和“zoo”匹配。</code></pre><h4 id="-4"><a href="#-4" class="headerlink" title="+"></a>+</h4><p>一次或多次匹配前面的字符或子表达式。 等效于 {1,}。</p>
+<pre><code>zo+ 与“zo”和“zoo”匹配，但与“z”不匹配。</code></pre><h4 id="-5"><a href="#-5" class="headerlink" title="?"></a>?</h4><p>零次或一次匹配前面的字符或子表达式。 等效于 {0,1}。<br>当 ? 紧随任何其他限定符（*、+、?、{n}、{n,} 或 {n,m}）之后时，匹配模式是非贪婪的。<br>非贪婪模式匹配搜索到的、尽可能少的字符串， 而默认的贪婪模式匹配搜索到的、尽可能多的字符串。</p>
+<pre><code>zo? 与“z”和“zo”匹配，但与“zoo”不匹配。
+o+? 只与“oooo”中的单个“o”匹配，而 o+ 与所有“o”匹配。
+do(es)? 与“do”或“does”中的“do”匹配。</code></pre><h4 id="-6"><a href="#-6" class="headerlink" title="."></a>.</h4><p>匹配除换行符 \n 之外的任何单个字符。 若要匹配包括 \n 在内的任意字符，请使用诸如 [\s\S] 之类的模式。</p>
+<pre><code>a.c 与“abc”、“a1c”和“a-c”匹配</code></pre><h4 id="-7"><a href="#-7" class="headerlink" title="[]"></a>[]</h4><p>标记括号表达式的开始和结尾。</p>
+<pre><code>[1-4] 与“1”、“2”、“3”或“4”匹配。 [^aAeEiIoOuU] 与任何非元音字符匹配</code></pre><h4 id="-8"><a href="#-8" class="headerlink" title="{}"></a>{}</h4><p>标记限定符表达式的开始和结尾。</p>
+<pre><code>a{2,3} 与“aa”和“aaa”匹配</code></pre><h4 id="-9"><a href="#-9" class="headerlink" title="()"></a>()</h4><p>标记子表达式的开始和结尾。 可以保存子表达式以备将来之用。</p>
+<pre><code>A(\d) 与“A0”至“A9”匹配。 保存该数字以备将来之用</code></pre><h4 id="-10"><a href="#-10" class="headerlink" title="|"></a>|</h4><p>指示在两个或多个项之间进行选择。</p>
+<pre><code>z|food 与“z”或“food”匹配。 (z|f)ood 与“zood”或“food”匹配</code></pre><h3 id="元字符"><a href="#元字符" class="headerlink" title="元字符"></a>元字符</h3><h4 id="b"><a href="#b" class="headerlink" title="\b"></a>\b</h4><p>与一个字边界匹配；即字与空格间的位置。</p>
+<pre><code>er\b 与“never”中的“er”匹配，但与“verb”中的“er”不匹配</code></pre><h4 id="B"><a href="#B" class="headerlink" title="\B"></a>\B</h4><p>非边界字匹配。</p>
+<pre><code>er\B 与“verb”中的“er”匹配，但与“never”中的“er”不匹配</code></pre><h4 id="d"><a href="#d" class="headerlink" title="\d"></a>\d</h4><p>数字字符匹配。 等效于 [0-9]。</p>
+<pre><code>在搜索字符串“12 345”中，\d{2} 与“12”和“34”匹配。 \d 与“1”、“2”、“3”、“4”和“5”匹配。</code></pre><h4 id="D"><a href="#D" class="headerlink" title="\D"></a>\D</h4><p>非数字字符匹配。 等效于 [^0-9]。</p>
+<pre><code>\D+ 与“abc123 def”中的“abc”和“def”匹配。</code></pre><h4 id="w"><a href="#w" class="headerlink" title="\w"></a>\w</h4><p>与以下任意字符匹配：A-Z、a-z、0-9 和下划线。 等效于 [A-Za-z0-9_]。</p>
+<pre><code>在搜索字符串“The quick brown fox…”中，\w+ 与“The”、“quick”、“brown”和“fox”匹配。</code></pre><h4 id="W"><a href="#W" class="headerlink" title="\W"></a>\W</h4><p>与除 A-Z、a-z、0-9 和下划线以外的任意字符匹配。 等效于 [^A-Za-z0-9_]。</p>
+<pre><code>在搜索字符串“The quick brown fox…”中，\W+ 与“…”和所有空格匹配。</code></pre><h4 id="xyz"><a href="#xyz" class="headerlink" title="[xyz]"></a>[xyz]</h4><p>字符集。 与任何一个指定字符匹配。</p>
+<pre><code>[abc] 与“plain”中的“a”匹配。</code></pre><h4 id="xyz-1"><a href="#xyz-1" class="headerlink" title="[^xyz]"></a>[^xyz]</h4><p>反向字符集。 与未指定的任何字符匹配。</p>
+<pre><code>[^abc] 与“plain”中的“p”、“l”、“i”和“n”匹配。</code></pre><h4 id="a-z"><a href="#a-z" class="headerlink" title="[a-z]"></a>[a-z]</h4><p>字符范围。 匹配指定范围内的任何字符。</p>
+<pre><code>[a-z] 与“a”到“z”范围内的任何小写字母字符匹配。</code></pre><h4 id="a-z-1"><a href="#a-z-1" class="headerlink" title="[^a-z]"></a>[^a-z]</h4><p>反向字符范围。 与不在指定范围内的任何字符匹配。</p>
+<pre><code>[^a-z] 与不在范围“a”到“z”内的任何字符匹配。</code></pre><h4 id="n"><a href="#n" class="headerlink" title="{n}"></a>{n}</h4><p>正好匹配 n 次。 n 是非负整数。</p>
+<pre><code>o{2} 与“Bob”中的“o”不匹配，但与“food”中的两个“o”匹配。</code></pre><h4 id="n-1"><a href="#n-1" class="headerlink" title="{n,}"></a>{n,}</h4><p>至少匹配 n 次。 n 是非负整数。</p>
+<pre><code>* 与 {0,} 相等。
++ 与 {1,} 相等。
+o{2,} 与“Bob”中的“o”不匹配，但与“foooood”中的所有“o”匹配。</code></pre><h4 id="n-m"><a href="#n-m" class="headerlink" title="{n,m}"></a>{n,m}</h4><p>匹配至少 n 次，至多 m 次。 n 和 m 是非负整数，其中 n &lt;= m。 逗号和数字之间不能有空格。</p>
+<pre><code>? 与 {0,1} 相等。
+在搜索字符串“1234567”中，\d{1,3} 与“123”、“456”和“7”匹配。</code></pre><h4 id="pattern"><a href="#pattern" class="headerlink" title="(pattern)"></a>(pattern)</h4><p>与pattern 匹配并保存匹配项。 若要匹配括号字符 (  )，请使用“(”或者“)”。</p>
+<pre><code>(Chapter|Section) [1-9] 与“Chapter 5”匹配，保存“Chapter”以备将来之用。</code></pre><h4 id="pattern-1"><a href="#pattern-1" class="headerlink" title="(?:pattern)"></a>(?:pattern)</h4><p>与pattern 匹配，但不保存匹配项；即不会存储匹配项以备将来之用。 这对于用“or”字符 (|) 组合模式部件的情况很有用。</p>
+<pre><code>industr(?:y|ies) 与 industry|industries 相等。</code></pre><h4 id="pattern-2"><a href="#pattern-2" class="headerlink" title="(?=pattern)"></a>(?=pattern)</h4><p>正预测先行。 找到一个匹配项后，将在匹配文本之前开始搜索下一个匹配项。 不会保存匹配项以备将来之用。</p>
+<pre><code>^(?=.\*\d).{4,8}$ 对密码应用以下限制：其长度必须介于 4 到 8 个字符之间，并且必须至少包含一个数字。</code></pre><p>在该模式中，.*\d 查找后跟有数字的任意多个字符。 对于搜索字符串“abc3qr”，这与“abc3”匹配。<br>从该匹配项之前（而不是之后）开始，.{4,8} 与包含 4-8 个字符的字符串匹配。 这与“abc3qr”匹配。<br>^ 和 $ 指定搜索字符串的开始和结束位置。 这将在搜索字符串包含匹配字符之外的任何字符时阻止匹配。</p>
+<h4 id="pattern-3"><a href="#pattern-3" class="headerlink" title="(?!pattern)"></a>(?!pattern)</h4><p>负预测先行。 匹配与模式 不匹配的搜索字符串。 找到一个匹配项后，将在匹配文本之前开始搜索下一个匹配项。 不会保存匹配项以备将来之用。</p>
+<pre><code>\b(?!th)\w+\b 与不以“th”开头的单词匹配。</code></pre><p>在该模式中，\b 与一个字边界匹配。 对于搜索字符串“ quick ”，这与第一个空格匹配。 (?!th) 与非“th”字符串匹配。 这与“qu”匹配。<br>从该匹配项开始，\w+ 与一个字匹配。 这与“quick”匹配。</p>
+<h4 id="cx"><a href="#cx" class="headerlink" title="\cx"></a>\cx</h4><p>匹配 x 指示的控制字符。 x 的值必须在 A-Z 或 a-z 范围内。 如果不是这样，则假定 c 就是文本“c”字符本身。</p>
+<pre><code>\cM 与 Ctrl+M 或一个回车符匹配。</code></pre><h4 id="xn"><a href="#xn" class="headerlink" title="\xn"></a>\xn</h4><p>匹配 n，此处的 n 是一个十六进制转义码。<br>十六进制转义码必须正好是两位数长。 允许在正则表达式中使用 ASCII 代码。</p>
+<pre><code>\x41 与“A”匹配。 \x041 等效于后跟有“1”的“\x04”（因为 n 必须正好是两位数）。</code></pre><h4 id="num"><a href="#num" class="headerlink" title="\num"></a>\num</h4><p>匹配 num，此处的 num 是一个正整数。 这是对已保存的匹配项的引用。</p>
+<pre><code>(.)\1 与两个连续的相同字符匹配。</code></pre><h4 id="n-2"><a href="#n-2" class="headerlink" title="\n"></a>\n</h4><p>标识一个八进制转义码或反向引用。 如果 \n 前面至少有 n 个捕获子表达式，那么 n 是反向引用。<br>否则，如果 n 是八进制数 (0-7)，那么 n 是八进制转义码。</p>
+<pre><code>(\d)\1 与两个连续的相同数字匹配。</code></pre><h4 id="nm"><a href="#nm" class="headerlink" title="\nm"></a>\nm</h4><p>标识一个八进制转义码或反向引用。 如果 \nm 前面至少有 nm 个捕获子表达式，那么 nm 是反向引用。<br>如果 \nm 前面至少有 n 个捕获子表达式，则 n 是反向引用，后面跟有文本 m。<br>如果上述情况都不存在，当 n 和 m 是八进制数字 (0-7) 时，\nm 匹配八进制转义码 nm。</p>
+<pre><code>\11 与制表符匹配。</code></pre><h4 id="nml"><a href="#nml" class="headerlink" title="\nml"></a>\nml</h4><p>当 n 是八进制数字 (0-3)，m 和 l 是八进制数字 (0-7) 时，匹配八进制转义码 nml。</p>
+<pre><code>\011 与制表符匹配。</code></pre><h4 id="un"><a href="#un" class="headerlink" title="\un"></a>\un</h4><p>匹配 n，其中 n 是以四位十六进制数表示的 Unicode 字符。</p>
+<pre><code>\u00A9 与版权符号 (©) 匹配。</code></pre><h3 id="非打印字符"><a href="#非打印字符" class="headerlink" title="非打印字符"></a>非打印字符</h3><ul>
+<li>\f 换页符。 \x0c 和 \cL</li>
+<li>\n 换行符。 \x0a 和 \cJ</li>
+<li>\r 回车符。 \x0d 和 \cM</li>
+<li>\s 任何空白字符。 其中包括空格、制表符和换页符。 [ \f\n\r\t\v ]</li>
+<li>\S 任何非空白字符。 [^ \f\n\r\t\v]</li>
+<li>\t Tab 字符。 \x09 和 \cI</li>
+<li>\v 垂直制表符。 \x0b 和 \cK</li>
+</ul>
+<ol>
+<li><a href="http://blog.chinaunix.net/uid-26284412-id-3189214.html" target="_blank" rel="noopener">sscanf的高级用法</a></li>
+<li><a href="http://www.cnblogs.com/lyq105/archive/2009/11/28/1612677.html" target="_blank" rel="noopener">C语言函数sscanf()的用法</a></li>
+<li><a href="http://www.kryptosx.info/archives/60.html" target="_blank" rel="noopener">scanf的正则表达式总结</a></li>
+<li><a href="http://blog.csdn.net/tujiaw/article/details/6139896" target="_blank" rel="noopener">scanf、sscanf中的正则表达式</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>C</category>
+      </categories>
+      <tags>
+        <tag>regexp</tag>
+        <tag>doline</tag>
+        <tag>sscanf</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Linux 图形编程简介</title>
     <url>/2018/06/11/linux-ui/</url>
     <content><![CDATA[<p>简单介绍 Linux 图形编程概念、协议及库</p>
@@ -33389,6 +33392,194 @@ SSL_CTX_set_verify_depth(ctx, 1);</code></pre>
       </tags>
   </entry>
   <entry>
+    <title>Raw Socket L2 vs L3</title>
+    <url>/2019/04/28/raw-socket-L2-vs-L3/</url>
+    <content><![CDATA[<p>记录<code>Raw socket</code>相关知识点，以及数据链路层数据访问</p>
+<ul>
+<li>Layer 2: MAC &amp; LLC</li>
+<li>Layer 3: Network</li>
+</ul>
+<a id="more"></a>
+
+<h2 id="OSI-Model"><a href="#OSI-Model" class="headerlink" title="OSI Model"></a>OSI Model</h2><p><code>OSI</code>七层模型如下</p>
+<p><img src="/images/socket/1556452439780.png" alt="1556452439780"></p>
+<ul>
+<li>Layer2: <code>MAC &amp; LLC</code>，数据类型 <a href="https://en.wikipedia.org/wiki/Frame_networking" target="_blank" rel="noopener">Frame</a></li>
+<li>Layer3: <code>Network</code>，数据类型 <a href="https://en.wikipedia.org/wiki/Network_packet" target="_blank" rel="noopener">Packet</a></li>
+</ul>
+<h2 id="Raw-Socket"><a href="#Raw-Socket" class="headerlink" title="Raw Socket"></a>Raw Socket</h2><p>每一层级网络数据都由两部分组成：<code>Header</code>和<code>Payload</code>，<code>TCP</code>报文如下</p>
+<p><img src="/images/socket/1556455755725.png" alt="1556455755725"></p>
+<p>通常使用的流式套接字<code>SOCK_STREAM</code>和数据包式套接字<code>SOCK_DGRAM</code>，已经由系统提供的协议栈处理过，应用只能处理<code>Payload</code>部分，<code>Header</code>部分已被处理过。而当需要处理<code>Header</code>部分时，需要使用<code>raw socket</code>，它位于系统核心，可以处理<code>Header</code>部分，而<code>raw socket</code>根据能力不同分为<code>L2</code>和<code>L3</code>，部分资料摘录如下：</p>
+<ol>
+<li>non-Raw socket<blockquote>
+<p>you can just determine Transport Layer Payload. i.e it is OS task to create Transport,Network and Data Link layer headers.</p>
+</blockquote>
+</li>
+<li>Raw socket<blockquote>
+<p>you can determine every section of packet,either header or payload. Please note that raw socket is a general word. I categorize raw socket into: Network Socket andd Data-Link Socket (or alternativly L3 Socket and L2 Socket)</p>
+</blockquote>
+</li>
+</ol>
+<h2 id="L3-Socket-–-Network-Socket"><a href="#L3-Socket-–-Network-Socket" class="headerlink" title="L3 Socket – Network Socket"></a>L3 Socket – Network Socket</h2><blockquote>
+<p>In L3 Socket you can determine header and payload of packet in network layer. For example if network layer protocol is IPv4, you can determine IPv4 header and payload. Thus you can set transport layer header/payload, ICMP header/payload, Routing Protocols headder/payload.</p>
+</blockquote>
+<p>创建方式</p>
+<pre><code class="c">socket(AF_INET, SOCK_RAW, protocol)</code></pre>
+<p>在头文件<code>netinet/in.h</code>中定义了系统中该字段目前能取的值，注意：有些系统中不一定实现了<code>netinet/in.h</code>中的所有协议。源代码的<code>linux/in.h</code>中和<code>netinet/in.h</code>中的内容一样。常用的如下</p>
+<ul>
+<li><code>IPPROTO_IP(0)</code>: 用于接收任何的 IP 数据包。其中的校验和和协议分析由程序自己完成</li>
+<li><code>IPPROTO_RAW(255)</code>: 只能用来发送 IP 包，而不能接收任何的数据。发送的数据需要自己填充 IP 包头，并且自己计算校验和</li>
+<li>其他像<code>IPPROTO_TCP(6)</code>这种非 0、非 255 的协议，当操作系统内核碰到 IP 头中 protocol 域和创建 socket 所使用参数 protocol 相同的 IP 包，就会交给这个<code>raw socket</code>来处理，因此，一般来说，要想接收什么样的数据包，就应该在参数 protocol 里来指定相应的协议。当内核向此 raw socket 交付数据包的时候，是包括整个 IP 头的，并且已经是重组好的 IP 包</li>
+</ul>
+<p>用这种方式可以得到原始的 IP 包，然后就可以自定义 IP 所承载的具体协议类型，如<code>TCP</code>，<code>UDP</code>或<code>ICMP</code>，并手动对每种承载在 IP 协议之上的报文进行填充。</p>
+<p>注意其中一个参数<code>IP_HDRINCL</code>，允许用户构造 IP 头</p>
+<pre><code class="c">const int on =1;
+if (setsockopt (sockfd, IPPROTO_IP, IP_HDRINCL, &amp;on, sizeof(on)) &lt; 0) {
+    printf(&quot;setsockopt error!\n&quot;);
+}</code></pre>
+<p><strong>L3 原始套接字处理的只是 IP 层及其以上的数据，可以处理<code>IP Header</code>及<code>TCP/UDP Header</code></strong>，比如实现 SYN FLOOD 攻击、处理 PING 报文等。当需要操作更底层的数据的时候，就需要采用其他的方式。</p>
+<h2 id="L2-Socket-–-Data-Link-Socket"><a href="#L2-Socket-–-Data-Link-Socket" class="headerlink" title="L2 Socket – Data-Link Socket"></a>L2 Socket – Data-Link Socket</h2><blockquote>
+<p>In L2 Socket you can set header and payload of packet in data link layer, i.e everything in packet. Thus you do everything done with L3 Socket + determine ARP header/payload, PPP header/payload, PPPOE header/payload , …. .</p>
+</blockquote>
+<p>为了实现直接从链路层收发数据帧，用到原始套接字的如下形式</p>
+<pre><code class="c">socket(PF_PACKET, type, protocol)</code></pre>
+<ul>
+<li><code>type</code>可取<code>SOCK_RAW</code>或<code>SOCK_DGRAM</code>。它们两个都使用一种与设备无关的标准物理层地址结构<code>struct sockaddr_ll</code>，但具体操作的报文格式不同：<ul>
+<li><code>SOCK_RAW</code>：直接向网络硬件驱动程序发送或接收没有任何处理的完整数据报文，<strong>包括物理帧的帧头</strong></li>
+<li><code>SOCK_DGRAM</code>：这种类型的套接字对于收到的数据报文的物理帧帧头会被系统自动去掉，<strong>不包括物理帧的帧头</strong>，然后再将其往协议栈上层传递。发送时根据<code>sockaddr_ll</code>中的目的地址信息添加<code>MAC</code>头</li>
+</ul>
+</li>
+<li><code>protocol</code>，链路层协议，<code>linux/if_ether.h</code>，常用如下：<ul>
+<li><code>ETH_P_IP</code>只接收发往目的 MAC 是本机的 IP 类型的数据帧</li>
+<li><code>ETH_P_ARP</code>只接收发往目的 MAC 是本机的 ARP 类型的数据帧</li>
+<li><code>ETH_P_RARP</code>只接受发往目的 MAC 是本机的 RARP 类型的数据帧</li>
+<li><code>ETH_P_ALL</code>接收发往目的 MAC 是本机的所有类型 (ip,arp,rarp) 的数据帧，同时还可以接收从本机发出去的所有数据帧。<strong>在混杂模式 /Monitor 打开的情况下，还会接收到发往目的 MAC 为非本地硬件地址的数据帧</strong></li>
+</ul>
+</li>
+</ul>
+<p>发送数据的时候需要自己组织整个以太网数据帧。和地址相关的结构体就不能再用前面的<code>struct sockaddr_in</code>了，而是<code>struct sockaddr_ll</code>，头文件<code>linux/if_packet.h</code>，如下：</p>
+<pre><code class="c">struct sockaddr_ll{
+    unsigned short sll_family; /* 总是 AF_PACKET */
+    unsigned short sll_protocol; /* 物理层的协议 */
+    int sll_ifindex; /* 接口号 */
+    unsigned short sll_hatype; /* 报头类型 */
+    unsigned char sll_pkttype; /* 分组类型 */
+    unsigned char sll_halen; /* 地址长度 */
+    unsigned char sll_addr[8]; /* 物理层地址 */
+};</code></pre>
+<ul>
+<li><p><code>sll_family</code>，使用<code>AF_PACKET</code></p>
+</li>
+<li><p><code>sll_protocol</code>，见头文件<code>linux/if_ether.h</code>，例如<code>ETH_P_ALL</code></p>
+</li>
+<li><p><code>sll_ifindex</code>，设置为<code>0</code>表示处理所有<code>interface</code>，单网卡设备无所谓，示例代码如下</p>
+<pre><code class="c">struct  sockaddr_ll  sll;
+struct ifreq ifr;
+
+strcpy(ifr.ifr_name, &quot;eth0&quot;);
+ioctl(sockfd, SIOCGIFINDEX, &amp;ifr);
+sll.sll_ifindex = ifr.ifr_ifindex;</code></pre>
+</li>
+<li><p><code>sll_hatype</code>，ARP 硬件地址类型，定义在<code>linux/if_arp.h</code>中，例如</p>
+<ul>
+<li><code>ARPHRD_ETHER</code>以太网</li>
+<li><code>ARPHRD_IEEE80211</code> IEEE 802.11</li>
+<li><code>ARPHRD_IEEE80211_PRISM</code> IEEE 802.11 + Prism2 header</li>
+<li><code>ARPHRD_IEEE80211_RADIOTAP</code> IEEE 802.11 + radiotap header <strong>Monitor 模式抓下来的类型</strong></li>
+</ul>
+</li>
+<li><p><code>sll_pkttype</code>，分组类型，定义在<code>linux/if_packet.h</code>，例如</p>
+<pre><code class="c">  3 #define PACKET_HOST     0       /* To us        */
+  4 #define PACKET_BROADCAST    1       /* To all       */
+  5 #define PACKET_MULTICAST    2       /* To group     */
+  6 #define PACKET_OTHERHOST    3       /* To someone else  */
+  7 #define PACKET_OUTGOING     4       /* Outgoing of any type */
+  8 #define PACKET_LOOPBACK     5       /* MC/BRD frame looped back */
+  9 #define PACKET_USER     6       /* To user space    */
+ 10 #define PACKET_KERNEL       7       /* To kernel space  */</code></pre>
+</li>
+<li><p><code>sll_addr</code>和<code>sll_halen</code>指示物理层（如以太网，802.3，802.4 或 802.5 等）地址及其长度，<strong>严格依赖于具体的硬件设备</strong>。类似于获取接口索引<code>sll_ifindex</code>，要获取接口的物理地址，可以采用如下代码</p>
+<pre><code class="c">struct ifreq ifr;
+
+strcpy(ifr.ifr_name, &quot;eth0&quot;);
+ioctl(sockfd, SIOCGIFHWADDR, &amp;ifr);</code></pre>
+</li>
+</ul>
+<p>默认情况下，从任何接口收到的符合指定协议的所有数据报文都会被传送到原始 PACKET 套接字口，而使用<code>bind</code>系统调用并以一个<code>sochddr_ll</code>结构体对象将 PACKET 套接字与某个网络接口相绑定，就可使我们的 PACKET 原始套接字只接收指定接口的数据报文。示例代码如下</p>
+<pre><code class="c">struct sockaddr_ll sll;
+struct ifreq ifr;
+
+/* find the interface index */
+memset( &amp;ifr, 0, sizeof( ifr ) );
+strncpy( ifr.ifr_name, iface, sizeof( ifr.ifr_name ) - 1 );
+
+if( ioctl( fd, SIOCGIFINDEX, &amp;ifr ) &lt; 0 )
+{
+    printf(&quot;Interface %s: \n&quot;, iface);
+    perror( &quot;ioctl(SIOCGIFINDEX) failed&quot; );
+    return( 1 );
+}
+
+memset( &amp;sll, 0, sizeof( sll ) );
+sll.sll_family   = AF_PACKET;
+sll.sll_ifindex  = ifr.ifr_ifindex;
+//sll.sll_ifindex  = if_nametoindex(iface);
+sll.sll_protocol = htons( ETH_P_ALL );
+
+/* bind the raw socket to the interface */
+
+if( bind( fd, (struct sockaddr *) &amp;sll, sizeof( sll ) ) &lt; 0 )
+{
+    printf(&quot;Interface %s: \n&quot;, iface);
+    perror( &quot;bind(ETH_P_ALL) failed&quot; );
+    return( 1 );
+}</code></pre>
+<p><strong>L2 Socket 可以处理链路层数据，可以处理<code>MAC Header</code></strong>，如果创建这个原始套接字时指定了非 0 的协议参数，那么接收到的数据报协议字段必须匹配该值。如果这个套接字已由<code>bind</code>调用绑定了某个 IP 地址，那么接收到的数据报的目的地址必须匹配这个绑定地址。</p>
+<h3 id="SOCK-PACKET"><a href="#SOCK-PACKET" class="headerlink" title="SOCK_PACKET"></a>SOCK_PACKET</h3><p>老的内核<code>Linux 2.0</code>接口提供的接口用于处理数据链路层数据，具体信息参看<code>libpcap/pcap-linux.c</code></p>
+<pre><code class="c">socket(PF_INET, SOCK_PACKET, htons(ETH_P_ALL))</code></pre>
+<p>如果系统已经提供<code>PF_PACKET</code>支持，不建议使用<code>SOCK_PACKET</code></p>
+<h2 id="Programming-Example"><a href="#Programming-Example" class="headerlink" title="Programming Example"></a>Programming Example</h2><ul>
+<li>socket(AF_INET,RAW_SOCKET,…) means L3 socket , Network Layer Protocol = IPv4</li>
+<li>socket(AF_IPX,RAW_SOCKET,…) means L3 socket , Network Layer Protocol = IPX</li>
+<li>socket(AF_INET6,RAW_SOCKET,…) means L3 socket , Network Layer Protocol=IPv6</li>
+<li>socket(AF_PACKET,RAW_SOCKET,…) means L2 socket , Data-link Layer Protocol= Ethernet</li>
+<li>socket(AF_PACKET,SOCK_DGRAM,…) means L2 socket , Data-link Layer Protocol= Ethernet without MAC Header</li>
+<li>socket(PF_INET, SOCK_PACKET, htons(ETH_P_ALL)) means L2 socket , Data-link Layer Protocol= Ethernet</li>
+</ul>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://smallbiztrends.com/2013/09/osi-model-layer-networking.html" target="_blank" rel="noopener">Is the Extra Layer Better? Layer 2 Versus Layer 3 Networking</a></li>
+<li><a href="https://stackoverflow.com/questions/14774668/what-is-raw-socket-in-socket-programming" target="_blank" rel="noopener">what is RAW socket in socket programming</a></li>
+<li><a href="https://blog.csdn.net/whatday/article/details/79232598" target="_blank" rel="noopener">原始套接字 SOCK_RAW</a></li>
+<li><a href="http://abcdxyzk.github.io/blog/2015/04/14/kernel-net-sock-raw/" target="_blank" rel="noopener">Linux 网络编程：原始套接字 SOCK_RAW</a></li>
+<li><a href="https://blog.csdn.net/zimu2702/article/details/7185917" target="_blank" rel="noopener">IPPROTO_IP , IPPROTO_RAW</a></li>
+<li><a href="https://medium.com/@qre0ct/difference-between-pf-inet-sockets-and-pf-packet-sockets-5a58ab9fe8e3" target="_blank" rel="noopener">Difference between PF_INET sockets and PF_PACKET sockets ?</a></li>
+<li><a href="https://blog.csdn.net/gqtcgq/article/details/44874349" target="_blank" rel="noopener">原始套接字和数据链路层访问</a></li>
+<li><a href="https://en.wikipedia.org/wiki/OSI_model" target="_blank" rel="noopener">OSI Model</a></li>
+<li><a href="https://austinmarton.wordpress.com/2011/09/14/sending-raw-ethernet-packets-from-a-specific-interface-in-c-on-linux/" target="_blank" rel="noopener">Sending raw Ethernet packets from a specific interface in C on Linux</a></li>
+<li><a href="http://man7.org/linux/man-pages/man7/packet.7.html" target="_blank" rel="noopener">PACKET(7) Linux Programmer’s Manual</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+        <category>Socket</category>
+        <category>Network</category>
+        <category>Airkiss</category>
+      </categories>
+      <tags>
+        <tag>socket</tag>
+        <tag>LLC</tag>
+        <tag>MAC</tag>
+        <tag>raw socket</tag>
+        <tag>layer 2</tag>
+        <tag>layer 3</tag>
+        <tag>OSI Model</tag>
+        <tag>IP</tag>
+        <tag>AF_INET</tag>
+        <tag>AF_PACKET</tag>
+        <tag>SOCK_RAW</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>AirKiss Client 实现评估及 raw socket</title>
     <url>/2019/04/19/airkiss-client-and-raw-socket/</url>
     <content><![CDATA[<p>原始套接字、<code>wifi</code>驱动支持及<code>Airkiss Client</code>实现</p>
@@ -33593,194 +33784,6 @@ wlx00117f5bb7b4  IEEE 802.11  Mode:Monitor  Frequency:2.457 GHz  Tx-Power=20 dBm
         <tag>raw packet</tag>
         <tag>linux network stack</tag>
         <tag>freebsd network stack</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Raw Socket L2 vs L3</title>
-    <url>/2019/04/28/raw-socket-L2-vs-L3/</url>
-    <content><![CDATA[<p>记录<code>Raw socket</code>相关知识点，以及数据链路层数据访问</p>
-<ul>
-<li>Layer 2: MAC &amp; LLC</li>
-<li>Layer 3: Network</li>
-</ul>
-<a id="more"></a>
-
-<h2 id="OSI-Model"><a href="#OSI-Model" class="headerlink" title="OSI Model"></a>OSI Model</h2><p><code>OSI</code>七层模型如下</p>
-<p><img src="/images/socket/1556452439780.png" alt="1556452439780"></p>
-<ul>
-<li>Layer2: <code>MAC &amp; LLC</code>，数据类型 <a href="https://en.wikipedia.org/wiki/Frame_networking" target="_blank" rel="noopener">Frame</a></li>
-<li>Layer3: <code>Network</code>，数据类型 <a href="https://en.wikipedia.org/wiki/Network_packet" target="_blank" rel="noopener">Packet</a></li>
-</ul>
-<h2 id="Raw-Socket"><a href="#Raw-Socket" class="headerlink" title="Raw Socket"></a>Raw Socket</h2><p>每一层级网络数据都由两部分组成：<code>Header</code>和<code>Payload</code>，<code>TCP</code>报文如下</p>
-<p><img src="/images/socket/1556455755725.png" alt="1556455755725"></p>
-<p>通常使用的流式套接字<code>SOCK_STREAM</code>和数据包式套接字<code>SOCK_DGRAM</code>，已经由系统提供的协议栈处理过，应用只能处理<code>Payload</code>部分，<code>Header</code>部分已被处理过。而当需要处理<code>Header</code>部分时，需要使用<code>raw socket</code>，它位于系统核心，可以处理<code>Header</code>部分，而<code>raw socket</code>根据能力不同分为<code>L2</code>和<code>L3</code>，部分资料摘录如下：</p>
-<ol>
-<li>non-Raw socket<blockquote>
-<p>you can just determine Transport Layer Payload. i.e it is OS task to create Transport,Network and Data Link layer headers.</p>
-</blockquote>
-</li>
-<li>Raw socket<blockquote>
-<p>you can determine every section of packet,either header or payload. Please note that raw socket is a general word. I categorize raw socket into: Network Socket andd Data-Link Socket (or alternativly L3 Socket and L2 Socket)</p>
-</blockquote>
-</li>
-</ol>
-<h2 id="L3-Socket-–-Network-Socket"><a href="#L3-Socket-–-Network-Socket" class="headerlink" title="L3 Socket – Network Socket"></a>L3 Socket – Network Socket</h2><blockquote>
-<p>In L3 Socket you can determine header and payload of packet in network layer. For example if network layer protocol is IPv4, you can determine IPv4 header and payload. Thus you can set transport layer header/payload, ICMP header/payload, Routing Protocols headder/payload.</p>
-</blockquote>
-<p>创建方式</p>
-<pre><code class="c">socket(AF_INET, SOCK_RAW, protocol)</code></pre>
-<p>在头文件<code>netinet/in.h</code>中定义了系统中该字段目前能取的值，注意：有些系统中不一定实现了<code>netinet/in.h</code>中的所有协议。源代码的<code>linux/in.h</code>中和<code>netinet/in.h</code>中的内容一样。常用的如下</p>
-<ul>
-<li><code>IPPROTO_IP(0)</code>: 用于接收任何的 IP 数据包。其中的校验和和协议分析由程序自己完成</li>
-<li><code>IPPROTO_RAW(255)</code>: 只能用来发送 IP 包，而不能接收任何的数据。发送的数据需要自己填充 IP 包头，并且自己计算校验和</li>
-<li>其他像<code>IPPROTO_TCP(6)</code>这种非 0、非 255 的协议，当操作系统内核碰到 IP 头中 protocol 域和创建 socket 所使用参数 protocol 相同的 IP 包，就会交给这个<code>raw socket</code>来处理，因此，一般来说，要想接收什么样的数据包，就应该在参数 protocol 里来指定相应的协议。当内核向此 raw socket 交付数据包的时候，是包括整个 IP 头的，并且已经是重组好的 IP 包</li>
-</ul>
-<p>用这种方式可以得到原始的 IP 包，然后就可以自定义 IP 所承载的具体协议类型，如<code>TCP</code>，<code>UDP</code>或<code>ICMP</code>，并手动对每种承载在 IP 协议之上的报文进行填充。</p>
-<p>注意其中一个参数<code>IP_HDRINCL</code>，允许用户构造 IP 头</p>
-<pre><code class="c">const int on =1;
-if (setsockopt (sockfd, IPPROTO_IP, IP_HDRINCL, &amp;on, sizeof(on)) &lt; 0) {
-    printf(&quot;setsockopt error!\n&quot;);
-}</code></pre>
-<p><strong>L3 原始套接字处理的只是 IP 层及其以上的数据，可以处理<code>IP Header</code>及<code>TCP/UDP Header</code></strong>，比如实现 SYN FLOOD 攻击、处理 PING 报文等。当需要操作更底层的数据的时候，就需要采用其他的方式。</p>
-<h2 id="L2-Socket-–-Data-Link-Socket"><a href="#L2-Socket-–-Data-Link-Socket" class="headerlink" title="L2 Socket – Data-Link Socket"></a>L2 Socket – Data-Link Socket</h2><blockquote>
-<p>In L2 Socket you can set header and payload of packet in data link layer, i.e everything in packet. Thus you do everything done with L3 Socket + determine ARP header/payload, PPP header/payload, PPPOE header/payload , …. .</p>
-</blockquote>
-<p>为了实现直接从链路层收发数据帧，用到原始套接字的如下形式</p>
-<pre><code class="c">socket(PF_PACKET, type, protocol)</code></pre>
-<ul>
-<li><code>type</code>可取<code>SOCK_RAW</code>或<code>SOCK_DGRAM</code>。它们两个都使用一种与设备无关的标准物理层地址结构<code>struct sockaddr_ll</code>，但具体操作的报文格式不同：<ul>
-<li><code>SOCK_RAW</code>：直接向网络硬件驱动程序发送或接收没有任何处理的完整数据报文，<strong>包括物理帧的帧头</strong></li>
-<li><code>SOCK_DGRAM</code>：这种类型的套接字对于收到的数据报文的物理帧帧头会被系统自动去掉，<strong>不包括物理帧的帧头</strong>，然后再将其往协议栈上层传递。发送时根据<code>sockaddr_ll</code>中的目的地址信息添加<code>MAC</code>头</li>
-</ul>
-</li>
-<li><code>protocol</code>，链路层协议，<code>linux/if_ether.h</code>，常用如下：<ul>
-<li><code>ETH_P_IP</code>只接收发往目的 MAC 是本机的 IP 类型的数据帧</li>
-<li><code>ETH_P_ARP</code>只接收发往目的 MAC 是本机的 ARP 类型的数据帧</li>
-<li><code>ETH_P_RARP</code>只接受发往目的 MAC 是本机的 RARP 类型的数据帧</li>
-<li><code>ETH_P_ALL</code>接收发往目的 MAC 是本机的所有类型 (ip,arp,rarp) 的数据帧，同时还可以接收从本机发出去的所有数据帧。<strong>在混杂模式 /Monitor 打开的情况下，还会接收到发往目的 MAC 为非本地硬件地址的数据帧</strong></li>
-</ul>
-</li>
-</ul>
-<p>发送数据的时候需要自己组织整个以太网数据帧。和地址相关的结构体就不能再用前面的<code>struct sockaddr_in</code>了，而是<code>struct sockaddr_ll</code>，头文件<code>linux/if_packet.h</code>，如下：</p>
-<pre><code class="c">struct sockaddr_ll{
-    unsigned short sll_family; /* 总是 AF_PACKET */
-    unsigned short sll_protocol; /* 物理层的协议 */
-    int sll_ifindex; /* 接口号 */
-    unsigned short sll_hatype; /* 报头类型 */
-    unsigned char sll_pkttype; /* 分组类型 */
-    unsigned char sll_halen; /* 地址长度 */
-    unsigned char sll_addr[8]; /* 物理层地址 */
-};</code></pre>
-<ul>
-<li><p><code>sll_family</code>，使用<code>AF_PACKET</code></p>
-</li>
-<li><p><code>sll_protocol</code>，见头文件<code>linux/if_ether.h</code>，例如<code>ETH_P_ALL</code></p>
-</li>
-<li><p><code>sll_ifindex</code>，设置为<code>0</code>表示处理所有<code>interface</code>，单网卡设备无所谓，示例代码如下</p>
-<pre><code class="c">struct  sockaddr_ll  sll;
-struct ifreq ifr;
-
-strcpy(ifr.ifr_name, &quot;eth0&quot;);
-ioctl(sockfd, SIOCGIFINDEX, &amp;ifr);
-sll.sll_ifindex = ifr.ifr_ifindex;</code></pre>
-</li>
-<li><p><code>sll_hatype</code>，ARP 硬件地址类型，定义在<code>linux/if_arp.h</code>中，例如</p>
-<ul>
-<li><code>ARPHRD_ETHER</code>以太网</li>
-<li><code>ARPHRD_IEEE80211</code> IEEE 802.11</li>
-<li><code>ARPHRD_IEEE80211_PRISM</code> IEEE 802.11 + Prism2 header</li>
-<li><code>ARPHRD_IEEE80211_RADIOTAP</code> IEEE 802.11 + radiotap header <strong>Monitor 模式抓下来的类型</strong></li>
-</ul>
-</li>
-<li><p><code>sll_pkttype</code>，分组类型，定义在<code>linux/if_packet.h</code>，例如</p>
-<pre><code class="c">  3 #define PACKET_HOST     0       /* To us        */
-  4 #define PACKET_BROADCAST    1       /* To all       */
-  5 #define PACKET_MULTICAST    2       /* To group     */
-  6 #define PACKET_OTHERHOST    3       /* To someone else  */
-  7 #define PACKET_OUTGOING     4       /* Outgoing of any type */
-  8 #define PACKET_LOOPBACK     5       /* MC/BRD frame looped back */
-  9 #define PACKET_USER     6       /* To user space    */
- 10 #define PACKET_KERNEL       7       /* To kernel space  */</code></pre>
-</li>
-<li><p><code>sll_addr</code>和<code>sll_halen</code>指示物理层（如以太网，802.3，802.4 或 802.5 等）地址及其长度，<strong>严格依赖于具体的硬件设备</strong>。类似于获取接口索引<code>sll_ifindex</code>，要获取接口的物理地址，可以采用如下代码</p>
-<pre><code class="c">struct ifreq ifr;
-
-strcpy(ifr.ifr_name, &quot;eth0&quot;);
-ioctl(sockfd, SIOCGIFHWADDR, &amp;ifr);</code></pre>
-</li>
-</ul>
-<p>默认情况下，从任何接口收到的符合指定协议的所有数据报文都会被传送到原始 PACKET 套接字口，而使用<code>bind</code>系统调用并以一个<code>sochddr_ll</code>结构体对象将 PACKET 套接字与某个网络接口相绑定，就可使我们的 PACKET 原始套接字只接收指定接口的数据报文。示例代码如下</p>
-<pre><code class="c">struct sockaddr_ll sll;
-struct ifreq ifr;
-
-/* find the interface index */
-memset( &amp;ifr, 0, sizeof( ifr ) );
-strncpy( ifr.ifr_name, iface, sizeof( ifr.ifr_name ) - 1 );
-
-if( ioctl( fd, SIOCGIFINDEX, &amp;ifr ) &lt; 0 )
-{
-    printf(&quot;Interface %s: \n&quot;, iface);
-    perror( &quot;ioctl(SIOCGIFINDEX) failed&quot; );
-    return( 1 );
-}
-
-memset( &amp;sll, 0, sizeof( sll ) );
-sll.sll_family   = AF_PACKET;
-sll.sll_ifindex  = ifr.ifr_ifindex;
-//sll.sll_ifindex  = if_nametoindex(iface);
-sll.sll_protocol = htons( ETH_P_ALL );
-
-/* bind the raw socket to the interface */
-
-if( bind( fd, (struct sockaddr *) &amp;sll, sizeof( sll ) ) &lt; 0 )
-{
-    printf(&quot;Interface %s: \n&quot;, iface);
-    perror( &quot;bind(ETH_P_ALL) failed&quot; );
-    return( 1 );
-}</code></pre>
-<p><strong>L2 Socket 可以处理链路层数据，可以处理<code>MAC Header</code></strong>，如果创建这个原始套接字时指定了非 0 的协议参数，那么接收到的数据报协议字段必须匹配该值。如果这个套接字已由<code>bind</code>调用绑定了某个 IP 地址，那么接收到的数据报的目的地址必须匹配这个绑定地址。</p>
-<h3 id="SOCK-PACKET"><a href="#SOCK-PACKET" class="headerlink" title="SOCK_PACKET"></a>SOCK_PACKET</h3><p>老的内核<code>Linux 2.0</code>接口提供的接口用于处理数据链路层数据，具体信息参看<code>libpcap/pcap-linux.c</code></p>
-<pre><code class="c">socket(PF_INET, SOCK_PACKET, htons(ETH_P_ALL))</code></pre>
-<p>如果系统已经提供<code>PF_PACKET</code>支持，不建议使用<code>SOCK_PACKET</code></p>
-<h2 id="Programming-Example"><a href="#Programming-Example" class="headerlink" title="Programming Example"></a>Programming Example</h2><ul>
-<li>socket(AF_INET,RAW_SOCKET,…) means L3 socket , Network Layer Protocol = IPv4</li>
-<li>socket(AF_IPX,RAW_SOCKET,…) means L3 socket , Network Layer Protocol = IPX</li>
-<li>socket(AF_INET6,RAW_SOCKET,…) means L3 socket , Network Layer Protocol=IPv6</li>
-<li>socket(AF_PACKET,RAW_SOCKET,…) means L2 socket , Data-link Layer Protocol= Ethernet</li>
-<li>socket(AF_PACKET,SOCK_DGRAM,…) means L2 socket , Data-link Layer Protocol= Ethernet without MAC Header</li>
-<li>socket(PF_INET, SOCK_PACKET, htons(ETH_P_ALL)) means L2 socket , Data-link Layer Protocol= Ethernet</li>
-</ul>
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="https://smallbiztrends.com/2013/09/osi-model-layer-networking.html" target="_blank" rel="noopener">Is the Extra Layer Better? Layer 2 Versus Layer 3 Networking</a></li>
-<li><a href="https://stackoverflow.com/questions/14774668/what-is-raw-socket-in-socket-programming" target="_blank" rel="noopener">what is RAW socket in socket programming</a></li>
-<li><a href="https://blog.csdn.net/whatday/article/details/79232598" target="_blank" rel="noopener">原始套接字 SOCK_RAW</a></li>
-<li><a href="http://abcdxyzk.github.io/blog/2015/04/14/kernel-net-sock-raw/" target="_blank" rel="noopener">Linux 网络编程：原始套接字 SOCK_RAW</a></li>
-<li><a href="https://blog.csdn.net/zimu2702/article/details/7185917" target="_blank" rel="noopener">IPPROTO_IP , IPPROTO_RAW</a></li>
-<li><a href="https://medium.com/@qre0ct/difference-between-pf-inet-sockets-and-pf-packet-sockets-5a58ab9fe8e3" target="_blank" rel="noopener">Difference between PF_INET sockets and PF_PACKET sockets ?</a></li>
-<li><a href="https://blog.csdn.net/gqtcgq/article/details/44874349" target="_blank" rel="noopener">原始套接字和数据链路层访问</a></li>
-<li><a href="https://en.wikipedia.org/wiki/OSI_model" target="_blank" rel="noopener">OSI Model</a></li>
-<li><a href="https://austinmarton.wordpress.com/2011/09/14/sending-raw-ethernet-packets-from-a-specific-interface-in-c-on-linux/" target="_blank" rel="noopener">Sending raw Ethernet packets from a specific interface in C on Linux</a></li>
-<li><a href="http://man7.org/linux/man-pages/man7/packet.7.html" target="_blank" rel="noopener">PACKET(7) Linux Programmer’s Manual</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-        <category>Socket</category>
-        <category>Network</category>
-        <category>Airkiss</category>
-      </categories>
-      <tags>
-        <tag>socket</tag>
-        <tag>LLC</tag>
-        <tag>MAC</tag>
-        <tag>raw socket</tag>
-        <tag>layer 2</tag>
-        <tag>layer 3</tag>
-        <tag>OSI Model</tag>
-        <tag>IP</tag>
-        <tag>AF_INET</tag>
-        <tag>AF_PACKET</tag>
-        <tag>SOCK_RAW</tag>
       </tags>
   </entry>
   <entry>
@@ -36524,386 +36527,6 @@ if(nativemod != NULL)
       </tags>
   </entry>
   <entry>
-    <title>how-to-check-network-status</title>
-    <url>/2017/11/09/how-to-check-network-status/</url>
-    <content><![CDATA[<p><a href="https://github.com/antiX-Linux/ifplugd.git" target="_blank" rel="noopener">ifplugd</a> A link detection daemon for ethernet devices</p>
-<p>api mode:</p>
-<ul>
-<li>ethtool</li>
-<li>mii</li>
-<li>wlan</li>
-<li>iff</li>
-<li>priv</li>
-</ul>
-<blockquote>
-<p>Force a specific link beat detection ioctl() API. Possible values are auto, iff, wlan, ethtool, mii, and priv for automatic detection, interface flag (IFF_RUNNING), wireless extension, SIOCETHTOOL, SIOCGMIIREG resp. SIOCPRIV. Only the first character of the argument is relevant, case insensitive. (default: auto)</p>
-</blockquote>
-<a id="more"></a>
-
-<h2 id="base"><a href="#base" class="headerlink" title="base"></a>base</h2><pre><code>    if ((fd = socket(PF_INET, SOCK_DGRAM, 0)) &lt; 0)
-        return -1;</code></pre><p>创建<code>socket</code>用于<code>ioctl</code></p>
-<h2 id="ethtool-SIOCETHTOOL"><a href="#ethtool-SIOCETHTOOL" class="headerlink" title="ethtool SIOCETHTOOL"></a>ethtool SIOCETHTOOL</h2><p>Ethtool是Linux下用于查询及设置网卡参数的命令</p>
-<pre><code>#include &lt;sys/ioctl.h&gt;
-#include &lt;net/if.h&gt;
-
-interface_status_t interface_detect_beat_ethtool(int fd, char *iface) {
-
-    struct ifreq ifr;
-    struct ethtool_value edata;
-
-    if (interface_auto_up)
-        interface_up(fd, iface);
-
-    memset(&amp;ifr, 0, sizeof(ifr));
-    strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name)-1);
-
-    edata.cmd = ETHTOOL_GLINK;
-    ifr.ifr_data = (caddr_t) &amp;edata;
-
-    if (ioctl(fd, SIOCETHTOOL, &amp;ifr) == -1) {
-        if (interface_do_message)
-            daemon_log(LOG_ERR, &quot;ETHTOOL_GLINK failed: %s&quot;, strerror(errno));
-
-        return IFSTATUS_ERR;
-    }
-
-    return edata.data ? IFSTATUS_UP : IFSTATUS_DOWN;
-}</code></pre><p>对应内核代码<code>linux/net/core/dev.c</code>中<code>dev_ioctl()</code>函数，对应的<code>SIOCETHTOOL</code>，又调用了<code>linux/net/core/ethtool.c</code>中的实现，而<code>dev_ethtool()</code>函数，而这个函数最终又会调用相应<code>if</code>驱动的<code>ethtool_ops</code>结构体中注册的函数来实现寄存器的操作。当然，不同的<code>PHY</code>驱动对此有不同的操作，甚至有些<code>PHY</code>驱动根本没有注册这个结构体，这时，我们就要尝试其他方式。</p>
-<pre><code>static struct ethtool_ops synopGMAC_ethtool_ops = {
-    .get_link       = synopGMAC_get_link
-};
-
-.
-
-netdev-&gt;ethtool_ops = &amp;synopGMAC_ethtool_ops;</code></pre><p><code>include/linux/ethtool.h</code> 中存在 <code>ioctl</code> 列表 <code>ETHTOOL_*</code></p>
-<h2 id="mii"><a href="#mii" class="headerlink" title="mii"></a>mii</h2><p>mii-tool（这是Linux下专门设置网卡工作模式的命令）　</p>
-<p><code>MII</code>的全称是<code>Media Independent Interface</code>，字面意思上就是媒体无关的接口，因此它是独立于具体设备的，仔细想想标准化的东西都是独立于具体设备的。虽然如此，很多以太网卡设备并不支持这些参数的配置，因此当你执行mii-tool的时候，会得到Operation not supported的提示，要不就是没有使用超级用户身份，还有就是若接口编号设置超过eth7时，直接使用mii-tool 不加参数，会出现NO MII xxxxxxxxxx interface 之类的提示，是因为超过了默认值，使用帮助信息可以了解。</p>
-<pre><code>interface_status_t interface_detect_beat_mii(int fd, char *iface) {
-    struct ifreq ifr;
-
-    if (interface_auto_up)
-        interface_up(fd, iface);
-
-    memset(&amp;ifr, 0, sizeof(ifr));
-    strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name)-1);
-
-    if (ioctl(fd, SIOCGMIIPHY, &amp;ifr) == -1) {
-        if (interface_do_message)
-            daemon_log(LOG_ERR, &quot;SIOCGMIIPHY failed: %s&quot;, strerror(errno));
-
-        return IFSTATUS_ERR;
-    }
-
-    ((unsigned short*) &amp;ifr.ifr_data)[1] = 1;
-
-    if (ioctl(fd, SIOCGMIIREG, &amp;ifr) == -1) {
-        if (interface_do_message)
-            daemon_log(LOG_ERR, &quot;SIOCGMIIREG failed: %s&quot;, strerror(errno));
-
-        return IFSTATUS_ERR;
-    }
-
-    return (((unsigned short*) &amp;ifr.ifr_data)[3] &amp; 0x0004) ? IFSTATUS_UP : IFSTATUS_DOWN;
-}</code></pre><p>对应内核代码<code>linux/net/core/dev.c</code>中<code>dev_ioctl()</code>函数，对应的<code>SIOCxMIIxxx</code>，又调用了<code>dev_ifsioc()</code>函数，这个函数最终调用<code>PHY</code>驱动中注册的<code>do_ioctl()</code>函数来实现PHY寄存器的读写。</p>
-<p>例如内核中<code>winbond-840</code>初始化如下：</p>
-<pre><code>static int __devinit w840_probe1 (struct pci_dev *pdev, const struct pci_device_id *ent)
-{
-    struct net_device *dev;
-    struct netdev_private *np;
-    static int find_cnt;
-    int chip_idx = ent-&gt;driver_data;
-    int irq;
-    int i, option = find_cnt &lt; MAX_UNITS ? options[find_cnt] : 0;
-    void __iomem *ioaddr;
-
-    ...
-
-    dev = alloc_etherdev(sizeof(*np));
-    if (!dev)
-        return -ENOMEM;
-    SET_NETDEV_DEV(dev, &amp;pdev-&gt;dev);
-
-    ...
-
-    dev-&gt;open = &amp;netdev_open;
-    dev-&gt;hard_start_xmit = &amp;start_tx;
-    dev-&gt;stop = &amp;netdev_close;
-    dev-&gt;get_stats = &amp;get_stats;
-    dev-&gt;set_multicast_list = &amp;set_rx_mode;
-    dev-&gt;do_ioctl = &amp;netdev_ioctl; //mii
-    dev-&gt;ethtool_ops = &amp;netdev_ethtool_ops; //ethtool
-    dev-&gt;tx_timeout = &amp;tx_timeout;
-    dev-&gt;watchdog_timeo = TX_TIMEOUT;
-
-    i = register_netdev(dev);
-}</code></pre><p><code>include/linux/sockios.h</code> 中</p>
-<pre><code>#define SIOCGMIIPHY 0x8947      /* Get address of MII PHY in use. */
-#define SIOCGMIIREG 0x8948      /* Read MII PHY register.   */
-#define SIOCSMIIREG 0x8949      /* Write MII PHY register.  */</code></pre><h2 id="wlan"><a href="#wlan" class="headerlink" title="wlan"></a>wlan</h2><pre><code>    interface_status_t interface_detect_beat_wlan(int fd, char *iface)
-    {
-        uint8_t mac[6];
-        int q;
-        struct iwreq req;
-
-        if (interface_auto_up)
-            interface_up(fd, iface);
-
-        memset(&amp;req, 0, sizeof(req));
-        strncpy(req.ifr_ifrn.ifrn_name, iface, IFNAMSIZ);
-
-        if (ioctl(fd, SIOCGIWAP, &amp;req) &lt; 0) {
-            if (interface_do_message)
-                daemon_log(LOG_WARNING, &quot;Failed to get AP address: %s&quot;,strerror(errno));
-            return IFSTATUS_ERR;
-        }
-
-        memcpy(mac, &amp;(req.u.ap_addr.sa_data), ETH_ALEN);
-
-        if (!is_assoc_ap(mac))
-            return IFSTATUS_DOWN;
-
-        if ((q = get_wlan_qual_new(fd, iface)) &lt; 0)
-            if ((q = get_wlan_qual_old(iface)) &lt; 0) {
-                if (interface_do_message)
-                    daemon_log(LOG_WARNING, &quot;Failed to get wireless link quality.&quot;);
-
-                return IFSTATUS_ERR;
-            }
-
-        return q &gt; 0 ? IFSTATUS_UP : IFSTATUS_DOWN;
-    }</code></pre><p>从应用到内核再到wifi驱动的流程如下：</p>
-<p>应用上</p>
-<pre><code>    if (ioctl(fd, SIOCGIWAP, &amp;req) &lt; 0) {
-        if (interface_do_message)
-            daemon_log(LOG_WARNING, &quot;Failed to get AP address: %s&quot;,strerror(errno));
-        return IFSTATUS_ERR;
-    }</code></pre><p>其中 <code>include/linux/wireless.h</code></p>
-<pre><code>    #define SIOCGIWAP   0x8B15</code></pre><p>调用流程如下：</p>
-<p><code>sock_ioctl[net/socket.c]</code> -&gt; <code>dev_ioctl[net/core/dev.c]</code> -&gt; <code>wext_handle_ioctl[net/wireless/wext.c]</code> -&gt; <code>wireless_process_ioctl[net/wireless/wext.c]</code></p>
-<p>对wireless_process_ioctl，又跑到了default中，如果有handler，最后到ioctl_standard_call中；没有handler时，使用老的接口（dev-&gt;do_ioctl）</p>
-<pre><code>    /* New driver API : try to find the handler */
-    handler = get_handler(dev, cmd);
-    if (handler) {
-        /* Standard and private are not the same */
-        if (cmd &lt; SIOCIWFIRSTPRIV)
-            return standard(dev, iwr, cmd, info, handler);
-        else
-            return private(dev, iwr, cmd, info, handler);
-    }
-    /* Old driver API : call driver ioctl handler */
-    if (dev-&gt;do_ioctl)
-        return dev-&gt;do_ioctl(dev, ifr, cmd);</code></pre><p>在WIFI驱动中如下：</p>
-<pre><code>    static const iw_handler rt_handler[] =
-    {
-        (iw_handler) NULL,                      /* SIOCSIWCOMMIT */
-        (iw_handler) rt_ioctl_giwname,          /* SIOCGIWNAME   */
-        (iw_handler) NULL,                      /* SIOCSIWNWID   */
-        (iw_handler) NULL,                      /* SIOCGIWNWID   */
-        (iw_handler) rt_ioctl_siwfreq,          /* SIOCSIWFREQ   */
-        (iw_handler) rt_ioctl_giwfreq,          /* SIOCGIWFREQ   */
-        (iw_handler) rt_ioctl_siwmode,          /* SIOCSIWMODE   */
-        (iw_handler) rt_ioctl_giwmode,          /* SIOCGIWMODE   */
-        (iw_handler) NULL,                      /* SIOCSIWSENS   */
-        (iw_handler) NULL,                      /* SIOCGIWSENS   */
-        (iw_handler) NULL /* not used */,       /* SIOCSIWRANGE  */
-        (iw_handler) rt_ioctl_giwrange,         /* SIOCGIWRANGE  */
-        (iw_handler) rt_ioctl_giwpriv,      /* SIOCSIWPRIV  for Android */
-        (iw_handler) NULL /* kernel code */,    /* SIOCGIWPRIV   */
-        (iw_handler) NULL /* not used */,       /* SIOCSIWSTATS  */
-        (iw_handler) rt28xx_get_wireless_stats /* kernel code */,    /* SIOCGIWSTATS  */
-        (iw_handler) NULL,                      /* SIOCSIWSPY    */
-        (iw_handler) NULL,                      /* SIOCGIWSPY    */
-        (iw_handler) NULL,                      /* SIOCSIWTHRSPY */
-        (iw_handler) NULL,                      /* SIOCGIWTHRSPY */
-        (iw_handler) rt_ioctl_siwap,            /* SIOCSIWAP     */
-        (iw_handler) rt_ioctl_giwap,            /* SIOCGIWAP     */
-    };
-
-    const struct iw_handler_def rt28xx_iw_handler_def =
-    {
-    #define N(a)    (sizeof (a) / sizeof (a[0]))
-        .standard   = (iw_handler *) rt_handler,
-        .num_standard   = sizeof(rt_handler) / sizeof(iw_handler),
-        .private    = (iw_handler *) rt_priv_handlers,
-        .num_private        = N(rt_priv_handlers),
-        .private_args   = (struct iw_priv_args *) privtab,
-        .num_private_args   = N(privtab),
-    #if IW_HANDLER_VERSION &gt;= 7
-        .get_wireless_stats = rt28xx_get_wireless_stats,
-    #endif
-    };
-
-    int rt28xx_open(VOID *dev)
-    {
-        if (OpMode == OPMODE_STA)
-            net_dev-&gt;wireless_handlers = (struct iw_handler_def *) &amp;rt28xx_iw_handler_def;
-    }</code></pre><p>老的接口实现如下：</p>
-<pre><code>    RtmpPhyNetDevInit()
-    {
-        pNetDevHook-&gt;ioctl = rt28xx_ioctl;
-        pNetDevHook-&gt;priv_flags = InfId; /*INT_MAIN; */
-        pNetDevHook-&gt;get_stats = RT28xx_get_ether_stats;
-    }
-
-    RtmpOSNetDevAttach()
-    {
-    #if LINUX_VERSION_CODE &gt;= KERNEL_VERSION(2,6,31)
-        pNetDevOps-&gt;ndo_open = pDevOpHook-&gt;open;
-        pNetDevOps-&gt;ndo_stop = pDevOpHook-&gt;stop;
-        pNetDevOps-&gt;ndo_start_xmit =
-            (HARD_START_XMIT_FUNC) (pDevOpHook-&gt;xmit);
-        pNetDevOps-&gt;ndo_do_ioctl = pDevOpHook-&gt;ioctl;
-    #else
-        pNetDev-&gt;open = pDevOpHook-&gt;open;
-        pNetDev-&gt;stop = pDevOpHook-&gt;stop;
-        pNetDev-&gt;hard_start_xmit =
-            (HARD_START_XMIT_FUNC) (pDevOpHook-&gt;xmit);
-        pNetDev-&gt;do_ioctl = pDevOpHook-&gt;ioctl;
-    #endif
-
-    #if LINUX_VERSION_CODE &gt;= KERNEL_VERSION(2,6,18)
-        pNetDev-&gt;ethtool_ops = &amp;RALINK_Ethtool_Ops;
-    #endif
-
-        /* if you don&#39;t implement get_stats, just leave the callback function as NULL, a dummy
-        function will make kernel panic.
-        */
-        if (pDevOpHook-&gt;get_stats)
-    #if LINUX_VERSION_CODE &gt;= KERNEL_VERSION(2,6,31)
-            pNetDevOps-&gt;ndo_get_stats = pDevOpHook-&gt;get_stats;
-    #else
-        pNetDev-&gt;get_stats = pDevOpHook-&gt;get_stats;
-    #endif
-
-        /* OS specific flags, here we used to indicate if we are virtual interface */
-        /*      pNetDev-&gt;priv_flags = pDevOpHook-&gt;priv_flags; */
-        RT_DEV_PRIV_FLAGS_SET(pNetDev, pDevOpHook-&gt;priv_flags);
-    #if (WIRELESS_EXT &lt; 21) &amp;&amp; (WIRELESS_EXT &gt;= 12)
-        /*      pNetDev-&gt;get_wireless_stats = rt28xx_get_wireless_stats; */
-        pNetDev-&gt;get_wireless_stats = pDevOpHook-&gt;get_wstats;
-    #endif
-
-    #ifdef CONFIG_STA_SUPPORT
-    #if WIRELESS_EXT &gt;= 12
-        if (OpMode == OPMODE_STA) {
-            /*          pNetDev-&gt;wireless_handlers = &amp;rt28xx_iw_handler_def; */
-            pNetDev-&gt;wireless_handlers = pDevOpHook-&gt;iw_handler;
-        }
-    #endif /*WIRELESS_EXT &gt;= 12 */
-    #endif /* CONFIG_STA_SUPPORT */
-
-    #ifdef CONFIG_APSTA_MIXED_SUPPORT
-    #if WIRELESS_EXT &gt;= 12
-        if (OpMode == OPMODE_AP) {
-            /*          pNetDev-&gt;wireless_handlers = &amp;rt28xx_ap_iw_handler_def; */
-            pNetDev-&gt;wireless_handlers = pDevOpHook-&gt;iw_handler;
-        }
-    #endif /*WIRELESS_EXT &gt;= 12 */
-    #endif /* CONFIG_APSTA_MIXED_SUPPORT */
-
-        /* copy the net device mac address to the net_device structure. */
-        NdisMoveMemory(pNetDev-&gt;dev_addr, &amp;pDevOpHook-&gt;devAddr[0],
-                MAC_ADDR_LEN);
-
-        rtnl_locked = pDevOpHook-&gt;needProtcted;
-    }
-
-    rt2870_probe()
-    {
-
-        net_dev = RtmpPhyNetDevInit(pAd, &amp;netDevHook);
-
-        status = RtmpOSNetDevAttach(OpMode, net_dev, &amp;netDevHook);
-    }</code></pre><h2 id="iff"><a href="#iff" class="headerlink" title="iff"></a>iff</h2><pre><code>    interface_status_t interface_detect_beat_iff(int fd, char *iface) {
-
-        struct ifreq ifr;
-
-        if (interface_auto_up)
-            interface_up(fd, iface);
-
-        memset(&amp;ifr, 0, sizeof(ifr));
-        strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name)-1);
-
-        if (ioctl(fd, SIOCGIFFLAGS, &amp;ifr) == -1) {
-            if (interface_do_message)
-                daemon_log(LOG_ERR, &quot;SIOCGIFFLAGS failed: %s&quot;, strerror(errno));
-
-            return IFSTATUS_ERR;
-        }
-
-        return ifr.ifr_flags &amp; IFF_RUNNING ? IFSTATUS_UP : IFSTATUS_DOWN;
-    }</code></pre><p>调ioctl的<code>SIOCGIFFLAGS</code>实现，<code>dev_ifsioc_locked</code>函数（net/core/dev.c）中处理：</p>
-<pre><code>    case SIOCGIFFLAGS:  /* Get interface flags */                         
-        ifr-&gt;ifr_flags = dev_get_flags(dev);                              
-        return 0;  </code></pre><pre><code>    unsigned dev_get_flags(const struct net_device *dev)                                                                     
-    {                                                                             
-        unsigned flags;                                                           
-
-        flags = (dev-&gt;flags &amp; ~(IFF_PROMISC |                                     
-                    IFF_ALLMULTI |                                                
-                    IFF_RUNNING |                                                 
-                    IFF_LOWER_UP |                                                
-                    IFF_DORMANT)) |                                               
-            (dev-&gt;gflags &amp; (IFF_PROMISC |                                         
-                    IFF_ALLMULTI));                                               
-
-        if (netif_running(dev)) {                                                 
-            if (netif_oper_up(dev))                                               
-                flags |= IFF_RUNNING;                                             
-            if (netif_carrier_ok(dev))                                            
-                flags |= IFF_LOWER_UP;                                            
-            if (netif_dormant(dev))                                               
-                flags |= IFF_DORMANT;                                             
-        }                                                                         
-
-        return flags;                                                             
-    }</code></pre><p><strong>没有由网卡驱动去查硬件，而是查现有的状态标志位来实现。</strong></p>
-<h2 id="priv"><a href="#priv" class="headerlink" title="priv"></a>priv</h2><p><code>interface_detect_beat_priv</code> 基本上和 <code>mii</code> 一样，调<code>ioctl</code>的<code>SIOCDEVPRIVATE</code>和<code>SIOCDEVPRIVATE+1</code>实现，<code>dev_ifsioc</code>函数（net/core/dev.c）中处理同方法<code>mii</code>，有一点不同就是<code>SIOCDEVPRIVATE</code>到<code>SIOCDEVPRIVATE + 15</code>是各个网卡自己定义的命令，有的网卡有实现，有的没有。例如e100就没有实现这个ioctl。而rtl8150的usb版本网卡驱动就有实现。</p>
-<pre><code>    interface_status_t interface_detect_beat_priv(int fd, char *iface) {
-        struct ifreq ifr;
-
-        if (interface_auto_up)
-            interface_up(fd, iface);
-
-        memset(&amp;ifr, 0, sizeof(ifr));
-        strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name)-1);
-
-        if (ioctl(fd, SIOCDEVPRIVATE, &amp;ifr) == -1) {
-            if (interface_do_message)
-                daemon_log(LOG_ERR, &quot;SIOCDEVPRIVATE failed: %s&quot;, strerror(errno));
-
-            return IFSTATUS_ERR;
-        }
-
-        ((unsigned short*) &amp;ifr.ifr_data)[1] = 1;
-
-        if (ioctl(fd, SIOCDEVPRIVATE+1, &amp;ifr) == -1) {
-            if (interface_do_message)
-                daemon_log(LOG_ERR, &quot;SIOCDEVPRIVATE+1 failed: %s&quot;, strerror(errno));
-
-            return IFSTATUS_ERR;
-        }
-
-        return (((unsigned short*) &amp;ifr.ifr_data)[3] &amp; 0x0004) ? IFSTATUS_UP : IFSTATUS_DOWN;
-    }</code></pre><h2 id="summarize"><a href="#summarize" class="headerlink" title="summarize"></a>summarize</h2><p><code>ethtool</code>，<code>mii</code> 和 <code>wlan</code> 都是通过查询硬件寄存器，<code>priv</code> 可能不支持，<code>iff</code> 查询状态标志位</p>
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="http://www.chongchonggou.com/g_69808964.html" target="_blank" rel="noopener">对netlink无法检测到dellink事件和探测网卡是否插网线方法的简单分析</a></li>
-<li><a href="http://ju.outofmemory.cn/entry/251118" target="_blank" rel="noopener">Linux无线模块WEXT简单分析</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>ethtool</tag>
-        <tag>mii</tag>
-        <tag>wlan</tag>
-        <tag>iff</tag>
-        <tag>priv</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>how_to_use_wpa_supplicant</title>
     <url>/2017/11/01/how-to-use-wpa-supplicant/</url>
     <content><![CDATA[<p>这个工具的下载和移植都很简单。移植后能得到 <code>wpa_supplicant</code> 和 <code>wpa_cli</code>。<code>wpa_supplicant</code> 运行在后台，使用socket与前台进行数据通信。<code>wpa_cli</code> 可以用来进行调试和查看 <code>wpa_supplicant</code> 的运行</p>
@@ -37578,6 +37201,386 @@ static int wpa_cli(const char *ifname, char *cmd)
       <tags>
         <tag>linux</tag>
         <tag>wpa_supplicant</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>how-to-check-network-status</title>
+    <url>/2017/11/09/how-to-check-network-status/</url>
+    <content><![CDATA[<p><a href="https://github.com/antiX-Linux/ifplugd.git" target="_blank" rel="noopener">ifplugd</a> A link detection daemon for ethernet devices</p>
+<p>api mode:</p>
+<ul>
+<li>ethtool</li>
+<li>mii</li>
+<li>wlan</li>
+<li>iff</li>
+<li>priv</li>
+</ul>
+<blockquote>
+<p>Force a specific link beat detection ioctl() API. Possible values are auto, iff, wlan, ethtool, mii, and priv for automatic detection, interface flag (IFF_RUNNING), wireless extension, SIOCETHTOOL, SIOCGMIIREG resp. SIOCPRIV. Only the first character of the argument is relevant, case insensitive. (default: auto)</p>
+</blockquote>
+<a id="more"></a>
+
+<h2 id="base"><a href="#base" class="headerlink" title="base"></a>base</h2><pre><code>    if ((fd = socket(PF_INET, SOCK_DGRAM, 0)) &lt; 0)
+        return -1;</code></pre><p>创建<code>socket</code>用于<code>ioctl</code></p>
+<h2 id="ethtool-SIOCETHTOOL"><a href="#ethtool-SIOCETHTOOL" class="headerlink" title="ethtool SIOCETHTOOL"></a>ethtool SIOCETHTOOL</h2><p>Ethtool是Linux下用于查询及设置网卡参数的命令</p>
+<pre><code>#include &lt;sys/ioctl.h&gt;
+#include &lt;net/if.h&gt;
+
+interface_status_t interface_detect_beat_ethtool(int fd, char *iface) {
+
+    struct ifreq ifr;
+    struct ethtool_value edata;
+
+    if (interface_auto_up)
+        interface_up(fd, iface);
+
+    memset(&amp;ifr, 0, sizeof(ifr));
+    strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name)-1);
+
+    edata.cmd = ETHTOOL_GLINK;
+    ifr.ifr_data = (caddr_t) &amp;edata;
+
+    if (ioctl(fd, SIOCETHTOOL, &amp;ifr) == -1) {
+        if (interface_do_message)
+            daemon_log(LOG_ERR, &quot;ETHTOOL_GLINK failed: %s&quot;, strerror(errno));
+
+        return IFSTATUS_ERR;
+    }
+
+    return edata.data ? IFSTATUS_UP : IFSTATUS_DOWN;
+}</code></pre><p>对应内核代码<code>linux/net/core/dev.c</code>中<code>dev_ioctl()</code>函数，对应的<code>SIOCETHTOOL</code>，又调用了<code>linux/net/core/ethtool.c</code>中的实现，而<code>dev_ethtool()</code>函数，而这个函数最终又会调用相应<code>if</code>驱动的<code>ethtool_ops</code>结构体中注册的函数来实现寄存器的操作。当然，不同的<code>PHY</code>驱动对此有不同的操作，甚至有些<code>PHY</code>驱动根本没有注册这个结构体，这时，我们就要尝试其他方式。</p>
+<pre><code>static struct ethtool_ops synopGMAC_ethtool_ops = {
+    .get_link       = synopGMAC_get_link
+};
+
+.
+
+netdev-&gt;ethtool_ops = &amp;synopGMAC_ethtool_ops;</code></pre><p><code>include/linux/ethtool.h</code> 中存在 <code>ioctl</code> 列表 <code>ETHTOOL_*</code></p>
+<h2 id="mii"><a href="#mii" class="headerlink" title="mii"></a>mii</h2><p>mii-tool（这是Linux下专门设置网卡工作模式的命令）　</p>
+<p><code>MII</code>的全称是<code>Media Independent Interface</code>，字面意思上就是媒体无关的接口，因此它是独立于具体设备的，仔细想想标准化的东西都是独立于具体设备的。虽然如此，很多以太网卡设备并不支持这些参数的配置，因此当你执行mii-tool的时候，会得到Operation not supported的提示，要不就是没有使用超级用户身份，还有就是若接口编号设置超过eth7时，直接使用mii-tool 不加参数，会出现NO MII xxxxxxxxxx interface 之类的提示，是因为超过了默认值，使用帮助信息可以了解。</p>
+<pre><code>interface_status_t interface_detect_beat_mii(int fd, char *iface) {
+    struct ifreq ifr;
+
+    if (interface_auto_up)
+        interface_up(fd, iface);
+
+    memset(&amp;ifr, 0, sizeof(ifr));
+    strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name)-1);
+
+    if (ioctl(fd, SIOCGMIIPHY, &amp;ifr) == -1) {
+        if (interface_do_message)
+            daemon_log(LOG_ERR, &quot;SIOCGMIIPHY failed: %s&quot;, strerror(errno));
+
+        return IFSTATUS_ERR;
+    }
+
+    ((unsigned short*) &amp;ifr.ifr_data)[1] = 1;
+
+    if (ioctl(fd, SIOCGMIIREG, &amp;ifr) == -1) {
+        if (interface_do_message)
+            daemon_log(LOG_ERR, &quot;SIOCGMIIREG failed: %s&quot;, strerror(errno));
+
+        return IFSTATUS_ERR;
+    }
+
+    return (((unsigned short*) &amp;ifr.ifr_data)[3] &amp; 0x0004) ? IFSTATUS_UP : IFSTATUS_DOWN;
+}</code></pre><p>对应内核代码<code>linux/net/core/dev.c</code>中<code>dev_ioctl()</code>函数，对应的<code>SIOCxMIIxxx</code>，又调用了<code>dev_ifsioc()</code>函数，这个函数最终调用<code>PHY</code>驱动中注册的<code>do_ioctl()</code>函数来实现PHY寄存器的读写。</p>
+<p>例如内核中<code>winbond-840</code>初始化如下：</p>
+<pre><code>static int __devinit w840_probe1 (struct pci_dev *pdev, const struct pci_device_id *ent)
+{
+    struct net_device *dev;
+    struct netdev_private *np;
+    static int find_cnt;
+    int chip_idx = ent-&gt;driver_data;
+    int irq;
+    int i, option = find_cnt &lt; MAX_UNITS ? options[find_cnt] : 0;
+    void __iomem *ioaddr;
+
+    ...
+
+    dev = alloc_etherdev(sizeof(*np));
+    if (!dev)
+        return -ENOMEM;
+    SET_NETDEV_DEV(dev, &amp;pdev-&gt;dev);
+
+    ...
+
+    dev-&gt;open = &amp;netdev_open;
+    dev-&gt;hard_start_xmit = &amp;start_tx;
+    dev-&gt;stop = &amp;netdev_close;
+    dev-&gt;get_stats = &amp;get_stats;
+    dev-&gt;set_multicast_list = &amp;set_rx_mode;
+    dev-&gt;do_ioctl = &amp;netdev_ioctl; //mii
+    dev-&gt;ethtool_ops = &amp;netdev_ethtool_ops; //ethtool
+    dev-&gt;tx_timeout = &amp;tx_timeout;
+    dev-&gt;watchdog_timeo = TX_TIMEOUT;
+
+    i = register_netdev(dev);
+}</code></pre><p><code>include/linux/sockios.h</code> 中</p>
+<pre><code>#define SIOCGMIIPHY 0x8947      /* Get address of MII PHY in use. */
+#define SIOCGMIIREG 0x8948      /* Read MII PHY register.   */
+#define SIOCSMIIREG 0x8949      /* Write MII PHY register.  */</code></pre><h2 id="wlan"><a href="#wlan" class="headerlink" title="wlan"></a>wlan</h2><pre><code>    interface_status_t interface_detect_beat_wlan(int fd, char *iface)
+    {
+        uint8_t mac[6];
+        int q;
+        struct iwreq req;
+
+        if (interface_auto_up)
+            interface_up(fd, iface);
+
+        memset(&amp;req, 0, sizeof(req));
+        strncpy(req.ifr_ifrn.ifrn_name, iface, IFNAMSIZ);
+
+        if (ioctl(fd, SIOCGIWAP, &amp;req) &lt; 0) {
+            if (interface_do_message)
+                daemon_log(LOG_WARNING, &quot;Failed to get AP address: %s&quot;,strerror(errno));
+            return IFSTATUS_ERR;
+        }
+
+        memcpy(mac, &amp;(req.u.ap_addr.sa_data), ETH_ALEN);
+
+        if (!is_assoc_ap(mac))
+            return IFSTATUS_DOWN;
+
+        if ((q = get_wlan_qual_new(fd, iface)) &lt; 0)
+            if ((q = get_wlan_qual_old(iface)) &lt; 0) {
+                if (interface_do_message)
+                    daemon_log(LOG_WARNING, &quot;Failed to get wireless link quality.&quot;);
+
+                return IFSTATUS_ERR;
+            }
+
+        return q &gt; 0 ? IFSTATUS_UP : IFSTATUS_DOWN;
+    }</code></pre><p>从应用到内核再到wifi驱动的流程如下：</p>
+<p>应用上</p>
+<pre><code>    if (ioctl(fd, SIOCGIWAP, &amp;req) &lt; 0) {
+        if (interface_do_message)
+            daemon_log(LOG_WARNING, &quot;Failed to get AP address: %s&quot;,strerror(errno));
+        return IFSTATUS_ERR;
+    }</code></pre><p>其中 <code>include/linux/wireless.h</code></p>
+<pre><code>    #define SIOCGIWAP   0x8B15</code></pre><p>调用流程如下：</p>
+<p><code>sock_ioctl[net/socket.c]</code> -&gt; <code>dev_ioctl[net/core/dev.c]</code> -&gt; <code>wext_handle_ioctl[net/wireless/wext.c]</code> -&gt; <code>wireless_process_ioctl[net/wireless/wext.c]</code></p>
+<p>对wireless_process_ioctl，又跑到了default中，如果有handler，最后到ioctl_standard_call中；没有handler时，使用老的接口（dev-&gt;do_ioctl）</p>
+<pre><code>    /* New driver API : try to find the handler */
+    handler = get_handler(dev, cmd);
+    if (handler) {
+        /* Standard and private are not the same */
+        if (cmd &lt; SIOCIWFIRSTPRIV)
+            return standard(dev, iwr, cmd, info, handler);
+        else
+            return private(dev, iwr, cmd, info, handler);
+    }
+    /* Old driver API : call driver ioctl handler */
+    if (dev-&gt;do_ioctl)
+        return dev-&gt;do_ioctl(dev, ifr, cmd);</code></pre><p>在WIFI驱动中如下：</p>
+<pre><code>    static const iw_handler rt_handler[] =
+    {
+        (iw_handler) NULL,                      /* SIOCSIWCOMMIT */
+        (iw_handler) rt_ioctl_giwname,          /* SIOCGIWNAME   */
+        (iw_handler) NULL,                      /* SIOCSIWNWID   */
+        (iw_handler) NULL,                      /* SIOCGIWNWID   */
+        (iw_handler) rt_ioctl_siwfreq,          /* SIOCSIWFREQ   */
+        (iw_handler) rt_ioctl_giwfreq,          /* SIOCGIWFREQ   */
+        (iw_handler) rt_ioctl_siwmode,          /* SIOCSIWMODE   */
+        (iw_handler) rt_ioctl_giwmode,          /* SIOCGIWMODE   */
+        (iw_handler) NULL,                      /* SIOCSIWSENS   */
+        (iw_handler) NULL,                      /* SIOCGIWSENS   */
+        (iw_handler) NULL /* not used */,       /* SIOCSIWRANGE  */
+        (iw_handler) rt_ioctl_giwrange,         /* SIOCGIWRANGE  */
+        (iw_handler) rt_ioctl_giwpriv,      /* SIOCSIWPRIV  for Android */
+        (iw_handler) NULL /* kernel code */,    /* SIOCGIWPRIV   */
+        (iw_handler) NULL /* not used */,       /* SIOCSIWSTATS  */
+        (iw_handler) rt28xx_get_wireless_stats /* kernel code */,    /* SIOCGIWSTATS  */
+        (iw_handler) NULL,                      /* SIOCSIWSPY    */
+        (iw_handler) NULL,                      /* SIOCGIWSPY    */
+        (iw_handler) NULL,                      /* SIOCSIWTHRSPY */
+        (iw_handler) NULL,                      /* SIOCGIWTHRSPY */
+        (iw_handler) rt_ioctl_siwap,            /* SIOCSIWAP     */
+        (iw_handler) rt_ioctl_giwap,            /* SIOCGIWAP     */
+    };
+
+    const struct iw_handler_def rt28xx_iw_handler_def =
+    {
+    #define N(a)    (sizeof (a) / sizeof (a[0]))
+        .standard   = (iw_handler *) rt_handler,
+        .num_standard   = sizeof(rt_handler) / sizeof(iw_handler),
+        .private    = (iw_handler *) rt_priv_handlers,
+        .num_private        = N(rt_priv_handlers),
+        .private_args   = (struct iw_priv_args *) privtab,
+        .num_private_args   = N(privtab),
+    #if IW_HANDLER_VERSION &gt;= 7
+        .get_wireless_stats = rt28xx_get_wireless_stats,
+    #endif
+    };
+
+    int rt28xx_open(VOID *dev)
+    {
+        if (OpMode == OPMODE_STA)
+            net_dev-&gt;wireless_handlers = (struct iw_handler_def *) &amp;rt28xx_iw_handler_def;
+    }</code></pre><p>老的接口实现如下：</p>
+<pre><code>    RtmpPhyNetDevInit()
+    {
+        pNetDevHook-&gt;ioctl = rt28xx_ioctl;
+        pNetDevHook-&gt;priv_flags = InfId; /*INT_MAIN; */
+        pNetDevHook-&gt;get_stats = RT28xx_get_ether_stats;
+    }
+
+    RtmpOSNetDevAttach()
+    {
+    #if LINUX_VERSION_CODE &gt;= KERNEL_VERSION(2,6,31)
+        pNetDevOps-&gt;ndo_open = pDevOpHook-&gt;open;
+        pNetDevOps-&gt;ndo_stop = pDevOpHook-&gt;stop;
+        pNetDevOps-&gt;ndo_start_xmit =
+            (HARD_START_XMIT_FUNC) (pDevOpHook-&gt;xmit);
+        pNetDevOps-&gt;ndo_do_ioctl = pDevOpHook-&gt;ioctl;
+    #else
+        pNetDev-&gt;open = pDevOpHook-&gt;open;
+        pNetDev-&gt;stop = pDevOpHook-&gt;stop;
+        pNetDev-&gt;hard_start_xmit =
+            (HARD_START_XMIT_FUNC) (pDevOpHook-&gt;xmit);
+        pNetDev-&gt;do_ioctl = pDevOpHook-&gt;ioctl;
+    #endif
+
+    #if LINUX_VERSION_CODE &gt;= KERNEL_VERSION(2,6,18)
+        pNetDev-&gt;ethtool_ops = &amp;RALINK_Ethtool_Ops;
+    #endif
+
+        /* if you don&#39;t implement get_stats, just leave the callback function as NULL, a dummy
+        function will make kernel panic.
+        */
+        if (pDevOpHook-&gt;get_stats)
+    #if LINUX_VERSION_CODE &gt;= KERNEL_VERSION(2,6,31)
+            pNetDevOps-&gt;ndo_get_stats = pDevOpHook-&gt;get_stats;
+    #else
+        pNetDev-&gt;get_stats = pDevOpHook-&gt;get_stats;
+    #endif
+
+        /* OS specific flags, here we used to indicate if we are virtual interface */
+        /*      pNetDev-&gt;priv_flags = pDevOpHook-&gt;priv_flags; */
+        RT_DEV_PRIV_FLAGS_SET(pNetDev, pDevOpHook-&gt;priv_flags);
+    #if (WIRELESS_EXT &lt; 21) &amp;&amp; (WIRELESS_EXT &gt;= 12)
+        /*      pNetDev-&gt;get_wireless_stats = rt28xx_get_wireless_stats; */
+        pNetDev-&gt;get_wireless_stats = pDevOpHook-&gt;get_wstats;
+    #endif
+
+    #ifdef CONFIG_STA_SUPPORT
+    #if WIRELESS_EXT &gt;= 12
+        if (OpMode == OPMODE_STA) {
+            /*          pNetDev-&gt;wireless_handlers = &amp;rt28xx_iw_handler_def; */
+            pNetDev-&gt;wireless_handlers = pDevOpHook-&gt;iw_handler;
+        }
+    #endif /*WIRELESS_EXT &gt;= 12 */
+    #endif /* CONFIG_STA_SUPPORT */
+
+    #ifdef CONFIG_APSTA_MIXED_SUPPORT
+    #if WIRELESS_EXT &gt;= 12
+        if (OpMode == OPMODE_AP) {
+            /*          pNetDev-&gt;wireless_handlers = &amp;rt28xx_ap_iw_handler_def; */
+            pNetDev-&gt;wireless_handlers = pDevOpHook-&gt;iw_handler;
+        }
+    #endif /*WIRELESS_EXT &gt;= 12 */
+    #endif /* CONFIG_APSTA_MIXED_SUPPORT */
+
+        /* copy the net device mac address to the net_device structure. */
+        NdisMoveMemory(pNetDev-&gt;dev_addr, &amp;pDevOpHook-&gt;devAddr[0],
+                MAC_ADDR_LEN);
+
+        rtnl_locked = pDevOpHook-&gt;needProtcted;
+    }
+
+    rt2870_probe()
+    {
+
+        net_dev = RtmpPhyNetDevInit(pAd, &amp;netDevHook);
+
+        status = RtmpOSNetDevAttach(OpMode, net_dev, &amp;netDevHook);
+    }</code></pre><h2 id="iff"><a href="#iff" class="headerlink" title="iff"></a>iff</h2><pre><code>    interface_status_t interface_detect_beat_iff(int fd, char *iface) {
+
+        struct ifreq ifr;
+
+        if (interface_auto_up)
+            interface_up(fd, iface);
+
+        memset(&amp;ifr, 0, sizeof(ifr));
+        strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name)-1);
+
+        if (ioctl(fd, SIOCGIFFLAGS, &amp;ifr) == -1) {
+            if (interface_do_message)
+                daemon_log(LOG_ERR, &quot;SIOCGIFFLAGS failed: %s&quot;, strerror(errno));
+
+            return IFSTATUS_ERR;
+        }
+
+        return ifr.ifr_flags &amp; IFF_RUNNING ? IFSTATUS_UP : IFSTATUS_DOWN;
+    }</code></pre><p>调ioctl的<code>SIOCGIFFLAGS</code>实现，<code>dev_ifsioc_locked</code>函数（net/core/dev.c）中处理：</p>
+<pre><code>    case SIOCGIFFLAGS:  /* Get interface flags */                         
+        ifr-&gt;ifr_flags = dev_get_flags(dev);                              
+        return 0;  </code></pre><pre><code>    unsigned dev_get_flags(const struct net_device *dev)                                                                     
+    {                                                                             
+        unsigned flags;                                                           
+
+        flags = (dev-&gt;flags &amp; ~(IFF_PROMISC |                                     
+                    IFF_ALLMULTI |                                                
+                    IFF_RUNNING |                                                 
+                    IFF_LOWER_UP |                                                
+                    IFF_DORMANT)) |                                               
+            (dev-&gt;gflags &amp; (IFF_PROMISC |                                         
+                    IFF_ALLMULTI));                                               
+
+        if (netif_running(dev)) {                                                 
+            if (netif_oper_up(dev))                                               
+                flags |= IFF_RUNNING;                                             
+            if (netif_carrier_ok(dev))                                            
+                flags |= IFF_LOWER_UP;                                            
+            if (netif_dormant(dev))                                               
+                flags |= IFF_DORMANT;                                             
+        }                                                                         
+
+        return flags;                                                             
+    }</code></pre><p><strong>没有由网卡驱动去查硬件，而是查现有的状态标志位来实现。</strong></p>
+<h2 id="priv"><a href="#priv" class="headerlink" title="priv"></a>priv</h2><p><code>interface_detect_beat_priv</code> 基本上和 <code>mii</code> 一样，调<code>ioctl</code>的<code>SIOCDEVPRIVATE</code>和<code>SIOCDEVPRIVATE+1</code>实现，<code>dev_ifsioc</code>函数（net/core/dev.c）中处理同方法<code>mii</code>，有一点不同就是<code>SIOCDEVPRIVATE</code>到<code>SIOCDEVPRIVATE + 15</code>是各个网卡自己定义的命令，有的网卡有实现，有的没有。例如e100就没有实现这个ioctl。而rtl8150的usb版本网卡驱动就有实现。</p>
+<pre><code>    interface_status_t interface_detect_beat_priv(int fd, char *iface) {
+        struct ifreq ifr;
+
+        if (interface_auto_up)
+            interface_up(fd, iface);
+
+        memset(&amp;ifr, 0, sizeof(ifr));
+        strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name)-1);
+
+        if (ioctl(fd, SIOCDEVPRIVATE, &amp;ifr) == -1) {
+            if (interface_do_message)
+                daemon_log(LOG_ERR, &quot;SIOCDEVPRIVATE failed: %s&quot;, strerror(errno));
+
+            return IFSTATUS_ERR;
+        }
+
+        ((unsigned short*) &amp;ifr.ifr_data)[1] = 1;
+
+        if (ioctl(fd, SIOCDEVPRIVATE+1, &amp;ifr) == -1) {
+            if (interface_do_message)
+                daemon_log(LOG_ERR, &quot;SIOCDEVPRIVATE+1 failed: %s&quot;, strerror(errno));
+
+            return IFSTATUS_ERR;
+        }
+
+        return (((unsigned short*) &amp;ifr.ifr_data)[3] &amp; 0x0004) ? IFSTATUS_UP : IFSTATUS_DOWN;
+    }</code></pre><h2 id="summarize"><a href="#summarize" class="headerlink" title="summarize"></a>summarize</h2><p><code>ethtool</code>，<code>mii</code> 和 <code>wlan</code> 都是通过查询硬件寄存器，<code>priv</code> 可能不支持，<code>iff</code> 查询状态标志位</p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://www.chongchonggou.com/g_69808964.html" target="_blank" rel="noopener">对netlink无法检测到dellink事件和探测网卡是否插网线方法的简单分析</a></li>
+<li><a href="http://ju.outofmemory.cn/entry/251118" target="_blank" rel="noopener">Linux无线模块WEXT简单分析</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>ethtool</tag>
+        <tag>mii</tag>
+        <tag>wlan</tag>
+        <tag>iff</tag>
+        <tag>priv</tag>
       </tags>
   </entry>
   <entry>
