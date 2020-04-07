@@ -53,13 +53,13 @@
 
   <meta name="description" content="系统出现死机问题，终端无法操作，怀疑是死锁问题，开启内核选项来辅助调试">
 <meta property="og:type" content="article">
-<meta property="og:title" content="linux-kernel-deadlock">
+<meta property="og:title" content="Linux 内核死锁">
 <meta property="og:url" content="http://yoursite.com/2018/11/29/linux-kernel-deadlock/index.html">
 <meta property="og:site_name" content="IT日记">
 <meta property="og:description" content="系统出现死机问题，终端无法操作，怀疑是死锁问题，开启内核选项来辅助调试">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2018-11-29T07:06:25.000Z">
-<meta property="article:modified_time" content="2020-03-31T05:02:18.380Z">
+<meta property="article:modified_time" content="2020-04-07T02:56:53.911Z">
 <meta property="article:author" content="Breeze.Temple">
 <meta property="article:tag" content="linux">
 <meta property="article:tag" content="panic">
@@ -81,7 +81,7 @@
   };
 </script>
 
-  <title>linux-kernel-deadlock | IT日记</title>
+  <title>Linux 内核死锁 | IT日记</title>
   
 
 
@@ -235,7 +235,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          linux-kernel-deadlock
+          Linux 内核死锁
         </h1>
 
         <div class="post-meta">
@@ -252,7 +252,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-03-31 13:02:18" itemprop="dateModified" datetime="2020-03-31T13:02:18+08:00">2020-03-31</time>
+                <time title="Modified: 2020-04-07 10:56:53" itemprop="dateModified" datetime="2020-04-07T10:56:53+08:00">2020-04-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -262,6 +262,12 @@
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
                   <a href="/categories/Linux/" itemprop="url" rel="index">
                     <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/Debug/" itemprop="url" rel="index">
+                    <span itemprop="name">Debug</span>
                   </a>
                 </span>
             </span>
@@ -314,40 +320,40 @@
 <h2 id="panic-分析"><a href="#panic-分析" class="headerlink" title="panic 分析"></a>panic 分析</h2><p>死机时输出如下信息，可以看出是 <code>spinlock</code> 导致的问题</p>
 <pre><code>[  304.883867] VPU_DecClose: success
 [  309.036689] BUG: spinlock lockup suspected on CPU#0, thread-demux0/801
-[  309.044130]  lock: gxdmxdev+0x580/0xffe44a4c [av], .magic: dead4ead, .owner: dumpfilter_thre/10758, .owner_cpu: 1
+[  309.044130]  lock: _dmxdev+0x580/0xffe44a4c [av], .magic: dead4ead, .owner: dumpfilter_thre/10758, .owner_cpu: 1
 [  309.054407] CPU: 0 PID: 801 Comm: thread-demux0 Tainted: G           O    4.9.y #7
 [  309.061979] Hardware name: nationalchip sirius
 [  309.066458] [&lt;c010f290&gt;] (unwind_backtrace) from [&lt;c010b834&gt;] (show_stack+0x10/0x14)
 [  309.074220] [&lt;c010b834&gt;] (show_stack) from [&lt;c0374618&gt;] (dump_stack+0x94/0xa8)
 [  309.081460] [&lt;c0374618&gt;] (dump_stack) from [&lt;c015d860&gt;] (do_raw_spin_lock+0xfc/0x1b8)
 [  309.089309] [&lt;c015d860&gt;] (do_raw_spin_lock) from [&lt;c0651830&gt;] (_raw_spin_lock_irqsave+0x10/0x18)
-[  309.098594] [&lt;c0651830&gt;] (_raw_spin_lock_irqsave) from [&lt;bf004e9c&gt;] (gxfifo_put+0x110/0x144 [av])
-[  309.108335] [&lt;bf004e9c&gt;] (gxfifo_put [av]) from [&lt;bf05ff9c&gt;] (gx3211_tsw_dealwith+0x210/0x35c [av])
-[  309.118203] [&lt;bf05ff9c&gt;] (gx3211_tsw_dealwith [av]) from [&lt;bf060814&gt;] (gx3211_tsw_isr+0x144/0x244 [av])
-[  309.128405] [&lt;bf060814&gt;] (gx3211_tsw_isr [av]) from [&lt;bf059da0&gt;] (demux_irq_thread+0xa4/0xe0 [av])
+[  309.098594] [&lt;c0651830&gt;] (_raw_spin_lock_irqsave) from [&lt;bf004e9c&gt;] (_fifo_put+0x110/0x144 [av])
+[  309.108335] [&lt;bf004e9c&gt;] (_fifo_put [av]) from [&lt;bf05ff9c&gt;] (_tsw_dealwith+0x210/0x35c [av])
+[  309.118203] [&lt;bf05ff9c&gt;] (_tsw_dealwith [av]) from [&lt;bf060814&gt;] (_tsw_isr+0x144/0x244 [av])
+[  309.128405] [&lt;bf060814&gt;] (_tsw_isr [av]) from [&lt;bf059da0&gt;] (demux_irq_thread+0xa4/0xe0 [av])
 [  309.137781] [&lt;bf059da0&gt;] (demux_irq_thread [av]) from [&lt;c01385d4&gt;] (kthread+0xdc/0xf4)
 [  309.145720] [&lt;c01385d4&gt;] (kthread) from [&lt;c0107678&gt;] (ret_from_fork+0x14/0x3c)
 [  309.152951] NMI backtrace for cpu 0</code></pre><p>需要使用的几种工具 <code>objdump</code>、 <code>addr2line</code></p>
-<p><code>[&lt;bf004e9c&gt;] (gxfifo_put [av]) from [&lt;bf05ff9c&gt;] (gx3211_tsw_dealwith+0x210/0x35c [av])</code> 解析如下</p>
+<p><code>[&lt;bf004e9c&gt;] (_fifo_put [av]) from [&lt;bf05ff9c&gt;] (_tsw_dealwith+0x210/0x35c [av])</code> 解析如下</p>
 <ul>
 <li><code>&lt;bf004e9c&gt;</code> 当前栈指针</li>
-<li><code>gxfifo_put</code> 当前调用</li>
+<li><code>_fifo_put</code> 当前调用</li>
 <li><code>[av]</code> 模块名</li>
 <li><code>from [&lt;bf05ff9c&gt;]</code> 上一栈指针</li>
-<li><code>gx3211_tsw_dealwith</code> 函数调用</li>
+<li><code>_tsw_dealwith</code> 函数调用</li>
 <li><code>0x210/0x35c</code>， <code>0x210</code> 偏移， <code>0x35c</code> 函数大小</li>
 </ul>
 <p>可以使用 <code>objdump -d -t -S linux/a.o</code> 查看函数</p>
 <p>另外模块在加载时存在偏移量，使用 <code>lsmod</code> 查询偏移量已计算绝对值</p>
 <pre><code class="shell">$ lsmod
 av 2552573 3 - Live 0xbf000000 (O)</code></pre>
-<p><code>[&lt;bf004e9c&gt;] (gxfifo_put [av]) from [&lt;bf05ff9c&gt;] (gx3211_tsw_dealwith+0x210/0x35c [av])</code></p>
+<p><code>[&lt;bf004e9c&gt;] (_fifo_put [av]) from [&lt;bf05ff9c&gt;] (_tsw_dealwith+0x210/0x35c [av])</code></p>
 <p>反汇编代码截取如下， <code>0x5ff9c = 0x0005fd8c + 0x210</code></p>
-<pre><code>0005fd8c &lt;gx3211_tsw_dealwith&gt;:
+<pre><code>0005fd8c &lt;_tsw_dealwith&gt;:
     .
     .
-    5ff98:   ebfffffe    bl  4d8c &lt;gxfifo_put&gt;
-    5ff9c:   eaffffac    b   5fe54 &lt;gx3211_tsw_dealwith+0xc8&gt;
+    5ff98:   ebfffffe    bl  4d8c &lt;_fifo_put&gt;
+    5ff9c:   eaffffac    b   5fe54 &lt;_tsw_dealwith+0xc8&gt;
     5ffa0:   e1a0200a    mov r2, sl
     .</code></pre>
     </div>
