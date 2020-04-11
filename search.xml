@@ -13338,6 +13338,129 @@ int main(void)
       </tags>
   </entry>
   <entry>
+    <title>回收 fork() 的子进程</title>
+    <url>/2018/08/21/fork-and-zombie-process/</url>
+    <content><![CDATA[<p>使用 <code>fork()</code> 函数派生出多个子进程来并行执行程序的不同代码块，是一种常用的编程泛型。但是，在使用 <code>fork()</code> 函数时若处理不当，很容易产生僵尸进程。</p>
+<a id="more"></a>
+
+<h2 id="fork"><a href="#fork" class="headerlink" title="fork()"></a>fork()</h2><pre><code class="c">#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+
+int main(int argc, char **argv) {
+    while (1) {
+        pid_t pid = fork();
+        if (pid &gt; 0) {
+            // 主进程
+            sleep(5);
+        } else if (pid == 0) {
+            // 子进程
+            return 0;
+        } else {
+            fprintf(stderr, &quot;fork error\n&quot;);
+            return 2;
+        }
+    }
+}</code></pre>
+<p>该函数的返回值有三种情况，分别是：</p>
+<ul>
+<li>大于 0，表示当前进程为父进程，返回值是子进程号；</li>
+<li>等于 0，表示当前进程是子进程；</li>
+<li>小于 0（确切地说是等于 -1），表示 fork() 调用失败。</li>
+</ul>
+<p>示例代码每 5 秒创建一个子进程，而且没有等待回收，变成僵尸进程</p>
+<pre><code class="shell">$ gcc test.c -o fork
+$ ./fork
+kk  24336 17551  0 11:16 pts/6    00:00:00 ./fork
+kk  24337 24336  0 11:16 pts/6    00:00:00 [fork] &lt;defunct&gt;
+kk  24340 24336  0 11:16 pts/6    00:00:00 [fork] &lt;defunct&gt;
+kk  24345 24336  0 11:16 pts/6    00:00:00 [fork] &lt;defunct&gt;</code></pre>
+<h2 id="僵尸进程"><a href="#僵尸进程" class="headerlink" title="僵尸进程"></a>僵尸进程</h2><p><strong>僵尸进程</strong>是指子进程退出后，它的父进程没有“等待”该子进程，这样的子进程就会成为僵尸进程。</p>
+<p>一般父进程需要调用 <code>wait</code> 或 <code>waitpid</code> 来等待子进程进行回收</p>
+<h3 id="wait"><a href="#wait" class="headerlink" title="wait"></a>wait</h3><h3 id="waitpid"><a href="#waitpid" class="headerlink" title="waitpid"></a>waitpid</h3><h2 id="SIGCHLD"><a href="#SIGCHLD" class="headerlink" title="SIGCHLD"></a>SIGCHLD</h2><p>在 <code>SIGCHLD</code> 中调用 <code>wait</code> 或 <code>waitpid</code></p>
+<h2 id="SIG-IGN"><a href="#SIG-IGN" class="headerlink" title="SIG_IGN"></a>SIG_IGN</h2><p>除了在 SIGCHLD 信号处理函数中调用 wait() 来避免产生僵尸进程，我们还可以选择忽略 SIGCHLD 信号，告知操作系统父进程不关心子进程的退出状态，可以直接清理。</p>
+<pre><code class="c">signal(SIGCHLD, SIG_IGN);</code></pre>
+<p>但需要注意的是，在部分 BSD 系统中，这种做法仍会产生僵尸进程。因此更为通用的方法还是使用 wait() 函数。</p>
+<p><strong>需要区分僵尸进程和孤儿进程</strong></p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://www.coder4.com/archives/151" target="_blank" rel="noopener">异步回收 fork 出的子进程（僵尸进程）</a></li>
+<li><a href="https://blog.csdn.net/oqqHuTu12345678/article/details/75043726" target="_blank" rel="noopener">Linux 进程全解 7——父进程 wait / waitip 回收子进程</a></li>
+<li><a href="http://blog.sina.com.cn/s/blog_605f5b4f0100x3wm.html" target="_blank" rel="noopener">父进程非阻塞回收子进程（适用 LINUX 下 C 语言的 client-server 模型）</a></li>
+<li><a href="http://shzhangji.com/cnblogs/2013/03/27/fork-and-zombie-process/" target="_blank" rel="noopener">fork() 与僵尸进程</a></li>
+<li><a href="https://blog.csdn.net/liyantianmin/article/details/79485923" target="_blank" rel="noopener">僵尸进程的发现与解决</a></li>
+<li><a href="https://blog.csdn.net/xingxu0207/article/details/74971529" target="_blank" rel="noopener">SIGCHLD 信号与 SIG_IGN 处理的使用</a></li>
+<li><a href="https://www.cnblogs.com/wuchanming/p/4020463.html" target="_blank" rel="noopener">linux 下的僵尸进程处理 SIGCHLD 信号</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>fork</tag>
+        <tag>zombie process</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>解决 ubuntu 64 位系统无法运行 32 位程序的问题</title>
+    <url>/2018/08/21/ubuntu64-with-32-bin/</url>
+    <content><![CDATA[<p>新装主机 <code>ubuntu 64</code> 系统，32 位编译工具链不能正常执行，需要安装支持包</p>
+<a id="more"></a>
+
+<h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><pre><code class="shell">$ ldd work
+libm.so.6 =&gt; /lib32/libm.so.6 (0xf7714000)
+libc.so.6 =&gt; /lib32/libc.so.6 (0xf7569000)
+/lib/ld-linux.so.2 (0xf776a000)
+
+$ ./work
+-bash: ./work: No such file or direcory
+
+$ file work
+work:ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV), dynamically linked (used shared libs), for GNU/linux 2.2.5, stripped</code></pre>
+<p>在 64 位系统上，32 位可执行文件需要安装支持库</p>
+<h2 id="安装支持库"><a href="#安装支持库" class="headerlink" title="安装支持库"></a>安装支持库</h2><pre><code class="shell">$ sudo apt-get install libc6-i386</code></pre>
+]]></content>
+      <categories>
+        <category>ubuntu</category>
+      </categories>
+      <tags>
+        <tag>ubuntu</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>僵尸进程和孤儿进程</title>
+    <url>/2018/08/21/zombie-process-and-orphaned-process/</url>
+    <content><![CDATA[<p>僵尸进程和孤儿进程</p>
+<a id="more"></a>
+
+<p>##</p>
+<p><code>zombie process</code> 父进程没有退出，只是没有回收子进程结束时的状态信息（需要使用 <code>wait</code> 或 <code>waitpid</code> )，而 <code>orphaned process</code> 父进程已经先于子进程退出，此时 <code>pid = 1 的 init</code> 收养了子进程</p>
+<p>而在父进程中显式指明忽略 <code>SIGCHLD</code> 可以将回收 <code>zombie process</code> 的工作交给 <code>init</code></p>
+<pre><code class="c">struct sigaction sa;
+
+sigemptyset(&amp;sa.sa_mask);
+sa.sa_handler = SIG_IGN;
+sa.sa_flags = 0;
+sigaction(SIGCHLD, &amp;sa, NULL);</code></pre>
+<p>如果已经显式指明忽略 <code>SIGCHLD</code>，但是还有<strong>疑似僵尸进程</strong>存在，需要确认是否为僵尸进程（打印 ppid)</p>
+<p>如果是僵尸进程，说明僵尸进程在此系统中通过这种方式回收不干净，在信号处理中调用 <code>waitpid</code> 进行回收</p>
+<p>如果是孤儿进程，需要检查逻辑，为什么子进程不退出，或长时间执行</p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://www.cnblogs.com/Anker/p/3271773.html" target="_blank" rel="noopener">孤儿进程与僵尸进程『总结』</a></li>
+<li><a href="https://blog.csdn.net/wzb56_earl/article/details/6328472" target="_blank" rel="noopener">浅议孤儿进程和僵尸进程（defunc）</a></li>
+<li><a href="https://segmentfault.com/q/1010000008713383" target="_blank" rel="noopener">子进程执行完成为僵尸进程，怎么解决</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>zombie process</tag>
+        <tag>orphaned process</tag>
+        <tag>僵尸进程</tag>
+        <tag>孤儿进程</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Movian Plugin Development</title>
     <url>/2018/01/10/movian-plugin-development/</url>
     <content><![CDATA[<p>Movian Development</p>
@@ -13533,129 +13656,6 @@ cStatement     xxx return goto asm continue break
       <tags>
         <tag>linux</tag>
         <tag>proc</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>回收 fork() 的子进程</title>
-    <url>/2018/08/21/fork-and-zombie-process/</url>
-    <content><![CDATA[<p>使用 <code>fork()</code> 函数派生出多个子进程来并行执行程序的不同代码块，是一种常用的编程泛型。但是，在使用 <code>fork()</code> 函数时若处理不当，很容易产生僵尸进程。</p>
-<a id="more"></a>
-
-<h2 id="fork"><a href="#fork" class="headerlink" title="fork()"></a>fork()</h2><pre><code class="c">#include &lt;unistd.h&gt;
-#include &lt;stdio.h&gt;
-
-int main(int argc, char **argv) {
-    while (1) {
-        pid_t pid = fork();
-        if (pid &gt; 0) {
-            // 主进程
-            sleep(5);
-        } else if (pid == 0) {
-            // 子进程
-            return 0;
-        } else {
-            fprintf(stderr, &quot;fork error\n&quot;);
-            return 2;
-        }
-    }
-}</code></pre>
-<p>该函数的返回值有三种情况，分别是：</p>
-<ul>
-<li>大于 0，表示当前进程为父进程，返回值是子进程号；</li>
-<li>等于 0，表示当前进程是子进程；</li>
-<li>小于 0（确切地说是等于 -1），表示 fork() 调用失败。</li>
-</ul>
-<p>示例代码每 5 秒创建一个子进程，而且没有等待回收，变成僵尸进程</p>
-<pre><code class="shell">$ gcc test.c -o fork
-$ ./fork
-kk  24336 17551  0 11:16 pts/6    00:00:00 ./fork
-kk  24337 24336  0 11:16 pts/6    00:00:00 [fork] &lt;defunct&gt;
-kk  24340 24336  0 11:16 pts/6    00:00:00 [fork] &lt;defunct&gt;
-kk  24345 24336  0 11:16 pts/6    00:00:00 [fork] &lt;defunct&gt;</code></pre>
-<h2 id="僵尸进程"><a href="#僵尸进程" class="headerlink" title="僵尸进程"></a>僵尸进程</h2><p><strong>僵尸进程</strong>是指子进程退出后，它的父进程没有“等待”该子进程，这样的子进程就会成为僵尸进程。</p>
-<p>一般父进程需要调用 <code>wait</code> 或 <code>waitpid</code> 来等待子进程进行回收</p>
-<h3 id="wait"><a href="#wait" class="headerlink" title="wait"></a>wait</h3><h3 id="waitpid"><a href="#waitpid" class="headerlink" title="waitpid"></a>waitpid</h3><h2 id="SIGCHLD"><a href="#SIGCHLD" class="headerlink" title="SIGCHLD"></a>SIGCHLD</h2><p>在 <code>SIGCHLD</code> 中调用 <code>wait</code> 或 <code>waitpid</code></p>
-<h2 id="SIG-IGN"><a href="#SIG-IGN" class="headerlink" title="SIG_IGN"></a>SIG_IGN</h2><p>除了在 SIGCHLD 信号处理函数中调用 wait() 来避免产生僵尸进程，我们还可以选择忽略 SIGCHLD 信号，告知操作系统父进程不关心子进程的退出状态，可以直接清理。</p>
-<pre><code class="c">signal(SIGCHLD, SIG_IGN);</code></pre>
-<p>但需要注意的是，在部分 BSD 系统中，这种做法仍会产生僵尸进程。因此更为通用的方法还是使用 wait() 函数。</p>
-<p><strong>需要区分僵尸进程和孤儿进程</strong></p>
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="https://www.coder4.com/archives/151" target="_blank" rel="noopener">异步回收 fork 出的子进程（僵尸进程）</a></li>
-<li><a href="https://blog.csdn.net/oqqHuTu12345678/article/details/75043726" target="_blank" rel="noopener">Linux 进程全解 7——父进程 wait / waitip 回收子进程</a></li>
-<li><a href="http://blog.sina.com.cn/s/blog_605f5b4f0100x3wm.html" target="_blank" rel="noopener">父进程非阻塞回收子进程（适用 LINUX 下 C 语言的 client-server 模型）</a></li>
-<li><a href="http://shzhangji.com/cnblogs/2013/03/27/fork-and-zombie-process/" target="_blank" rel="noopener">fork() 与僵尸进程</a></li>
-<li><a href="https://blog.csdn.net/liyantianmin/article/details/79485923" target="_blank" rel="noopener">僵尸进程的发现与解决</a></li>
-<li><a href="https://blog.csdn.net/xingxu0207/article/details/74971529" target="_blank" rel="noopener">SIGCHLD 信号与 SIG_IGN 处理的使用</a></li>
-<li><a href="https://www.cnblogs.com/wuchanming/p/4020463.html" target="_blank" rel="noopener">linux 下的僵尸进程处理 SIGCHLD 信号</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>fork</tag>
-        <tag>zombie process</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>解决 ubuntu 64 位系统无法运行 32 位程序的问题</title>
-    <url>/2018/08/21/ubuntu64-with-32-bin/</url>
-    <content><![CDATA[<p>新装主机 <code>ubuntu 64</code> 系统，32 位编译工具链不能正常执行，需要安装支持包</p>
-<a id="more"></a>
-
-<h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><pre><code class="shell">$ ldd work
-libm.so.6 =&gt; /lib32/libm.so.6 (0xf7714000)
-libc.so.6 =&gt; /lib32/libc.so.6 (0xf7569000)
-/lib/ld-linux.so.2 (0xf776a000)
-
-$ ./work
--bash: ./work: No such file or direcory
-
-$ file work
-work:ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV), dynamically linked (used shared libs), for GNU/linux 2.2.5, stripped</code></pre>
-<p>在 64 位系统上，32 位可执行文件需要安装支持库</p>
-<h2 id="安装支持库"><a href="#安装支持库" class="headerlink" title="安装支持库"></a>安装支持库</h2><pre><code class="shell">$ sudo apt-get install libc6-i386</code></pre>
-]]></content>
-      <categories>
-        <category>ubuntu</category>
-      </categories>
-      <tags>
-        <tag>ubuntu</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>僵尸进程和孤儿进程</title>
-    <url>/2018/08/21/zombie-process-and-orphaned-process/</url>
-    <content><![CDATA[<p>僵尸进程和孤儿进程</p>
-<a id="more"></a>
-
-<p>##</p>
-<p><code>zombie process</code> 父进程没有退出，只是没有回收子进程结束时的状态信息（需要使用 <code>wait</code> 或 <code>waitpid</code> )，而 <code>orphaned process</code> 父进程已经先于子进程退出，此时 <code>pid = 1 的 init</code> 收养了子进程</p>
-<p>而在父进程中显式指明忽略 <code>SIGCHLD</code> 可以将回收 <code>zombie process</code> 的工作交给 <code>init</code></p>
-<pre><code class="c">struct sigaction sa;
-
-sigemptyset(&amp;sa.sa_mask);
-sa.sa_handler = SIG_IGN;
-sa.sa_flags = 0;
-sigaction(SIGCHLD, &amp;sa, NULL);</code></pre>
-<p>如果已经显式指明忽略 <code>SIGCHLD</code>，但是还有<strong>疑似僵尸进程</strong>存在，需要确认是否为僵尸进程（打印 ppid)</p>
-<p>如果是僵尸进程，说明僵尸进程在此系统中通过这种方式回收不干净，在信号处理中调用 <code>waitpid</code> 进行回收</p>
-<p>如果是孤儿进程，需要检查逻辑，为什么子进程不退出，或长时间执行</p>
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="https://www.cnblogs.com/Anker/p/3271773.html" target="_blank" rel="noopener">孤儿进程与僵尸进程『总结』</a></li>
-<li><a href="https://blog.csdn.net/wzb56_earl/article/details/6328472" target="_blank" rel="noopener">浅议孤儿进程和僵尸进程（defunc）</a></li>
-<li><a href="https://segmentfault.com/q/1010000008713383" target="_blank" rel="noopener">子进程执行完成为僵尸进程，怎么解决</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>zombie process</tag>
-        <tag>orphaned process</tag>
-        <tag>僵尸进程</tag>
-        <tag>孤儿进程</tag>
       </tags>
   </entry>
   <entry>
@@ -15930,48 +15930,6 @@ networking/nslookup.c:202:     * after getaddrinfo (in server_print). This repor
       </tags>
   </entry>
   <entry>
-    <title>嵌入式 Linux 系统支持 GSM/3G</title>
-    <url>/2018/11/13/linux-kernel-support-GSM/</url>
-    <content><![CDATA[<p>编译 <code>Linux Kernel</code> 支持 <code>GSM/3G/4G</code></p>
-<a id="more"></a>
-
-<h2 id="Linux-内核选项"><a href="#Linux-内核选项" class="headerlink" title="Linux 内核选项"></a>Linux 内核选项</h2><p>Linux Version: v4.9.22</p>
-<p>内核配置保证打开如下选项</p>
-<pre><code>Device Drivers  ---&gt;
-   [*] Network device support  ---&gt;
-        &lt;*&gt;   PPP (point-to-point protocol) support
-        &lt; &gt;     PPP BSD-Compress compression
-        &lt; &gt;     PPP Deflate compression
-        [*]     PPP filtering
-        &lt; &gt;     PPP MPPE compression (encryption)
-        [*]     PPP multilink support
-        &lt; &gt;     PPP over Ethernet
-        &lt; &gt;     PPP support for async serial ports
-        &lt; &gt;     PPP support for sync tty ports
-   [*] USB support  ---&gt;
-        &lt;*&gt;   USB Serial Converter support  ---&gt;
-            &lt;*&gt;   USB driver for GSM and CDMA modems</code></pre><p>工作之后有如下错误信息</p>
-<pre><code>Couldn&#39;t set tty to PPP discipline: Invalid argument</code></pre><p>参考文章 <a href="http://pptpclient.sourceforge.net/howto-diagnosis.phtml" target="_blank" rel="noopener">PPTP Client</a></p>
-<p>打开选项 <code>CONFIG_PPP_ASYNC</code></p>
-<p>注意其中 <code>compression</code> 为压缩选项</p>
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="http://pptpclient.sourceforge.net/howto-diagnosis.phtml" target="_blank" rel="noopener">PPTP Client</a></li>
-<li><a href="https://www.toradex.com/zh-cn/blog/how-to-use-gsm-3g-4g-in-embedded-linux-systems" target="_blank" rel="noopener">如何在嵌入式 Linux 系统中使用 GSM/3G/4G 模块</a></li>
-<li><a href="https://www.linuxjournal.com/article/2109" target="_blank" rel="noopener">A 10-Minute Guide for Using PPP to Connect Linux to the Internet</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>3g</tag>
-        <tag>gsm</tag>
-        <tag>4g</tag>
-        <tag>ppp</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>静态编译使用 getaddrinfo 出现警告及动态静态混合使用</title>
     <url>/2018/11/12/statically-linked-binary-that-uses-getaddrinfo/</url>
     <content><![CDATA[<p>使用 <code>-static</code> 编译出现以下警告</p>
@@ -16060,6 +16018,48 @@ pngset.c.o</code></pre>
         <tag>libnss</tag>
         <tag>static</tag>
         <tag>getaddrinfp</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>嵌入式 Linux 系统支持 GSM/3G</title>
+    <url>/2018/11/13/linux-kernel-support-GSM/</url>
+    <content><![CDATA[<p>编译 <code>Linux Kernel</code> 支持 <code>GSM/3G/4G</code></p>
+<a id="more"></a>
+
+<h2 id="Linux-内核选项"><a href="#Linux-内核选项" class="headerlink" title="Linux 内核选项"></a>Linux 内核选项</h2><p>Linux Version: v4.9.22</p>
+<p>内核配置保证打开如下选项</p>
+<pre><code>Device Drivers  ---&gt;
+   [*] Network device support  ---&gt;
+        &lt;*&gt;   PPP (point-to-point protocol) support
+        &lt; &gt;     PPP BSD-Compress compression
+        &lt; &gt;     PPP Deflate compression
+        [*]     PPP filtering
+        &lt; &gt;     PPP MPPE compression (encryption)
+        [*]     PPP multilink support
+        &lt; &gt;     PPP over Ethernet
+        &lt; &gt;     PPP support for async serial ports
+        &lt; &gt;     PPP support for sync tty ports
+   [*] USB support  ---&gt;
+        &lt;*&gt;   USB Serial Converter support  ---&gt;
+            &lt;*&gt;   USB driver for GSM and CDMA modems</code></pre><p>工作之后有如下错误信息</p>
+<pre><code>Couldn&#39;t set tty to PPP discipline: Invalid argument</code></pre><p>参考文章 <a href="http://pptpclient.sourceforge.net/howto-diagnosis.phtml" target="_blank" rel="noopener">PPTP Client</a></p>
+<p>打开选项 <code>CONFIG_PPP_ASYNC</code></p>
+<p>注意其中 <code>compression</code> 为压缩选项</p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://pptpclient.sourceforge.net/howto-diagnosis.phtml" target="_blank" rel="noopener">PPTP Client</a></li>
+<li><a href="https://www.toradex.com/zh-cn/blog/how-to-use-gsm-3g-4g-in-embedded-linux-systems" target="_blank" rel="noopener">如何在嵌入式 Linux 系统中使用 GSM/3G/4G 模块</a></li>
+<li><a href="https://www.linuxjournal.com/article/2109" target="_blank" rel="noopener">A 10-Minute Guide for Using PPP to Connect Linux to the Internet</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>3g</tag>
+        <tag>gsm</tag>
+        <tag>4g</tag>
+        <tag>ppp</tag>
       </tags>
   </entry>
   <entry>
@@ -19604,15 +19604,41 @@ printf(&quot;%d: %s\n&quot;, (int)t, s);</code></pre>
       </tags>
   </entry>
   <entry>
-    <title>jenkins-multi-configuration</title>
+    <title>Jenkins 构建多配置项目</title>
     <url>/2019/08/28/jenkins-multi-configuration/</url>
-    <content><![CDATA[<a id="more"></a>
+    <content><![CDATA[<p>使用 multiple configuration project 来管理项目 Matrix</p>
+<a id="more"></a>
 
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="https://www.jianshu.com/p/32f6c2e08161" target="_blank" rel="noopener">Jenkins Multi-configuration Project 使用体验</a></li>
-<li><a href="https://www.howtoing.com/how-to-install-jenkins-on-ubuntu-18-04" target="_blank" rel="noopener">如何在 Ubuntu 18.04 上安装 Jenkins</a></li>
+<h2 id="Multi-Configuration-Projects"><a href="#Multi-Configuration-Projects" class="headerlink" title="Multi-Configuration Projects"></a><a href="https://wiki.jenkins.io/display/JENKINS/Building+a+matrix+project" target="_blank" rel="noopener">Multi-Configuration Projects</a></h2><p>多配置项目是一组 job 的集合，他们有相同的工作步骤，差异在配置参数不同。例如针对同一份代码编译不同平台库。</p>
+<p>因此当你有一组 job 拥有类似的step，又不想为此创建多个 job 时，可以使用这种方式来处理。</p>
+<h2 id="Jenkins-使用"><a href="#Jenkins-使用" class="headerlink" title="Jenkins 使用"></a>Jenkins 使用</h2><ol>
+<li>新建任务 -&gt; 构建一个多配置项目</li>
+<li>Configuration Matrix -&gt; add axis <User-defined Axis><ul>
+<li>name: 参数名</li>
+<li>values: 参数取值范围</li>
+<li>多个参数配置成矩阵</li>
+</ul>
+</li>
+<li>Configuration Matrix -&gt; Combination Filter 过滤矩阵无效项<ul>
+<li>假定 <code>windows + free</code> 无效，设置表达式 <code>!(type == &quot;free&quot; &amp;&amp; os == &quot;windows&quot;)</code></li>
+</ul>
+</li>
+<li>保存之后查看生成如下矩阵<br> <img src="/images/jenkins/1586583374369.png" alt=""></li>
+</ol>
+<p>其他需要注意选项：</p>
+<ol>
+<li><code>Execute touchstone build first</code> 首先验证符合过滤条件的配置，达到预期之后执行剩余配置</li>
+<li><code>Run each configuration sequentially</code> 不触发并行构建，one by one</li>
 </ol>
 ]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>CI</category>
+      </categories>
+      <tags>
+        <tag>jenkins</tag>
+        <tag>ci</tag>
+      </tags>
   </entry>
   <entry>
     <title>源码中移除注释</title>
@@ -19951,7 +19977,7 @@ ArrayList : size()
 @enduml
 ` ` `</code></pre>
 <p>效果：</p>
-<img src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBjb250ZW50U2NyaXB0VHlwZT0iYXBwbGljYXRpb24vZWNtYXNjcmlwdCIgY29udGVudFN0eWxlVHlwZT0idGV4dC9jc3MiIGhlaWdodD0iMjEzcHgiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiIHN0eWxlPSJ3aWR0aDoxNDlweDtoZWlnaHQ6MjEzcHg7IiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAxNDkgMjEzIiB3aWR0aD0iMTQ5cHgiIHpvb21BbmRQYW49Im1hZ25pZnkiPjxkZWZzPjxmaWx0ZXIgaGVpZ2h0PSIzMDAlIiBpZD0iZnh2MG5kZzc3YWtyZyIgd2lkdGg9IjMwMCUiIHg9Ii0xIiB5PSItMSI+PGZlR2F1c3NpYW5CbHVyIHJlc3VsdD0iYmx1ck91dCIgc3RkRGV2aWF0aW9uPSIyLjAiLz48ZmVDb2xvck1hdHJpeCBpbj0iYmx1ck91dCIgcmVzdWx0PSJibHVyT3V0MiIgdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIC40IDAiLz48ZmVPZmZzZXQgZHg9IjQuMCIgZHk9IjQuMCIgaW49ImJsdXJPdXQyIiByZXN1bHQ9ImJsdXJPdXQzIi8+PGZlQmxlbmQgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iYmx1ck91dDMiIG1vZGU9Im5vcm1hbCIvPjwvZmlsdGVyPjwvZGVmcz48Zz48IS0tTUQ1PVthYTdmNTg2NTMyZTE4NzE5ZTZjZWZhNzBmYzY1MDU4M10KY2xhc3MgT2JqZWN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjYwLjgwNDciIGlkPSJPYmplY3QiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS41OyIgd2lkdGg9IjcyIiB4PSIzNiIgeT0iOCIvPjxlbGxpcHNlIGN4PSI1MSIgY3k9IjI0IiBmaWxsPSIjQUREMUIyIiByeD0iMTEiIHJ5PSIxMSIgc3R5bGU9InN0cm9rZTogI0E4MDAzNjsgc3Ryb2tlLXdpZHRoOiAxLjA7Ii8+PHBhdGggZD0iTTUzLjM0MzgsMTkuNjcxOSBMNTMuNTE1NiwxOS43NSBDNTMuNzM0NCwxOS40Mzc1IDUzLjkzNzUsMTkuMzQzOCA1NC4yMzQ0LDE5LjM0MzggQzU0LjUzMTMsMTkuMzQzOCA1NC44MTI1LDE5LjQ4NDQgNTQuOTY4OCwxOS43NSBDNTUuMDYyNSwxOS45MDYzIDU1LjA3ODEsMjAuMDMxMyA1NS4wNzgxLDIwLjQ2ODggTDU1LjA3ODEsMjEuODkwNiBDNTUuMDc4MSwyMi4zMTI1IDU1LjA0NjksMjIuNSA1NC45Mzc1LDIyLjY1NjMgQzU0Ljc2NTYsMjIuODc1IDU0LjUsMjMuMDE1NiA1NC4yMzQ0LDIzLjAxNTYgQzU0LjAxNTYsMjMuMDE1NiA1My43ODEzLDIyLjkwNjMgNTMuNjQwNiwyMi43NjU2IEM1My41LDIyLjY0MDYgNTMuNDY4OCwyMi41MTU2IDUzLjQwNjMsMjIuMTA5NCBDNTMuMzEyNSwyMS43MDMxIDUzLjE0MDYsMjEuNDg0NCA1Mi42NTYzLDIxLjIwMzEgQzUyLjE4NzUsMjAuOTUzMSA1MS41NzgxLDIwLjc5NjkgNTEsMjAuNzk2OSBDNDkuMjY1NiwyMC43OTY5IDQ4LjAxNTYsMjIuMTA5NCA0OC4wMTU2LDIzLjg5MDYgTDQ4LjAxNTYsMjQuOTg0NCBDNDguMDE1NiwyNi42ODc1IDQ5LjMxMjUsMjcuNzgxMyA1MS4zNTk0LDI3Ljc4MTMgQzUyLjEyNSwyNy43ODEzIDUyLjgxMjUsMjcuNjU2MyA1My4yMzQ0LDI3LjM5MDYgQzUzLjQyMTksMjcuMjk2OSA1My40MjE5LDI3LjI5NjkgNTMuODc1LDI2LjgxMjUgQzU0LjA2MjUsMjYuNjI1IDU0LjI2NTYsMjYuNTQ2OSA1NC40ODQ0LDI2LjU0NjkgQzU0Ljk1MzEsMjYuNTQ2OSA1NS4zNDM4LDI2LjkzNzUgNTUuMzQzOCwyNy4zOTA2IEM1NS4zNDM4LDI3Ljc4MTMgNTUuMDE1NiwyOC4yMzQ0IDU0LjQzNzUsMjguNjQwNiBDNTMuNjg3NSwyOS4xODc1IDUyLjUzMTMsMjkuNDg0NCA1MS4zMTI1LDI5LjQ4NDQgQzQ4LjQyMTksMjkuNDg0NCA0Ni4zMTI1LDI3LjU5MzggNDYuMzEyNSwyNS4wMTU2IEw0Ni4zMTI1LDIzLjg5MDYgQzQ2LjMxMjUsMjEuMTcxOSA0OC4zMTI1LDE5LjA5MzggNTAuOTM3NSwxOS4wOTM4IEM1MS44MTI1LDE5LjA5MzggNTIuNDA2MywxOS4yMzQ0IDUzLjM0MzgsMTkuNjcxOSBaICIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiIHRleHRMZW5ndGg9IjQwIiB4PSI2NSIgeT0iMjguMTU0MyI+T2JqZWN0PC90ZXh0PjxsaW5lIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS41OyIgeDE9IjM3IiB4Mj0iMTA3IiB5MT0iNDAiIHkyPSI0MCIvPjxsaW5lIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS41OyIgeDE9IjM3IiB4Mj0iMTA3IiB5MT0iNDgiIHkyPSI0OCIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiIHRleHRMZW5ndGg9IjQ2IiB4PSI0MiIgeT0iNjIuMjEwNCI+ZXF1YWxzKCk8L3RleHQ+PCEtLU1ENT1bYWI4ODcxZWQ2MzdmNDA3MDdiODY2YmE2NTk3NzM0YmNdCmNsYXNzIEFycmF5TGlzdC0tPjxyZWN0IGZpbGw9IiNGRUZFQ0UiIGZpbHRlcj0idXJsKCNmeHYwbmRnNzdha3JnKSIgaGVpZ2h0PSI3My42MDk0IiBpZD0iQXJyYXlMaXN0IiBzdHlsZT0ic3Ryb2tlOiAjQTgwMDM2OyBzdHJva2Utd2lkdGg6IDEuNTsiIHdpZHRoPSIxMzIiIHg9IjYiIHk9IjEyOSIvPjxlbGxpcHNlIGN4PSI0Mi4xNSIgY3k9IjE0NSIgZmlsbD0iI0FERDFCMiIgcng9IjExIiByeT0iMTEiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS4wOyIvPjxwYXRoIGQ9Ik00NC40OTM4LDE0MC42NzE5IEw0NC42NjU2LDE0MC43NSBDNDQuODg0NCwxNDAuNDM3NSA0NS4wODc1LDE0MC4zNDM4IDQ1LjM4NDQsMTQwLjM0MzggQzQ1LjY4MTMsMTQwLjM0MzggNDUuOTYyNSwxNDAuNDg0NCA0Ni4xMTg4LDE0MC43NSBDNDYuMjEyNSwxNDAuOTA2MyA0Ni4yMjgxLDE0MS4wMzEzIDQ2LjIyODEsMTQxLjQ2ODggTDQ2LjIyODEsMTQyLjg5MDYgQzQ2LjIyODEsMTQzLjMxMjUgNDYuMTk2OSwxNDMuNSA0Ni4wODc1LDE0My42NTYzIEM0NS45MTU2LDE0My44NzUgNDUuNjUsMTQ0LjAxNTYgNDUuMzg0NCwxNDQuMDE1NiBDNDUuMTY1NiwxNDQuMDE1NiA0NC45MzEzLDE0My45MDYzIDQ0Ljc5MDYsMTQzLjc2NTYgQzQ0LjY1LDE0My42NDA2IDQ0LjYxODgsMTQzLjUxNTYgNDQuNTU2MywxNDMuMTA5NCBDNDQuNDYyNSwxNDIuNzAzMSA0NC4yOTA2LDE0Mi40ODQ0IDQzLjgwNjMsMTQyLjIwMzEgQzQzLjMzNzUsMTQxLjk1MzEgNDIuNzI4MSwxNDEuNzk2OSA0Mi4xNSwxNDEuNzk2OSBDNDAuNDE1NiwxNDEuNzk2OSAzOS4xNjU2LDE0My4xMDk0IDM5LjE2NTYsMTQ0Ljg5MDYgTDM5LjE2NTYsMTQ1Ljk4NDQgQzM5LjE2NTYsMTQ3LjY4NzUgNDAuNDYyNSwxNDguNzgxMyA0Mi41MDk0LDE0OC43ODEzIEM0My4yNzUsMTQ4Ljc4MTMgNDMuOTYyNSwxNDguNjU2MyA0NC4zODQ0LDE0OC4zOTA2IEM0NC41NzE5LDE0OC4yOTY5IDQ0LjU3MTksMTQ4LjI5NjkgNDUuMDI1LDE0Ny44MTI1IEM0NS4yMTI1LDE0Ny42MjUgNDUuNDE1NiwxNDcuNTQ2OSA0NS42MzQ0LDE0Ny41NDY5IEM0Ni4xMDMxLDE0Ny41NDY5IDQ2LjQ5MzgsMTQ3LjkzNzUgNDYuNDkzOCwxNDguMzkwNiBDNDYuNDkzOCwxNDguNzgxMyA0Ni4xNjU2LDE0OS4yMzQ0IDQ1LjU4NzUsMTQ5LjY0MDYgQzQ0LjgzNzUsMTUwLjE4NzUgNDMuNjgxMywxNTAuNDg0NCA0Mi40NjI1LDE1MC40ODQ0IEMzOS41NzE5LDE1MC40ODQ0IDM3LjQ2MjUsMTQ4LjU5MzggMzcuNDYyNSwxNDYuMDE1NiBMMzcuNDYyNSwxNDQuODkwNiBDMzcuNDYyNSwxNDIuMTcxOSAzOS40NjI1LDE0MC4wOTM4IDQyLjA4NzUsMTQwLjA5MzggQzQyLjk2MjUsMTQwLjA5MzggNDMuNTU2MywxNDAuMjM0NCA0NC40OTM4LDE0MC42NzE5IFogIi8+PHRleHQgZmlsbD0iIzAwMDAwMCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGxlbmd0aEFkanVzdD0ic3BhY2luZ0FuZEdseXBocyIgdGV4dExlbmd0aD0iNTMiIHg9IjYwLjg1IiB5PSIxNDkuMTU0MyI+QXJyYXlMaXN0PC90ZXh0PjxsaW5lIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS41OyIgeDE9IjciIHgyPSIxMzciIHkxPSIxNjEiIHkyPSIxNjEiLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIiB0ZXh0TGVuZ3RoPSIxMjAiIHg9IjEyIiB5PSIxNzUuMjEwNCI+T2JqZWN0W10gZWxlbWVudERhdGE8L3RleHQ+PGxpbmUgc3R5bGU9InN0cm9rZTogI0E4MDAzNjsgc3Ryb2tlLXdpZHRoOiAxLjU7IiB4MT0iNyIgeDI9IjEzNyIgeTE9IjE4MS44MDQ3IiB5Mj0iMTgxLjgwNDciLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIiB0ZXh0TGVuZ3RoPSIzMCIgeD0iMTIiIHk9IjE5Ni4wMTUxIj5zaXplKCk8L3RleHQ+PCEtLU1ENT1bNzhlZDNkNTRjNmFkOTZmYjY0MzRhNGU0NWFhNGI1ZjBdCnJldmVyc2UgbGluayBPYmplY3QgdG8gQXJyYXlMaXN0LS0+PHBhdGggZD0iTTcyLDg5LjUwNSBDNzIsMTAyLjYyMSA3MiwxMTYuNTEyOCA3MiwxMjguNzU1NSAiIGZpbGw9Im5vbmUiIGlkPSJPYmplY3QmbHQ7LUFycmF5TGlzdCIgc3R5bGU9InN0cm9rZTogI0E4MDAzNjsgc3Ryb2tlLXdpZHRoOiAxLjA7Ii8+PHBvbHlnb24gZmlsbD0ibm9uZSIgcG9pbnRzPSI2NS4wMDAxLDg5LjI0Miw3Miw2OS4yNDIsNzkuMDAwMSw4OS4yNDIsNjUuMDAwMSw4OS4yNDIiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS4wOyIvPjwhLS1NRDU9W2JmMmU3ZTRmYzM1YTFjZmU0OGJhMTc5MzQ0MmQwOWExXQpAc3RhcnR1bWwNCk9iamVjdCA8fC0gLSBBcnJheUxpc3QNCk9iamVjdCA6IGVxdWFscygpDQpBcnJheUxpc3QgOiBPYmplY3RbXSBlbGVtZW50RGF0YQ0KQXJyYXlMaXN0IDogc2l6ZSgpDQpAZW5kdW1sDQoKUGxhbnRVTUwgdmVyc2lvbiAxLjIwMjAuMDdiZXRhMihVbmtub3duIGNvbXBpbGUgdGltZSkKKEdQTCBzb3VyY2UgZGlzdHJpYnV0aW9uKQpKYXZhIFJ1bnRpbWU6IEphdmEoVE0pIFNFIFJ1bnRpbWUgRW52aXJvbm1lbnQKSlZNOiBKYXZhIEhvdFNwb3QoVE0pIDY0LUJpdCBTZXJ2ZXIgVk0KSmF2YSBWZXJzaW9uOiAxLjcuMF8yNS1iMTUKT3BlcmF0aW5nIFN5c3RlbTogTGludXgKRGVmYXVsdCBFbmNvZGluZzogVVRGLTgKTGFuZ3VhZ2U6IGVuCkNvdW50cnk6IFVTCi0tPjwvZz48L3N2Zz4='>
+<img src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBjb250ZW50U2NyaXB0VHlwZT0iYXBwbGljYXRpb24vZWNtYXNjcmlwdCIgY29udGVudFN0eWxlVHlwZT0idGV4dC9jc3MiIGhlaWdodD0iMjEzcHgiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiIHN0eWxlPSJ3aWR0aDoxNDlweDtoZWlnaHQ6MjEzcHg7IiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAxNDkgMjEzIiB3aWR0aD0iMTQ5cHgiIHpvb21BbmRQYW49Im1hZ25pZnkiPjxkZWZzPjxmaWx0ZXIgaGVpZ2h0PSIzMDAlIiBpZD0iZnh2MG5kZzc3YWtyZyIgd2lkdGg9IjMwMCUiIHg9Ii0xIiB5PSItMSI+PGZlR2F1c3NpYW5CbHVyIHJlc3VsdD0iYmx1ck91dCIgc3RkRGV2aWF0aW9uPSIyLjAiLz48ZmVDb2xvck1hdHJpeCBpbj0iYmx1ck91dCIgcmVzdWx0PSJibHVyT3V0MiIgdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIC40IDAiLz48ZmVPZmZzZXQgZHg9IjQuMCIgZHk9IjQuMCIgaW49ImJsdXJPdXQyIiByZXN1bHQ9ImJsdXJPdXQzIi8+PGZlQmxlbmQgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iYmx1ck91dDMiIG1vZGU9Im5vcm1hbCIvPjwvZmlsdGVyPjwvZGVmcz48Zz48IS0tTUQ1PVthYTdmNTg2NTMyZTE4NzE5ZTZjZWZhNzBmYzY1MDU4M10KY2xhc3MgT2JqZWN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjYwLjgwNDciIGlkPSJPYmplY3QiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS41OyIgd2lkdGg9IjcyIiB4PSIzNiIgeT0iOCIvPjxlbGxpcHNlIGN4PSI1MSIgY3k9IjI0IiBmaWxsPSIjQUREMUIyIiByeD0iMTEiIHJ5PSIxMSIgc3R5bGU9InN0cm9rZTogI0E4MDAzNjsgc3Ryb2tlLXdpZHRoOiAxLjA7Ii8+PHBhdGggZD0iTTUzLjM0MzgsMTkuNjcxOSBMNTMuNTE1NiwxOS43NSBDNTMuNzM0NCwxOS40Mzc1IDUzLjkzNzUsMTkuMzQzOCA1NC4yMzQ0LDE5LjM0MzggQzU0LjUzMTMsMTkuMzQzOCA1NC44MTI1LDE5LjQ4NDQgNTQuOTY4OCwxOS43NSBDNTUuMDYyNSwxOS45MDYzIDU1LjA3ODEsMjAuMDMxMyA1NS4wNzgxLDIwLjQ2ODggTDU1LjA3ODEsMjEuODkwNiBDNTUuMDc4MSwyMi4zMTI1IDU1LjA0NjksMjIuNSA1NC45Mzc1LDIyLjY1NjMgQzU0Ljc2NTYsMjIuODc1IDU0LjUsMjMuMDE1NiA1NC4yMzQ0LDIzLjAxNTYgQzU0LjAxNTYsMjMuMDE1NiA1My43ODEzLDIyLjkwNjMgNTMuNjQwNiwyMi43NjU2IEM1My41LDIyLjY0MDYgNTMuNDY4OCwyMi41MTU2IDUzLjQwNjMsMjIuMTA5NCBDNTMuMzEyNSwyMS43MDMxIDUzLjE0MDYsMjEuNDg0NCA1Mi42NTYzLDIxLjIwMzEgQzUyLjE4NzUsMjAuOTUzMSA1MS41NzgxLDIwLjc5NjkgNTEsMjAuNzk2OSBDNDkuMjY1NiwyMC43OTY5IDQ4LjAxNTYsMjIuMTA5NCA0OC4wMTU2LDIzLjg5MDYgTDQ4LjAxNTYsMjQuOTg0NCBDNDguMDE1NiwyNi42ODc1IDQ5LjMxMjUsMjcuNzgxMyA1MS4zNTk0LDI3Ljc4MTMgQzUyLjEyNSwyNy43ODEzIDUyLjgxMjUsMjcuNjU2MyA1My4yMzQ0LDI3LjM5MDYgQzUzLjQyMTksMjcuMjk2OSA1My40MjE5LDI3LjI5NjkgNTMuODc1LDI2LjgxMjUgQzU0LjA2MjUsMjYuNjI1IDU0LjI2NTYsMjYuNTQ2OSA1NC40ODQ0LDI2LjU0NjkgQzU0Ljk1MzEsMjYuNTQ2OSA1NS4zNDM4LDI2LjkzNzUgNTUuMzQzOCwyNy4zOTA2IEM1NS4zNDM4LDI3Ljc4MTMgNTUuMDE1NiwyOC4yMzQ0IDU0LjQzNzUsMjguNjQwNiBDNTMuNjg3NSwyOS4xODc1IDUyLjUzMTMsMjkuNDg0NCA1MS4zMTI1LDI5LjQ4NDQgQzQ4LjQyMTksMjkuNDg0NCA0Ni4zMTI1LDI3LjU5MzggNDYuMzEyNSwyNS4wMTU2IEw0Ni4zMTI1LDIzLjg5MDYgQzQ2LjMxMjUsMjEuMTcxOSA0OC4zMTI1LDE5LjA5MzggNTAuOTM3NSwxOS4wOTM4IEM1MS44MTI1LDE5LjA5MzggNTIuNDA2MywxOS4yMzQ0IDUzLjM0MzgsMTkuNjcxOSBaICIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiIHRleHRMZW5ndGg9IjQwIiB4PSI2NSIgeT0iMjguMTU0MyI+T2JqZWN0PC90ZXh0PjxsaW5lIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS41OyIgeDE9IjM3IiB4Mj0iMTA3IiB5MT0iNDAiIHkyPSI0MCIvPjxsaW5lIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS41OyIgeDE9IjM3IiB4Mj0iMTA3IiB5MT0iNDgiIHkyPSI0OCIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiIHRleHRMZW5ndGg9IjQ2IiB4PSI0MiIgeT0iNjIuMjEwNCI+ZXF1YWxzKCk8L3RleHQ+PCEtLU1ENT1bYWI4ODcxZWQ2MzdmNDA3MDdiODY2YmE2NTk3NzM0YmNdCmNsYXNzIEFycmF5TGlzdC0tPjxyZWN0IGZpbGw9IiNGRUZFQ0UiIGZpbHRlcj0idXJsKCNmeHYwbmRnNzdha3JnKSIgaGVpZ2h0PSI3My42MDk0IiBpZD0iQXJyYXlMaXN0IiBzdHlsZT0ic3Ryb2tlOiAjQTgwMDM2OyBzdHJva2Utd2lkdGg6IDEuNTsiIHdpZHRoPSIxMzIiIHg9IjYiIHk9IjEyOSIvPjxlbGxpcHNlIGN4PSI0Mi4xNSIgY3k9IjE0NSIgZmlsbD0iI0FERDFCMiIgcng9IjExIiByeT0iMTEiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS4wOyIvPjxwYXRoIGQ9Ik00NC40OTM4LDE0MC42NzE5IEw0NC42NjU2LDE0MC43NSBDNDQuODg0NCwxNDAuNDM3NSA0NS4wODc1LDE0MC4zNDM4IDQ1LjM4NDQsMTQwLjM0MzggQzQ1LjY4MTMsMTQwLjM0MzggNDUuOTYyNSwxNDAuNDg0NCA0Ni4xMTg4LDE0MC43NSBDNDYuMjEyNSwxNDAuOTA2MyA0Ni4yMjgxLDE0MS4wMzEzIDQ2LjIyODEsMTQxLjQ2ODggTDQ2LjIyODEsMTQyLjg5MDYgQzQ2LjIyODEsMTQzLjMxMjUgNDYuMTk2OSwxNDMuNSA0Ni4wODc1LDE0My42NTYzIEM0NS45MTU2LDE0My44NzUgNDUuNjUsMTQ0LjAxNTYgNDUuMzg0NCwxNDQuMDE1NiBDNDUuMTY1NiwxNDQuMDE1NiA0NC45MzEzLDE0My45MDYzIDQ0Ljc5MDYsMTQzLjc2NTYgQzQ0LjY1LDE0My42NDA2IDQ0LjYxODgsMTQzLjUxNTYgNDQuNTU2MywxNDMuMTA5NCBDNDQuNDYyNSwxNDIuNzAzMSA0NC4yOTA2LDE0Mi40ODQ0IDQzLjgwNjMsMTQyLjIwMzEgQzQzLjMzNzUsMTQxLjk1MzEgNDIuNzI4MSwxNDEuNzk2OSA0Mi4xNSwxNDEuNzk2OSBDNDAuNDE1NiwxNDEuNzk2OSAzOS4xNjU2LDE0My4xMDk0IDM5LjE2NTYsMTQ0Ljg5MDYgTDM5LjE2NTYsMTQ1Ljk4NDQgQzM5LjE2NTYsMTQ3LjY4NzUgNDAuNDYyNSwxNDguNzgxMyA0Mi41MDk0LDE0OC43ODEzIEM0My4yNzUsMTQ4Ljc4MTMgNDMuOTYyNSwxNDguNjU2MyA0NC4zODQ0LDE0OC4zOTA2IEM0NC41NzE5LDE0OC4yOTY5IDQ0LjU3MTksMTQ4LjI5NjkgNDUuMDI1LDE0Ny44MTI1IEM0NS4yMTI1LDE0Ny42MjUgNDUuNDE1NiwxNDcuNTQ2OSA0NS42MzQ0LDE0Ny41NDY5IEM0Ni4xMDMxLDE0Ny41NDY5IDQ2LjQ5MzgsMTQ3LjkzNzUgNDYuNDkzOCwxNDguMzkwNiBDNDYuNDkzOCwxNDguNzgxMyA0Ni4xNjU2LDE0OS4yMzQ0IDQ1LjU4NzUsMTQ5LjY0MDYgQzQ0LjgzNzUsMTUwLjE4NzUgNDMuNjgxMywxNTAuNDg0NCA0Mi40NjI1LDE1MC40ODQ0IEMzOS41NzE5LDE1MC40ODQ0IDM3LjQ2MjUsMTQ4LjU5MzggMzcuNDYyNSwxNDYuMDE1NiBMMzcuNDYyNSwxNDQuODkwNiBDMzcuNDYyNSwxNDIuMTcxOSAzOS40NjI1LDE0MC4wOTM4IDQyLjA4NzUsMTQwLjA5MzggQzQyLjk2MjUsMTQwLjA5MzggNDMuNTU2MywxNDAuMjM0NCA0NC40OTM4LDE0MC42NzE5IFogIi8+PHRleHQgZmlsbD0iIzAwMDAwMCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGxlbmd0aEFkanVzdD0ic3BhY2luZ0FuZEdseXBocyIgdGV4dExlbmd0aD0iNTMiIHg9IjYwLjg1IiB5PSIxNDkuMTU0MyI+QXJyYXlMaXN0PC90ZXh0PjxsaW5lIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS41OyIgeDE9IjciIHgyPSIxMzciIHkxPSIxNjEiIHkyPSIxNjEiLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIiB0ZXh0TGVuZ3RoPSIxMjAiIHg9IjEyIiB5PSIxNzUuMjEwNCI+T2JqZWN0W10gZWxlbWVudERhdGE8L3RleHQ+PGxpbmUgc3R5bGU9InN0cm9rZTogI0E4MDAzNjsgc3Ryb2tlLXdpZHRoOiAxLjU7IiB4MT0iNyIgeDI9IjEzNyIgeTE9IjE4MS44MDQ3IiB5Mj0iMTgxLjgwNDciLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIiB0ZXh0TGVuZ3RoPSIzMCIgeD0iMTIiIHk9IjE5Ni4wMTUxIj5zaXplKCk8L3RleHQ+PCEtLU1ENT1bNzhlZDNkNTRjNmFkOTZmYjY0MzRhNGU0NWFhNGI1ZjBdCnJldmVyc2UgbGluayBPYmplY3QgdG8gQXJyYXlMaXN0LS0+PHBhdGggZD0iTTcyLDg5LjUwNSBDNzIsMTAyLjYyMSA3MiwxMTYuNTEyOCA3MiwxMjguNzU1NSAiIGZpbGw9Im5vbmUiIGlkPSJPYmplY3QmbHQ7LUFycmF5TGlzdCIgc3R5bGU9InN0cm9rZTogI0E4MDAzNjsgc3Ryb2tlLXdpZHRoOiAxLjA7Ii8+PHBvbHlnb24gZmlsbD0ibm9uZSIgcG9pbnRzPSI2NS4wMDAxLDg5LjI0Miw3Miw2OS4yNDIsNzkuMDAwMSw4OS4yNDIsNjUuMDAwMSw4OS4yNDIiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS4wOyIvPjwhLS1NRDU9WzZkMzIzMWFkZGU0ZGI3OGIwMmU3NjE4NzRjNThmNGY0XQpAc3RhcnR1bWwNCk9iamVjdCA8fC0gLSBBcnJheUxpc3QNCk9iamVjdCA6IGVxdWFscygpDQpBcnJheUxpc3QgOiBPYmplY3RbXSBlbGVtZW50RGF0YQ0KQXJyYXlMaXN0IDogc2l6ZSgpDQpAZW5kdW1sDQoKUGxhbnRVTUwgdmVyc2lvbiAxLjIwMjAuMDdiZXRhOChVbmtub3duIGNvbXBpbGUgdGltZSkKKEdQTCBzb3VyY2UgZGlzdHJpYnV0aW9uKQpKYXZhIFJ1bnRpbWU6IEphdmEoVE0pIFNFIFJ1bnRpbWUgRW52aXJvbm1lbnQKSlZNOiBKYXZhIEhvdFNwb3QoVE0pIDY0LUJpdCBTZXJ2ZXIgVk0KSmF2YSBWZXJzaW9uOiAxLjcuMF8yNS1iMTUKT3BlcmF0aW5nIFN5c3RlbTogTGludXgKRGVmYXVsdCBFbmNvZGluZzogVVRGLTgKTGFuZ3VhZ2U6IGVuCkNvdW50cnk6IFVTCi0tPjwvZz48L3N2Zz4='>
 
 <h2 id="Markdown-Preview-Enhanced"><a href="#Markdown-Preview-Enhanced" class="headerlink" title="Markdown Preview Enhanced"></a><strong>Markdown Preview Enhanced</strong></h2><p><strong>Markdown Preview Enhanced</strong> 是一款为 <a href="https://atom.io/packages/markdown-preview-enhanced" target="_blank" rel="noopener"><strong>Atom</strong></a> 以及 <a href="https://marketplace.visualstudio.com/items?itemName=shd101wyy.markdown-preview-enhanced" target="_blank" rel="noopener"><strong>Visual Studio Code</strong></a> 编辑器编写的<strong>超级强大的</strong> Markdown 插件。 这款插件意在让你拥有飘逸的 Markdown 写作体验。</p>
 <p><strong>Markdown Preview Enhanced</strong> 内部支持 <code>flow charts</code>, <code>sequence diagrams</code>, <code>mermaid</code>, <code>PlantUML</code>, <code>WaveDrom</code>, <code>GraphViz</code>，<code>Vega &amp; Vega-lite</code>，<code>Ditaa</code> 图像渲染。 你也可以通过使用 <a href="https://shd101wyy.github.io/markdown-preview-enhanced/#/zh-cn/code-chunk" target="_blank" rel="noopener">Code Chunk</a> 来渲染 <code>TikZ</code>, <code>Python Matplotlib</code>, <code>Plotly</code> 等图像。</p>
@@ -26429,6 +26455,190 @@ net.core.wmem_max = 16777216</code></pre><p>一般来说，<strong>理论上的R
       </tags>
   </entry>
   <entry>
+    <title>逐行处理内存文本及正则表达式元字符列表</title>
+    <url>/2015/11/18/deal-with-file-by-line/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h2 id="文本内容"><a href="#文本内容" class="headerlink" title="文本内容"></a>文本内容</h2><pre><code>P:013.0:E:11054:H:27500:5DDC29D54BE4D7:F3381AD050DE3A
+P:091.5:E:03960:H:29700:DAE69F8B6E0106:E0DE2F8903AE55
+P:105.5:E:03960:H:27500:CEF7CE422FF89E:E42DB81767E02E
+P:166.0:E:03760:V:27690:7199819B0CF04F:7EE0F00CFFBF66
+P:138.0:E:03703:V:04444:AD5CDBA991505A:1E1376FD07FB13
+P:166.0:E:03830:H:14000:956D98AD9E6E84:842F2801182286</code></pre><p>或者：</p>
+<pre><code>B:042.0:E:11919:V:24444:00012:1000000000000000:TRT3
+B:042.0:E:11954:A:08800:00001:1111110011111800:EINTERCOM
+B:042.0:E:11953:A:02980:00001:1212123312121233:
+B:042.0:E:11996:V:27500:00300:A33130046167824A:Sci-Tech TV
+B:042.0:E:12015:H:27500:00009:1000001010000010:Teledunya 3D
+B:042.0:E:12130:V:27500:00024:1000000000000000:Radio Migros
+B:042.0:E:12130:V:27500:00025:1000000000000000:Radio Tansas</code></pre><h2 id="逐行读取文本strsep"><a href="#逐行读取文本strsep" class="headerlink" title="逐行读取文本strsep"></a>逐行读取文本strsep</h2><pre><code>char *tok = NULL;
+for (tok = strsep(&amp;p, &quot;\n&quot;); tok != NULL; tok = strsep(&amp;p, &quot;\n&quot;))
+{
+    printf(&quot;\033[33m%s\n\033[0m&quot;, tok);
+    //TODO
+}</code></pre><h2 id="处理单行格式化文本sscanf"><a href="#处理单行格式化文本sscanf" class="headerlink" title="处理单行格式化文本sscanf"></a>处理单行格式化文本sscanf</h2><p>sscanf() - 从一个字符串中读进与指定格式相符的数据.　函数原型:</p>
+<pre><code>int sscanf( string str, string fmt, mixed var1, mixed var2 ...  );
+int scanf( const char \*format [,argument]...  );</code></pre><p>说明：</p>
+<p>sscanf与scanf类似，都是用于输入的，只是后者以屏幕(stdin)为输入源，前者以固定字符串为输入源。<br>其中的format可以是一个或多个 %[*] [width] [{h | l | I64 | L}]type | ‘ ‘ | ‘\t’ | ‘\n’ | 非%符号：</p>
+<ol>
+<li>* 亦可用于格式中, (即 %*d 和 %*s) 加了星号 (*) 表示跳过此数据不读入. (也就是不把此数据读入参数中)</li>
+<li>{a|b|c}表示a,b,c中选一，[d],表示可以有d也可以没有d。</li>
+<li>width表示读取宽度。</li>
+<li>{h | l | I64 | L}:参数的size,通常h表示单字节size，I表示2字节size,L表示4字节size(double例外),l64表示8字节size。</li>
+<li>type :这就很多了，就是%s,%d,%c之类。</li>
+<li>特别的：%*[width] [{h | l | I64 | L}]type 表示满足该条件的被过滤掉，不会向目标参数中写入值</li>
+</ol>
+<p>支持集合操作：</p>
+<ol>
+<li>%[a-z] 表示匹配a到z中任意字符，贪婪性(尽可能多的匹配)</li>
+<li>%[A-Z] 表示匹配A到Z中任意字符，贪婪性(尽可能多的匹配)</li>
+<li>%[aB’] 匹配a、B、’中一员，贪婪性</li>
+<li>%[^a] 匹配非a的任意字符，贪婪性</li>
+</ol>
+<p>注意：在读入的字符串是空字符串时，sscanf函数并不改变待读入到的字符串的值。</p>
+<p><strong>针对格式化文本的处理：</strong></p>
+<pre><code>char longitude[6] = {0};
+char direction = 0;
+char frequency[6] = {0};
+char polar = 0;
+char symbol[6] = {0};
+char sid[6] = {0};
+char data0[EMU_KEY_STR_LEN] = {0};
+char data1[EMU_KEY_STR_LEN] = {0};
+
+if (type == 0)
+{
+    //B:004.0:W:11389:A:27500:00011:1A2B3C81C3B2A116:RTR                  
+    sscanf(tok, &quot;%*1c:%5c:%1c:%5c:%1c:%5c:%5c:%16c:%16c&quot;,
+            longitude, &amp;direction, frequency, &amp;polar, symbol, sid, data0, data1);
+}
+else
+{ 
+    //P:105.5:E:03960:H:27500:CEF7CE422FF89E:E42DB81767E02E
+    sscanf(tok, &quot;%*1c:%5c:%1c:%5c:%1c:%5c:%14c:%14c&quot;,
+            longitude, &amp;direction, frequency, &amp;polar, symbol, data0, data1);
+}
+pMinifs-&gt;symbol_rate = atoi(symbol);
+.
+.
+.</code></pre><p>注意：<strong>%s与%c的区别，注意buf的长度包含字符串结束符‘\0’，长度如果不对，后续处理可能出现问题。</strong></p>
+<h2 id="强制内存转换处理格式化文本"><a href="#强制内存转换处理格式化文本" class="headerlink" title="强制内存转换处理格式化文本"></a>强制内存转换处理格式化文本</h2><p>针对格式化文本还有一种内存强制转换的处理方式：</p>
+<pre><code>struct DevData{
+    char tag[2];
+    char longitude[6];
+    char direction[2];
+    char frequency[6];
+    char polar[2];
+    char symbol_rate[6];
+    char service_id[6];
+    char key[KEY_STR_LEN+1];
+    char prog_name[PROG_NAME_LENTH];
+    char line_feed[2];//tail(0x0d0a or 0x0a)
+} __attribute__((packed));
+
+//获取文件数据
+fd = fopen(path, &quot;r&quot;);
+p = (char *)mallocz(size);
+fseek(fd, 0, SEEK_SET);
+fread(fd, p, 1, size);
+
+//强制转换
+struct DevData *pRootData=NULL;
+for(i=0;i&lt;total_num;i++)
+{
+    pRootData = (struct DevData*)p1;
+    .
+    .
+    //处理当前结构体pRootData，并获得偏移量用来取下一个结构体数据
+    memset(atoi_buf,0,sizeof(atoi_buf));
+    memcpy(atoi_buf,pRootData-&gt;symbol_rate,sizeof(pRootData-&gt;symbol_rate)-1);
+    pMinifs-&gt;symbol_rate = atoi(atoi_buf);
+    .
+    p1 += offset;
+}</code></pre><h2 id="正则表达式"><a href="#正则表达式" class="headerlink" title="正则表达式"></a>正则表达式</h2><h3 id="特殊字符"><a href="#特殊字符" class="headerlink" title="特殊字符"></a><strong>特殊字符</strong></h3><h4 id=""><a href="#" class="headerlink" title="\"></a>\</h4><p>转义字符，将下一字符标记为特殊字符、文本、反向引用或八进制转义符</p>
+<pre><code>&#39;\n&#39;匹配换行，
+&#39;\\&#39;匹配&#39;\&#39;</code></pre><h4 id="-1"><a href="#-1" class="headerlink" title="^"></a>^</h4><p>匹配搜索字符串开始的位置。如果标志中包括 m（多行搜索）字符，^ 还将匹配 \n 或 \r 后面的位置。<br>如果将 ^ 用作括号表达式中的第一个字符，则会对字符集求反。</p>
+<pre><code>^\d{3} 与搜索字符串开始处的 3 个数字匹配。
+[^abc] 与除 a、b 和 c 以外的任何字符匹配。</code></pre><h4 id="-2"><a href="#-2" class="headerlink" title="$"></a>$</h4><p>匹配搜索字符串结尾的位置。 如果标志中包括 m（多行搜索）字符，^ 还将匹配 \n 或 \r 前面的位置。</p>
+<pre><code>\d{3}$ 与搜索字符串结尾处的 3 个数字匹配。</code></pre><h4 id="-3"><a href="#-3" class="headerlink" title="*"></a>*</h4><p>零次或多次匹配前面的字符或子表达式。等效于 {0,}。</p>
+<pre><code>zo\* 与“z”和“zoo”匹配。</code></pre><h4 id="-4"><a href="#-4" class="headerlink" title="+"></a>+</h4><p>一次或多次匹配前面的字符或子表达式。 等效于 {1,}。</p>
+<pre><code>zo+ 与“zo”和“zoo”匹配，但与“z”不匹配。</code></pre><h4 id="-5"><a href="#-5" class="headerlink" title="?"></a>?</h4><p>零次或一次匹配前面的字符或子表达式。 等效于 {0,1}。<br>当 ? 紧随任何其他限定符（*、+、?、{n}、{n,} 或 {n,m}）之后时，匹配模式是非贪婪的。<br>非贪婪模式匹配搜索到的、尽可能少的字符串， 而默认的贪婪模式匹配搜索到的、尽可能多的字符串。</p>
+<pre><code>zo? 与“z”和“zo”匹配，但与“zoo”不匹配。
+o+? 只与“oooo”中的单个“o”匹配，而 o+ 与所有“o”匹配。
+do(es)? 与“do”或“does”中的“do”匹配。</code></pre><h4 id="-6"><a href="#-6" class="headerlink" title="."></a>.</h4><p>匹配除换行符 \n 之外的任何单个字符。 若要匹配包括 \n 在内的任意字符，请使用诸如 [\s\S] 之类的模式。</p>
+<pre><code>a.c 与“abc”、“a1c”和“a-c”匹配</code></pre><h4 id="-7"><a href="#-7" class="headerlink" title="[]"></a>[]</h4><p>标记括号表达式的开始和结尾。</p>
+<pre><code>[1-4] 与“1”、“2”、“3”或“4”匹配。 [^aAeEiIoOuU] 与任何非元音字符匹配</code></pre><h4 id="-8"><a href="#-8" class="headerlink" title="{}"></a>{}</h4><p>标记限定符表达式的开始和结尾。</p>
+<pre><code>a{2,3} 与“aa”和“aaa”匹配</code></pre><h4 id="-9"><a href="#-9" class="headerlink" title="()"></a>()</h4><p>标记子表达式的开始和结尾。 可以保存子表达式以备将来之用。</p>
+<pre><code>A(\d) 与“A0”至“A9”匹配。 保存该数字以备将来之用</code></pre><h4 id="-10"><a href="#-10" class="headerlink" title="|"></a>|</h4><p>指示在两个或多个项之间进行选择。</p>
+<pre><code>z|food 与“z”或“food”匹配。 (z|f)ood 与“zood”或“food”匹配</code></pre><h3 id="元字符"><a href="#元字符" class="headerlink" title="元字符"></a>元字符</h3><h4 id="b"><a href="#b" class="headerlink" title="\b"></a>\b</h4><p>与一个字边界匹配；即字与空格间的位置。</p>
+<pre><code>er\b 与“never”中的“er”匹配，但与“verb”中的“er”不匹配</code></pre><h4 id="B"><a href="#B" class="headerlink" title="\B"></a>\B</h4><p>非边界字匹配。</p>
+<pre><code>er\B 与“verb”中的“er”匹配，但与“never”中的“er”不匹配</code></pre><h4 id="d"><a href="#d" class="headerlink" title="\d"></a>\d</h4><p>数字字符匹配。 等效于 [0-9]。</p>
+<pre><code>在搜索字符串“12 345”中，\d{2} 与“12”和“34”匹配。 \d 与“1”、“2”、“3”、“4”和“5”匹配。</code></pre><h4 id="D"><a href="#D" class="headerlink" title="\D"></a>\D</h4><p>非数字字符匹配。 等效于 [^0-9]。</p>
+<pre><code>\D+ 与“abc123 def”中的“abc”和“def”匹配。</code></pre><h4 id="w"><a href="#w" class="headerlink" title="\w"></a>\w</h4><p>与以下任意字符匹配：A-Z、a-z、0-9 和下划线。 等效于 [A-Za-z0-9_]。</p>
+<pre><code>在搜索字符串“The quick brown fox…”中，\w+ 与“The”、“quick”、“brown”和“fox”匹配。</code></pre><h4 id="W"><a href="#W" class="headerlink" title="\W"></a>\W</h4><p>与除 A-Z、a-z、0-9 和下划线以外的任意字符匹配。 等效于 [^A-Za-z0-9_]。</p>
+<pre><code>在搜索字符串“The quick brown fox…”中，\W+ 与“…”和所有空格匹配。</code></pre><h4 id="xyz"><a href="#xyz" class="headerlink" title="[xyz]"></a>[xyz]</h4><p>字符集。 与任何一个指定字符匹配。</p>
+<pre><code>[abc] 与“plain”中的“a”匹配。</code></pre><h4 id="xyz-1"><a href="#xyz-1" class="headerlink" title="[^xyz]"></a>[^xyz]</h4><p>反向字符集。 与未指定的任何字符匹配。</p>
+<pre><code>[^abc] 与“plain”中的“p”、“l”、“i”和“n”匹配。</code></pre><h4 id="a-z"><a href="#a-z" class="headerlink" title="[a-z]"></a>[a-z]</h4><p>字符范围。 匹配指定范围内的任何字符。</p>
+<pre><code>[a-z] 与“a”到“z”范围内的任何小写字母字符匹配。</code></pre><h4 id="a-z-1"><a href="#a-z-1" class="headerlink" title="[^a-z]"></a>[^a-z]</h4><p>反向字符范围。 与不在指定范围内的任何字符匹配。</p>
+<pre><code>[^a-z] 与不在范围“a”到“z”内的任何字符匹配。</code></pre><h4 id="n"><a href="#n" class="headerlink" title="{n}"></a>{n}</h4><p>正好匹配 n 次。 n 是非负整数。</p>
+<pre><code>o{2} 与“Bob”中的“o”不匹配，但与“food”中的两个“o”匹配。</code></pre><h4 id="n-1"><a href="#n-1" class="headerlink" title="{n,}"></a>{n,}</h4><p>至少匹配 n 次。 n 是非负整数。</p>
+<pre><code>* 与 {0,} 相等。
++ 与 {1,} 相等。
+o{2,} 与“Bob”中的“o”不匹配，但与“foooood”中的所有“o”匹配。</code></pre><h4 id="n-m"><a href="#n-m" class="headerlink" title="{n,m}"></a>{n,m}</h4><p>匹配至少 n 次，至多 m 次。 n 和 m 是非负整数，其中 n &lt;= m。 逗号和数字之间不能有空格。</p>
+<pre><code>? 与 {0,1} 相等。
+在搜索字符串“1234567”中，\d{1,3} 与“123”、“456”和“7”匹配。</code></pre><h4 id="pattern"><a href="#pattern" class="headerlink" title="(pattern)"></a>(pattern)</h4><p>与pattern 匹配并保存匹配项。 若要匹配括号字符 (  )，请使用“(”或者“)”。</p>
+<pre><code>(Chapter|Section) [1-9] 与“Chapter 5”匹配，保存“Chapter”以备将来之用。</code></pre><h4 id="pattern-1"><a href="#pattern-1" class="headerlink" title="(?:pattern)"></a>(?:pattern)</h4><p>与pattern 匹配，但不保存匹配项；即不会存储匹配项以备将来之用。 这对于用“or”字符 (|) 组合模式部件的情况很有用。</p>
+<pre><code>industr(?:y|ies) 与 industry|industries 相等。</code></pre><h4 id="pattern-2"><a href="#pattern-2" class="headerlink" title="(?=pattern)"></a>(?=pattern)</h4><p>正预测先行。 找到一个匹配项后，将在匹配文本之前开始搜索下一个匹配项。 不会保存匹配项以备将来之用。</p>
+<pre><code>^(?=.\*\d).{4,8}$ 对密码应用以下限制：其长度必须介于 4 到 8 个字符之间，并且必须至少包含一个数字。</code></pre><p>在该模式中，.*\d 查找后跟有数字的任意多个字符。 对于搜索字符串“abc3qr”，这与“abc3”匹配。<br>从该匹配项之前（而不是之后）开始，.{4,8} 与包含 4-8 个字符的字符串匹配。 这与“abc3qr”匹配。<br>^ 和 $ 指定搜索字符串的开始和结束位置。 这将在搜索字符串包含匹配字符之外的任何字符时阻止匹配。</p>
+<h4 id="pattern-3"><a href="#pattern-3" class="headerlink" title="(?!pattern)"></a>(?!pattern)</h4><p>负预测先行。 匹配与模式 不匹配的搜索字符串。 找到一个匹配项后，将在匹配文本之前开始搜索下一个匹配项。 不会保存匹配项以备将来之用。</p>
+<pre><code>\b(?!th)\w+\b 与不以“th”开头的单词匹配。</code></pre><p>在该模式中，\b 与一个字边界匹配。 对于搜索字符串“ quick ”，这与第一个空格匹配。 (?!th) 与非“th”字符串匹配。 这与“qu”匹配。<br>从该匹配项开始，\w+ 与一个字匹配。 这与“quick”匹配。</p>
+<h4 id="cx"><a href="#cx" class="headerlink" title="\cx"></a>\cx</h4><p>匹配 x 指示的控制字符。 x 的值必须在 A-Z 或 a-z 范围内。 如果不是这样，则假定 c 就是文本“c”字符本身。</p>
+<pre><code>\cM 与 Ctrl+M 或一个回车符匹配。</code></pre><h4 id="xn"><a href="#xn" class="headerlink" title="\xn"></a>\xn</h4><p>匹配 n，此处的 n 是一个十六进制转义码。<br>十六进制转义码必须正好是两位数长。 允许在正则表达式中使用 ASCII 代码。</p>
+<pre><code>\x41 与“A”匹配。 \x041 等效于后跟有“1”的“\x04”（因为 n 必须正好是两位数）。</code></pre><h4 id="num"><a href="#num" class="headerlink" title="\num"></a>\num</h4><p>匹配 num，此处的 num 是一个正整数。 这是对已保存的匹配项的引用。</p>
+<pre><code>(.)\1 与两个连续的相同字符匹配。</code></pre><h4 id="n-2"><a href="#n-2" class="headerlink" title="\n"></a>\n</h4><p>标识一个八进制转义码或反向引用。 如果 \n 前面至少有 n 个捕获子表达式，那么 n 是反向引用。<br>否则，如果 n 是八进制数 (0-7)，那么 n 是八进制转义码。</p>
+<pre><code>(\d)\1 与两个连续的相同数字匹配。</code></pre><h4 id="nm"><a href="#nm" class="headerlink" title="\nm"></a>\nm</h4><p>标识一个八进制转义码或反向引用。 如果 \nm 前面至少有 nm 个捕获子表达式，那么 nm 是反向引用。<br>如果 \nm 前面至少有 n 个捕获子表达式，则 n 是反向引用，后面跟有文本 m。<br>如果上述情况都不存在，当 n 和 m 是八进制数字 (0-7) 时，\nm 匹配八进制转义码 nm。</p>
+<pre><code>\11 与制表符匹配。</code></pre><h4 id="nml"><a href="#nml" class="headerlink" title="\nml"></a>\nml</h4><p>当 n 是八进制数字 (0-3)，m 和 l 是八进制数字 (0-7) 时，匹配八进制转义码 nml。</p>
+<pre><code>\011 与制表符匹配。</code></pre><h4 id="un"><a href="#un" class="headerlink" title="\un"></a>\un</h4><p>匹配 n，其中 n 是以四位十六进制数表示的 Unicode 字符。</p>
+<pre><code>\u00A9 与版权符号 (©) 匹配。</code></pre><h3 id="非打印字符"><a href="#非打印字符" class="headerlink" title="非打印字符"></a>非打印字符</h3><ul>
+<li>\f 换页符。 \x0c 和 \cL</li>
+<li>\n 换行符。 \x0a 和 \cJ</li>
+<li>\r 回车符。 \x0d 和 \cM</li>
+<li>\s 任何空白字符。 其中包括空格、制表符和换页符。 [ \f\n\r\t\v ]</li>
+<li>\S 任何非空白字符。 [^ \f\n\r\t\v]</li>
+<li>\t Tab 字符。 \x09 和 \cI</li>
+<li>\v 垂直制表符。 \x0b 和 \cK</li>
+</ul>
+<ol>
+<li><a href="http://blog.chinaunix.net/uid-26284412-id-3189214.html" target="_blank" rel="noopener">sscanf的高级用法</a></li>
+<li><a href="http://www.cnblogs.com/lyq105/archive/2009/11/28/1612677.html" target="_blank" rel="noopener">C语言函数sscanf()的用法</a></li>
+<li><a href="http://www.kryptosx.info/archives/60.html" target="_blank" rel="noopener">scanf的正则表达式总结</a></li>
+<li><a href="http://blog.csdn.net/tujiaw/article/details/6139896" target="_blank" rel="noopener">scanf、sscanf中的正则表达式</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>C</category>
+      </categories>
+      <tags>
+        <tag>regexp</tag>
+        <tag>doline</tag>
+        <tag>sscanf</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Linux设备驱动程序基础</title>
     <url>/2015/12/02/linux-device_drivers/</url>
     <content><![CDATA[<script type="text/javascript">
@@ -30581,190 +30791,6 @@ UseTab: Never
       </tags>
   </entry>
   <entry>
-    <title>逐行处理内存文本及正则表达式元字符列表</title>
-    <url>/2015/11/18/deal-with-file-by-line/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<h2 id="文本内容"><a href="#文本内容" class="headerlink" title="文本内容"></a>文本内容</h2><pre><code>P:013.0:E:11054:H:27500:5DDC29D54BE4D7:F3381AD050DE3A
-P:091.5:E:03960:H:29700:DAE69F8B6E0106:E0DE2F8903AE55
-P:105.5:E:03960:H:27500:CEF7CE422FF89E:E42DB81767E02E
-P:166.0:E:03760:V:27690:7199819B0CF04F:7EE0F00CFFBF66
-P:138.0:E:03703:V:04444:AD5CDBA991505A:1E1376FD07FB13
-P:166.0:E:03830:H:14000:956D98AD9E6E84:842F2801182286</code></pre><p>或者：</p>
-<pre><code>B:042.0:E:11919:V:24444:00012:1000000000000000:TRT3
-B:042.0:E:11954:A:08800:00001:1111110011111800:EINTERCOM
-B:042.0:E:11953:A:02980:00001:1212123312121233:
-B:042.0:E:11996:V:27500:00300:A33130046167824A:Sci-Tech TV
-B:042.0:E:12015:H:27500:00009:1000001010000010:Teledunya 3D
-B:042.0:E:12130:V:27500:00024:1000000000000000:Radio Migros
-B:042.0:E:12130:V:27500:00025:1000000000000000:Radio Tansas</code></pre><h2 id="逐行读取文本strsep"><a href="#逐行读取文本strsep" class="headerlink" title="逐行读取文本strsep"></a>逐行读取文本strsep</h2><pre><code>char *tok = NULL;
-for (tok = strsep(&amp;p, &quot;\n&quot;); tok != NULL; tok = strsep(&amp;p, &quot;\n&quot;))
-{
-    printf(&quot;\033[33m%s\n\033[0m&quot;, tok);
-    //TODO
-}</code></pre><h2 id="处理单行格式化文本sscanf"><a href="#处理单行格式化文本sscanf" class="headerlink" title="处理单行格式化文本sscanf"></a>处理单行格式化文本sscanf</h2><p>sscanf() - 从一个字符串中读进与指定格式相符的数据.　函数原型:</p>
-<pre><code>int sscanf( string str, string fmt, mixed var1, mixed var2 ...  );
-int scanf( const char \*format [,argument]...  );</code></pre><p>说明：</p>
-<p>sscanf与scanf类似，都是用于输入的，只是后者以屏幕(stdin)为输入源，前者以固定字符串为输入源。<br>其中的format可以是一个或多个 %[*] [width] [{h | l | I64 | L}]type | ‘ ‘ | ‘\t’ | ‘\n’ | 非%符号：</p>
-<ol>
-<li>* 亦可用于格式中, (即 %*d 和 %*s) 加了星号 (*) 表示跳过此数据不读入. (也就是不把此数据读入参数中)</li>
-<li>{a|b|c}表示a,b,c中选一，[d],表示可以有d也可以没有d。</li>
-<li>width表示读取宽度。</li>
-<li>{h | l | I64 | L}:参数的size,通常h表示单字节size，I表示2字节size,L表示4字节size(double例外),l64表示8字节size。</li>
-<li>type :这就很多了，就是%s,%d,%c之类。</li>
-<li>特别的：%*[width] [{h | l | I64 | L}]type 表示满足该条件的被过滤掉，不会向目标参数中写入值</li>
-</ol>
-<p>支持集合操作：</p>
-<ol>
-<li>%[a-z] 表示匹配a到z中任意字符，贪婪性(尽可能多的匹配)</li>
-<li>%[A-Z] 表示匹配A到Z中任意字符，贪婪性(尽可能多的匹配)</li>
-<li>%[aB’] 匹配a、B、’中一员，贪婪性</li>
-<li>%[^a] 匹配非a的任意字符，贪婪性</li>
-</ol>
-<p>注意：在读入的字符串是空字符串时，sscanf函数并不改变待读入到的字符串的值。</p>
-<p><strong>针对格式化文本的处理：</strong></p>
-<pre><code>char longitude[6] = {0};
-char direction = 0;
-char frequency[6] = {0};
-char polar = 0;
-char symbol[6] = {0};
-char sid[6] = {0};
-char data0[EMU_KEY_STR_LEN] = {0};
-char data1[EMU_KEY_STR_LEN] = {0};
-
-if (type == 0)
-{
-    //B:004.0:W:11389:A:27500:00011:1A2B3C81C3B2A116:RTR                  
-    sscanf(tok, &quot;%*1c:%5c:%1c:%5c:%1c:%5c:%5c:%16c:%16c&quot;,
-            longitude, &amp;direction, frequency, &amp;polar, symbol, sid, data0, data1);
-}
-else
-{ 
-    //P:105.5:E:03960:H:27500:CEF7CE422FF89E:E42DB81767E02E
-    sscanf(tok, &quot;%*1c:%5c:%1c:%5c:%1c:%5c:%14c:%14c&quot;,
-            longitude, &amp;direction, frequency, &amp;polar, symbol, data0, data1);
-}
-pMinifs-&gt;symbol_rate = atoi(symbol);
-.
-.
-.</code></pre><p>注意：<strong>%s与%c的区别，注意buf的长度包含字符串结束符‘\0’，长度如果不对，后续处理可能出现问题。</strong></p>
-<h2 id="强制内存转换处理格式化文本"><a href="#强制内存转换处理格式化文本" class="headerlink" title="强制内存转换处理格式化文本"></a>强制内存转换处理格式化文本</h2><p>针对格式化文本还有一种内存强制转换的处理方式：</p>
-<pre><code>struct DevData{
-    char tag[2];
-    char longitude[6];
-    char direction[2];
-    char frequency[6];
-    char polar[2];
-    char symbol_rate[6];
-    char service_id[6];
-    char key[KEY_STR_LEN+1];
-    char prog_name[PROG_NAME_LENTH];
-    char line_feed[2];//tail(0x0d0a or 0x0a)
-} __attribute__((packed));
-
-//获取文件数据
-fd = fopen(path, &quot;r&quot;);
-p = (char *)mallocz(size);
-fseek(fd, 0, SEEK_SET);
-fread(fd, p, 1, size);
-
-//强制转换
-struct DevData *pRootData=NULL;
-for(i=0;i&lt;total_num;i++)
-{
-    pRootData = (struct DevData*)p1;
-    .
-    .
-    //处理当前结构体pRootData，并获得偏移量用来取下一个结构体数据
-    memset(atoi_buf,0,sizeof(atoi_buf));
-    memcpy(atoi_buf,pRootData-&gt;symbol_rate,sizeof(pRootData-&gt;symbol_rate)-1);
-    pMinifs-&gt;symbol_rate = atoi(atoi_buf);
-    .
-    p1 += offset;
-}</code></pre><h2 id="正则表达式"><a href="#正则表达式" class="headerlink" title="正则表达式"></a>正则表达式</h2><h3 id="特殊字符"><a href="#特殊字符" class="headerlink" title="特殊字符"></a><strong>特殊字符</strong></h3><h4 id=""><a href="#" class="headerlink" title="\"></a>\</h4><p>转义字符，将下一字符标记为特殊字符、文本、反向引用或八进制转义符</p>
-<pre><code>&#39;\n&#39;匹配换行，
-&#39;\\&#39;匹配&#39;\&#39;</code></pre><h4 id="-1"><a href="#-1" class="headerlink" title="^"></a>^</h4><p>匹配搜索字符串开始的位置。如果标志中包括 m（多行搜索）字符，^ 还将匹配 \n 或 \r 后面的位置。<br>如果将 ^ 用作括号表达式中的第一个字符，则会对字符集求反。</p>
-<pre><code>^\d{3} 与搜索字符串开始处的 3 个数字匹配。
-[^abc] 与除 a、b 和 c 以外的任何字符匹配。</code></pre><h4 id="-2"><a href="#-2" class="headerlink" title="$"></a>$</h4><p>匹配搜索字符串结尾的位置。 如果标志中包括 m（多行搜索）字符，^ 还将匹配 \n 或 \r 前面的位置。</p>
-<pre><code>\d{3}$ 与搜索字符串结尾处的 3 个数字匹配。</code></pre><h4 id="-3"><a href="#-3" class="headerlink" title="*"></a>*</h4><p>零次或多次匹配前面的字符或子表达式。等效于 {0,}。</p>
-<pre><code>zo\* 与“z”和“zoo”匹配。</code></pre><h4 id="-4"><a href="#-4" class="headerlink" title="+"></a>+</h4><p>一次或多次匹配前面的字符或子表达式。 等效于 {1,}。</p>
-<pre><code>zo+ 与“zo”和“zoo”匹配，但与“z”不匹配。</code></pre><h4 id="-5"><a href="#-5" class="headerlink" title="?"></a>?</h4><p>零次或一次匹配前面的字符或子表达式。 等效于 {0,1}。<br>当 ? 紧随任何其他限定符（*、+、?、{n}、{n,} 或 {n,m}）之后时，匹配模式是非贪婪的。<br>非贪婪模式匹配搜索到的、尽可能少的字符串， 而默认的贪婪模式匹配搜索到的、尽可能多的字符串。</p>
-<pre><code>zo? 与“z”和“zo”匹配，但与“zoo”不匹配。
-o+? 只与“oooo”中的单个“o”匹配，而 o+ 与所有“o”匹配。
-do(es)? 与“do”或“does”中的“do”匹配。</code></pre><h4 id="-6"><a href="#-6" class="headerlink" title="."></a>.</h4><p>匹配除换行符 \n 之外的任何单个字符。 若要匹配包括 \n 在内的任意字符，请使用诸如 [\s\S] 之类的模式。</p>
-<pre><code>a.c 与“abc”、“a1c”和“a-c”匹配</code></pre><h4 id="-7"><a href="#-7" class="headerlink" title="[]"></a>[]</h4><p>标记括号表达式的开始和结尾。</p>
-<pre><code>[1-4] 与“1”、“2”、“3”或“4”匹配。 [^aAeEiIoOuU] 与任何非元音字符匹配</code></pre><h4 id="-8"><a href="#-8" class="headerlink" title="{}"></a>{}</h4><p>标记限定符表达式的开始和结尾。</p>
-<pre><code>a{2,3} 与“aa”和“aaa”匹配</code></pre><h4 id="-9"><a href="#-9" class="headerlink" title="()"></a>()</h4><p>标记子表达式的开始和结尾。 可以保存子表达式以备将来之用。</p>
-<pre><code>A(\d) 与“A0”至“A9”匹配。 保存该数字以备将来之用</code></pre><h4 id="-10"><a href="#-10" class="headerlink" title="|"></a>|</h4><p>指示在两个或多个项之间进行选择。</p>
-<pre><code>z|food 与“z”或“food”匹配。 (z|f)ood 与“zood”或“food”匹配</code></pre><h3 id="元字符"><a href="#元字符" class="headerlink" title="元字符"></a>元字符</h3><h4 id="b"><a href="#b" class="headerlink" title="\b"></a>\b</h4><p>与一个字边界匹配；即字与空格间的位置。</p>
-<pre><code>er\b 与“never”中的“er”匹配，但与“verb”中的“er”不匹配</code></pre><h4 id="B"><a href="#B" class="headerlink" title="\B"></a>\B</h4><p>非边界字匹配。</p>
-<pre><code>er\B 与“verb”中的“er”匹配，但与“never”中的“er”不匹配</code></pre><h4 id="d"><a href="#d" class="headerlink" title="\d"></a>\d</h4><p>数字字符匹配。 等效于 [0-9]。</p>
-<pre><code>在搜索字符串“12 345”中，\d{2} 与“12”和“34”匹配。 \d 与“1”、“2”、“3”、“4”和“5”匹配。</code></pre><h4 id="D"><a href="#D" class="headerlink" title="\D"></a>\D</h4><p>非数字字符匹配。 等效于 [^0-9]。</p>
-<pre><code>\D+ 与“abc123 def”中的“abc”和“def”匹配。</code></pre><h4 id="w"><a href="#w" class="headerlink" title="\w"></a>\w</h4><p>与以下任意字符匹配：A-Z、a-z、0-9 和下划线。 等效于 [A-Za-z0-9_]。</p>
-<pre><code>在搜索字符串“The quick brown fox…”中，\w+ 与“The”、“quick”、“brown”和“fox”匹配。</code></pre><h4 id="W"><a href="#W" class="headerlink" title="\W"></a>\W</h4><p>与除 A-Z、a-z、0-9 和下划线以外的任意字符匹配。 等效于 [^A-Za-z0-9_]。</p>
-<pre><code>在搜索字符串“The quick brown fox…”中，\W+ 与“…”和所有空格匹配。</code></pre><h4 id="xyz"><a href="#xyz" class="headerlink" title="[xyz]"></a>[xyz]</h4><p>字符集。 与任何一个指定字符匹配。</p>
-<pre><code>[abc] 与“plain”中的“a”匹配。</code></pre><h4 id="xyz-1"><a href="#xyz-1" class="headerlink" title="[^xyz]"></a>[^xyz]</h4><p>反向字符集。 与未指定的任何字符匹配。</p>
-<pre><code>[^abc] 与“plain”中的“p”、“l”、“i”和“n”匹配。</code></pre><h4 id="a-z"><a href="#a-z" class="headerlink" title="[a-z]"></a>[a-z]</h4><p>字符范围。 匹配指定范围内的任何字符。</p>
-<pre><code>[a-z] 与“a”到“z”范围内的任何小写字母字符匹配。</code></pre><h4 id="a-z-1"><a href="#a-z-1" class="headerlink" title="[^a-z]"></a>[^a-z]</h4><p>反向字符范围。 与不在指定范围内的任何字符匹配。</p>
-<pre><code>[^a-z] 与不在范围“a”到“z”内的任何字符匹配。</code></pre><h4 id="n"><a href="#n" class="headerlink" title="{n}"></a>{n}</h4><p>正好匹配 n 次。 n 是非负整数。</p>
-<pre><code>o{2} 与“Bob”中的“o”不匹配，但与“food”中的两个“o”匹配。</code></pre><h4 id="n-1"><a href="#n-1" class="headerlink" title="{n,}"></a>{n,}</h4><p>至少匹配 n 次。 n 是非负整数。</p>
-<pre><code>* 与 {0,} 相等。
-+ 与 {1,} 相等。
-o{2,} 与“Bob”中的“o”不匹配，但与“foooood”中的所有“o”匹配。</code></pre><h4 id="n-m"><a href="#n-m" class="headerlink" title="{n,m}"></a>{n,m}</h4><p>匹配至少 n 次，至多 m 次。 n 和 m 是非负整数，其中 n &lt;= m。 逗号和数字之间不能有空格。</p>
-<pre><code>? 与 {0,1} 相等。
-在搜索字符串“1234567”中，\d{1,3} 与“123”、“456”和“7”匹配。</code></pre><h4 id="pattern"><a href="#pattern" class="headerlink" title="(pattern)"></a>(pattern)</h4><p>与pattern 匹配并保存匹配项。 若要匹配括号字符 (  )，请使用“(”或者“)”。</p>
-<pre><code>(Chapter|Section) [1-9] 与“Chapter 5”匹配，保存“Chapter”以备将来之用。</code></pre><h4 id="pattern-1"><a href="#pattern-1" class="headerlink" title="(?:pattern)"></a>(?:pattern)</h4><p>与pattern 匹配，但不保存匹配项；即不会存储匹配项以备将来之用。 这对于用“or”字符 (|) 组合模式部件的情况很有用。</p>
-<pre><code>industr(?:y|ies) 与 industry|industries 相等。</code></pre><h4 id="pattern-2"><a href="#pattern-2" class="headerlink" title="(?=pattern)"></a>(?=pattern)</h4><p>正预测先行。 找到一个匹配项后，将在匹配文本之前开始搜索下一个匹配项。 不会保存匹配项以备将来之用。</p>
-<pre><code>^(?=.\*\d).{4,8}$ 对密码应用以下限制：其长度必须介于 4 到 8 个字符之间，并且必须至少包含一个数字。</code></pre><p>在该模式中，.*\d 查找后跟有数字的任意多个字符。 对于搜索字符串“abc3qr”，这与“abc3”匹配。<br>从该匹配项之前（而不是之后）开始，.{4,8} 与包含 4-8 个字符的字符串匹配。 这与“abc3qr”匹配。<br>^ 和 $ 指定搜索字符串的开始和结束位置。 这将在搜索字符串包含匹配字符之外的任何字符时阻止匹配。</p>
-<h4 id="pattern-3"><a href="#pattern-3" class="headerlink" title="(?!pattern)"></a>(?!pattern)</h4><p>负预测先行。 匹配与模式 不匹配的搜索字符串。 找到一个匹配项后，将在匹配文本之前开始搜索下一个匹配项。 不会保存匹配项以备将来之用。</p>
-<pre><code>\b(?!th)\w+\b 与不以“th”开头的单词匹配。</code></pre><p>在该模式中，\b 与一个字边界匹配。 对于搜索字符串“ quick ”，这与第一个空格匹配。 (?!th) 与非“th”字符串匹配。 这与“qu”匹配。<br>从该匹配项开始，\w+ 与一个字匹配。 这与“quick”匹配。</p>
-<h4 id="cx"><a href="#cx" class="headerlink" title="\cx"></a>\cx</h4><p>匹配 x 指示的控制字符。 x 的值必须在 A-Z 或 a-z 范围内。 如果不是这样，则假定 c 就是文本“c”字符本身。</p>
-<pre><code>\cM 与 Ctrl+M 或一个回车符匹配。</code></pre><h4 id="xn"><a href="#xn" class="headerlink" title="\xn"></a>\xn</h4><p>匹配 n，此处的 n 是一个十六进制转义码。<br>十六进制转义码必须正好是两位数长。 允许在正则表达式中使用 ASCII 代码。</p>
-<pre><code>\x41 与“A”匹配。 \x041 等效于后跟有“1”的“\x04”（因为 n 必须正好是两位数）。</code></pre><h4 id="num"><a href="#num" class="headerlink" title="\num"></a>\num</h4><p>匹配 num，此处的 num 是一个正整数。 这是对已保存的匹配项的引用。</p>
-<pre><code>(.)\1 与两个连续的相同字符匹配。</code></pre><h4 id="n-2"><a href="#n-2" class="headerlink" title="\n"></a>\n</h4><p>标识一个八进制转义码或反向引用。 如果 \n 前面至少有 n 个捕获子表达式，那么 n 是反向引用。<br>否则，如果 n 是八进制数 (0-7)，那么 n 是八进制转义码。</p>
-<pre><code>(\d)\1 与两个连续的相同数字匹配。</code></pre><h4 id="nm"><a href="#nm" class="headerlink" title="\nm"></a>\nm</h4><p>标识一个八进制转义码或反向引用。 如果 \nm 前面至少有 nm 个捕获子表达式，那么 nm 是反向引用。<br>如果 \nm 前面至少有 n 个捕获子表达式，则 n 是反向引用，后面跟有文本 m。<br>如果上述情况都不存在，当 n 和 m 是八进制数字 (0-7) 时，\nm 匹配八进制转义码 nm。</p>
-<pre><code>\11 与制表符匹配。</code></pre><h4 id="nml"><a href="#nml" class="headerlink" title="\nml"></a>\nml</h4><p>当 n 是八进制数字 (0-3)，m 和 l 是八进制数字 (0-7) 时，匹配八进制转义码 nml。</p>
-<pre><code>\011 与制表符匹配。</code></pre><h4 id="un"><a href="#un" class="headerlink" title="\un"></a>\un</h4><p>匹配 n，其中 n 是以四位十六进制数表示的 Unicode 字符。</p>
-<pre><code>\u00A9 与版权符号 (©) 匹配。</code></pre><h3 id="非打印字符"><a href="#非打印字符" class="headerlink" title="非打印字符"></a>非打印字符</h3><ul>
-<li>\f 换页符。 \x0c 和 \cL</li>
-<li>\n 换行符。 \x0a 和 \cJ</li>
-<li>\r 回车符。 \x0d 和 \cM</li>
-<li>\s 任何空白字符。 其中包括空格、制表符和换页符。 [ \f\n\r\t\v ]</li>
-<li>\S 任何非空白字符。 [^ \f\n\r\t\v]</li>
-<li>\t Tab 字符。 \x09 和 \cI</li>
-<li>\v 垂直制表符。 \x0b 和 \cK</li>
-</ul>
-<ol>
-<li><a href="http://blog.chinaunix.net/uid-26284412-id-3189214.html" target="_blank" rel="noopener">sscanf的高级用法</a></li>
-<li><a href="http://www.cnblogs.com/lyq105/archive/2009/11/28/1612677.html" target="_blank" rel="noopener">C语言函数sscanf()的用法</a></li>
-<li><a href="http://www.kryptosx.info/archives/60.html" target="_blank" rel="noopener">scanf的正则表达式总结</a></li>
-<li><a href="http://blog.csdn.net/tujiaw/article/details/6139896" target="_blank" rel="noopener">scanf、sscanf中的正则表达式</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>C</category>
-      </categories>
-      <tags>
-        <tag>regexp</tag>
-        <tag>doline</tag>
-        <tag>sscanf</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Linux 图形编程简介</title>
     <url>/2018/06/11/linux-ui/</url>
     <content><![CDATA[<p>简单介绍 Linux 图形编程概念、协议及库</p>
@@ -33392,194 +33418,6 @@ SSL_CTX_set_verify_depth(ctx, 1);</code></pre>
       </tags>
   </entry>
   <entry>
-    <title>Raw Socket L2 vs L3</title>
-    <url>/2019/04/28/raw-socket-L2-vs-L3/</url>
-    <content><![CDATA[<p>记录<code>Raw socket</code>相关知识点，以及数据链路层数据访问</p>
-<ul>
-<li>Layer 2: MAC &amp; LLC</li>
-<li>Layer 3: Network</li>
-</ul>
-<a id="more"></a>
-
-<h2 id="OSI-Model"><a href="#OSI-Model" class="headerlink" title="OSI Model"></a>OSI Model</h2><p><code>OSI</code>七层模型如下</p>
-<p><img src="/images/socket/1556452439780.png" alt="1556452439780"></p>
-<ul>
-<li>Layer2: <code>MAC &amp; LLC</code>，数据类型 <a href="https://en.wikipedia.org/wiki/Frame_networking" target="_blank" rel="noopener">Frame</a></li>
-<li>Layer3: <code>Network</code>，数据类型 <a href="https://en.wikipedia.org/wiki/Network_packet" target="_blank" rel="noopener">Packet</a></li>
-</ul>
-<h2 id="Raw-Socket"><a href="#Raw-Socket" class="headerlink" title="Raw Socket"></a>Raw Socket</h2><p>每一层级网络数据都由两部分组成：<code>Header</code>和<code>Payload</code>，<code>TCP</code>报文如下</p>
-<p><img src="/images/socket/1556455755725.png" alt="1556455755725"></p>
-<p>通常使用的流式套接字<code>SOCK_STREAM</code>和数据包式套接字<code>SOCK_DGRAM</code>，已经由系统提供的协议栈处理过，应用只能处理<code>Payload</code>部分，<code>Header</code>部分已被处理过。而当需要处理<code>Header</code>部分时，需要使用<code>raw socket</code>，它位于系统核心，可以处理<code>Header</code>部分，而<code>raw socket</code>根据能力不同分为<code>L2</code>和<code>L3</code>，部分资料摘录如下：</p>
-<ol>
-<li>non-Raw socket<blockquote>
-<p>you can just determine Transport Layer Payload. i.e it is OS task to create Transport,Network and Data Link layer headers.</p>
-</blockquote>
-</li>
-<li>Raw socket<blockquote>
-<p>you can determine every section of packet,either header or payload. Please note that raw socket is a general word. I categorize raw socket into: Network Socket andd Data-Link Socket (or alternativly L3 Socket and L2 Socket)</p>
-</blockquote>
-</li>
-</ol>
-<h2 id="L3-Socket-–-Network-Socket"><a href="#L3-Socket-–-Network-Socket" class="headerlink" title="L3 Socket – Network Socket"></a>L3 Socket – Network Socket</h2><blockquote>
-<p>In L3 Socket you can determine header and payload of packet in network layer. For example if network layer protocol is IPv4, you can determine IPv4 header and payload. Thus you can set transport layer header/payload, ICMP header/payload, Routing Protocols headder/payload.</p>
-</blockquote>
-<p>创建方式</p>
-<pre><code class="c">socket(AF_INET, SOCK_RAW, protocol)</code></pre>
-<p>在头文件<code>netinet/in.h</code>中定义了系统中该字段目前能取的值，注意：有些系统中不一定实现了<code>netinet/in.h</code>中的所有协议。源代码的<code>linux/in.h</code>中和<code>netinet/in.h</code>中的内容一样。常用的如下</p>
-<ul>
-<li><code>IPPROTO_IP(0)</code>: 用于接收任何的 IP 数据包。其中的校验和和协议分析由程序自己完成</li>
-<li><code>IPPROTO_RAW(255)</code>: 只能用来发送 IP 包，而不能接收任何的数据。发送的数据需要自己填充 IP 包头，并且自己计算校验和</li>
-<li>其他像<code>IPPROTO_TCP(6)</code>这种非 0、非 255 的协议，当操作系统内核碰到 IP 头中 protocol 域和创建 socket 所使用参数 protocol 相同的 IP 包，就会交给这个<code>raw socket</code>来处理，因此，一般来说，要想接收什么样的数据包，就应该在参数 protocol 里来指定相应的协议。当内核向此 raw socket 交付数据包的时候，是包括整个 IP 头的，并且已经是重组好的 IP 包</li>
-</ul>
-<p>用这种方式可以得到原始的 IP 包，然后就可以自定义 IP 所承载的具体协议类型，如<code>TCP</code>，<code>UDP</code>或<code>ICMP</code>，并手动对每种承载在 IP 协议之上的报文进行填充。</p>
-<p>注意其中一个参数<code>IP_HDRINCL</code>，允许用户构造 IP 头</p>
-<pre><code class="c">const int on =1;
-if (setsockopt (sockfd, IPPROTO_IP, IP_HDRINCL, &amp;on, sizeof(on)) &lt; 0) {
-    printf(&quot;setsockopt error!\n&quot;);
-}</code></pre>
-<p><strong>L3 原始套接字处理的只是 IP 层及其以上的数据，可以处理<code>IP Header</code>及<code>TCP/UDP Header</code></strong>，比如实现 SYN FLOOD 攻击、处理 PING 报文等。当需要操作更底层的数据的时候，就需要采用其他的方式。</p>
-<h2 id="L2-Socket-–-Data-Link-Socket"><a href="#L2-Socket-–-Data-Link-Socket" class="headerlink" title="L2 Socket – Data-Link Socket"></a>L2 Socket – Data-Link Socket</h2><blockquote>
-<p>In L2 Socket you can set header and payload of packet in data link layer, i.e everything in packet. Thus you do everything done with L3 Socket + determine ARP header/payload, PPP header/payload, PPPOE header/payload , …. .</p>
-</blockquote>
-<p>为了实现直接从链路层收发数据帧，用到原始套接字的如下形式</p>
-<pre><code class="c">socket(PF_PACKET, type, protocol)</code></pre>
-<ul>
-<li><code>type</code>可取<code>SOCK_RAW</code>或<code>SOCK_DGRAM</code>。它们两个都使用一种与设备无关的标准物理层地址结构<code>struct sockaddr_ll</code>，但具体操作的报文格式不同：<ul>
-<li><code>SOCK_RAW</code>：直接向网络硬件驱动程序发送或接收没有任何处理的完整数据报文，<strong>包括物理帧的帧头</strong></li>
-<li><code>SOCK_DGRAM</code>：这种类型的套接字对于收到的数据报文的物理帧帧头会被系统自动去掉，<strong>不包括物理帧的帧头</strong>，然后再将其往协议栈上层传递。发送时根据<code>sockaddr_ll</code>中的目的地址信息添加<code>MAC</code>头</li>
-</ul>
-</li>
-<li><code>protocol</code>，链路层协议，<code>linux/if_ether.h</code>，常用如下：<ul>
-<li><code>ETH_P_IP</code>只接收发往目的 MAC 是本机的 IP 类型的数据帧</li>
-<li><code>ETH_P_ARP</code>只接收发往目的 MAC 是本机的 ARP 类型的数据帧</li>
-<li><code>ETH_P_RARP</code>只接受发往目的 MAC 是本机的 RARP 类型的数据帧</li>
-<li><code>ETH_P_ALL</code>接收发往目的 MAC 是本机的所有类型 (ip,arp,rarp) 的数据帧，同时还可以接收从本机发出去的所有数据帧。<strong>在混杂模式 /Monitor 打开的情况下，还会接收到发往目的 MAC 为非本地硬件地址的数据帧</strong></li>
-</ul>
-</li>
-</ul>
-<p>发送数据的时候需要自己组织整个以太网数据帧。和地址相关的结构体就不能再用前面的<code>struct sockaddr_in</code>了，而是<code>struct sockaddr_ll</code>，头文件<code>linux/if_packet.h</code>，如下：</p>
-<pre><code class="c">struct sockaddr_ll{
-    unsigned short sll_family; /* 总是 AF_PACKET */
-    unsigned short sll_protocol; /* 物理层的协议 */
-    int sll_ifindex; /* 接口号 */
-    unsigned short sll_hatype; /* 报头类型 */
-    unsigned char sll_pkttype; /* 分组类型 */
-    unsigned char sll_halen; /* 地址长度 */
-    unsigned char sll_addr[8]; /* 物理层地址 */
-};</code></pre>
-<ul>
-<li><p><code>sll_family</code>，使用<code>AF_PACKET</code></p>
-</li>
-<li><p><code>sll_protocol</code>，见头文件<code>linux/if_ether.h</code>，例如<code>ETH_P_ALL</code></p>
-</li>
-<li><p><code>sll_ifindex</code>，设置为<code>0</code>表示处理所有<code>interface</code>，单网卡设备无所谓，示例代码如下</p>
-<pre><code class="c">struct  sockaddr_ll  sll;
-struct ifreq ifr;
-
-strcpy(ifr.ifr_name, &quot;eth0&quot;);
-ioctl(sockfd, SIOCGIFINDEX, &amp;ifr);
-sll.sll_ifindex = ifr.ifr_ifindex;</code></pre>
-</li>
-<li><p><code>sll_hatype</code>，ARP 硬件地址类型，定义在<code>linux/if_arp.h</code>中，例如</p>
-<ul>
-<li><code>ARPHRD_ETHER</code>以太网</li>
-<li><code>ARPHRD_IEEE80211</code> IEEE 802.11</li>
-<li><code>ARPHRD_IEEE80211_PRISM</code> IEEE 802.11 + Prism2 header</li>
-<li><code>ARPHRD_IEEE80211_RADIOTAP</code> IEEE 802.11 + radiotap header <strong>Monitor 模式抓下来的类型</strong></li>
-</ul>
-</li>
-<li><p><code>sll_pkttype</code>，分组类型，定义在<code>linux/if_packet.h</code>，例如</p>
-<pre><code class="c">  3 #define PACKET_HOST     0       /* To us        */
-  4 #define PACKET_BROADCAST    1       /* To all       */
-  5 #define PACKET_MULTICAST    2       /* To group     */
-  6 #define PACKET_OTHERHOST    3       /* To someone else  */
-  7 #define PACKET_OUTGOING     4       /* Outgoing of any type */
-  8 #define PACKET_LOOPBACK     5       /* MC/BRD frame looped back */
-  9 #define PACKET_USER     6       /* To user space    */
- 10 #define PACKET_KERNEL       7       /* To kernel space  */</code></pre>
-</li>
-<li><p><code>sll_addr</code>和<code>sll_halen</code>指示物理层（如以太网，802.3，802.4 或 802.5 等）地址及其长度，<strong>严格依赖于具体的硬件设备</strong>。类似于获取接口索引<code>sll_ifindex</code>，要获取接口的物理地址，可以采用如下代码</p>
-<pre><code class="c">struct ifreq ifr;
-
-strcpy(ifr.ifr_name, &quot;eth0&quot;);
-ioctl(sockfd, SIOCGIFHWADDR, &amp;ifr);</code></pre>
-</li>
-</ul>
-<p>默认情况下，从任何接口收到的符合指定协议的所有数据报文都会被传送到原始 PACKET 套接字口，而使用<code>bind</code>系统调用并以一个<code>sochddr_ll</code>结构体对象将 PACKET 套接字与某个网络接口相绑定，就可使我们的 PACKET 原始套接字只接收指定接口的数据报文。示例代码如下</p>
-<pre><code class="c">struct sockaddr_ll sll;
-struct ifreq ifr;
-
-/* find the interface index */
-memset( &amp;ifr, 0, sizeof( ifr ) );
-strncpy( ifr.ifr_name, iface, sizeof( ifr.ifr_name ) - 1 );
-
-if( ioctl( fd, SIOCGIFINDEX, &amp;ifr ) &lt; 0 )
-{
-    printf(&quot;Interface %s: \n&quot;, iface);
-    perror( &quot;ioctl(SIOCGIFINDEX) failed&quot; );
-    return( 1 );
-}
-
-memset( &amp;sll, 0, sizeof( sll ) );
-sll.sll_family   = AF_PACKET;
-sll.sll_ifindex  = ifr.ifr_ifindex;
-//sll.sll_ifindex  = if_nametoindex(iface);
-sll.sll_protocol = htons( ETH_P_ALL );
-
-/* bind the raw socket to the interface */
-
-if( bind( fd, (struct sockaddr *) &amp;sll, sizeof( sll ) ) &lt; 0 )
-{
-    printf(&quot;Interface %s: \n&quot;, iface);
-    perror( &quot;bind(ETH_P_ALL) failed&quot; );
-    return( 1 );
-}</code></pre>
-<p><strong>L2 Socket 可以处理链路层数据，可以处理<code>MAC Header</code></strong>，如果创建这个原始套接字时指定了非 0 的协议参数，那么接收到的数据报协议字段必须匹配该值。如果这个套接字已由<code>bind</code>调用绑定了某个 IP 地址，那么接收到的数据报的目的地址必须匹配这个绑定地址。</p>
-<h3 id="SOCK-PACKET"><a href="#SOCK-PACKET" class="headerlink" title="SOCK_PACKET"></a>SOCK_PACKET</h3><p>老的内核<code>Linux 2.0</code>接口提供的接口用于处理数据链路层数据，具体信息参看<code>libpcap/pcap-linux.c</code></p>
-<pre><code class="c">socket(PF_INET, SOCK_PACKET, htons(ETH_P_ALL))</code></pre>
-<p>如果系统已经提供<code>PF_PACKET</code>支持，不建议使用<code>SOCK_PACKET</code></p>
-<h2 id="Programming-Example"><a href="#Programming-Example" class="headerlink" title="Programming Example"></a>Programming Example</h2><ul>
-<li>socket(AF_INET,RAW_SOCKET,…) means L3 socket , Network Layer Protocol = IPv4</li>
-<li>socket(AF_IPX,RAW_SOCKET,…) means L3 socket , Network Layer Protocol = IPX</li>
-<li>socket(AF_INET6,RAW_SOCKET,…) means L3 socket , Network Layer Protocol=IPv6</li>
-<li>socket(AF_PACKET,RAW_SOCKET,…) means L2 socket , Data-link Layer Protocol= Ethernet</li>
-<li>socket(AF_PACKET,SOCK_DGRAM,…) means L2 socket , Data-link Layer Protocol= Ethernet without MAC Header</li>
-<li>socket(PF_INET, SOCK_PACKET, htons(ETH_P_ALL)) means L2 socket , Data-link Layer Protocol= Ethernet</li>
-</ul>
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="https://smallbiztrends.com/2013/09/osi-model-layer-networking.html" target="_blank" rel="noopener">Is the Extra Layer Better? Layer 2 Versus Layer 3 Networking</a></li>
-<li><a href="https://stackoverflow.com/questions/14774668/what-is-raw-socket-in-socket-programming" target="_blank" rel="noopener">what is RAW socket in socket programming</a></li>
-<li><a href="https://blog.csdn.net/whatday/article/details/79232598" target="_blank" rel="noopener">原始套接字 SOCK_RAW</a></li>
-<li><a href="http://abcdxyzk.github.io/blog/2015/04/14/kernel-net-sock-raw/" target="_blank" rel="noopener">Linux 网络编程：原始套接字 SOCK_RAW</a></li>
-<li><a href="https://blog.csdn.net/zimu2702/article/details/7185917" target="_blank" rel="noopener">IPPROTO_IP , IPPROTO_RAW</a></li>
-<li><a href="https://medium.com/@qre0ct/difference-between-pf-inet-sockets-and-pf-packet-sockets-5a58ab9fe8e3" target="_blank" rel="noopener">Difference between PF_INET sockets and PF_PACKET sockets ?</a></li>
-<li><a href="https://blog.csdn.net/gqtcgq/article/details/44874349" target="_blank" rel="noopener">原始套接字和数据链路层访问</a></li>
-<li><a href="https://en.wikipedia.org/wiki/OSI_model" target="_blank" rel="noopener">OSI Model</a></li>
-<li><a href="https://austinmarton.wordpress.com/2011/09/14/sending-raw-ethernet-packets-from-a-specific-interface-in-c-on-linux/" target="_blank" rel="noopener">Sending raw Ethernet packets from a specific interface in C on Linux</a></li>
-<li><a href="http://man7.org/linux/man-pages/man7/packet.7.html" target="_blank" rel="noopener">PACKET(7) Linux Programmer’s Manual</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-        <category>Socket</category>
-        <category>Network</category>
-        <category>Airkiss</category>
-      </categories>
-      <tags>
-        <tag>socket</tag>
-        <tag>LLC</tag>
-        <tag>MAC</tag>
-        <tag>raw socket</tag>
-        <tag>layer 2</tag>
-        <tag>layer 3</tag>
-        <tag>OSI Model</tag>
-        <tag>IP</tag>
-        <tag>AF_INET</tag>
-        <tag>AF_PACKET</tag>
-        <tag>SOCK_RAW</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>AirKiss Client 实现评估及 raw socket</title>
     <url>/2019/04/19/airkiss-client-and-raw-socket/</url>
     <content><![CDATA[<p>原始套接字、<code>wifi</code>驱动支持及<code>Airkiss Client</code>实现</p>
@@ -33784,6 +33622,194 @@ wlx00117f5bb7b4  IEEE 802.11  Mode:Monitor  Frequency:2.457 GHz  Tx-Power=20 dBm
         <tag>raw packet</tag>
         <tag>linux network stack</tag>
         <tag>freebsd network stack</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Raw Socket L2 vs L3</title>
+    <url>/2019/04/28/raw-socket-L2-vs-L3/</url>
+    <content><![CDATA[<p>记录<code>Raw socket</code>相关知识点，以及数据链路层数据访问</p>
+<ul>
+<li>Layer 2: MAC &amp; LLC</li>
+<li>Layer 3: Network</li>
+</ul>
+<a id="more"></a>
+
+<h2 id="OSI-Model"><a href="#OSI-Model" class="headerlink" title="OSI Model"></a>OSI Model</h2><p><code>OSI</code>七层模型如下</p>
+<p><img src="/images/socket/1556452439780.png" alt="1556452439780"></p>
+<ul>
+<li>Layer2: <code>MAC &amp; LLC</code>，数据类型 <a href="https://en.wikipedia.org/wiki/Frame_networking" target="_blank" rel="noopener">Frame</a></li>
+<li>Layer3: <code>Network</code>，数据类型 <a href="https://en.wikipedia.org/wiki/Network_packet" target="_blank" rel="noopener">Packet</a></li>
+</ul>
+<h2 id="Raw-Socket"><a href="#Raw-Socket" class="headerlink" title="Raw Socket"></a>Raw Socket</h2><p>每一层级网络数据都由两部分组成：<code>Header</code>和<code>Payload</code>，<code>TCP</code>报文如下</p>
+<p><img src="/images/socket/1556455755725.png" alt="1556455755725"></p>
+<p>通常使用的流式套接字<code>SOCK_STREAM</code>和数据包式套接字<code>SOCK_DGRAM</code>，已经由系统提供的协议栈处理过，应用只能处理<code>Payload</code>部分，<code>Header</code>部分已被处理过。而当需要处理<code>Header</code>部分时，需要使用<code>raw socket</code>，它位于系统核心，可以处理<code>Header</code>部分，而<code>raw socket</code>根据能力不同分为<code>L2</code>和<code>L3</code>，部分资料摘录如下：</p>
+<ol>
+<li>non-Raw socket<blockquote>
+<p>you can just determine Transport Layer Payload. i.e it is OS task to create Transport,Network and Data Link layer headers.</p>
+</blockquote>
+</li>
+<li>Raw socket<blockquote>
+<p>you can determine every section of packet,either header or payload. Please note that raw socket is a general word. I categorize raw socket into: Network Socket andd Data-Link Socket (or alternativly L3 Socket and L2 Socket)</p>
+</blockquote>
+</li>
+</ol>
+<h2 id="L3-Socket-–-Network-Socket"><a href="#L3-Socket-–-Network-Socket" class="headerlink" title="L3 Socket – Network Socket"></a>L3 Socket – Network Socket</h2><blockquote>
+<p>In L3 Socket you can determine header and payload of packet in network layer. For example if network layer protocol is IPv4, you can determine IPv4 header and payload. Thus you can set transport layer header/payload, ICMP header/payload, Routing Protocols headder/payload.</p>
+</blockquote>
+<p>创建方式</p>
+<pre><code class="c">socket(AF_INET, SOCK_RAW, protocol)</code></pre>
+<p>在头文件<code>netinet/in.h</code>中定义了系统中该字段目前能取的值，注意：有些系统中不一定实现了<code>netinet/in.h</code>中的所有协议。源代码的<code>linux/in.h</code>中和<code>netinet/in.h</code>中的内容一样。常用的如下</p>
+<ul>
+<li><code>IPPROTO_IP(0)</code>: 用于接收任何的 IP 数据包。其中的校验和和协议分析由程序自己完成</li>
+<li><code>IPPROTO_RAW(255)</code>: 只能用来发送 IP 包，而不能接收任何的数据。发送的数据需要自己填充 IP 包头，并且自己计算校验和</li>
+<li>其他像<code>IPPROTO_TCP(6)</code>这种非 0、非 255 的协议，当操作系统内核碰到 IP 头中 protocol 域和创建 socket 所使用参数 protocol 相同的 IP 包，就会交给这个<code>raw socket</code>来处理，因此，一般来说，要想接收什么样的数据包，就应该在参数 protocol 里来指定相应的协议。当内核向此 raw socket 交付数据包的时候，是包括整个 IP 头的，并且已经是重组好的 IP 包</li>
+</ul>
+<p>用这种方式可以得到原始的 IP 包，然后就可以自定义 IP 所承载的具体协议类型，如<code>TCP</code>，<code>UDP</code>或<code>ICMP</code>，并手动对每种承载在 IP 协议之上的报文进行填充。</p>
+<p>注意其中一个参数<code>IP_HDRINCL</code>，允许用户构造 IP 头</p>
+<pre><code class="c">const int on =1;
+if (setsockopt (sockfd, IPPROTO_IP, IP_HDRINCL, &amp;on, sizeof(on)) &lt; 0) {
+    printf(&quot;setsockopt error!\n&quot;);
+}</code></pre>
+<p><strong>L3 原始套接字处理的只是 IP 层及其以上的数据，可以处理<code>IP Header</code>及<code>TCP/UDP Header</code></strong>，比如实现 SYN FLOOD 攻击、处理 PING 报文等。当需要操作更底层的数据的时候，就需要采用其他的方式。</p>
+<h2 id="L2-Socket-–-Data-Link-Socket"><a href="#L2-Socket-–-Data-Link-Socket" class="headerlink" title="L2 Socket – Data-Link Socket"></a>L2 Socket – Data-Link Socket</h2><blockquote>
+<p>In L2 Socket you can set header and payload of packet in data link layer, i.e everything in packet. Thus you do everything done with L3 Socket + determine ARP header/payload, PPP header/payload, PPPOE header/payload , …. .</p>
+</blockquote>
+<p>为了实现直接从链路层收发数据帧，用到原始套接字的如下形式</p>
+<pre><code class="c">socket(PF_PACKET, type, protocol)</code></pre>
+<ul>
+<li><code>type</code>可取<code>SOCK_RAW</code>或<code>SOCK_DGRAM</code>。它们两个都使用一种与设备无关的标准物理层地址结构<code>struct sockaddr_ll</code>，但具体操作的报文格式不同：<ul>
+<li><code>SOCK_RAW</code>：直接向网络硬件驱动程序发送或接收没有任何处理的完整数据报文，<strong>包括物理帧的帧头</strong></li>
+<li><code>SOCK_DGRAM</code>：这种类型的套接字对于收到的数据报文的物理帧帧头会被系统自动去掉，<strong>不包括物理帧的帧头</strong>，然后再将其往协议栈上层传递。发送时根据<code>sockaddr_ll</code>中的目的地址信息添加<code>MAC</code>头</li>
+</ul>
+</li>
+<li><code>protocol</code>，链路层协议，<code>linux/if_ether.h</code>，常用如下：<ul>
+<li><code>ETH_P_IP</code>只接收发往目的 MAC 是本机的 IP 类型的数据帧</li>
+<li><code>ETH_P_ARP</code>只接收发往目的 MAC 是本机的 ARP 类型的数据帧</li>
+<li><code>ETH_P_RARP</code>只接受发往目的 MAC 是本机的 RARP 类型的数据帧</li>
+<li><code>ETH_P_ALL</code>接收发往目的 MAC 是本机的所有类型 (ip,arp,rarp) 的数据帧，同时还可以接收从本机发出去的所有数据帧。<strong>在混杂模式 /Monitor 打开的情况下，还会接收到发往目的 MAC 为非本地硬件地址的数据帧</strong></li>
+</ul>
+</li>
+</ul>
+<p>发送数据的时候需要自己组织整个以太网数据帧。和地址相关的结构体就不能再用前面的<code>struct sockaddr_in</code>了，而是<code>struct sockaddr_ll</code>，头文件<code>linux/if_packet.h</code>，如下：</p>
+<pre><code class="c">struct sockaddr_ll{
+    unsigned short sll_family; /* 总是 AF_PACKET */
+    unsigned short sll_protocol; /* 物理层的协议 */
+    int sll_ifindex; /* 接口号 */
+    unsigned short sll_hatype; /* 报头类型 */
+    unsigned char sll_pkttype; /* 分组类型 */
+    unsigned char sll_halen; /* 地址长度 */
+    unsigned char sll_addr[8]; /* 物理层地址 */
+};</code></pre>
+<ul>
+<li><p><code>sll_family</code>，使用<code>AF_PACKET</code></p>
+</li>
+<li><p><code>sll_protocol</code>，见头文件<code>linux/if_ether.h</code>，例如<code>ETH_P_ALL</code></p>
+</li>
+<li><p><code>sll_ifindex</code>，设置为<code>0</code>表示处理所有<code>interface</code>，单网卡设备无所谓，示例代码如下</p>
+<pre><code class="c">struct  sockaddr_ll  sll;
+struct ifreq ifr;
+
+strcpy(ifr.ifr_name, &quot;eth0&quot;);
+ioctl(sockfd, SIOCGIFINDEX, &amp;ifr);
+sll.sll_ifindex = ifr.ifr_ifindex;</code></pre>
+</li>
+<li><p><code>sll_hatype</code>，ARP 硬件地址类型，定义在<code>linux/if_arp.h</code>中，例如</p>
+<ul>
+<li><code>ARPHRD_ETHER</code>以太网</li>
+<li><code>ARPHRD_IEEE80211</code> IEEE 802.11</li>
+<li><code>ARPHRD_IEEE80211_PRISM</code> IEEE 802.11 + Prism2 header</li>
+<li><code>ARPHRD_IEEE80211_RADIOTAP</code> IEEE 802.11 + radiotap header <strong>Monitor 模式抓下来的类型</strong></li>
+</ul>
+</li>
+<li><p><code>sll_pkttype</code>，分组类型，定义在<code>linux/if_packet.h</code>，例如</p>
+<pre><code class="c">  3 #define PACKET_HOST     0       /* To us        */
+  4 #define PACKET_BROADCAST    1       /* To all       */
+  5 #define PACKET_MULTICAST    2       /* To group     */
+  6 #define PACKET_OTHERHOST    3       /* To someone else  */
+  7 #define PACKET_OUTGOING     4       /* Outgoing of any type */
+  8 #define PACKET_LOOPBACK     5       /* MC/BRD frame looped back */
+  9 #define PACKET_USER     6       /* To user space    */
+ 10 #define PACKET_KERNEL       7       /* To kernel space  */</code></pre>
+</li>
+<li><p><code>sll_addr</code>和<code>sll_halen</code>指示物理层（如以太网，802.3，802.4 或 802.5 等）地址及其长度，<strong>严格依赖于具体的硬件设备</strong>。类似于获取接口索引<code>sll_ifindex</code>，要获取接口的物理地址，可以采用如下代码</p>
+<pre><code class="c">struct ifreq ifr;
+
+strcpy(ifr.ifr_name, &quot;eth0&quot;);
+ioctl(sockfd, SIOCGIFHWADDR, &amp;ifr);</code></pre>
+</li>
+</ul>
+<p>默认情况下，从任何接口收到的符合指定协议的所有数据报文都会被传送到原始 PACKET 套接字口，而使用<code>bind</code>系统调用并以一个<code>sochddr_ll</code>结构体对象将 PACKET 套接字与某个网络接口相绑定，就可使我们的 PACKET 原始套接字只接收指定接口的数据报文。示例代码如下</p>
+<pre><code class="c">struct sockaddr_ll sll;
+struct ifreq ifr;
+
+/* find the interface index */
+memset( &amp;ifr, 0, sizeof( ifr ) );
+strncpy( ifr.ifr_name, iface, sizeof( ifr.ifr_name ) - 1 );
+
+if( ioctl( fd, SIOCGIFINDEX, &amp;ifr ) &lt; 0 )
+{
+    printf(&quot;Interface %s: \n&quot;, iface);
+    perror( &quot;ioctl(SIOCGIFINDEX) failed&quot; );
+    return( 1 );
+}
+
+memset( &amp;sll, 0, sizeof( sll ) );
+sll.sll_family   = AF_PACKET;
+sll.sll_ifindex  = ifr.ifr_ifindex;
+//sll.sll_ifindex  = if_nametoindex(iface);
+sll.sll_protocol = htons( ETH_P_ALL );
+
+/* bind the raw socket to the interface */
+
+if( bind( fd, (struct sockaddr *) &amp;sll, sizeof( sll ) ) &lt; 0 )
+{
+    printf(&quot;Interface %s: \n&quot;, iface);
+    perror( &quot;bind(ETH_P_ALL) failed&quot; );
+    return( 1 );
+}</code></pre>
+<p><strong>L2 Socket 可以处理链路层数据，可以处理<code>MAC Header</code></strong>，如果创建这个原始套接字时指定了非 0 的协议参数，那么接收到的数据报协议字段必须匹配该值。如果这个套接字已由<code>bind</code>调用绑定了某个 IP 地址，那么接收到的数据报的目的地址必须匹配这个绑定地址。</p>
+<h3 id="SOCK-PACKET"><a href="#SOCK-PACKET" class="headerlink" title="SOCK_PACKET"></a>SOCK_PACKET</h3><p>老的内核<code>Linux 2.0</code>接口提供的接口用于处理数据链路层数据，具体信息参看<code>libpcap/pcap-linux.c</code></p>
+<pre><code class="c">socket(PF_INET, SOCK_PACKET, htons(ETH_P_ALL))</code></pre>
+<p>如果系统已经提供<code>PF_PACKET</code>支持，不建议使用<code>SOCK_PACKET</code></p>
+<h2 id="Programming-Example"><a href="#Programming-Example" class="headerlink" title="Programming Example"></a>Programming Example</h2><ul>
+<li>socket(AF_INET,RAW_SOCKET,…) means L3 socket , Network Layer Protocol = IPv4</li>
+<li>socket(AF_IPX,RAW_SOCKET,…) means L3 socket , Network Layer Protocol = IPX</li>
+<li>socket(AF_INET6,RAW_SOCKET,…) means L3 socket , Network Layer Protocol=IPv6</li>
+<li>socket(AF_PACKET,RAW_SOCKET,…) means L2 socket , Data-link Layer Protocol= Ethernet</li>
+<li>socket(AF_PACKET,SOCK_DGRAM,…) means L2 socket , Data-link Layer Protocol= Ethernet without MAC Header</li>
+<li>socket(PF_INET, SOCK_PACKET, htons(ETH_P_ALL)) means L2 socket , Data-link Layer Protocol= Ethernet</li>
+</ul>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://smallbiztrends.com/2013/09/osi-model-layer-networking.html" target="_blank" rel="noopener">Is the Extra Layer Better? Layer 2 Versus Layer 3 Networking</a></li>
+<li><a href="https://stackoverflow.com/questions/14774668/what-is-raw-socket-in-socket-programming" target="_blank" rel="noopener">what is RAW socket in socket programming</a></li>
+<li><a href="https://blog.csdn.net/whatday/article/details/79232598" target="_blank" rel="noopener">原始套接字 SOCK_RAW</a></li>
+<li><a href="http://abcdxyzk.github.io/blog/2015/04/14/kernel-net-sock-raw/" target="_blank" rel="noopener">Linux 网络编程：原始套接字 SOCK_RAW</a></li>
+<li><a href="https://blog.csdn.net/zimu2702/article/details/7185917" target="_blank" rel="noopener">IPPROTO_IP , IPPROTO_RAW</a></li>
+<li><a href="https://medium.com/@qre0ct/difference-between-pf-inet-sockets-and-pf-packet-sockets-5a58ab9fe8e3" target="_blank" rel="noopener">Difference between PF_INET sockets and PF_PACKET sockets ?</a></li>
+<li><a href="https://blog.csdn.net/gqtcgq/article/details/44874349" target="_blank" rel="noopener">原始套接字和数据链路层访问</a></li>
+<li><a href="https://en.wikipedia.org/wiki/OSI_model" target="_blank" rel="noopener">OSI Model</a></li>
+<li><a href="https://austinmarton.wordpress.com/2011/09/14/sending-raw-ethernet-packets-from-a-specific-interface-in-c-on-linux/" target="_blank" rel="noopener">Sending raw Ethernet packets from a specific interface in C on Linux</a></li>
+<li><a href="http://man7.org/linux/man-pages/man7/packet.7.html" target="_blank" rel="noopener">PACKET(7) Linux Programmer’s Manual</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+        <category>Socket</category>
+        <category>Network</category>
+        <category>Airkiss</category>
+      </categories>
+      <tags>
+        <tag>socket</tag>
+        <tag>LLC</tag>
+        <tag>MAC</tag>
+        <tag>raw socket</tag>
+        <tag>layer 2</tag>
+        <tag>layer 3</tag>
+        <tag>OSI Model</tag>
+        <tag>IP</tag>
+        <tag>AF_INET</tag>
+        <tag>AF_PACKET</tag>
+        <tag>SOCK_RAW</tag>
       </tags>
   </entry>
   <entry>
