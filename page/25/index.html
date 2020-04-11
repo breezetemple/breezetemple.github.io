@@ -216,7 +216,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/18/markdown-to-html/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/18/git-undo/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -230,7 +230,7 @@
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/2016/04/18/markdown-to-html/" class="post-title-link" itemprop="url">Pandoc 实现 markdown 多格式自由转换</a>
+            <a href="/2016/04/18/git-undo/" class="post-title-link" itemprop="url">git中的撤销操作</a>
         </h1>
 
         <div class="post-meta">
@@ -247,7 +247,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-04-11 15:10:39" itemprop="dateModified" datetime="2020-04-11T15:10:39+08:00">2020-04-11</time>
+                <time title="Modified: 2020-04-11 15:11:26" itemprop="dateModified" datetime="2020-04-11T15:11:26+08:00">2020-04-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -261,8 +261,8 @@
                 </span>
                   , 
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/Markdown/" itemprop="url" rel="index">
-                    <span itemprop="name">Markdown</span>
+                  <a href="/categories/Tools/Git/" itemprop="url" rel="index">
+                    <span itemprop="name">Git</span>
                   </a>
                 </span>
             </span>
@@ -273,14 +273,14 @@
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>1.4k</span>
+              <span>2.6k</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="fa fa-clock-o"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
+              <span>2 mins.</span>
             </span>
 
         </div>
@@ -292,15 +292,67 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>Pandoc 是由 John MacFarlane 开发的标记语言转换工具，可实现不同标记语言间的格式转换</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2016/04/18/markdown-to-html/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
+          <p>在Git中，用<code>HEAD</code>表示当前版本，上一个版本就是<code>HEAD^</code>，上上一个版本就是<code>HEAD^^</code>，<br>当然往上100个版本写100个^比较容易数不过来，所以写成<code>HEAD~100</code>。</p>
+<hr>
+<h2 id="撤销一个已提交修改"><a href="#撤销一个已提交修改" class="headerlink" title="撤销一个已提交修改"></a><strong>撤销一个已提交修改</strong></h2><p>撤销某次提交，此次操作之前和之后的commit和history都会保留，并且把这次撤销作为一次最新的提交</p>
+<pre><code>git revert HEAD   撤销前一次 commit
+git revert HEAD^  撤销前前一次 commit
+git revert commit （比如：fa042ce57ebbe5bb9c8db709f719cec2c58ee7ff）撤销指定的版本，撤销也会作为一次提交进行保存。</code></pre><p>git revert是提交一个新的版本，将需要revert的版本的内容再反向修改回去，版本会递增，不影响之前提交的内容</p>
+<h2 id="修改最近一次的提交信息"><a href="#修改最近一次的提交信息" class="headerlink" title="修改最近一次的提交信息"></a><strong>修改最近一次的提交信息</strong></h2><p>提交时，可能没写好或者误操作导致提交的信息不合适，但你还没有 push 到远程分支时，修改上一次的提交信息。</p>
+<pre><code>git commit –amend或git commit --amend -m &quot;Fixes bug #42&quot;</code></pre><p>如果需要修改已push的文件，需要如下操作：</p>
+<pre><code>git rebase -i HEAD~3 
+git commit -amend 
+git rebase --continue</code></pre><h2 id="撤销本地修改"><a href="#撤销本地修改" class="headerlink" title="撤销本地修改"></a><strong>撤销本地修改</strong></h2><pre><code>git checkout -- file</code></pre><p><code>git checkout -- file</code>可以丢弃工作区的修改，把file文件在工作区的修改全部撤销，这里有两种情况：</p>
+<ol>
+<li>一种是自修改后还没有被放到暂存区，现在，撤销修改就回到和版本库一模一样的状态；</li>
+<li>一种是已经添加到暂存区后，又作了修改，现在，撤销修改就回到添加到暂存区后的状态。</li>
+</ol>
+<p>总之，就是<strong>让这个文件回到最近一次git commit或git add时的状态。</strong></p>
+<h2 id="重置修改"><a href="#重置修改" class="headerlink" title="重置修改"></a><strong>重置修改</strong></h2><p>已经使用<code>git add</code>，但是没有使用<code>git commit</code>，需要修改暂存区内容：</p>
+<pre><code>git reset HEAD file</code></pre><p>仅用HEAD指向的目录树充值暂存区，工作区不受影响。相当于把git add命令更新到暂存区的内容撤出暂存区</p>
+<pre><code>git reset --hard HEAD^</code></pre><p>把版本库、暂存区和工作区都回退到HEAD的前一个版本。head版本的提交全部丢失。慎用！</p>
+<pre><code>git reset --hard HEAD</code></pre><p>等价与：</p>
+<pre><code>git reset HEAD file
+git checkout -- file</code></pre><h2 id="版本回退"><a href="#版本回退" class="headerlink" title="版本回退"></a><strong>版本回退</strong></h2><pre><code>git reset --hard HEAD^
+git reset --hard commit_id</code></pre><h2 id="撤销本地后重做"><a href="#撤销本地后重做" class="headerlink" title="撤销本地后重做"></a><strong>撤销本地后重做</strong></h2><p>已经提交了一些内容，并使用git reset –hard撤销了这些更改（见上面），突然意识到：你想还原这些修改！</p>
+<pre><code>git reflog</code></pre><p>git reflog是一个用来恢复项目历史记录的好办法。你可以通过git reflog恢复几乎任何已提交的内容。<br>git reflog与git log类似，只不过git reflog显示的是HEAD变更次数的列表。</p>
+<p>具体一个例子，假设有三个commit， </p>
+<pre><code>git st:
+commit3: add test3.c
+commit2: add test2.c
+commit1: add test1.c</code></pre><p>如果执行git reset –hard HEAD~1则 删除了commit3，如果发现删除错误了，需要恢复commit3，这个时候就要使用</p>
+<pre><code>git reflog
+HEAD@{0}: HEAD~1: updating HEAD
+63ee781 HEAD@{1}: commit: test3:q</code></pre><p>运行git log则没有这一行记录，可以使用git reset –hard 63ee781将红色记录删除，则恢复了cmmit3，运行git log后可以看到：</p>
+<pre><code>git reset --hard 63ee781
+git log
+commit3: add test3.c
+commit2: add test2.c
+commit1: add test1.c</code></pre><h2 id="停止跟踪一个已被跟踪的文件"><a href="#停止跟踪一个已被跟踪的文件" class="headerlink" title="停止跟踪一个已被跟踪的文件"></a><strong>停止跟踪一个已被跟踪的文件</strong></h2><p>场景：你意外将application.log添加到仓库中，现在你每次运行程序，Git都提示application.log中有unstaged的提交。<br>你在.gitignore中写上”*.log”，但仍旧没用——怎样告诉Git“撤销”跟踪这个文件的变化呢？</p>
+<pre><code>git rm --cached application.log</code></pre><p>发生了什么：尽管.gitignore阻止Git跟踪文件的变化，甚至是之前没被跟踪的文件是否存在，<br>但是，一旦文件被add或者commit，Git会开始持续跟踪这 个文件的变化。<br>类似的，如果你用git add –f来“强制”add，或者覆盖.gitignore，Git还是会继续监视变化。所以以后最好不要使用 –f来add .gitignore文件。</p>
+<p>如果你希望移除那些应当被忽略的文件，git rm –cached可以帮助你，并将这些文件保留在磁盘上。<br>因为这个文件现在被忽略了，你将不会在git status中看到它，也不会再把这个文件commit了。</p>
+<h2 id="git-reset-与-git-revert"><a href="#git-reset-与-git-revert" class="headerlink" title="git reset 与 git revert"></a>git reset 与 git revert</h2><p><strong>git revert</strong> 是生成一个新的提交来撤销某次提交，此次提交之前的commit都会被保留</p>
+<p><strong>git reset</strong> 是回到某次提交，提交及之前的commit都会被保留，但是此次之后的修改都会被退回到暂存区</p>
+<p>假设有三个commit， </p>
+<pre><code>git st
+commit3: add test3.c
+commit2: add test2.c
+commit1: add test1.c</code></pre><p>当执行git revert HEAD~1时， commit2被撤销了，git log可以看到：</p>
+<p>revert “commit2”:this reverts commit 5fe21s2…<br>commit3: add test3.c<br>commit2: add test2.c<br>commit1: add test1.c</p>
+<p><strong>git status 没有任何变化</strong>，如果换做执行git reset –soft(默认) HEAD~1后，运行git log</p>
+<pre><code>commit2: add test2.c
+commit1: add test1.c</code></pre><p><strong>运行git status， 则test3.c处于暂存区，准备提交。</strong></p>
+<p>如果换做执行git reset –hard HEAD~1后，</p>
+<p>显示：HEAD is now at commit2，运行git log</p>
+<pre><code>commit2: add test2.c
+commit1: add test1.c</code></pre><p><strong>运行git st， 没有任何变化，工作目录文件也不存在</strong></p>
+<ol>
+<li><a href="http://www.open-open.com/lib/view/open1434097780473.html" target="_blank" rel="noopener">如何在Git中撤销一切</a></li>
+<li><a href="http://www.liaoxuefeng.com/wiki/0013739516305929606dd18361248578c67b8067c8c017b000/001374831943254ee90db11b13d4ba9a73b9047f4fb968d000" target="_blank" rel="noopener">撤销修改</a></li>
+<li><a href="http://www.oschina.net/translate/10-tips-git-next-level" target="_blank" rel="noopener">10 个迅速提升你 Git 水平的提示</a></li>
+<li><a href="https://segmentfault.com/q/1010000000430041" target="_blank" rel="noopener">团队开发里频繁使用 git rebase 来保持树的整洁好吗?</a></li>
+</ol>
+
       
     </div>
 
@@ -350,7 +402,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-04-11 15:10:39" itemprop="dateModified" datetime="2020-04-11T15:10:39+08:00">2020-04-11</time>
+                <time title="Modified: 2020-04-11 15:11:26" itemprop="dateModified" datetime="2020-04-11T15:11:26+08:00">2020-04-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -495,7 +547,7 @@ done</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-04-11 15:10:39" itemprop="dateModified" datetime="2020-04-11T15:10:39+08:00">2020-04-11</time>
+                <time title="Modified: 2020-04-11 15:11:26" itemprop="dateModified" datetime="2020-04-11T15:11:26+08:00">2020-04-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -645,7 +697,7 @@ install : *.a
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-04-11 15:10:39" itemprop="dateModified" datetime="2020-04-11T15:10:39+08:00">2020-04-11</time>
+                <time title="Modified: 2020-04-11 15:11:26" itemprop="dateModified" datetime="2020-04-11T15:11:26+08:00">2020-04-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -802,6 +854,386 @@ $ git rebase -i --autosquash </code></pre><p>这个用法请参考<a href="http:
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/02/23/git-workflow/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2016/02/23/git-workflow/" class="post-title-link" itemprop="url">Git 工作流程[转载]</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-02-24 00:00:00" itemprop="dateCreated datePublished" datetime="2016-02-24T00:00:00+08:00">2016-02-24</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-04-11 15:11:26" itemprop="dateModified" datetime="2020-04-11T15:11:26+08:00">2020-04-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Git/" itemprop="url" rel="index">
+                    <span itemprop="name">Git</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<p>作者： 阮一峰<br>日期： 2015年12月24日<br><a href="http://www.ruanyifeng.com/blog/2015/12/git-workflow.html" target="_blank" rel="noopener">原文</a></p>
+<p>Git 作为一个源码管理系统，不可避免涉及到多人协作。<br>协作必须有一个规范的工作流程，让大家有效地合作，使得项目井井有条地发展下去。<br>“工作流程”在英语里，叫做”workflow”或者”flow”，原意是水流，比喻项目像水流那样，顺畅、自然地向前流动，不会发生冲击、对撞、甚至漩涡。</p>
+<p><img src="/images/git/git_workflow.png" alt="Git Workflow" title="git workflow"></p>
+<p>本文介绍三种广泛使用的工作流程：</p>
+<ul>
+<li><strong>Git flow</strong></li>
+<li><strong>Github flow</strong></li>
+<li><strong>Gitlab flow</strong></li>
+</ul>
+<p>如果你对Git还不是很熟悉，可以先阅读下面的文章。</p>
+<ul>
+<li><a href="http://www.ruanyifeng.com/blog/2015/08/git-use-process.html" target="_blank" rel="noopener">《Git 使用规范流程》</a></li>
+<li><a href="http://www.ruanyifeng.com/blog/2015/12/git-cheat-sheet.html" target="_blank" rel="noopener">《常用 Git 命令清单》</a></li>
+<li><a href="http://www.ruanyifeng.com/blog/2014/06/git_remote.html" target="_blank" rel="noopener">《Git 远程操作详解》</a></li>
+</ul>
+<h2 id="功能驱动"><a href="#功能驱动" class="headerlink" title="功能驱动"></a>功能驱动</h2><p>本文的三种工作流程，有一个共同点：都采用<a href="https://en.wikipedia.org/wiki/Feature-driven_development" target="_blank" rel="noopener">“功能驱动式开发”</a>（Feature-driven development，简称FDD）。</p>
+<p>它指的是，需求是开发的起点，先有需求再有功能分支（feature branch）或者补丁分支（hotfix branch）。<br>完成开发后，该分支就合并到主分支，然后被删除。</p>
+<h2 id="Git-flow"><a href="#Git-flow" class="headerlink" title="Git flow"></a>Git flow</h2><p>最早诞生、并得到广泛采用的一种工作流程，就是Git flow 。</p>
+<h3 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h3><p>它最主要的特点有两个。</p>
+<p><img src="/images/git/gitflow.png" alt="gitflow" title="gitflow"></p>
+<p>首先，项目存在两个长期分支。</p>
+<ul>
+<li><strong>主分支master</strong></li>
+<li><strong>开发分支develop</strong></li>
+</ul>
+<p>前者用于存放对外发布的版本，任何时候在这个分支拿到的，都是稳定的分布版；后者用于日常开发，存放最新的开发版。</p>
+<p>其次，项目存在三种短期分支。</p>
+<ul>
+<li><strong>功能分支（feature branch）</strong></li>
+<li><strong>补丁分支（hotfix branch）</strong></li>
+<li><strong>预发分支（release branch）</strong></li>
+</ul>
+<p>一旦完成开发，它们就会被合并进develop或master，然后被删除。<br>Git flow 的详细介绍，请阅读我翻译的中文版<a href="http://www.ruanyifeng.com/blog/2012/07/git.html" target="_blank" rel="noopener">《Git 分支管理策略》</a>。</p>
+<h3 id="评价"><a href="#评价" class="headerlink" title="评价"></a>评价</h3><p>Git flow的优点是清晰可控，缺点是相对复杂，需要同时维护两个长期分支。<br>大多数工具都将master当作默认分支，可是开发是在develop分支进行的，这导致经常要切换分支，非常烦人。<br>更大问题在于，这个模式是基于”版本发布”的，目标是一段时间以后产出一个新版本。<br>但是，很多网站项目是”持续发布”，代码一有变动，就部署一次。<br>这时，master分支和develop分支的差别不大，没必要维护两个长期分支。</p>
+<h2 id="Github-flow"><a href="#Github-flow" class="headerlink" title="Github flow"></a>Github flow</h2><p>Github flow 是Git flow的简化版，专门配合”持续发布”。它是 Github.com 使用的工作流程。</p>
+<h3 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h3><p>它只有一个长期分支，就是master，因此用起来非常简单。<br>官方推荐的<a href="https://guides.github.com/introduction/flow/index.html" target="_blank" rel="noopener">流程</a>如下。</p>
+<p><img src="/images/git/github_flow.png" alt="github flow" title="github flow"></p>
+<ol>
+<li>根据需求，从master拉出新分支，不区分功能分支或补丁分支。</li>
+<li>新分支开发完成后，或者需要讨论的时候，就向master发起一个<a href="https://help.github.com/articles/using-pull-requests/" target="_blank" rel="noopener">pull request</a>（简称PR）。</li>
+<li>Pull Request既是一个通知，让别人注意到你的请求，又是一种对话机制，大家一起评审和讨论你的代码。对话过程中，你还可以不断提交代码。</li>
+<li>你的Pull Request被接受，合并进master，重新部署后，原来你拉出来的那个分支就被删除。（先部署再合并也可。）</li>
+</ol>
+<h3 id="评价-1"><a href="#评价-1" class="headerlink" title="评价"></a>评价</h3><p>Github flow 的最大优点就是简单，对于”持续发布”的产品，可以说是最合适的流程。<br>问题在于它的假设：master分支的更新与产品的发布是一致的。也就是说，master分支的最新代码，默认就是当前的线上代码。<br>可是，有些时候并非如此，代码合并进入master分支，并不代表它就能立刻发布。<br>比如，苹果商店的APP提交审核以后，等一段时间才能上架。<br>这时，如果还有新的代码提交，master分支就会与刚发布的版本不一致。<br>另一个例子是，有些公司有发布窗口，只有指定时间才能发布，这也会导致线上版本落后于master分支。<br>上面这种情况，只有master一个主分支就不够用了。<br>通常，你不得不在master分支以外，另外新建一个production分支跟踪线上版本。</p>
+<h2 id="Gitlab-flow"><a href="#Gitlab-flow" class="headerlink" title="Gitlab flow"></a>Gitlab flow</h2><p>Gitlab flow 是 Git flow 与 Github flow 的综合。<br>它吸取了两者的优点，既有适应不同开发环境的弹性，又有单一主分支的简单和便利。<br>它是 Gitlab.com 推荐的做法。</p>
+<h3 id="上游优先"><a href="#上游优先" class="headerlink" title="上游优先"></a>上游优先</h3><p>Gitlab flow 的最大原则叫做”上游优先”（upsteam first），即只存在一个主分支master，它是所有其他分支的”上游”。<br>只有上游分支采纳的代码变化，才能应用到其他分支。</p>
+<p><a href="https://www.chromium.org/chromium-os/chromiumos-design-docs/upstream-first" target="_blank" rel="noopener">Chromium项目</a>就是一个例子，<br>它明确规定，上游分支依次为：</p>
+<ul>
+<li><strong>Linus Torvalds的分支</strong></li>
+<li><strong>子系统（比如netdev）的分支</strong></li>
+<li><strong>设备厂商（比如三星）的分支</strong></li>
+</ul>
+<h3 id="持续发布"><a href="#持续发布" class="headerlink" title="持续发布"></a>持续发布</h3><p>Gitlab flow 分成两种情况，适应不同的开发流程。</p>
+<p><img src="/images/git/gitlab_flow1.png" alt="gitlab flow" title="gitlab flow"></p>
+<p>对于”持续发布”的项目，它建议在master分支以外，再建立不同的环境分支。<br>比如，”开发环境”的分支是master，”预发环境”的分支是pre-production，”生产环境”的分支是production。</p>
+<p>开发分支是预发分支的”上游”，预发分支又是生产分支的”上游”。<br>代码的变化，必须由”上游”向”下游”发展。<br>比如，生产环境出现了bug，这时就要新建一个功能分支，先把它合并到master，确认没有问题，<br>再cherry-pick到pre-production，这一步也没有问题，才进入production。<br>只有紧急情况，才允许跳过上游，直接合并到下游分支。</p>
+<h3 id="版本发布"><a href="#版本发布" class="headerlink" title="版本发布"></a>版本发布</h3><p><img src="/images/git/gitlab_release.png" alt="gitlab release" title="gitlab release"></p>
+<p>对于”版本发布”的项目，建议的做法是每一个稳定版本，都要从master分支拉出一个分支，比如2-3-stable、2-4-stable等等。<br>以后，只有修补bug，才允许将代码合并到这些分支，并且此时要更新小版本号。</p>
+<h2 id="一些小技巧"><a href="#一些小技巧" class="headerlink" title="一些小技巧"></a>一些小技巧</h2><h3 id="Pull-Request"><a href="#Pull-Request" class="headerlink" title="Pull Request"></a>Pull Request</h3><p><img src="/images/git/merge.png" alt="merge" title="merge"></p>
+<p>功能分支合并进master分支，必须通过Pull Request（Gitlab里面叫做 Merge Request）。</p>
+<p><img src="/images/git/request.png" alt="request" title="request"></p>
+<p>前面说过，Pull Request本质是一种对话机制，你可以在提交的时候，<br>@相关<a href="https://github.com/blog/1004-mention-autocompletion" target="_blank" rel="noopener">人员</a>或<a href="https://github.com/blog/1121-introducing-team-mentions" target="_blank" rel="noopener">团队</a>，引起他们的注意。</p>
+<h3 id="Protected-branch"><a href="#Protected-branch" class="headerlink" title="Protected branch"></a>Protected branch</h3><p>master分支应该受到保护，不是每个人都可以修改这个分支，以及拥有审批 Pull Request 的权力。</p>
+<p><a href="https://help.github.com/articles/about-protected-branches/" target="_blank" rel="noopener">Github</a><br>和 <a href="http://doc.gitlab.com/ce/permissions/permissions.html" target="_blank" rel="noopener">Gitlab</a> 都提供”保护分支”（Protected branch）这个功能。</p>
+<h3 id="Issue"><a href="#Issue" class="headerlink" title="Issue"></a>Issue</h3><p>Issue 用于 Bug追踪和需求管理。建议先新建 Issue，再新建对应的功能分支。功能分支总是为了解决一个或多个 Issue。<br>功能分支的名称，可以与issue的名字保持一致，并且以issue的编号起首，比如”15-require-a-password-to-change-it”。</p>
+<p>开发完成后，在提交说明里面，可以写上”fixes #14”或者”closes #67”。<br>Github规定，只要commit message里面有下面这些<a href="https://help.github.com/articles/closing-issues-via-commit-messages/" target="_blank" rel="noopener">动词</a> + 编号，<br>就会关闭对应的issue。</p>
+<ul>
+<li>close</li>
+<li>closes</li>
+<li>closed</li>
+<li>fix</li>
+<li>fixes</li>
+<li>fixed</li>
+<li>resolve</li>
+<li>resolves</li>
+<li>resolved</li>
+</ul>
+<p>这种方式还可以一次关闭多个issue，或者关闭其他代码库的issue，格式是username/repository#issue_number。<br>Pull Request被接受以后，issue关闭，原始分支就应该删除。如果以后该issue重新打开，新分支可以复用原来的名字。</p>
+<h3 id="Merge节点"><a href="#Merge节点" class="headerlink" title="Merge节点"></a>Merge节点</h3><p>Git有两种合并：一种是”直进式合并”（fast forward），不生成单独的合并节点；<br>另一种是”非直进式合并”（none fast-forword），会生成单独节点。</p>
+<p>前者不利于保持commit信息的清晰，也不利于以后的回滚，建议总是采用后者（即使用–no-ff参数）。<br>只要发生合并，就要有一个单独的合并节点。</p>
+<h3 id="Squash-多个commit"><a href="#Squash-多个commit" class="headerlink" title="Squash 多个commit"></a>Squash 多个commit</h3><p>为了便于他人阅读你的提交，也便于cherry-pick或撤销代码变化，在发起Pull Request之前，应该把多个commit合并成一个。<br>（前提是，该分支只有你一个人开发，且没有跟master合并过。）</p>
+<p>这可以采用rebase命令附带的squash操作，具体方法请参考我写的<a href="http://www.ruanyifeng.com/blog/2015/08/git-use-process.html" target="_blank" rel="noopener">《Git 使用规范流程》</a>。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/02/23/git-remote/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2016/02/23/git-remote/" class="post-title-link" itemprop="url">Git 远程操作详解[转载]</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-02-24 00:00:00" itemprop="dateCreated datePublished" datetime="2016-02-24T00:00:00+08:00">2016-02-24</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-04-11 15:11:26" itemprop="dateModified" datetime="2020-04-11T15:11:26+08:00">2020-04-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Git/" itemprop="url" rel="index">
+                    <span itemprop="name">Git</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>4.9k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<p>作者： 阮一峰<br>日期： 2014年6月12日<br><a href="http://www.ruanyifeng.com/blog/2014/06/git_remote.html" target="_blank" rel="noopener">原文</a></p>
+<p>Git是目前最流行的版本管理系统，学会Git几乎成了开发者的必备技能。<br>Git有很多优势，其中之一就是远程操作非常简便。本文详细介绍5个Git命令，它们的概念和用法，理解了这些内容，你就会完全掌握Git远程操作。</p>
+<ul>
+<li><strong>git clone</strong></li>
+<li><strong>git remote</strong></li>
+<li><strong>git fetch</strong></li>
+<li><strong>git pull</strong></li>
+<li><strong>git push</strong></li>
+</ul>
+<p>本文针对初级用户，从最简单的讲起，但是需要读者对Git的基本用法有所了解。<br>同时，本文覆盖了上面5个命令的几乎所有的常用用法，所以对于熟练用户也有参考价值。</p>
+<p><img src="/images/git/git_remote.jpg" alt="Git Remote" title="git remote"></p>
+<h2 id="git-clone"><a href="#git-clone" class="headerlink" title="git clone"></a><strong>git clone</strong></h2><p>远程操作的第一步，通常是从远程主机克隆一个版本库，这时就要用到git clone命令。</p>
+<pre><code>$ git clone &lt;版本库的网址&gt;</code></pre><p>比如，克隆jQuery的版本库。</p>
+<pre><code>$ git clone https://github.com/jquery/jquery.git</code></pre><p>该命令会在本地主机生成一个目录，与远程主机的版本库同名。如果要指定不同的目录名，可以将目录名作为git clone命令的第二个参数。</p>
+<pre><code>$ git clone &lt;版本库的网址&gt; &lt;本地目录名&gt;</code></pre><p>git clone支持多种协议，除了HTTP(s)以外，还支持SSH、Git、本地文件协议等，下面是一些例子。</p>
+<pre><code>$ git clone http[s]://example.com/path/to/repo.git/
+$ git clone ssh://example.com/path/to/repo.git/
+$ git clone git://example.com/path/to/repo.git/
+$ git clone /opt/git/project.git 
+$ git clone file:///opt/git/project.git
+$ git clone ftp[s]://example.com/path/to/repo.git/
+$ git clone rsync://example.com/path/to/repo.git/</code></pre><p>SSH协议还有另一种写法。</p>
+<pre><code>$ git clone [user@]example.com:path/to/repo.git/</code></pre><p>通常来说，Git协议下载速度最快，SSH协议用于需要用户认证的场合。各种协议优劣的详细讨论请参考官方文档。</p>
+<h2 id="git-remote"><a href="#git-remote" class="headerlink" title="git remote"></a><strong>git remote</strong></h2><p>为了便于管理，Git要求每个远程主机都必须指定一个主机名。git remote命令就用于管理主机名。<br>不带选项的时候，git remote命令列出所有远程主机。</p>
+<pre><code>$ git remote
+origin</code></pre><p>使用-v选项，可以参看远程主机的网址。</p>
+<pre><code>$ git remote -v
+origin  git@github.com:jquery/jquery.git (fetch)
+origin  git@github.com:jquery/jquery.git (push)</code></pre><p>上面命令表示，当前只有一台远程主机，叫做origin，以及它的网址。<br>克隆版本库的时候，所使用的远程主机自动被Git命名为origin。如果想用其他的主机名，需要用git clone命令的-o选项指定。</p>
+<pre><code>$ git clone -o jQuery https://github.com/jquery/jquery.git
+$ git remote
+jQuery</code></pre><p>上面命令表示，克隆的时候，指定远程主机叫做jQuery。</p>
+<p>git remote show命令加上主机名，可以查看该主机的详细信息。</p>
+<pre><code>$ git remote show &lt;主机名&gt;</code></pre><p>git remote add命令用于添加远程主机。</p>
+<pre><code>$ git remote add &lt;主机名&gt; &lt;网址&gt;</code></pre><p>git remote rm命令用于删除远程主机。</p>
+<pre><code>$ git remote rm &lt;主机名&gt;</code></pre><p>git remote rename命令用于远程主机的改名。</p>
+<pre><code>$ git remote rename &lt;原主机名&gt; &lt;新主机名&gt;</code></pre><h2 id="git-fetch"><a href="#git-fetch" class="headerlink" title="git fetch"></a><strong>git fetch</strong></h2><p>一旦远程主机的版本库有了更新（Git术语叫做commit），需要将这些更新取回本地，这时就要用到git fetch命令。</p>
+<pre><code>$ git fetch &lt;远程主机名&gt;</code></pre><p>上面命令将某个远程主机的更新，全部取回本地。<br>git fetch命令通常用来查看其他人的进程，因为它取回的代码对你本地的开发代码没有影响。<br>默认情况下，git fetch取回所有分支（branch）的更新。如果只想取回特定分支的更新，可以指定分支名。</p>
+<pre><code>$ git fetch &lt;远程主机名&gt; &lt;分支名&gt;</code></pre><p>比如，取回origin主机的master分支。</p>
+<pre><code>$ git fetch origin master</code></pre><p>所取回的更新，在本地主机上要用”远程主机名/分支名”的形式读取。比如origin主机的master，就要用origin/master读取。<br>git branch命令的-r选项，可以用来查看远程分支，-a选项查看所有分支。</p>
+<pre><code>$ git branch -r
+origin/master
+
+$ git branch -a
+* master
+  remotes/origin/master</code></pre><p>上面命令表示，本地主机的当前分支是master，远程分支是origin/master。<br>取回远程主机的更新以后，可以在它的基础上，使用git checkout命令创建一个新的分支。</p>
+<pre><code>$ git checkout -b newBrach origin/master</code></pre><p>上面命令表示，在origin/master的基础上，创建一个新分支。<br>此外，也可以使用git merge命令或者git rebase命令，在本地分支上合并远程分支。</p>
+<pre><code>$ git merge origin/master
+$ git rebase origin/master</code></pre><p>上面命令表示在当前分支上，合并origin/master。</p>
+<h2 id="git-pull"><a href="#git-pull" class="headerlink" title="git pull"></a><strong>git pull</strong></h2><p>git pull命令的作用是，取回远程主机某个分支的更新，再与本地的指定分支合并。它的完整格式稍稍有点复杂。</p>
+<pre><code>$ git pull &lt;远程主机名&gt; &lt;远程分支名&gt;:&lt;本地分支名&gt;</code></pre><p>比如，取回origin主机的next分支，与本地的master分支合并，需要写成下面这样。</p>
+<pre><code>$ git pull origin next:master</code></pre><p>如果远程分支是与当前分支合并，则冒号后面的部分可以省略。</p>
+<pre><code>$ git pull origin next</code></pre><p>上面命令表示，取回origin/next分支，再与当前分支合并。实质上，这等同于先做git fetch，再做git merge。</p>
+<pre><code>$ git fetch origin
+$ git merge origin/next</code></pre><p>在某些场合，Git会自动在本地分支与远程分支之间，建立一种追踪关系（tracking）。<br>比如，在git clone的时候，所有本地分支默认与远程主机的同名分支，建立追踪关系，<br>也就是说，本地的master分支自动”追踪”origin/master分支。<br>Git也允许手动建立追踪关系。</p>
+<pre><code>git branch --set-upstream master origin/next</code></pre><p>上面命令指定master分支追踪origin/next分支。<br><strong>如果当前分支与远程分支存在追踪关系，git pull就可以省略远程分支名。</strong></p>
+<pre><code>$ git pull origin</code></pre><p>上面命令表示，本地的当前分支自动与对应的origin主机”追踪分支”（remote-tracking branch）进行合并。<br>如果当前分支只有一个追踪分支，连远程主机名都可以省略。</p>
+<pre><code>$ git pull</code></pre><p>上面命令表示，当前分支自动与唯一一个追踪分支进行合并。<br>如果合并需要采用rebase模式，可以使用–rebase选项。</p>
+<pre><code>$ git pull --rebase &lt;远程主机名&gt; &lt;远程分支名&gt;:&lt;本地分支名&gt;</code></pre><p>如果远程主机删除了某个分支，默认情况下，git pull 不会在拉取远程分支的时候，删除对应的本地分支。<br>这是为了防止，由于其他人操作了远程主机，导致git pull不知不觉删除了本地分支。<br>但是，你可以改变这个行为，加上参数 -p 就会在本地删除远程已经删除的分支。</p>
+<pre><code>$ git pull -p
+# 等同于下面的命令
+$ git fetch --prune origin 
+$ git fetch -p</code></pre><h2 id="git-push"><a href="#git-push" class="headerlink" title="git push"></a><strong>git push</strong></h2><p>git push命令用于将本地分支的更新，推送到远程主机。它的格式与git pull命令相仿。</p>
+<pre><code>$ git push &lt;远程主机名&gt; &lt;本地分支名&gt;:&lt;远程分支名&gt;</code></pre><p>注意，分支推送顺序的写法是&lt;来源地&gt;:&lt;目的地&gt;，所以git pull是&lt;远程分支&gt;:&lt;本地分支&gt;，而git push是&lt;本地分支&gt;:&lt;远程分支&gt;。<br>如果省略远程分支名，则表示将本地分支推送与之存在”追踪关系”的远程分支（通常两者同名），如果该远程分支不存在，则会被新建。</p>
+<pre><code>$ git push origin master</code></pre><p>上面命令表示，将本地的master分支推送到origin主机的master分支。如果后者不存在，则会被新建。<br>如果省略本地分支名，则表示删除指定的远程分支，因为这等同于推送一个空的本地分支到远程分支。</p>
+<pre><code>$ git push origin :master
+# 等同于
+$ git push origin --delete master</code></pre><p>上面命令表示删除origin主机的master分支。<br>如果当前分支与远程分支之间存在追踪关系，则本地分支和远程分支都可以省略。</p>
+<pre><code>$ git push origin</code></pre><p>上面命令表示，将当前分支推送到origin主机的对应分支。<br>如果当前分支只有一个追踪分支，那么主机名都可以省略。</p>
+<pre><code>$ git push</code></pre><p>如果当前分支与多个主机存在追踪关系，则可以使用-u选项指定一个默认主机，这样后面就可以不加任何参数使用git push。</p>
+<pre><code>$ git push -u origin master</code></pre><p>上面命令将本地的master分支推送到origin主机，同时指定origin为默认主机，后面就可以不加任何参数使用git push了。<br>不带任何参数的git push，默认只推送当前分支，这叫做simple方式。<br>此外，还有一种matching方式，会推送所有有对应的远程分支的本地分支。<br>Git 2.0版本之前，默认采用matching方法，现在改为默认采用simple方式。如果要修改这个设置，可以采用git config命令。</p>
+<pre><code>$ git config --global push.default matching
+# 或者
+$ git config --global push.default simple</code></pre><p>还有一种情况，就是不管是否存在对应的远程分支，将本地的所有分支都推送到远程主机，这时需要使用–all选项。</p>
+<pre><code>$ git push --all origin</code></pre><p>上面命令表示，将所有本地分支都推送到origin主机。<br>如果远程主机的版本比本地版本更新，推送时Git会报错，要求先在本地做git pull合并差异，然后再推送到远程主机。<br>这时，如果你一定要推送，可以使用–force选项。</p>
+<pre><code>$ git push --force origin </code></pre><p>上面命令使用–force选项，结果导致远程主机上更新的版本被覆盖。<br>除非你很确定要这样做，否则应该尽量避免使用–force选项。<br>最后，git push不会推送标签（tag），除非使用–tags选项。</p>
+<pre><code>$ git push origin --tags</code></pre>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/02/23/git-cheat-sheet/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -833,7 +1265,7 @@ $ git rebase -i --autosquash </code></pre><p>这个用法请参考<a href="http:
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-04-11 15:10:39" itemprop="dateModified" datetime="2020-04-11T15:10:39+08:00">2020-04-11</time>
+                <time title="Modified: 2020-04-11 15:11:26" itemprop="dateModified" datetime="2020-04-11T15:11:26+08:00">2020-04-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1128,386 +1560,6 @@ $ git archive</code></pre>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/02/23/git-workflow/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2016/02/23/git-workflow/" class="post-title-link" itemprop="url">Git 工作流程[转载]</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2016-02-24 00:00:00" itemprop="dateCreated datePublished" datetime="2016-02-24T00:00:00+08:00">2016-02-24</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-04-11 15:10:39" itemprop="dateModified" datetime="2020-04-11T15:10:39+08:00">2020-04-11</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/" itemprop="url" rel="index">
-                    <span itemprop="name">Tools</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/Git/" itemprop="url" rel="index">
-                    <span itemprop="name">Git</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>3.6k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>3 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<p>作者： 阮一峰<br>日期： 2015年12月24日<br><a href="http://www.ruanyifeng.com/blog/2015/12/git-workflow.html" target="_blank" rel="noopener">原文</a></p>
-<p>Git 作为一个源码管理系统，不可避免涉及到多人协作。<br>协作必须有一个规范的工作流程，让大家有效地合作，使得项目井井有条地发展下去。<br>“工作流程”在英语里，叫做”workflow”或者”flow”，原意是水流，比喻项目像水流那样，顺畅、自然地向前流动，不会发生冲击、对撞、甚至漩涡。</p>
-<p><img src="/images/git/git_workflow.png" alt="Git Workflow" title="git workflow"></p>
-<p>本文介绍三种广泛使用的工作流程：</p>
-<ul>
-<li><strong>Git flow</strong></li>
-<li><strong>Github flow</strong></li>
-<li><strong>Gitlab flow</strong></li>
-</ul>
-<p>如果你对Git还不是很熟悉，可以先阅读下面的文章。</p>
-<ul>
-<li><a href="http://www.ruanyifeng.com/blog/2015/08/git-use-process.html" target="_blank" rel="noopener">《Git 使用规范流程》</a></li>
-<li><a href="http://www.ruanyifeng.com/blog/2015/12/git-cheat-sheet.html" target="_blank" rel="noopener">《常用 Git 命令清单》</a></li>
-<li><a href="http://www.ruanyifeng.com/blog/2014/06/git_remote.html" target="_blank" rel="noopener">《Git 远程操作详解》</a></li>
-</ul>
-<h2 id="功能驱动"><a href="#功能驱动" class="headerlink" title="功能驱动"></a>功能驱动</h2><p>本文的三种工作流程，有一个共同点：都采用<a href="https://en.wikipedia.org/wiki/Feature-driven_development" target="_blank" rel="noopener">“功能驱动式开发”</a>（Feature-driven development，简称FDD）。</p>
-<p>它指的是，需求是开发的起点，先有需求再有功能分支（feature branch）或者补丁分支（hotfix branch）。<br>完成开发后，该分支就合并到主分支，然后被删除。</p>
-<h2 id="Git-flow"><a href="#Git-flow" class="headerlink" title="Git flow"></a>Git flow</h2><p>最早诞生、并得到广泛采用的一种工作流程，就是Git flow 。</p>
-<h3 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h3><p>它最主要的特点有两个。</p>
-<p><img src="/images/git/gitflow.png" alt="gitflow" title="gitflow"></p>
-<p>首先，项目存在两个长期分支。</p>
-<ul>
-<li><strong>主分支master</strong></li>
-<li><strong>开发分支develop</strong></li>
-</ul>
-<p>前者用于存放对外发布的版本，任何时候在这个分支拿到的，都是稳定的分布版；后者用于日常开发，存放最新的开发版。</p>
-<p>其次，项目存在三种短期分支。</p>
-<ul>
-<li><strong>功能分支（feature branch）</strong></li>
-<li><strong>补丁分支（hotfix branch）</strong></li>
-<li><strong>预发分支（release branch）</strong></li>
-</ul>
-<p>一旦完成开发，它们就会被合并进develop或master，然后被删除。<br>Git flow 的详细介绍，请阅读我翻译的中文版<a href="http://www.ruanyifeng.com/blog/2012/07/git.html" target="_blank" rel="noopener">《Git 分支管理策略》</a>。</p>
-<h3 id="评价"><a href="#评价" class="headerlink" title="评价"></a>评价</h3><p>Git flow的优点是清晰可控，缺点是相对复杂，需要同时维护两个长期分支。<br>大多数工具都将master当作默认分支，可是开发是在develop分支进行的，这导致经常要切换分支，非常烦人。<br>更大问题在于，这个模式是基于”版本发布”的，目标是一段时间以后产出一个新版本。<br>但是，很多网站项目是”持续发布”，代码一有变动，就部署一次。<br>这时，master分支和develop分支的差别不大，没必要维护两个长期分支。</p>
-<h2 id="Github-flow"><a href="#Github-flow" class="headerlink" title="Github flow"></a>Github flow</h2><p>Github flow 是Git flow的简化版，专门配合”持续发布”。它是 Github.com 使用的工作流程。</p>
-<h3 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h3><p>它只有一个长期分支，就是master，因此用起来非常简单。<br>官方推荐的<a href="https://guides.github.com/introduction/flow/index.html" target="_blank" rel="noopener">流程</a>如下。</p>
-<p><img src="/images/git/github_flow.png" alt="github flow" title="github flow"></p>
-<ol>
-<li>根据需求，从master拉出新分支，不区分功能分支或补丁分支。</li>
-<li>新分支开发完成后，或者需要讨论的时候，就向master发起一个<a href="https://help.github.com/articles/using-pull-requests/" target="_blank" rel="noopener">pull request</a>（简称PR）。</li>
-<li>Pull Request既是一个通知，让别人注意到你的请求，又是一种对话机制，大家一起评审和讨论你的代码。对话过程中，你还可以不断提交代码。</li>
-<li>你的Pull Request被接受，合并进master，重新部署后，原来你拉出来的那个分支就被删除。（先部署再合并也可。）</li>
-</ol>
-<h3 id="评价-1"><a href="#评价-1" class="headerlink" title="评价"></a>评价</h3><p>Github flow 的最大优点就是简单，对于”持续发布”的产品，可以说是最合适的流程。<br>问题在于它的假设：master分支的更新与产品的发布是一致的。也就是说，master分支的最新代码，默认就是当前的线上代码。<br>可是，有些时候并非如此，代码合并进入master分支，并不代表它就能立刻发布。<br>比如，苹果商店的APP提交审核以后，等一段时间才能上架。<br>这时，如果还有新的代码提交，master分支就会与刚发布的版本不一致。<br>另一个例子是，有些公司有发布窗口，只有指定时间才能发布，这也会导致线上版本落后于master分支。<br>上面这种情况，只有master一个主分支就不够用了。<br>通常，你不得不在master分支以外，另外新建一个production分支跟踪线上版本。</p>
-<h2 id="Gitlab-flow"><a href="#Gitlab-flow" class="headerlink" title="Gitlab flow"></a>Gitlab flow</h2><p>Gitlab flow 是 Git flow 与 Github flow 的综合。<br>它吸取了两者的优点，既有适应不同开发环境的弹性，又有单一主分支的简单和便利。<br>它是 Gitlab.com 推荐的做法。</p>
-<h3 id="上游优先"><a href="#上游优先" class="headerlink" title="上游优先"></a>上游优先</h3><p>Gitlab flow 的最大原则叫做”上游优先”（upsteam first），即只存在一个主分支master，它是所有其他分支的”上游”。<br>只有上游分支采纳的代码变化，才能应用到其他分支。</p>
-<p><a href="https://www.chromium.org/chromium-os/chromiumos-design-docs/upstream-first" target="_blank" rel="noopener">Chromium项目</a>就是一个例子，<br>它明确规定，上游分支依次为：</p>
-<ul>
-<li><strong>Linus Torvalds的分支</strong></li>
-<li><strong>子系统（比如netdev）的分支</strong></li>
-<li><strong>设备厂商（比如三星）的分支</strong></li>
-</ul>
-<h3 id="持续发布"><a href="#持续发布" class="headerlink" title="持续发布"></a>持续发布</h3><p>Gitlab flow 分成两种情况，适应不同的开发流程。</p>
-<p><img src="/images/git/gitlab_flow1.png" alt="gitlab flow" title="gitlab flow"></p>
-<p>对于”持续发布”的项目，它建议在master分支以外，再建立不同的环境分支。<br>比如，”开发环境”的分支是master，”预发环境”的分支是pre-production，”生产环境”的分支是production。</p>
-<p>开发分支是预发分支的”上游”，预发分支又是生产分支的”上游”。<br>代码的变化，必须由”上游”向”下游”发展。<br>比如，生产环境出现了bug，这时就要新建一个功能分支，先把它合并到master，确认没有问题，<br>再cherry-pick到pre-production，这一步也没有问题，才进入production。<br>只有紧急情况，才允许跳过上游，直接合并到下游分支。</p>
-<h3 id="版本发布"><a href="#版本发布" class="headerlink" title="版本发布"></a>版本发布</h3><p><img src="/images/git/gitlab_release.png" alt="gitlab release" title="gitlab release"></p>
-<p>对于”版本发布”的项目，建议的做法是每一个稳定版本，都要从master分支拉出一个分支，比如2-3-stable、2-4-stable等等。<br>以后，只有修补bug，才允许将代码合并到这些分支，并且此时要更新小版本号。</p>
-<h2 id="一些小技巧"><a href="#一些小技巧" class="headerlink" title="一些小技巧"></a>一些小技巧</h2><h3 id="Pull-Request"><a href="#Pull-Request" class="headerlink" title="Pull Request"></a>Pull Request</h3><p><img src="/images/git/merge.png" alt="merge" title="merge"></p>
-<p>功能分支合并进master分支，必须通过Pull Request（Gitlab里面叫做 Merge Request）。</p>
-<p><img src="/images/git/request.png" alt="request" title="request"></p>
-<p>前面说过，Pull Request本质是一种对话机制，你可以在提交的时候，<br>@相关<a href="https://github.com/blog/1004-mention-autocompletion" target="_blank" rel="noopener">人员</a>或<a href="https://github.com/blog/1121-introducing-team-mentions" target="_blank" rel="noopener">团队</a>，引起他们的注意。</p>
-<h3 id="Protected-branch"><a href="#Protected-branch" class="headerlink" title="Protected branch"></a>Protected branch</h3><p>master分支应该受到保护，不是每个人都可以修改这个分支，以及拥有审批 Pull Request 的权力。</p>
-<p><a href="https://help.github.com/articles/about-protected-branches/" target="_blank" rel="noopener">Github</a><br>和 <a href="http://doc.gitlab.com/ce/permissions/permissions.html" target="_blank" rel="noopener">Gitlab</a> 都提供”保护分支”（Protected branch）这个功能。</p>
-<h3 id="Issue"><a href="#Issue" class="headerlink" title="Issue"></a>Issue</h3><p>Issue 用于 Bug追踪和需求管理。建议先新建 Issue，再新建对应的功能分支。功能分支总是为了解决一个或多个 Issue。<br>功能分支的名称，可以与issue的名字保持一致，并且以issue的编号起首，比如”15-require-a-password-to-change-it”。</p>
-<p>开发完成后，在提交说明里面，可以写上”fixes #14”或者”closes #67”。<br>Github规定，只要commit message里面有下面这些<a href="https://help.github.com/articles/closing-issues-via-commit-messages/" target="_blank" rel="noopener">动词</a> + 编号，<br>就会关闭对应的issue。</p>
-<ul>
-<li>close</li>
-<li>closes</li>
-<li>closed</li>
-<li>fix</li>
-<li>fixes</li>
-<li>fixed</li>
-<li>resolve</li>
-<li>resolves</li>
-<li>resolved</li>
-</ul>
-<p>这种方式还可以一次关闭多个issue，或者关闭其他代码库的issue，格式是username/repository#issue_number。<br>Pull Request被接受以后，issue关闭，原始分支就应该删除。如果以后该issue重新打开，新分支可以复用原来的名字。</p>
-<h3 id="Merge节点"><a href="#Merge节点" class="headerlink" title="Merge节点"></a>Merge节点</h3><p>Git有两种合并：一种是”直进式合并”（fast forward），不生成单独的合并节点；<br>另一种是”非直进式合并”（none fast-forword），会生成单独节点。</p>
-<p>前者不利于保持commit信息的清晰，也不利于以后的回滚，建议总是采用后者（即使用–no-ff参数）。<br>只要发生合并，就要有一个单独的合并节点。</p>
-<h3 id="Squash-多个commit"><a href="#Squash-多个commit" class="headerlink" title="Squash 多个commit"></a>Squash 多个commit</h3><p>为了便于他人阅读你的提交，也便于cherry-pick或撤销代码变化，在发起Pull Request之前，应该把多个commit合并成一个。<br>（前提是，该分支只有你一个人开发，且没有跟master合并过。）</p>
-<p>这可以采用rebase命令附带的squash操作，具体方法请参考我写的<a href="http://www.ruanyifeng.com/blog/2015/08/git-use-process.html" target="_blank" rel="noopener">《Git 使用规范流程》</a>。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/02/23/git-remote/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2016/02/23/git-remote/" class="post-title-link" itemprop="url">Git 远程操作详解[转载]</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2016-02-24 00:00:00" itemprop="dateCreated datePublished" datetime="2016-02-24T00:00:00+08:00">2016-02-24</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-04-11 15:10:39" itemprop="dateModified" datetime="2020-04-11T15:10:39+08:00">2020-04-11</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/" itemprop="url" rel="index">
-                    <span itemprop="name">Tools</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/Git/" itemprop="url" rel="index">
-                    <span itemprop="name">Git</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>4.9k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>4 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<p>作者： 阮一峰<br>日期： 2014年6月12日<br><a href="http://www.ruanyifeng.com/blog/2014/06/git_remote.html" target="_blank" rel="noopener">原文</a></p>
-<p>Git是目前最流行的版本管理系统，学会Git几乎成了开发者的必备技能。<br>Git有很多优势，其中之一就是远程操作非常简便。本文详细介绍5个Git命令，它们的概念和用法，理解了这些内容，你就会完全掌握Git远程操作。</p>
-<ul>
-<li><strong>git clone</strong></li>
-<li><strong>git remote</strong></li>
-<li><strong>git fetch</strong></li>
-<li><strong>git pull</strong></li>
-<li><strong>git push</strong></li>
-</ul>
-<p>本文针对初级用户，从最简单的讲起，但是需要读者对Git的基本用法有所了解。<br>同时，本文覆盖了上面5个命令的几乎所有的常用用法，所以对于熟练用户也有参考价值。</p>
-<p><img src="/images/git/git_remote.jpg" alt="Git Remote" title="git remote"></p>
-<h2 id="git-clone"><a href="#git-clone" class="headerlink" title="git clone"></a><strong>git clone</strong></h2><p>远程操作的第一步，通常是从远程主机克隆一个版本库，这时就要用到git clone命令。</p>
-<pre><code>$ git clone &lt;版本库的网址&gt;</code></pre><p>比如，克隆jQuery的版本库。</p>
-<pre><code>$ git clone https://github.com/jquery/jquery.git</code></pre><p>该命令会在本地主机生成一个目录，与远程主机的版本库同名。如果要指定不同的目录名，可以将目录名作为git clone命令的第二个参数。</p>
-<pre><code>$ git clone &lt;版本库的网址&gt; &lt;本地目录名&gt;</code></pre><p>git clone支持多种协议，除了HTTP(s)以外，还支持SSH、Git、本地文件协议等，下面是一些例子。</p>
-<pre><code>$ git clone http[s]://example.com/path/to/repo.git/
-$ git clone ssh://example.com/path/to/repo.git/
-$ git clone git://example.com/path/to/repo.git/
-$ git clone /opt/git/project.git 
-$ git clone file:///opt/git/project.git
-$ git clone ftp[s]://example.com/path/to/repo.git/
-$ git clone rsync://example.com/path/to/repo.git/</code></pre><p>SSH协议还有另一种写法。</p>
-<pre><code>$ git clone [user@]example.com:path/to/repo.git/</code></pre><p>通常来说，Git协议下载速度最快，SSH协议用于需要用户认证的场合。各种协议优劣的详细讨论请参考官方文档。</p>
-<h2 id="git-remote"><a href="#git-remote" class="headerlink" title="git remote"></a><strong>git remote</strong></h2><p>为了便于管理，Git要求每个远程主机都必须指定一个主机名。git remote命令就用于管理主机名。<br>不带选项的时候，git remote命令列出所有远程主机。</p>
-<pre><code>$ git remote
-origin</code></pre><p>使用-v选项，可以参看远程主机的网址。</p>
-<pre><code>$ git remote -v
-origin  git@github.com:jquery/jquery.git (fetch)
-origin  git@github.com:jquery/jquery.git (push)</code></pre><p>上面命令表示，当前只有一台远程主机，叫做origin，以及它的网址。<br>克隆版本库的时候，所使用的远程主机自动被Git命名为origin。如果想用其他的主机名，需要用git clone命令的-o选项指定。</p>
-<pre><code>$ git clone -o jQuery https://github.com/jquery/jquery.git
-$ git remote
-jQuery</code></pre><p>上面命令表示，克隆的时候，指定远程主机叫做jQuery。</p>
-<p>git remote show命令加上主机名，可以查看该主机的详细信息。</p>
-<pre><code>$ git remote show &lt;主机名&gt;</code></pre><p>git remote add命令用于添加远程主机。</p>
-<pre><code>$ git remote add &lt;主机名&gt; &lt;网址&gt;</code></pre><p>git remote rm命令用于删除远程主机。</p>
-<pre><code>$ git remote rm &lt;主机名&gt;</code></pre><p>git remote rename命令用于远程主机的改名。</p>
-<pre><code>$ git remote rename &lt;原主机名&gt; &lt;新主机名&gt;</code></pre><h2 id="git-fetch"><a href="#git-fetch" class="headerlink" title="git fetch"></a><strong>git fetch</strong></h2><p>一旦远程主机的版本库有了更新（Git术语叫做commit），需要将这些更新取回本地，这时就要用到git fetch命令。</p>
-<pre><code>$ git fetch &lt;远程主机名&gt;</code></pre><p>上面命令将某个远程主机的更新，全部取回本地。<br>git fetch命令通常用来查看其他人的进程，因为它取回的代码对你本地的开发代码没有影响。<br>默认情况下，git fetch取回所有分支（branch）的更新。如果只想取回特定分支的更新，可以指定分支名。</p>
-<pre><code>$ git fetch &lt;远程主机名&gt; &lt;分支名&gt;</code></pre><p>比如，取回origin主机的master分支。</p>
-<pre><code>$ git fetch origin master</code></pre><p>所取回的更新，在本地主机上要用”远程主机名/分支名”的形式读取。比如origin主机的master，就要用origin/master读取。<br>git branch命令的-r选项，可以用来查看远程分支，-a选项查看所有分支。</p>
-<pre><code>$ git branch -r
-origin/master
-
-$ git branch -a
-* master
-  remotes/origin/master</code></pre><p>上面命令表示，本地主机的当前分支是master，远程分支是origin/master。<br>取回远程主机的更新以后，可以在它的基础上，使用git checkout命令创建一个新的分支。</p>
-<pre><code>$ git checkout -b newBrach origin/master</code></pre><p>上面命令表示，在origin/master的基础上，创建一个新分支。<br>此外，也可以使用git merge命令或者git rebase命令，在本地分支上合并远程分支。</p>
-<pre><code>$ git merge origin/master
-$ git rebase origin/master</code></pre><p>上面命令表示在当前分支上，合并origin/master。</p>
-<h2 id="git-pull"><a href="#git-pull" class="headerlink" title="git pull"></a><strong>git pull</strong></h2><p>git pull命令的作用是，取回远程主机某个分支的更新，再与本地的指定分支合并。它的完整格式稍稍有点复杂。</p>
-<pre><code>$ git pull &lt;远程主机名&gt; &lt;远程分支名&gt;:&lt;本地分支名&gt;</code></pre><p>比如，取回origin主机的next分支，与本地的master分支合并，需要写成下面这样。</p>
-<pre><code>$ git pull origin next:master</code></pre><p>如果远程分支是与当前分支合并，则冒号后面的部分可以省略。</p>
-<pre><code>$ git pull origin next</code></pre><p>上面命令表示，取回origin/next分支，再与当前分支合并。实质上，这等同于先做git fetch，再做git merge。</p>
-<pre><code>$ git fetch origin
-$ git merge origin/next</code></pre><p>在某些场合，Git会自动在本地分支与远程分支之间，建立一种追踪关系（tracking）。<br>比如，在git clone的时候，所有本地分支默认与远程主机的同名分支，建立追踪关系，<br>也就是说，本地的master分支自动”追踪”origin/master分支。<br>Git也允许手动建立追踪关系。</p>
-<pre><code>git branch --set-upstream master origin/next</code></pre><p>上面命令指定master分支追踪origin/next分支。<br><strong>如果当前分支与远程分支存在追踪关系，git pull就可以省略远程分支名。</strong></p>
-<pre><code>$ git pull origin</code></pre><p>上面命令表示，本地的当前分支自动与对应的origin主机”追踪分支”（remote-tracking branch）进行合并。<br>如果当前分支只有一个追踪分支，连远程主机名都可以省略。</p>
-<pre><code>$ git pull</code></pre><p>上面命令表示，当前分支自动与唯一一个追踪分支进行合并。<br>如果合并需要采用rebase模式，可以使用–rebase选项。</p>
-<pre><code>$ git pull --rebase &lt;远程主机名&gt; &lt;远程分支名&gt;:&lt;本地分支名&gt;</code></pre><p>如果远程主机删除了某个分支，默认情况下，git pull 不会在拉取远程分支的时候，删除对应的本地分支。<br>这是为了防止，由于其他人操作了远程主机，导致git pull不知不觉删除了本地分支。<br>但是，你可以改变这个行为，加上参数 -p 就会在本地删除远程已经删除的分支。</p>
-<pre><code>$ git pull -p
-# 等同于下面的命令
-$ git fetch --prune origin 
-$ git fetch -p</code></pre><h2 id="git-push"><a href="#git-push" class="headerlink" title="git push"></a><strong>git push</strong></h2><p>git push命令用于将本地分支的更新，推送到远程主机。它的格式与git pull命令相仿。</p>
-<pre><code>$ git push &lt;远程主机名&gt; &lt;本地分支名&gt;:&lt;远程分支名&gt;</code></pre><p>注意，分支推送顺序的写法是&lt;来源地&gt;:&lt;目的地&gt;，所以git pull是&lt;远程分支&gt;:&lt;本地分支&gt;，而git push是&lt;本地分支&gt;:&lt;远程分支&gt;。<br>如果省略远程分支名，则表示将本地分支推送与之存在”追踪关系”的远程分支（通常两者同名），如果该远程分支不存在，则会被新建。</p>
-<pre><code>$ git push origin master</code></pre><p>上面命令表示，将本地的master分支推送到origin主机的master分支。如果后者不存在，则会被新建。<br>如果省略本地分支名，则表示删除指定的远程分支，因为这等同于推送一个空的本地分支到远程分支。</p>
-<pre><code>$ git push origin :master
-# 等同于
-$ git push origin --delete master</code></pre><p>上面命令表示删除origin主机的master分支。<br>如果当前分支与远程分支之间存在追踪关系，则本地分支和远程分支都可以省略。</p>
-<pre><code>$ git push origin</code></pre><p>上面命令表示，将当前分支推送到origin主机的对应分支。<br>如果当前分支只有一个追踪分支，那么主机名都可以省略。</p>
-<pre><code>$ git push</code></pre><p>如果当前分支与多个主机存在追踪关系，则可以使用-u选项指定一个默认主机，这样后面就可以不加任何参数使用git push。</p>
-<pre><code>$ git push -u origin master</code></pre><p>上面命令将本地的master分支推送到origin主机，同时指定origin为默认主机，后面就可以不加任何参数使用git push了。<br>不带任何参数的git push，默认只推送当前分支，这叫做simple方式。<br>此外，还有一种matching方式，会推送所有有对应的远程分支的本地分支。<br>Git 2.0版本之前，默认采用matching方法，现在改为默认采用simple方式。如果要修改这个设置，可以采用git config命令。</p>
-<pre><code>$ git config --global push.default matching
-# 或者
-$ git config --global push.default simple</code></pre><p>还有一种情况，就是不管是否存在对应的远程分支，将本地的所有分支都推送到远程主机，这时需要使用–all选项。</p>
-<pre><code>$ git push --all origin</code></pre><p>上面命令表示，将所有本地分支都推送到origin主机。<br>如果远程主机的版本比本地版本更新，推送时Git会报错，要求先在本地做git pull合并差异，然后再推送到远程主机。<br>这时，如果你一定要推送，可以使用–force选项。</p>
-<pre><code>$ git push --force origin </code></pre><p>上面命令使用–force选项，结果导致远程主机上更新的版本被覆盖。<br>除非你很确定要这样做，否则应该尽量避免使用–force选项。<br>最后，git push不会推送标签（tag），除非使用–tags选项。</p>
-<pre><code>$ git push origin --tags</code></pre>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/12/03/linux-modules/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1539,7 +1591,7 @@ $ git config --global push.default simple</code></pre><p>还有一种情况，�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-04-11 15:10:39" itemprop="dateModified" datetime="2020-04-11T15:10:39+08:00">2020-04-11</time>
+                <time title="Modified: 2020-04-11 15:11:26" itemprop="dateModified" datetime="2020-04-11T15:11:26+08:00">2020-04-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1830,7 +1882,7 @@ U printk
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-04-11 15:10:39" itemprop="dateModified" datetime="2020-04-11T15:10:39+08:00">2020-04-11</time>
+                <time title="Modified: 2020-04-11 15:11:26" itemprop="dateModified" datetime="2020-04-11T15:11:26+08:00">2020-04-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2158,7 +2210,7 @@ module_param(int_var, uint, S_IRUGO);</code></pre><h2 id="Tips"><a href="#Tips" 
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-04-11 15:10:39" itemprop="dateModified" datetime="2020-04-11T15:10:39+08:00">2020-04-11</time>
+                <time title="Modified: 2020-04-11 15:11:26" itemprop="dateModified" datetime="2020-04-11T15:11:26+08:00">2020-04-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2352,7 +2404,7 @@ eax 0xbffff6a4 -1073744220</code></pre><p>　<br>1.<a href="http://blog.csdn.net
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-04-11 15:10:39" itemprop="dateModified" datetime="2020-04-11T15:10:39+08:00">2020-04-11</time>
+                <time title="Modified: 2020-04-11 15:11:26" itemprop="dateModified" datetime="2020-04-11T15:11:26+08:00">2020-04-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2612,7 +2664,7 @@ o{2,} 与“Bob”中的“o”不匹配，但与“foooood”中的所有“o�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-04-11 15:10:39" itemprop="dateModified" datetime="2020-04-11T15:10:39+08:00">2020-04-11</time>
+                <time title="Modified: 2020-04-11 15:11:26" itemprop="dateModified" datetime="2020-04-11T15:11:26+08:00">2020-04-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2712,7 +2764,7 @@ o{2,} 与“Bob”中的“o”不匹配，但与“foooood”中的所有“o�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-04-11 15:10:39" itemprop="dateModified" datetime="2020-04-11T15:10:39+08:00">2020-04-11</time>
+                <time title="Modified: 2020-04-11 15:11:26" itemprop="dateModified" datetime="2020-04-11T15:11:26+08:00">2020-04-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2850,7 +2902,7 @@ dump tekhex value filename expression
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-04-11 15:10:39" itemprop="dateModified" datetime="2020-04-11T15:10:39+08:00">2020-04-11</time>
+                <time title="Modified: 2020-04-11 15:11:26" itemprop="dateModified" datetime="2020-04-11T15:11:26+08:00">2020-04-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -3041,7 +3093,7 @@ nmap &lt;leader&gt;&lt;leader&gt;q :call CodeFormat()&lt;CR&gt;</code></pre><p>�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-04-11 15:10:39" itemprop="dateModified" datetime="2020-04-11T15:10:39+08:00">2020-04-11</time>
+                <time title="Modified: 2020-04-11 15:11:26" itemprop="dateModified" datetime="2020-04-11T15:11:26+08:00">2020-04-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
