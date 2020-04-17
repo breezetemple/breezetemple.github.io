@@ -59,7 +59,7 @@
 <meta property="og:description" content="记录 ubuntu18.04 安装并配置 MySQL">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2020-04-17T03:04:03.000Z">
-<meta property="article:modified_time" content="2020-04-17T03:30:18.167Z">
+<meta property="article:modified_time" content="2020-04-17T08:11:27.280Z">
 <meta property="article:author" content="Breeze.Temple">
 <meta property="article:tag" content="mysql">
 <meta name="twitter:card" content="summary">
@@ -243,7 +243,7 @@
               <span class="post-meta-item-text">Posted on</span>
               
 
-              <time title="Created: 2020-04-17 11:04:03 / Modified: 11:30:18" itemprop="dateCreated datePublished" datetime="2020-04-17T11:04:03+08:00">2020-04-17</time>
+              <time title="Created: 2020-04-17 11:04:03 / Modified: 16:11:27" itemprop="dateCreated datePublished" datetime="2020-04-17T11:04:03+08:00">2020-04-17</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -270,14 +270,14 @@
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>1.9k</span>
+              <span>4.1k</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="fa fa-clock-o"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
+              <span>4 mins.</span>
             </span>
 
         </div>
@@ -292,8 +292,8 @@
         <p>记录 ubuntu18.04 安装并配置 MySQL</p>
 <a id="more"></a>
 
-<pre><code class="shell">$ sudo apt install mysql-server</code></pre>
-<p>使用命令出现如下错误，<a href="https://stackoverflow.com/questions/39281594/error-1698-28000-access-denied-for-user-rootlocalhost" target="_blank" rel="noopener">原因及解决方法</a></p>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><pre><code class="shell">$ sudo apt install mysql-server</code></pre>
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p>使用命令出现如下错误，<a href="https://stackoverflow.com/questions/39281594/error-1698-28000-access-denied-for-user-rootlocalhost" target="_blank" rel="noopener">原因及解决方法</a></p>
 <pre><code class="shell">$ mysql -ui root -p
 ERROR 1698 (28000): Access denied for user &#39;root&#39;@&#39;localhost&#39;
 
@@ -347,7 +347,76 @@ mysql&gt;</code></pre>
 <li>查看数据库的字符集编码 <code>show variables like &#39;%char%&#39;;</code></li>
 <li>重启 <code>service mysqld restart</code></li>
 </ol>
+<h2 id="pymysql简单使用"><a href="#pymysql简单使用" class="headerlink" title="pymysql简单使用"></a>pymysql简单使用</h2><ul>
+<li>创建数据库<pre><code class="python">pymysql.connect(host=&#39;127.0.0.1&#39;, user=&#39;test&#39;, passwd=&#39;&#39;, use_unicode=True)
+cursor = self.connect.cursor()
+cursor.execute(&quot;create database if not exists sql-test&quot;)</code></pre>
+</li>
+<li>选择数据库<pre><code class="python">self.cursor.execute(&quot;use sql-test;&quot;)</code></pre>
+</li>
+<li>创建表<pre><code class="python">sql = &quot;&quot;&quot;create table if not exists saes(
+  pos varchar(20),
+  area varchar(20),
+  name varchar(100),
+  time varchar(20));&quot;&quot;&quot;
+cursor.execute(sql)</code></pre>
+</li>
+<li>更新数据<pre><code class="python">cursor.execute(&quot;&quot;&quot;select * from saes where name = %s&quot;&quot;&quot;, item[&quot;name&quot;])
+ret = cursor.fetchone()
+if ret:
+  cursor.execute(
+      &quot;&quot;&quot;update saes set pos = %s,area = %s,
+          name = %s,time = %s
+          where name = %s&quot;&quot;&quot;,
+      (item[&#39;pos&#39;],
+      item[&#39;area&#39;],
+      item[&#39;name&#39;],
+      item[&#39;time&#39;],
+      item[&#39;name&#39;]))
+else:
+  cursor.execute(
+      &quot;&quot;&quot;insert into saes(pos,area,cku,name,time)
+      value (%s,%s,%s,%s)&quot;&quot;&quot;,
+      (item[&#39;pos&#39;],
+      item[&#39;area&#39;],
+      item[&#39;name&#39;],
+      item[&#39;time&#39;]))
+connect.commit()</code></pre>
+</li>
+<li>删除表<pre><code class="python">drop table tablename;</code></pre>
+</li>
+</ul>
+<h2 id="其他命令"><a href="#其他命令" class="headerlink" title="其他命令"></a>其他命令</h2><pre><code>create database new_dbname;--新建数据库
+drop database old_dbnane; --删除数据库
+show databases;--显示数据库
+use databasename;--使用数据库
+select database();--查看已选择的数据库
 
+show tables;--显示当前库的所有表
+create table tablename(fieldname1 fieldtype1,fieldname2 fieldtype2,..)[ENGINE=engine_name];--创建表
+drop table tablename; --删除表
+create table tablename select statement;--通过子查询创建表
+desc tablename;--查看表结构
+show create table tablename;--查看建表语句
+
+alter table tablename add new_fielname new_fieldtype;--新增列
+alter table tablename add new_fielname new_fieldtype after 列名1;--在列名1后新增列
+alter table tablename modify fieldname new_fieldtype;--修改列
+alter table tablename drop fieldname;--删除列
+alter table tablename_old rename tablename_new;--表重命名
+
+insert into tablename(fieldname1,fieldname2,fieldnamen) valuse(value1,value2,valuen);--增
+delete from tablename [where fieldname=value];--删
+update tablename set fieldname1=new_value where filename2=value;--改
+select * from tablename [where filename=value];--查
+
+truncate table tablename;--清空表中所有数据，DDL语句
+
+show engines;--查看mysql现在已提供的存储引擎:
+show variables like &#39;%storage_engine%&#39;;--查看mysql当前默认的存储引擎
+show create table tablename;--查看某张表用的存储引擎（结果的&quot;ENGINE=&quot;部分）
+alter table tablename ENGINE=InnoDB--修改引擎
+create table tablename(fieldname1 fieldtype1,fieldname2 fieldtype2,..) ENGINE=engine_name;--创建表时设置存储引擎</code></pre>
     </div>
 
     
@@ -409,6 +478,7 @@ mysql&gt;</code></pre>
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#安装"><span class="nav-number">1.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#配置"><span class="nav-number">2.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pymysql简单使用"><span class="nav-number">3.</span> <span class="nav-text">pymysql简单使用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#其他命令"><span class="nav-number">4.</span> <span class="nav-text">其他命令</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -497,7 +567,7 @@ mysql&gt;</code></pre>
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:04</span>
+    <span title="Reading time total">18:06</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
   </div>
