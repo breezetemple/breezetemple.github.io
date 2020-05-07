@@ -216,6 +216,425 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/socket/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/12/14/socket/" class="post-title-link" itemprop="url">网络编程Socket</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-12-15 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-15T00:00:00+08:00">2014-12-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/Socket/" itemprop="url" rel="index">
+                    <span itemprop="name">Socket</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/TCP/" itemprop="url" rel="index">
+                    <span itemprop="name">TCP</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.7k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p>网络中的进程通常由一个三元组来标识，包括<strong>协议、本地地址和端口</strong>。</p>
+<p><strong>主机字节次序与网络字节次序</strong></p>
+<p>对于一个4字节的整数：<code>0x11223344</code>，占用四个字节存储单元，在主机中有两种<strong>主机字节次序</strong>：</p>
+<hr>
+<table border="1" width="400" frame="hsides" rules="rows">
+    <tr>
+        <td></td>
+        <td>Bytes3</td>
+        <td>Bytes2</td>
+        <td>Bytes1</td>
+        <td>Bytes0</td>
+    </tr>
+    <tr>
+        <td>Little Endian :</td>
+        <td>11</td>
+        <td>22</td>
+        <td>33</td>
+        <td>44</td>
+    </tr>
+    <tr>
+        <td>Big Endian :</td>
+        <td>44</td>
+        <td>33</td>
+        <td>22</td>
+        <td>11</td>
+    </tr>
+</table>
+
+<hr>
+<p>x86采用小端方式，PowerPC和Sparc采用大端方式。<br>为了保证互连性，要求所有的数据按照统一字节顺序传输，于是出现了<strong>网络字节次序</strong>，规定与x86的主机字节次序相反。</p>
+<p>在UNIX中提供如下API用于转换：</p>
+<pre><code>#include &lt;arpa/inet.h&gt;
+
+uint32_t htonl(uint32_t hostlong);
+uint16_t htons(uint16_t hostshort);
+uint32_t ntohl(uint32_t netlong);
+uint16_t ntohs(uint16_t netshort);</code></pre><p>进程经网络通信时，有两种方法可以选择：</p>
+<ul>
+<li><p><strong>面向连接方式</strong>，就是通信双方在通信时，要事先建立一条通信线路，<br>其过程有建立连接、使用连接和释放连接三个过程。<br>TCP协议就是一种面向连接服务的协议，电话系统是一个面向连接的模式。</p>
+</li>
+<li><p><strong>无连接方式</strong>，就是通信双方不需要事先建立一条通信线路，<br>而是把每个带有目的地址的包（报文分组）送到线路上，由系统选定路线进行传输。<br>IP、UDP协议就是一种无连接协议，邮政系统是一个无连接的模式。</p>
+<p>  #include &lt;sys/types.h&gt;          /* See NOTES */<br>  #include &lt;sys/socket.h&gt;</p>
+<p>  int socket(int domain, int type, int protocol);</p>
+</li>
+</ul>
+<p>Socket类型：</p>
+<ul>
+<li><strong>流套接字，SOCK_STREAM，用于提供面向连接、可靠的数据传输服务</strong></li>
+<li><strong>数据包套接字，SOCK_DGRAM，用于提供无连接服务，不能保证数据的可靠性</strong></li>
+<li><strong>原始套接字，SOCK_RAW</strong></li>
+</ul>
+<p>Raw socket与标准套接字（SOCK_STREAM、SOCK_DGRAM）的区别：</p>
+<p>raw socket可以读写内核没有处理的IP数据包，而流套接字只能读取TCP数据，数据包套接字只能读取UDP数据。<br>使用raw socket可以避开TCP/IP处理机制，被传送的数据包可以被直接传送给需要它的应用程序。</p>
+<p>raw socket植根于操作系统网络核心（Network Core），而标准socket则“悬浮”于TCP和UDP协议的外围。</p>
+<p>套接字寻址API：</p>
+<pre><code>include &lt;netdb.h&gt;
+
+//获取主机名和IP地址
+struct hostent *gethostbyname(const char *name);
+struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type);
+//获取服务与端口地址
+struct servent *getservbyname(const char *name, const char *proto);
+struct servent *getservbyport(int port, const char *proto);</code></pre><p>套接字选项API：</p>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/socket.h&gt;
+
+//获取套接字选项的设置情况
+int getsockopt(int sockfd, int level, int optname, void *optval, socklen_t *optlen);
+//设置套接字选项
+int setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen);</code></pre><p>套接字API：</p>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/socket.h&gt;
+
+int socket(int domain, int type, int protocol);
+int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+int listen(int sockfd, int backlog);
+int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+int accept(int sockfd, struct sockaddr *cliaddr, socklen_t addrlen);
+ssize_t send(int sockfd, const void *buf, size_t len, int flags);
+ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
+ssize_t recv(int sockfd, void *buf, size_t len, int flags);
+ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
+int shutdown(int sockfd, int how);</code></pre><p>bind函数使用通用地址结构<code>struct sockaddr</code>来设置套接字地址，<br>而在网络通信时必须使用<code>sockaddr_in</code>来构造一个套接字地址，<br>所以，调用bind时，需要将<code>sockaddr_in</code>结构类型强制转换为<code>struct sockaddr</code>结构类型。</p>
+<p>listen函数仅被TCP服务器调用。当函数<code>socket</code>创建一个套接字时，它被假设为一个主动套接字，<br>listen将此套接字转换为被动套接字，指示内核应接受向此套接字的连接请求，<br>同时维护两个队列（未完成连接队列、已完成连接队列）排队连接请求。</p>
+<p>服务器套接字进入侦听状态后，必须通过函数accept接收客户进程提交的连接请求，从而完成一个套接字的完整连接。</p>
+<p>套接字的数据收发即可以使用文件库函数 read/write ，也可以使用套接字的专用收发函数 recv/send 。</p>
+<p>TCP是面向连接的通信协议，采用客户机-服务器模式。套接字的全部工作流程如下所述：</p>
+<ol>
+<li>服务器启动进程，调用Socket创建一个基于TCP协议的流套接字描述符。</li>
+<li>其次，服务进程调用bind命名套接字，将套接字描述符绑定到本地地址和本地端口上，至此Socket的半相关描述—{协议，本地地址，本地端口}—完成。</li>
+<li>再次，服务器端调用listen，开始侦听客户端的Socket连接请求。</li>
+<li>接下来，客户端创建套接字描述符，并且调用connect向服务端提交连接请求。服务器端接收到客户端连接请求后，调用accept接受，并创建一个新的套接字描述符与客户端建立连接，然后原套接字描述符继续侦听客户端的连接请求。</li>
+<li>客户端与服务器端的新套接字进行数据传送，调用write或send向对方发送数据，调用read或recv接收数据。</li>
+<li>在数据交流完毕后，双方调用close或者shutdown半闭套接字。</li>
+</ol>
+<p>基于TCP（面向连接）的socket编程TCP是面向连接的，可靠的传输协议</p>
+<p>服务器端程序：</p>
+<ol>
+<li>创建套接字（socket）</li>
+<li>将套接字绑定到一个本机地址和端口上（bind）</li>
+<li>将套接字设为监听模式，准备接收客户请求（listen）</li>
+<li>等待客户请求到来，当请求到来后，接受连接请求，返回一个新的对应于此次连接的套接字（accept）</li>
+<li>用返回的套接字和客户端进行通信（send/recv）</li>
+<li>返回，等待另一个用户的请求</li>
+<li>关闭套接字</li>
+</ol>
+<p>客户端程序：</p>
+<ol>
+<li>创建套接字（socket）</li>
+<li>向服务器端发送连接请求（connect）</li>
+<li>和服务器进行通信（recv/send）</li>
+<li>关闭套接字</li>
+</ol>
+<p>基于UDP（面向无连接）的socket编程UDP是无连接的，不可靠的传输协议</p>
+<p>服务器端（接收端）程序：</p>
+<ol>
+<li>创建套接字(socket)</li>
+<li>将套接字绑定到一个本地地址和端口上（bind）</li>
+<li>等待接收数据（recvfrom）</li>
+<li>关闭套接字</li>
+</ol>
+<p>客户端（发送端）程序：</p>
+<ol>
+<li>创建套接字（socket）</li>
+<li>发送数据（sendto）</li>
+<li>关闭套接字</li>
+</ol>
+<hr>
+<ol>
+<li><a href="http://www.cnblogs.com/chengmin/archive/2010/06/10/1755751.html" target="_blank" rel="noopener">socket与TCP/UDP编程</a></li>
+<li><a href="http://blog.163.com/zhangmaochu@126/blog/static/373606222009118103318856/" target="_blank" rel="noopener">基于Socket的UDP和TCP编程介绍</a></li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/04/fat32/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/12/04/fat32/" class="post-title-link" itemprop="url">FAT32文件系统</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-12-05 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-05T00:00:00+08:00">2014-12-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Ecos/" itemprop="url" rel="index">
+                    <span itemprop="name">Ecos</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>4.3k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p><strong>FAT文件系统部分资料，用于开发Ecos FAT接口，&lt;FatFs – FAT&gt; &lt;NTGS-3G – NTFS&gt;</strong></p>
+<hr>
+<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>可怕的问题：FATFS  f_open() 返回可怕的 FR_NO_FILESYS</p>
+<p>SDHC KINGSTON的4G卡 ，在电脑上已经格式化，里面有ABC.TXT文本文件。</p>
+<p>移植好的FATFS文件系统在 万利的EK-STM32F 开发板上 对写SD卡。</p>
+<pre><code>disk_sta=disk_initialize(0);//disk_status        
+f_mount(0, &amp;fatfs[0]);  </code></pre><p>上面两句都运行正常！ 到 </p>
+<pre><code>/* Open source file on the drive 1 */
+res = f_open(&amp;fsrc, &quot;0:/ABC.TXT&quot;, FA_CREATE_NEW | FA_READ);</code></pre><p>就返回可怕的FR_NO_FILESYSTEM</p>
+<p>从网上找来同样的问题的帖子：</p>
+<p>SD卡sector0读出来只有最后两个字节是 55 AA，中间也有几个数据，其他的都是00，<br>check_fs函数返回 FR_NO_FILESYSTEM 无可用的文件系统。<br>网上查了一下FAT系统的资料，发现物理扇区0（MBR）并不是逻辑扇区0，<br>根据第一个sector读出的数据，我的物理扇区的地址应该是0x61而不是0。<br>后来仔细查了一下FATFS的源码，发现只支持 FDISK 和 SFD 格式的FAT系统，<br>于是我猜想如果用fdisk格式化，MBR的物理扇区和逻辑扇区地址就都是0了。<br>然后在linux下用FDISK又格式化了一把，发现情况还是一样。</p>
+<p>我现在在裸机下移植fatfs，出现和你差不多的问题，麻烦楼主能看看</p>
+<pre><code>fmt = check_fs(fs, bsect = 0);                // Check sector 0 if it is a VBR 
+//fmt = check_fs(fs, 243);
+if (fmt == 1) {                                                // Not an FAT-VBR, the disk may be partitioned 
+    // Check the partition listed in top of the partition table 
+    tbl = &amp;fs-&gt;win;        // Partition table 
+    if (tbl) {                                                                        // Is the partition existing? 
+        bsect = LD_DWORD(&amp;tbl);                                        // Partition offset in LBA 
+        fmt = check_fs(fs, bsect);                                        // Check the partition 
+        //fmt = check_fs(fs, 0);
+    }
+}</code></pre><p>第一句话fmt = check_fs(fs, bsect = 0);是去读sd卡的MBR，即第0扇区，数据正常，<br>且根据里面的数据经过bsect = LD_DWORD(&amp;tbl);这句话计算正确得到启动扇区的位置（243），<br>然后fmt = check_fs(fs, bsect);这句话就是去读这个启动扇区内的数据，这里面的数据<br>非常重要，就像我们电脑的C盘，但是返回来全部是0，导致fatfs失败。<br>然后同一张卡在另一块板子的代码上测试正常，里面的数据也正常。<br>那么可以说明一点的是，既然可以读0扇区数据正常那么说明sd的底层读函数是对的，那么为什么读不出来第243扇区的数据？<br>同事怀疑是sd卡初始化中设置成了只能读一次，那么我一开始就读第243扇区，<br>也是返回全0.这就郁闷了。在另一块板子的代码上测试，一开始读243扇区的数据是正常的。<br>最后，我将sd卡格式化，用winhex查看其扇区内容，发现0扇区和243扇区的数据没变。</p>
+<p>FR_NO_FILESYSTEM  问题：</p>
+<p>提示没有在你的目标存储器上建立文件系统，试试res = f_mkfs(0,0,2048);这里的2048是2048 bytes，<br>指的是你的目标存储器的扇区大小 也有可能是你没有执行注册磁盘空间的操作，试试res = f_mount(0,&amp;fs);</p>
+<p>我在读写TF卡的时候也出现过这样的问题，我的解决方式是将卡用卡槽插到PC机上，然后格式化一下，我格式化选择的是FAT格式。</p>
+<p>试试用F_MKFS函数格式化一下<br>未格式化为Fat格式，先在电脑里格式化或者用Fatfs自带的格式化函数格式化SD.记得要格式化为Fatfs支持的格式 </p>
+<p>记得要把文件系统变量放到main函数的外面，比如工作区的变量，文件指针变量等。不这样做会出现一些错误，改了就好。我移植的时候没注意，就一直停顿这里很久，原因不明。</p>
+<p>说明你没有格式化，首先需要执行f_mkfs()函数，此步骤为建立FAT相关的一些表。只需要执行一次就可以了，以后再运行程序不需执行。</p>
+<p>在FATFS中经常用到chk_mount这个函数，主要是对物理驱动器检测它的可用性，即磁盘现在是否可用，避免了磁盘中途掉电的情况，在其中有这么一段程序</p>
+<pre><code>fmt = check_fs(fs, bsect = 0);                // Check sector 0 if it is a VBR /可用的分区记录
+if (fmt == 1) {                                                // Not an FAT-VBR, the disk may be partitioned /
+    //结束符正确，确不是FAT系统，则读取下一个分区的数据，看是否是有效的结束符和FAT系统
+    // Check the partition listed in top of the partition table /
+    tbl = &amp;fs-&gt;win[MBR_Table + LD2PT(vol) * SZ_PTE];// Partition table /下一个分区属性的16字节存储指针
+    if (tbl[4]) {                                                                        // Is the partition existing? /系统ID对于FAT32为0x01，未用是为0
+        bsect = LD_DWORD(&amp;tbl[8]);                                        // Partition offset in LBA /分区偏移地址
+        fmt = check_fs(fs, bsect);        //root record                                // Check the partition /这一句不懂了
+    }
+}        </code></pre><p>这一次它是要检测什么的？？</p>
+<p>后来想了一想，对于我们的硬盘，大多是只有一个分区的，但是有的可能会有多个分区，而对于每一个分区而言，他都有一个MBR区，又称为伪MBR区，存储了这一个分区的引导程序，以及分区的信息，这样的话，如果第一个分区不是FAT系统，我们就查找是否又下一个分区，如果有的话，就开始对下一分区的判断……</p>
+<p>但是为什么它只检测了两个分区呢，可能后面还有分区呢？？？</p>
+<p>if (fmt == 3) return FR_DISK_ERR;<br>if (fmt) return FR_NO_FILESYSTEM; // No FAT volume is found /<br>//两次检测之后还不是FAT系统，就返回错误</p>
+<p>我的理解是：<br>在一些SD1.0中，物理0扇区就是逻辑0扇区，0扇区就是DBR，没有MBR，<br>这种情况也就不存在分区，第一个fmt = check_fs(fs, bsect = 0);会返回0，<br>因为check_fs里的第三个或第四个if判断会检测到DBR里面的FAT系统标识字符串，<br>其中一个会返回0，fmt=0，fmt = check_fs(fs, bsect);就不会执行了 </p>
+<pre><code>if (disk_read(fs-&gt;drive, fs-&gt;win, sect, 1) != RES_OK) // Load boot record  
+    return 3; 
+if (LD_WORD(&amp;fs-&gt;win[BS_55AA]) != 0xAA55) // Check record signature (always placed at offset 510 even if the sector size is &gt;512)  
+    return 2; 
+
+if ((LD_DWORD(&amp;fs-&gt;win[BS_FilSysType]) &amp; 0xFFFFFF) == 0x544146) // Check &quot;FAT&quot; string  
+    return 0; 
+if ((LD_DWORD(&amp;fs-&gt;win[BS_FilSysType32]) &amp; 0xFFFFFF) == 0x544146) 
+    return 0; 
+
+    return 1; </code></pre><p>而在一些有MBR的sd卡中物理0扇区是MBR，mbr里有DBR的偏移信息，<br>执行fmt = check_fs(fs, bsect = 0);的时候，第一个和第二个if会通过，<br>但是mbr里面没有fat标识字符串所以第三个和第四个if不会过，返回1，fmt=1就会执行fmt = check_fs(fs, bsect);<br>其中bsect是从mbr里读出来的逻辑0扇区偏移量，既DBR所在扇区，这次执行就同上面读DBR一样，会再第三个或第三个if返回0.</p>
+<p>chaN的驱动是针对sd，ata，usb，nand的，不单单是sd。我的sd2.0是没有MBR的，0扇区就是DBR。而PC硬盘ata的MBR就在0扇区。<br>我们重装PC的时候硬盘是可以选择NTFS和FAT等格式。<br>在有MBR的前提下，就有DPT，紧接MBR引导代码是DPT和“55AA”，DBR是在偏移X扇区里，X就是代码的tbl[8]的双字（4字节），也就是DPT的OFFSET 8~11。<br>假设有4分区，那么只要第一次检查0扇区是不是DBR，如果不是就检查第二次（只需检查1次即可，无需检查多次，目的是验证是否是FAT），检查偏移X扇区。<br>执行check_fs(fs, bsect);后返回0，则说明第4分区DBR就在X扇区，验证成功，返回！0则错误。</p>
+<p>用电脑上的winhex去看下你的sd卡的0扇区是怎么回事<br>看看是不是mbr，当然 也得了解下这个mbr的结构<br>fat文件系统原理总得知道个大概吧</p>
+<p>可以使用WinHex来查看MBR，方法为：打开WinHex，然后在菜单栏选择“工具”、“打开磁盘”，在“物理驱动器”一栏选择自己的硬盘打开就可以了。</p>
+<p><strong>对U盘的格式化就是按照文件系统的规范完成BUFF的组建，然后写入到指定的扇区中，例如FAT32的DBR、FAT表等。</strong></p>
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ol>
+<li><a href="http://velep.com/archives/714.html" target="_blank" rel="noopener">stm32移植ecos #31，ecos sd driver，SD卡驱动（1）</a></li>
+<li><a href="http://velep.com/archives/725.html" target="_blank" rel="noopener">stm32移植ecos #32，ecos sd driver，SD卡驱动（2）</a></li>
+<li><a href="http://velep.com/archives/729.html" target="_blank" rel="noopener">stm32移植ecos #33，ecos sd driver，SD卡驱动（3）</a></li>
+<li><a href="http://velep.com/archives/732.html" target="_blank" rel="noopener">stm32移植ecos #34，ecos sd driver，SD卡驱动（4）</a></li>
+<li><a href="https://www.sourceware.org/ml/ecos-discuss/2012-07/msg00006.html" target="_blank" rel="noopener">reading size and used space on compact flash (CF) card?</a></li>
+<li><a href="http://velep.com/archives/688.html" target="_blank" rel="noopener">SD卡数据结构与FAT文件系统详细分析（上）</a></li>
+<li><a href="http://velep.com/archives/707.html" target="_blank" rel="noopener">SD卡数据结构与FAT文件系统详细分析（下）</a></li>
+<li><a href="http://elm-chan.org/fsw/ff/00index_e.html" target="_blank" rel="noopener">FatFs - Generic FAT File System Module</a></li>
+<li><a href="http://dengqi.blog.51cto.com/5685776/1349327" target="_blank" rel="noopener">FAT32文件系统详解</a></li>
+<li><a href="http://blog.csdn.net/l545045612/article/details/7490260" target="_blank" rel="noopener">FATFS 移植 （应用部分）</a></li>
+<li><a href="http://bbs.21ic.com/icview-619554-1-1.html" target="_blank" rel="noopener">FATFS  f_open() 返回可怕的 FR_NO_FILESYS</a></li>
+<li><a href="">FAT系统原理.pdf</a></li>
+<li><a href="">FAT白皮书中文版.pdf</a></li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/23/Linux-system-Advanced-File-IO/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +666,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -691,7 +1110,7 @@ int madvice(void *addr, size_t len, int advice);  </code></pre><p>madvise() 函�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -795,6 +1214,112 @@ int madvice(void *addr, size_t len, int advice);  </code></pre><p>madvise() 函�
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/18/rgb/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/11/18/rgb/" class="post-title-link" itemprop="url">RGB 颜色空间显示</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-11-19 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-19T00:00:00+08:00">2014-11-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>316</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>代码如下，实现RGB颜色空间的显示：</p>
+<pre><code>for(r = 0 ; r &lt; 0xFF; r++)
+{   
+    for(g = 0 ; g &lt; 0xFF; g++)
+    {   
+        for(b = 0 ; b &lt; 0xFF; b++)                                                                                         
+        {   
+            count++;
+
+            printf(&quot;\e]4;60;rgb:%d/%d/%d\e\\\e[38;5;60m 0x%02x%02x%02x██████\e[m&quot;, r, g, b, r, g, b); 
+
+            if(count%8 == 0)
+                printf(&quot;\n&quot;);
+        }   
+    }   
+}   </code></pre><p>shell中如下进行显示：</p>
+<pre><code>$ echo -en &#39;\e]4;60;rgb:ff/ff/ff\e\\\e[38;5;60m = ██ \e[m\n&#39;</code></pre><p>可以方便进行RGB颜色的查询</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/18/Linux-echo-colors/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -826,7 +1351,7 @@ int madvice(void *addr, size_t len, int advice);  </code></pre><p>madvise() 函�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -910,112 +1435,6 @@ echo</code></pre>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/18/rgb/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/11/18/rgb/" class="post-title-link" itemprop="url">RGB 颜色空间显示</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-11-19 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-19T00:00:00+08:00">2014-11-19</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>316</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>代码如下，实现RGB颜色空间的显示：</p>
-<pre><code>for(r = 0 ; r &lt; 0xFF; r++)
-{   
-    for(g = 0 ; g &lt; 0xFF; g++)
-    {   
-        for(b = 0 ; b &lt; 0xFF; b++)                                                                                         
-        {   
-            count++;
-
-            printf(&quot;\e]4;60;rgb:%d/%d/%d\e\\\e[38;5;60m 0x%02x%02x%02x██████\e[m&quot;, r, g, b, r, g, b); 
-
-            if(count%8 == 0)
-                printf(&quot;\n&quot;);
-        }   
-    }   
-}   </code></pre><p>shell中如下进行显示：</p>
-<pre><code>$ echo -en &#39;\e]4;60;rgb:ff/ff/ff\e\\\e[38;5;60m = ██ \e[m\n&#39;</code></pre><p>可以方便进行RGB颜色的查询</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/13/Linux-system-programming-Time/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1047,7 +1466,7 @@ echo</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1277,7 +1696,7 @@ int timer_delete(timer_t timerid);</code></pre><p>*<a href="http://blog.csdn.net
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1504,606 +1923,6 @@ int sigaction(int signum,const struct sigaction *act,struct sigaction *oldact));
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/11/Linux-system-programming-pthread_cont/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/11/11/Linux-system-programming-pthread_cont/" class="post-title-link" itemprop="url">Linux系统编程-多线程同步条件变量</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-11-12 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-12T00:00:00+08:00">2014-11-12</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux System Programming</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>5.1k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>5 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
-<p>与互斥锁不同，<strong>条件变量是用来等待而不是用来上锁的。<br>条件变量用来自动阻塞一个线程，直到某特殊情况发生为止。通常条件变量和互斥锁同时使用。</strong></p>
-<p>条件变量使我们可以睡眠等待某种条件出现。<br>条件变量是利用线程间共享的全局变量进行同步的一种机制，<br>主要包括两个动作：<strong>一个线程等待”条件变量的条件成立”而挂起；另一个线程使”条件成立”（给出条件成立信号）。</strong></p>
-<p><strong>条件的检测是在互斥锁的保护下进行的。<br>如果一个条件为假，一个线程自动阻塞，并释放等待状态改变的互斥锁。</strong><br>如果另一个线程改变了条件，它发信号给关联的条件变量，<br>唤醒一个或多个等待它的线程，重新获得互斥锁，重新评价条件。<br>如果两进程共享可读写的内存，条件变量可以被用来实现这两进程间的线程同步。</p>
-<p>使用条件变量之前要先进行初始化。<br>可以在单个语句中生成和初始化一个条件变量如：pthread_cond_t my_condition=PTHREAD_COND_INITIALIZER;（用于进程间线程的通信）。<br>可以利用函数pthread_cond_init动态初始化。</p>
-<p><strong>条件变量分为两部分: 条件和变量。<br>条件本身是由互斥量保护的。<br>线程在改变条件状态前先要锁住互斥量。<br>它利用线程间共享的全局变量进行同步的一种机制。</strong></p>
-<h2 id="API"><a href="#API" class="headerlink" title="API"></a><strong>API</strong></h2><pre><code>int pthread_cond_init(pthread_cond_t *cond,pthread_condattr_t *cond_attr);     
-int pthread_cond_destroy(pthread_cond_t *cond);  
-int pthread_cond_wait(pthread_cond_t *cond,pthread_mutex_t *mutex);
-int pthread_cond_timewait(pthread_cond_t *cond,pthread_mutex *mutex,const timespec *abstime);
-int pthread_cond_signal(pthread_cond_t *cond);
-int pthread_cond_broadcast(pthread_cond_t *cond);  //解除所有线程的阻塞</code></pre><p>条件变量采用的数据类型是pthread_cond_t, 在使用之前必须要进行初始化, 这包括两种方式:</p>
-<ul>
-<li>静态: 可以把常量PTHREAD_COND_INITIALIZER给静态分配的条件变量</li>
-<li>动态: pthread_cond_init函数, 释放动态条件变量的内存空间之前, 要用pthread_cond_destroy对其进行清理</li>
-</ul>
-<p>pthread_cond_wait()函数用于等待条件被触发。<br>该函数传入两个参数，一个条件变量一个互斥量，函数将条件变量和互斥量进行关联，<br>互斥量对该条件进行保护，传入的互斥量必须是已经锁住的。<br>调用pthread_cond_wait()函数后，会原子的执行以下两个动作：</p>
-<ul>
-<li>将调用线程放到等待条件的线程列表上，即进入睡眠</li>
-<li>对互斥量进行解锁</li>
-</ul>
-<p>由于这两个操作时原子操作，<br>这样就关闭了条件检查和线程进入睡眠等待条件改变这两个操作之间的时间通道，<br>这样就不会错过任何条件的变化。<br><strong>当pthread_cond_wait()返回后，互斥量会再次被锁住。</strong></p>
-<p>pthread_cond_timedwait()函数和pthread_cond_wait()的工作方式相似，只是多了一个等待时间。<br>等待时间的结构为struct timespec，</p>
-<pre><code>struct timespec{  
-    time_t  tv_sec    //Seconds.  
-    long    tv_nsec   //Nanoseconds.  
-};</code></pre><p>函数要求传入的时间值是一个绝对值，不是相对值，<br>例如，想要等待3分钟，必须先获得当前时间，然后加上3分钟。<br>要想获得当前系统时间的timespec值，没有直接可调用的函数，<br>需要通过调用gettimeofday函数获取timeval结构，然后转换成timespec结构，转换公式就是：</p>
-<pre><code>timeSpec.tv_sec = timeVal.tv_sec;  
-timeSpec.tv_nsec = timeVal.tv_usec * 1000; </code></pre><p>所以要等待3分钟，timespec时间结构的获得应该如下所示:</p>
-<pre><code>struct timeval now;  
-struct timespec until;  
-gettimeofday(&amp;now);//获得系统当前时间  
-
-//把时间从timeval结构转换成timespec结构  
-until.tv_sec = now.tv_sec;  
-until.tv_nsec = now.tv_usec * 1000;  
-
-//增加min  
-until.tv_sec += 3 * 60;  </code></pre><p>如果时间到后，条件还没有发生，那么会返回ETIMEDOUT错误。</p>
-<p><strong>从pthread_cond_wait()和pthread_cond_timewait()成功返回时，<br>线程需要重新计算条件，因为其他线程可能在运行过程中已经改变条件。</strong></p>
-<p>pthread_cond_signal() 和 pthread_cond_broadcast()<br>这两个函数都是用于向等待条件的线程发送唤醒信号，<br>pthread_cond_signal()函数只会唤醒等待该条件的某个线程，<br>pthread_cond_broadcast()会广播条件状态的改变，以唤醒等待该条件的所有线程。<br>例如多个线程只读共享资源，这是可以将它们都唤醒。<br>这里要注意的是：<strong>一定要在改变条件状态后，再给线程发送信号。</strong><br>考虑条件变量信号单播发送和广播发送的一种候选方式是坚持使用广播发送。<br><strong>只有在等待者代码编写确切，只有一个等待者需要唤醒，<br>且唤醒哪个线程无所谓，那么此时为这种情况使用单播，<br>所以其他情况下都必须使用广播发送。</strong></p>
-<p>在实际编程中，把共享数据和它们的同步变量集合到一个结构中，这往往是一个较好的编程技巧：</p>
-<pre><code>struct{  
-    pthread_mutex_t mutex;  
-    pthread_cond_t cond;  
-    int data;  
-}Data;  </code></pre><h2 id="Source-Code"><a href="#Source-Code" class="headerlink" title="Source Code"></a><strong>Source Code</strong></h2><pre><code>#include &lt;pthread.h&gt;  
-#include &lt;stdio.h&gt;  
-#include &lt;stdlib.h&gt;  
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;/* 初始化互斥锁*/  
-pthread_cond_t cond = PTHREAD_COND_INITIALIZER;/* 初始化条件变量*/  
-void *thread1(void *);  
-void *thread2(void *);  
-int i=1;  
-int main(void)  
-{  
-    pthread_t t_a;  
-    pthread_t t_b;  
-
-    pthread_create(&amp;t_a,NULL,thread1,(void *)NULL);/* 创建进程t_a*/  
-    sleep(1);
-    pthread_create(&amp;t_b,NULL,thread2,(void *)NULL); /* 创建进程t_b*/  
-
-    pthread_join(t_a, NULL);/* 等待进程t_a结束*/  
-    pthread_join(t_b, NULL);/* 等待进程t_b结束*/  
-
-    pthread_mutex_destroy(&amp;mutex);  
-    pthread_cond_destroy(&amp;cond);  
-
-    exit(0);  
-}  
-void *thread1(void *junk)  
-{  
-    for(i=1;i&lt;=6;i++)  
-    {  
-        pthread_mutex_lock(&amp;mutex);/* 锁住互斥量*/  
-        printf(&quot;thread1: lock %d\t i %d\n&quot;, __LINE__, i);  
-
-        if(i%3==0){  
-            printf(&quot;thread1:signal 1  %d\n&quot;, __LINE__);  
-            pthread_cond_signal(&amp;cond);/* 条件改变，发送信号，通知t_b进程*/  
-            printf(&quot;thread1:signal 2  %d\n&quot;, __LINE__);  
-            sleep(1);  
-        }  
-
-        pthread_mutex_unlock(&amp;mutex);/* 解锁互斥量*/  
-        printf(&quot;thread1: unlock %d\t i %d\n\n&quot;, __LINE__, i);  
-        sleep(1);  
-    }  
-}  
-void *thread2(void *junk)  
-{  
-    while(i&lt;6)  
-    {  
-        pthread_mutex_lock(&amp;mutex);  
-        printf(&quot;thread2: lock %d\t i %d\n&quot;, __LINE__, i);  
-
-        if(i%3!=0){  
-            printf(&quot;thread2: wait 1  %d\n&quot;, __LINE__);  
-            pthread_cond_wait(&amp;cond,&amp;mutex);/* 解锁mutex，并等待cond改变*/  
-            printf(&quot;thread2: wait 2  %d\n&quot;, __LINE__);  
-        }  
-
-        pthread_mutex_unlock(&amp;mutex);  
-        printf(&quot;thread2: unlock %d\t i %d\n\n&quot;, __LINE__, i);  
-        sleep(1);  
-    }  
-}</code></pre><p>编译运行结果如下：</p>
-<pre><code>thread1: lock 31     i 1
-thread1: unlock 41   i 1
-
-thread2: lock 50     i 1
-thread2: wait 1  53
-thread1: lock 31     i 2
-thread1: unlock 41   i 2
-
-thread1: lock 31     i 3
-thread1:signal 1  34
-thread1:signal 2  36
-thread1: unlock 41   i 3
-
-thread2: wait 2  55
-thread2: unlock 59   i 3
-
-thread1: lock 31     i 4
-thread1: unlock 41   i 4
-
-thread2: lock 50     i 4
-thread2: wait 1  53
-thread1: lock 31     i 5
-thread1: unlock 41   i 5
-
-thread1: lock 31     i 6
-thread1:signal 1  34
-thread1:signal 2  36
-thread1: unlock 41   i 6
-
-thread2: wait 2  55
-thread2: unlock 59   i 6</code></pre><p>线程1先执行，获得mutex锁，打印，然后释放mutex锁，然后阻塞自己1秒。</p>
-<p>线程2执行,阻塞在pthread_mutex_lock(&amp;mutex)<br>这行语句中，直到线程1释放mutex锁。<br>然后线程2得已执行，获取metux锁，满足if条件，到pthread_cond_wait (&amp;cond,&amp;mutex)<br>这里线程2阻塞，不仅仅是等待cond变量发生改变，同时释放mutex锁。<br>mutex锁释放后，线程1终于获得了mutex锁，得已继续运行，当线程1的if（i%3==0）的条件满足后，<br>通过pthread_cond_signal发送信号，<br>告诉等待cond的变量的线程（线程2），cond条件变量已经发生了改变。</p>
-<p>线程2并没有立即得到运行，因为线程2还在等待mutex锁的释放，<br>所以线程1继续往下走，直到线程1释放mutex锁，<br>线程2才能停止等待，打印语句，<br>然后往下走通过pthread_mutex_unlock(&amp;mutex)释放mutex锁，进入下一个循环。</p>
-<h2 id="References"><a href="#References" class="headerlink" title="References"></a><strong>References</strong></h2><ul>
-<li><a href="http://www.cnblogs.com/feisky/archive/2010/03/08/1680950.html" target="_blank" rel="noopener">Linux线程同步之条件变量</a></li>
-<li><a href="http://blog.csdn.net/anonymalias/article/details/9174481" target="_blank" rel="noopener">Linux线程同步之条件变量</a></li>
-<li><a href="http://my.oschina.net/solu/blog/125998" target="_blank" rel="noopener">线程同步之条件变量原理</a></li>
-<li><a href="http://www.blogjava.net/fhtdy2004/archive/2009/07/05/285519.html" target="_blank" rel="noopener">线程同步：何时互斥锁不够，还需要条件变量?</a></li>
-<li><a href="多线程同步条件变量">多线程同步条件变量</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/11/Linux-system-programming-File-and-Directory-Management/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/11/11/Linux-system-programming-File-and-Directory-Management/" class="post-title-link" itemprop="url">Linux系统编程-文件和目录管理</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-11-12 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-12T00:00:00+08:00">2014-11-12</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux System Programming</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>6k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>5 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <ul>
-<li>toc<br>{:toc}</li>
-</ul>
-<hr>
-<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
-<h2 id="获得文件metadata的Stat家族"><a href="#获得文件metadata的Stat家族" class="headerlink" title="获得文件metadata的Stat家族"></a>获得文件metadata的Stat家族</h2><pre><code>#include &lt;sys/types.h&gt;  
-#include &lt;sys/stat.h&gt;  
-#include &lt;unistd.h&gt;  
-
-struct stat{  
-    dev_t st_dev; /*包含文件的设备号*/  
-    ino_t st_ino; /*文件inode序列号 */  
-    mode_t st_mode;/*文件的mode*/  
-    nlink_t st_nlink; /*硬链接的数量*/  
-    uid_t st_uid; /*文件的用户id*/  
-    gid_t st_gid; /*文件的goup id*/  
-    off_t st_size;/*文件大小*/  
-
-    time_t st_atime;/*最后一次访问时间*/  
-    time_t st_mtime;/*最后一次修改时间*/  
-    time_t st_ctime;/*最后一次状态改变时间*/  
-}  
-
-int lstat(const char * restrict path, struct stat * restrict buf);  
-int stat(const char *restrict path, struct stat * restrict buf);  
-int fstat(int fd,struct stat *buf);  </code></pre><p>对于软链来说： </p>
-<ul>
-<li>lstat返回软链本身的状态 </li>
-<li>stat返回软链所指文件的状态 </li>
-</ul>
-<p>例子： </p>
-<pre><code>#include &lt;stdio.h&gt;  
-#include &lt;time.h&gt;  
-#include &lt;sys/stat.h&gt;  
-
-int isdirectory(char *path) {  
-    struct stat statbuf;  
-
-    if (stat(path, &amp;statbuf) == -1)  
-        return 0;  
-    else  
-        return S_ISDIR(statbuf.st_mode);  
-}  </code></pre><h2 id="文件权限"><a href="#文件权限" class="headerlink" title="文件权限"></a>文件权限</h2><p>设置文件权限的系统调用： </p>
-<pre><code>#include &lt;sys/types.h&gt;  
-#include &lt;sys/stat.h&gt;  
-
-int chmod(const char *path, mode_t mode);  
-int fchmod(int fd,mode_t mode);  </code></pre><p>成功返回0，失败返回-1，并设置errno： </p>
-<ul>
-<li>EACCESS：没有搜索path的权限 </li>
-<li>EBADF：fd不合法的文件描述符（仅fchmod) </li>
-<li>EFAULT:path不合法的指针（仅chmod) </li>
-<li>EIO：文件系统内部I/O错误 </li>
-<li>ELOOP：由于symbolic link导致解析path死循环 </li>
-<li>ENAMETOOLONG：path太长（仅chmod) </li>
-<li>ENOENT：path不存在 </li>
-<li>ENOME：内存不足 </li>
-<li>ENOTDIR：不是一个目录（仅chmod) </li>
-<li>EPERM:进程不是文件的owner或者缺少CAP_FOWNER能力。 </li>
-<li>EROFS：文件在只读文件系统中。 </li>
-</ul>
-<h2 id="文件的所有者"><a href="#文件的所有者" class="headerlink" title="文件的所有者"></a>文件的所有者</h2><p>stat结构中st_uid和st_gid提供了文件的所有者和group，以下系统调用可以改变所有者： </p>
-<pre><code>#include &lt;sys/types.h&gt;  
-#include &lt;unistd.h&gt;  
-
-int chown(const char *path, uid_t owner, gid_t group);  
-int lchown(const char *path, uid_t owner, gid_t group);  
-int fchown(int fd, uid_t owner, gid_t group);  </code></pre><p>chown和lchown区别：chown会follow simbolic link，改变link的目标文件，lchmod改变符号链接本身。<br>成功过返回0，失败返回-1，并设置errno。 </p>
-<pre><code>struct group *gr;  
-int ret;  
-
-gr = getgrnam(&quot;officers&quot;);  
-if(! gr){  
-    perror(&quot;getgrnam&quot;);  
-    return 1;  
-}  
-
-ret = chmod(&quot;manifest.txt&quot;,-1,gr-&gt;gr_gid);  
-if(ret){  
-    perror(&quot;chmod&quot;);  
-    return 1;  
-}  </code></pre><p>设置为root拥有者： </p>
-<pre><code>int make_root_owner(int fd){  
-    int ret;  
-
-    ret = fchown(fd,0,0);  
-    if(ret)  
-        perror(&quot;fchown&quot;);  
-    return ret;  
-}  </code></pre><p>进程需要有CAP_CHOWN能力，也就是必须是root为所有。 </p>
-<h2 id="文件系统Navigation"><a href="#文件系统Navigation" class="headerlink" title="文件系统Navigation"></a>文件系统Navigation</h2><h3 id="改变当前的工作目录"><a href="#改变当前的工作目录" class="headerlink" title="改变当前的工作目录"></a>改变当前的工作目录</h3><pre><code>#include &lt;unistd.h&gt;  
-
-int chdir(const char *path);  
-int fchdir(int fd);  </code></pre><p>将当前的工作目录指定为path：</p>
-<pre><code>char *dir = &quot;/tmp&quot;;  
-if(chdir(dir) == -1)  
-    perror(&quot;Failed to change current working directory to /tmp&quot;);  </code></pre><h3 id="获得当前工作目录"><a href="#获得当前工作目录" class="headerlink" title="获得当前工作目录"></a>获得当前工作目录</h3><pre><code>#include &lt;unistd.h&gt;  
-
-char *getcwd(char *buf, size_t size);  
-
-例子： 
-
-#include &lt;limits.h&gt;  
-#include &lt;stdio.h&gt;  
-#include &lt;unistd.h&gt;  
-#ifndef PATH_MAX  
-#define PATH_MAX 255  
-#endif  
-
-int main(void)
-{  
-    char mycwd[PATH_MAX];  
-    if(getcwd(mycwd,PATH_MAX) == NULL){  
-        perror(&quot;Failed to get current working directory&quot;);  
-        return 1;  
-    }  
-    printf(&quot;Current working directory: %s\n&quot;,mycwd);  
-    return 0;  
-}  </code></pre><h3 id="path-conf"><a href="#path-conf" class="headerlink" title="path conf"></a>path conf</h3><pre><code>#include &lt;unistd.h&gt;  
-
-long fpathconf(int fd, int name);  
-long pathconf(const char *path,int name);  
-sysconf(int name);  </code></pre><h2 id="创建目录"><a href="#创建目录" class="headerlink" title="创建目录"></a>创建目录</h2><pre><code>#include &lt;sys/stat.h&gt;  
-#include &lt;sys/types.h&gt;  
-
-int mkdir(const char *path, mode_t mode);  </code></pre><p>成功返回0，失败返回-1，并设置好errno。没有可以递归删除与rm -r等价的系统调用。<br>如果目录非空，失败设置errno为ENOTEMPTY。 </p>
-<pre><code>int ret;  
-
-ret = rmdir(&quot;/home/fuliang/test&quot;);  
-if(ret)  
-    perror(&quot;rmdir&quot;);  </code></pre><h2 id="删除目录"><a href="#删除目录" class="headerlink" title="删除目录"></a>删除目录</h2><pre><code>#include &lt;unistd.h&gt;  
-
-int rmdir(const char *path);  
-
-成功返回0，失败返回-1 </code></pre><h2 id="文件夹访问"><a href="#文件夹访问" class="headerlink" title="文件夹访问"></a>文件夹访问</h2><h3 id="opendir-closedir-readdir"><a href="#opendir-closedir-readdir" class="headerlink" title="opendir closedir, readdir"></a>opendir closedir, readdir</h3><pre><code>#include &lt;dirent.h&gt;  
-DIR *opendir(const char *dirname);  
-struct dirent *readdir(DIR *dirp);  
-int closedir(DIR *dirp);  
-void rewinddir(DIR *dirp);  </code></pre><p>例子：显示pathname下的文件： </p>
-<pre><code>#include &lt;dirent.h&gt;  
-#include &lt;errno.h&gt;  
-#include &lt;stdio.h&gt;  
-
-int main(int argc, char *argv[])
-{  
-    struct dirent *direntp;  
-    DIR *dirp;  
-
-    if(argc != 2){  
-        fprintf(stderr,&quot;Usage %s directory_name\n&quot;, argv[0]);  
-    }  
-
-    if((dirp = opendir(argv[1])) == NULL){  
-        perror(&quot;Failed to open directory&quot;);  
-        return 1;  
-    }  
-
-    while((direntp = readdir(dirp)) != NULL)  
-        printf(&quot;%s\n&quot;, direntp-&gt;d_name);  
-    while((closedir(dirp) == -1) &amp;&amp; (errno == EINTR)) ;  
-    return 0;   
-}  </code></pre><p>dirent结构： </p>
-<pre><code>struct dirent{  
-    ino_t d_ino; /* inode number */  
-    off_t d_off; /* offset to the next dirent */  
-    unsigned short d_reclen; /* length of this record */  
-    unsigned char d_type; /* type of file */  
-    char d_name[256]; /*filename*/    
-};  </code></pre><p>POSIX仅需要d_name字段，其他的都是可选的或者是linux特有的。<br>可移植性的程序应该只访问d_name字段。 </p>
-<p>从Dir可以获得文件描述符： </p>
-<pre><code>#define _BSD_SOURCE  
-#include &lt;sys/types.h&gt;  
-#include &lt;dirent.h&gt;  
-
-int dirfd(DIR *dir);  </code></pre><p>这个是BSD的一个扩展，并不是POSIX标准。 </p>
-<h3 id="访问文件的状态信息"><a href="#访问文件的状态信息" class="headerlink" title="访问文件的状态信息"></a>访问文件的状态信息</h3><p>lstat、stat </p>
-<h2 id="硬链接和软链接"><a href="#硬链接和软链接" class="headerlink" title="硬链接和软链接"></a>硬链接和软链接</h2><p>硬链接：两个path指向同一个inode.<br>软链接：单独的一个文件，里面存储了链接文件的路径。 </p>
-<h3 id="创建和删除一个硬链接"><a href="#创建和删除一个硬链接" class="headerlink" title="创建和删除一个硬链接"></a>创建和删除一个硬链接</h3><pre><code>#include &lt;unistd.h&gt;  
-
-int link(const char *path1, const char *path2);  
-int unlink(const char *path);  </code></pre><p>为有path1指定的文件创建一个新的目录项。 </p>
-<pre><code>#include &lt;stdio.h&gt;  
-#include &lt;unistd.h&gt;  
-
-if (link(&quot;/dirA/name1&quot;,&quot;dirB/name2&quot;) == -1)  
-    perror(&quot;Failed to make a new link in /dirB&quot;);  </code></pre><h3 id="创建和删除一个硬链接-1"><a href="#创建和删除一个硬链接-1" class="headerlink" title="创建和删除一个硬链接"></a>创建和删除一个硬链接</h3><pre><code>#include &lt;unistd.h&gt;  
-
-int symlink(const char *path1, const char *path2);  </code></pre><h2 id="拷贝或者移动文件"><a href="#拷贝或者移动文件" class="headerlink" title="拷贝或者移动文件"></a>拷贝或者移动文件</h2><p>拷贝和移动文件时两个最基本的文件操作任务，可以使用shell命令cp和mv来完成。 </p>
-<h3 id="拷贝文件"><a href="#拷贝文件" class="headerlink" title="拷贝文件"></a>拷贝文件</h3><p>Unix没有提供此操作的系统调用或者库来完成拷贝文件和目录，但可以使用cp命令来手工执行这个任务。<br>拷贝一个文件src到目标dst，要执行的操作步骤： </p>
-<ol>
-<li>打开src </li>
-<li>打开dst，创建如果不存在，清空如果存在。 </li>
-<li>将src读取到内存 </li>
-<li>将从src读取到的内容写入dst </li>
-<li>继续指导所有内容从src写到dst </li>
-<li>关闭dst </li>
-<li>关闭src </li>
-</ol>
-<p>如果拷贝一个目录，递归拷贝目录本身及其子目录通过mkdir及其采用上面步骤拷贝文件。 </p>
-<h3 id="移动"><a href="#移动" class="headerlink" title="移动"></a>移动</h3><p>Unix提供了移动文件的系统调用。ANSI C使用这个调用来移动文件，POSIX标准将其用于文件和目录。 </p>
-<pre><code>#include &lt;stdio.h&gt;  
-
-int rename(const char *oldpath, const char *newpath);  </code></pre><p>将路径名称从oldpath改成newpath，内容和inode没有变化。newpath需要在同一文件系统中。<br>成功返回0，失败返回-1，并设置errno。 </p>
-<h2 id="创建临时文件"><a href="#创建临时文件" class="headerlink" title="创建临时文件"></a>创建临时文件</h2><p>ISO C标准定义了两个标准I/O函数来创建临时文件。 </p>
-<pre><code>#include &lt;stdio.h&gt;  
-
-char *tmpnam(char *ptr); /*返回执行路径的指针*/  
-FILE *tmpfile(void); /*返回文件指针，错误则为NULL*/  </code></pre><p>tmpnam每次产生一个不同的合法的路径名字。如果ptr是NULL，生成一个存储在静态区域的名字，<br>并返回指向它的指针，所以如果连续调用两次会覆盖前一次的tmpname。<br>如果指定了ptr，则它被假设指向一个数组，并且长度不小于L_tmpnam（&lt;stdio.h&gt;中定义）。<br>例子： </p>
-<pre><code>#include &lt;stdio.h&gt;  
-
-int main(void){  
-    char name[L_tmpnam],line[MAXLINE];  
-    FILE *fp;  
-
-    printf(&quot;%s\n&quot;,tmpnam(NULL));  
-    tmpname(name);  
-    printf(&quot;%s\n&quot;,name);  
-
-    if((fp = tmpfile()) == NULL){  
-        perror(&quot;tmpfile&quot;);  
-        return 1;  
-    }  
-
-    fputs(&quot;one line of output\n&quot;,fp);  
-    rewind(fp);  
-
-    if(fgets(line,sizeof(line),fp) == NULL){  
-        perror(&quot;fgets&quot;);  
-        return 1;  
-    }  
-    fputs(line,stdout);  
-
-    return 0;  
-}  </code></pre><p>XSI扩展定义了两个另外的方法来操作临时文件： </p>
-<pre><code>#include &lt;stdio.h&gt;  
-
-char *tempnam(const char *directory, const char *prefix);  
-int mkstemp(char *template);  </code></pre><p>tempnam和tmpnam一样，但是可以指定目录和前缀来生成临时文件名。 </p>
-<ol>
-<li>如果环境变量定义了TMPDIR，则使用它作为目录。 </li>
-<li>如果directory不为NULL，则使用它。 </li>
-<li>在&lt;stdio.h&gt;中的P_tmpdir作为目录。 </li>
-<li>本地的目录，通常/tmp被作为临时目录。 </li>
-</ol>
-<p>前缀prefix如果不为NULL，至少5个字节。<br>生成的名字是通过malloc动态申请的内存，所以要使用free释放。 </p>
-<pre><code>#include &lt;stdio.h&gt;  
-
-int main(int argc, char *argv[]){  
-    if(argc != 3){  
-        pintf(&quot;usage: %s &lt;directory&gt; &lt;prefix&gt;&quot;,argv[0]);  
-        return 1;  
-    }  
-
-    printf(&quot;%s\n&quot;,tempnam(argv[1][0] != &#39; &#39; ? argv[1] : NULL, argv[2][0] != &#39; &#39; ? argv[2] : NULL));  
-
-    return 0;  
-}  </code></pre><p>mkstemp和tmpfile类似，只是返回了文件描述符，并且mkstemp生成的临时文件不会自动清除。<br>path的后六个字符要设置为XXXXXX，通过替换它来生成不同的名字。 </p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/11/Linux-system-programming-Memory-Management/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2135,7 +1954,7 @@ int main(int argc, char *argv[]){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2453,6 +2272,606 @@ int munlockall(void);</code></pre><h2 id="投机性内存分配策略"><a href="
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/11/Linux-system-programming-pthread_cont/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/11/11/Linux-system-programming-pthread_cont/" class="post-title-link" itemprop="url">Linux系统编程-多线程同步条件变量</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-11-12 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-12T00:00:00+08:00">2014-11-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux System Programming</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>5.1k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<p>与互斥锁不同，<strong>条件变量是用来等待而不是用来上锁的。<br>条件变量用来自动阻塞一个线程，直到某特殊情况发生为止。通常条件变量和互斥锁同时使用。</strong></p>
+<p>条件变量使我们可以睡眠等待某种条件出现。<br>条件变量是利用线程间共享的全局变量进行同步的一种机制，<br>主要包括两个动作：<strong>一个线程等待”条件变量的条件成立”而挂起；另一个线程使”条件成立”（给出条件成立信号）。</strong></p>
+<p><strong>条件的检测是在互斥锁的保护下进行的。<br>如果一个条件为假，一个线程自动阻塞，并释放等待状态改变的互斥锁。</strong><br>如果另一个线程改变了条件，它发信号给关联的条件变量，<br>唤醒一个或多个等待它的线程，重新获得互斥锁，重新评价条件。<br>如果两进程共享可读写的内存，条件变量可以被用来实现这两进程间的线程同步。</p>
+<p>使用条件变量之前要先进行初始化。<br>可以在单个语句中生成和初始化一个条件变量如：pthread_cond_t my_condition=PTHREAD_COND_INITIALIZER;（用于进程间线程的通信）。<br>可以利用函数pthread_cond_init动态初始化。</p>
+<p><strong>条件变量分为两部分: 条件和变量。<br>条件本身是由互斥量保护的。<br>线程在改变条件状态前先要锁住互斥量。<br>它利用线程间共享的全局变量进行同步的一种机制。</strong></p>
+<h2 id="API"><a href="#API" class="headerlink" title="API"></a><strong>API</strong></h2><pre><code>int pthread_cond_init(pthread_cond_t *cond,pthread_condattr_t *cond_attr);     
+int pthread_cond_destroy(pthread_cond_t *cond);  
+int pthread_cond_wait(pthread_cond_t *cond,pthread_mutex_t *mutex);
+int pthread_cond_timewait(pthread_cond_t *cond,pthread_mutex *mutex,const timespec *abstime);
+int pthread_cond_signal(pthread_cond_t *cond);
+int pthread_cond_broadcast(pthread_cond_t *cond);  //解除所有线程的阻塞</code></pre><p>条件变量采用的数据类型是pthread_cond_t, 在使用之前必须要进行初始化, 这包括两种方式:</p>
+<ul>
+<li>静态: 可以把常量PTHREAD_COND_INITIALIZER给静态分配的条件变量</li>
+<li>动态: pthread_cond_init函数, 释放动态条件变量的内存空间之前, 要用pthread_cond_destroy对其进行清理</li>
+</ul>
+<p>pthread_cond_wait()函数用于等待条件被触发。<br>该函数传入两个参数，一个条件变量一个互斥量，函数将条件变量和互斥量进行关联，<br>互斥量对该条件进行保护，传入的互斥量必须是已经锁住的。<br>调用pthread_cond_wait()函数后，会原子的执行以下两个动作：</p>
+<ul>
+<li>将调用线程放到等待条件的线程列表上，即进入睡眠</li>
+<li>对互斥量进行解锁</li>
+</ul>
+<p>由于这两个操作时原子操作，<br>这样就关闭了条件检查和线程进入睡眠等待条件改变这两个操作之间的时间通道，<br>这样就不会错过任何条件的变化。<br><strong>当pthread_cond_wait()返回后，互斥量会再次被锁住。</strong></p>
+<p>pthread_cond_timedwait()函数和pthread_cond_wait()的工作方式相似，只是多了一个等待时间。<br>等待时间的结构为struct timespec，</p>
+<pre><code>struct timespec{  
+    time_t  tv_sec    //Seconds.  
+    long    tv_nsec   //Nanoseconds.  
+};</code></pre><p>函数要求传入的时间值是一个绝对值，不是相对值，<br>例如，想要等待3分钟，必须先获得当前时间，然后加上3分钟。<br>要想获得当前系统时间的timespec值，没有直接可调用的函数，<br>需要通过调用gettimeofday函数获取timeval结构，然后转换成timespec结构，转换公式就是：</p>
+<pre><code>timeSpec.tv_sec = timeVal.tv_sec;  
+timeSpec.tv_nsec = timeVal.tv_usec * 1000; </code></pre><p>所以要等待3分钟，timespec时间结构的获得应该如下所示:</p>
+<pre><code>struct timeval now;  
+struct timespec until;  
+gettimeofday(&amp;now);//获得系统当前时间  
+
+//把时间从timeval结构转换成timespec结构  
+until.tv_sec = now.tv_sec;  
+until.tv_nsec = now.tv_usec * 1000;  
+
+//增加min  
+until.tv_sec += 3 * 60;  </code></pre><p>如果时间到后，条件还没有发生，那么会返回ETIMEDOUT错误。</p>
+<p><strong>从pthread_cond_wait()和pthread_cond_timewait()成功返回时，<br>线程需要重新计算条件，因为其他线程可能在运行过程中已经改变条件。</strong></p>
+<p>pthread_cond_signal() 和 pthread_cond_broadcast()<br>这两个函数都是用于向等待条件的线程发送唤醒信号，<br>pthread_cond_signal()函数只会唤醒等待该条件的某个线程，<br>pthread_cond_broadcast()会广播条件状态的改变，以唤醒等待该条件的所有线程。<br>例如多个线程只读共享资源，这是可以将它们都唤醒。<br>这里要注意的是：<strong>一定要在改变条件状态后，再给线程发送信号。</strong><br>考虑条件变量信号单播发送和广播发送的一种候选方式是坚持使用广播发送。<br><strong>只有在等待者代码编写确切，只有一个等待者需要唤醒，<br>且唤醒哪个线程无所谓，那么此时为这种情况使用单播，<br>所以其他情况下都必须使用广播发送。</strong></p>
+<p>在实际编程中，把共享数据和它们的同步变量集合到一个结构中，这往往是一个较好的编程技巧：</p>
+<pre><code>struct{  
+    pthread_mutex_t mutex;  
+    pthread_cond_t cond;  
+    int data;  
+}Data;  </code></pre><h2 id="Source-Code"><a href="#Source-Code" class="headerlink" title="Source Code"></a><strong>Source Code</strong></h2><pre><code>#include &lt;pthread.h&gt;  
+#include &lt;stdio.h&gt;  
+#include &lt;stdlib.h&gt;  
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;/* 初始化互斥锁*/  
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;/* 初始化条件变量*/  
+void *thread1(void *);  
+void *thread2(void *);  
+int i=1;  
+int main(void)  
+{  
+    pthread_t t_a;  
+    pthread_t t_b;  
+
+    pthread_create(&amp;t_a,NULL,thread1,(void *)NULL);/* 创建进程t_a*/  
+    sleep(1);
+    pthread_create(&amp;t_b,NULL,thread2,(void *)NULL); /* 创建进程t_b*/  
+
+    pthread_join(t_a, NULL);/* 等待进程t_a结束*/  
+    pthread_join(t_b, NULL);/* 等待进程t_b结束*/  
+
+    pthread_mutex_destroy(&amp;mutex);  
+    pthread_cond_destroy(&amp;cond);  
+
+    exit(0);  
+}  
+void *thread1(void *junk)  
+{  
+    for(i=1;i&lt;=6;i++)  
+    {  
+        pthread_mutex_lock(&amp;mutex);/* 锁住互斥量*/  
+        printf(&quot;thread1: lock %d\t i %d\n&quot;, __LINE__, i);  
+
+        if(i%3==0){  
+            printf(&quot;thread1:signal 1  %d\n&quot;, __LINE__);  
+            pthread_cond_signal(&amp;cond);/* 条件改变，发送信号，通知t_b进程*/  
+            printf(&quot;thread1:signal 2  %d\n&quot;, __LINE__);  
+            sleep(1);  
+        }  
+
+        pthread_mutex_unlock(&amp;mutex);/* 解锁互斥量*/  
+        printf(&quot;thread1: unlock %d\t i %d\n\n&quot;, __LINE__, i);  
+        sleep(1);  
+    }  
+}  
+void *thread2(void *junk)  
+{  
+    while(i&lt;6)  
+    {  
+        pthread_mutex_lock(&amp;mutex);  
+        printf(&quot;thread2: lock %d\t i %d\n&quot;, __LINE__, i);  
+
+        if(i%3!=0){  
+            printf(&quot;thread2: wait 1  %d\n&quot;, __LINE__);  
+            pthread_cond_wait(&amp;cond,&amp;mutex);/* 解锁mutex，并等待cond改变*/  
+            printf(&quot;thread2: wait 2  %d\n&quot;, __LINE__);  
+        }  
+
+        pthread_mutex_unlock(&amp;mutex);  
+        printf(&quot;thread2: unlock %d\t i %d\n\n&quot;, __LINE__, i);  
+        sleep(1);  
+    }  
+}</code></pre><p>编译运行结果如下：</p>
+<pre><code>thread1: lock 31     i 1
+thread1: unlock 41   i 1
+
+thread2: lock 50     i 1
+thread2: wait 1  53
+thread1: lock 31     i 2
+thread1: unlock 41   i 2
+
+thread1: lock 31     i 3
+thread1:signal 1  34
+thread1:signal 2  36
+thread1: unlock 41   i 3
+
+thread2: wait 2  55
+thread2: unlock 59   i 3
+
+thread1: lock 31     i 4
+thread1: unlock 41   i 4
+
+thread2: lock 50     i 4
+thread2: wait 1  53
+thread1: lock 31     i 5
+thread1: unlock 41   i 5
+
+thread1: lock 31     i 6
+thread1:signal 1  34
+thread1:signal 2  36
+thread1: unlock 41   i 6
+
+thread2: wait 2  55
+thread2: unlock 59   i 6</code></pre><p>线程1先执行，获得mutex锁，打印，然后释放mutex锁，然后阻塞自己1秒。</p>
+<p>线程2执行,阻塞在pthread_mutex_lock(&amp;mutex)<br>这行语句中，直到线程1释放mutex锁。<br>然后线程2得已执行，获取metux锁，满足if条件，到pthread_cond_wait (&amp;cond,&amp;mutex)<br>这里线程2阻塞，不仅仅是等待cond变量发生改变，同时释放mutex锁。<br>mutex锁释放后，线程1终于获得了mutex锁，得已继续运行，当线程1的if（i%3==0）的条件满足后，<br>通过pthread_cond_signal发送信号，<br>告诉等待cond的变量的线程（线程2），cond条件变量已经发生了改变。</p>
+<p>线程2并没有立即得到运行，因为线程2还在等待mutex锁的释放，<br>所以线程1继续往下走，直到线程1释放mutex锁，<br>线程2才能停止等待，打印语句，<br>然后往下走通过pthread_mutex_unlock(&amp;mutex)释放mutex锁，进入下一个循环。</p>
+<h2 id="References"><a href="#References" class="headerlink" title="References"></a><strong>References</strong></h2><ul>
+<li><a href="http://www.cnblogs.com/feisky/archive/2010/03/08/1680950.html" target="_blank" rel="noopener">Linux线程同步之条件变量</a></li>
+<li><a href="http://blog.csdn.net/anonymalias/article/details/9174481" target="_blank" rel="noopener">Linux线程同步之条件变量</a></li>
+<li><a href="http://my.oschina.net/solu/blog/125998" target="_blank" rel="noopener">线程同步之条件变量原理</a></li>
+<li><a href="http://www.blogjava.net/fhtdy2004/archive/2009/07/05/285519.html" target="_blank" rel="noopener">线程同步：何时互斥锁不够，还需要条件变量?</a></li>
+<li><a href="多线程同步条件变量">多线程同步条件变量</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/11/Linux-system-programming-File-and-Directory-Management/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/11/11/Linux-system-programming-File-and-Directory-Management/" class="post-title-link" itemprop="url">Linux系统编程-文件和目录管理</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-11-12 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-12T00:00:00+08:00">2014-11-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux System Programming</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <ul>
+<li>toc<br>{:toc}</li>
+</ul>
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<h2 id="获得文件metadata的Stat家族"><a href="#获得文件metadata的Stat家族" class="headerlink" title="获得文件metadata的Stat家族"></a>获得文件metadata的Stat家族</h2><pre><code>#include &lt;sys/types.h&gt;  
+#include &lt;sys/stat.h&gt;  
+#include &lt;unistd.h&gt;  
+
+struct stat{  
+    dev_t st_dev; /*包含文件的设备号*/  
+    ino_t st_ino; /*文件inode序列号 */  
+    mode_t st_mode;/*文件的mode*/  
+    nlink_t st_nlink; /*硬链接的数量*/  
+    uid_t st_uid; /*文件的用户id*/  
+    gid_t st_gid; /*文件的goup id*/  
+    off_t st_size;/*文件大小*/  
+
+    time_t st_atime;/*最后一次访问时间*/  
+    time_t st_mtime;/*最后一次修改时间*/  
+    time_t st_ctime;/*最后一次状态改变时间*/  
+}  
+
+int lstat(const char * restrict path, struct stat * restrict buf);  
+int stat(const char *restrict path, struct stat * restrict buf);  
+int fstat(int fd,struct stat *buf);  </code></pre><p>对于软链来说： </p>
+<ul>
+<li>lstat返回软链本身的状态 </li>
+<li>stat返回软链所指文件的状态 </li>
+</ul>
+<p>例子： </p>
+<pre><code>#include &lt;stdio.h&gt;  
+#include &lt;time.h&gt;  
+#include &lt;sys/stat.h&gt;  
+
+int isdirectory(char *path) {  
+    struct stat statbuf;  
+
+    if (stat(path, &amp;statbuf) == -1)  
+        return 0;  
+    else  
+        return S_ISDIR(statbuf.st_mode);  
+}  </code></pre><h2 id="文件权限"><a href="#文件权限" class="headerlink" title="文件权限"></a>文件权限</h2><p>设置文件权限的系统调用： </p>
+<pre><code>#include &lt;sys/types.h&gt;  
+#include &lt;sys/stat.h&gt;  
+
+int chmod(const char *path, mode_t mode);  
+int fchmod(int fd,mode_t mode);  </code></pre><p>成功返回0，失败返回-1，并设置errno： </p>
+<ul>
+<li>EACCESS：没有搜索path的权限 </li>
+<li>EBADF：fd不合法的文件描述符（仅fchmod) </li>
+<li>EFAULT:path不合法的指针（仅chmod) </li>
+<li>EIO：文件系统内部I/O错误 </li>
+<li>ELOOP：由于symbolic link导致解析path死循环 </li>
+<li>ENAMETOOLONG：path太长（仅chmod) </li>
+<li>ENOENT：path不存在 </li>
+<li>ENOME：内存不足 </li>
+<li>ENOTDIR：不是一个目录（仅chmod) </li>
+<li>EPERM:进程不是文件的owner或者缺少CAP_FOWNER能力。 </li>
+<li>EROFS：文件在只读文件系统中。 </li>
+</ul>
+<h2 id="文件的所有者"><a href="#文件的所有者" class="headerlink" title="文件的所有者"></a>文件的所有者</h2><p>stat结构中st_uid和st_gid提供了文件的所有者和group，以下系统调用可以改变所有者： </p>
+<pre><code>#include &lt;sys/types.h&gt;  
+#include &lt;unistd.h&gt;  
+
+int chown(const char *path, uid_t owner, gid_t group);  
+int lchown(const char *path, uid_t owner, gid_t group);  
+int fchown(int fd, uid_t owner, gid_t group);  </code></pre><p>chown和lchown区别：chown会follow simbolic link，改变link的目标文件，lchmod改变符号链接本身。<br>成功过返回0，失败返回-1，并设置errno。 </p>
+<pre><code>struct group *gr;  
+int ret;  
+
+gr = getgrnam(&quot;officers&quot;);  
+if(! gr){  
+    perror(&quot;getgrnam&quot;);  
+    return 1;  
+}  
+
+ret = chmod(&quot;manifest.txt&quot;,-1,gr-&gt;gr_gid);  
+if(ret){  
+    perror(&quot;chmod&quot;);  
+    return 1;  
+}  </code></pre><p>设置为root拥有者： </p>
+<pre><code>int make_root_owner(int fd){  
+    int ret;  
+
+    ret = fchown(fd,0,0);  
+    if(ret)  
+        perror(&quot;fchown&quot;);  
+    return ret;  
+}  </code></pre><p>进程需要有CAP_CHOWN能力，也就是必须是root为所有。 </p>
+<h2 id="文件系统Navigation"><a href="#文件系统Navigation" class="headerlink" title="文件系统Navigation"></a>文件系统Navigation</h2><h3 id="改变当前的工作目录"><a href="#改变当前的工作目录" class="headerlink" title="改变当前的工作目录"></a>改变当前的工作目录</h3><pre><code>#include &lt;unistd.h&gt;  
+
+int chdir(const char *path);  
+int fchdir(int fd);  </code></pre><p>将当前的工作目录指定为path：</p>
+<pre><code>char *dir = &quot;/tmp&quot;;  
+if(chdir(dir) == -1)  
+    perror(&quot;Failed to change current working directory to /tmp&quot;);  </code></pre><h3 id="获得当前工作目录"><a href="#获得当前工作目录" class="headerlink" title="获得当前工作目录"></a>获得当前工作目录</h3><pre><code>#include &lt;unistd.h&gt;  
+
+char *getcwd(char *buf, size_t size);  
+
+例子： 
+
+#include &lt;limits.h&gt;  
+#include &lt;stdio.h&gt;  
+#include &lt;unistd.h&gt;  
+#ifndef PATH_MAX  
+#define PATH_MAX 255  
+#endif  
+
+int main(void)
+{  
+    char mycwd[PATH_MAX];  
+    if(getcwd(mycwd,PATH_MAX) == NULL){  
+        perror(&quot;Failed to get current working directory&quot;);  
+        return 1;  
+    }  
+    printf(&quot;Current working directory: %s\n&quot;,mycwd);  
+    return 0;  
+}  </code></pre><h3 id="path-conf"><a href="#path-conf" class="headerlink" title="path conf"></a>path conf</h3><pre><code>#include &lt;unistd.h&gt;  
+
+long fpathconf(int fd, int name);  
+long pathconf(const char *path,int name);  
+sysconf(int name);  </code></pre><h2 id="创建目录"><a href="#创建目录" class="headerlink" title="创建目录"></a>创建目录</h2><pre><code>#include &lt;sys/stat.h&gt;  
+#include &lt;sys/types.h&gt;  
+
+int mkdir(const char *path, mode_t mode);  </code></pre><p>成功返回0，失败返回-1，并设置好errno。没有可以递归删除与rm -r等价的系统调用。<br>如果目录非空，失败设置errno为ENOTEMPTY。 </p>
+<pre><code>int ret;  
+
+ret = rmdir(&quot;/home/fuliang/test&quot;);  
+if(ret)  
+    perror(&quot;rmdir&quot;);  </code></pre><h2 id="删除目录"><a href="#删除目录" class="headerlink" title="删除目录"></a>删除目录</h2><pre><code>#include &lt;unistd.h&gt;  
+
+int rmdir(const char *path);  
+
+成功返回0，失败返回-1 </code></pre><h2 id="文件夹访问"><a href="#文件夹访问" class="headerlink" title="文件夹访问"></a>文件夹访问</h2><h3 id="opendir-closedir-readdir"><a href="#opendir-closedir-readdir" class="headerlink" title="opendir closedir, readdir"></a>opendir closedir, readdir</h3><pre><code>#include &lt;dirent.h&gt;  
+DIR *opendir(const char *dirname);  
+struct dirent *readdir(DIR *dirp);  
+int closedir(DIR *dirp);  
+void rewinddir(DIR *dirp);  </code></pre><p>例子：显示pathname下的文件： </p>
+<pre><code>#include &lt;dirent.h&gt;  
+#include &lt;errno.h&gt;  
+#include &lt;stdio.h&gt;  
+
+int main(int argc, char *argv[])
+{  
+    struct dirent *direntp;  
+    DIR *dirp;  
+
+    if(argc != 2){  
+        fprintf(stderr,&quot;Usage %s directory_name\n&quot;, argv[0]);  
+    }  
+
+    if((dirp = opendir(argv[1])) == NULL){  
+        perror(&quot;Failed to open directory&quot;);  
+        return 1;  
+    }  
+
+    while((direntp = readdir(dirp)) != NULL)  
+        printf(&quot;%s\n&quot;, direntp-&gt;d_name);  
+    while((closedir(dirp) == -1) &amp;&amp; (errno == EINTR)) ;  
+    return 0;   
+}  </code></pre><p>dirent结构： </p>
+<pre><code>struct dirent{  
+    ino_t d_ino; /* inode number */  
+    off_t d_off; /* offset to the next dirent */  
+    unsigned short d_reclen; /* length of this record */  
+    unsigned char d_type; /* type of file */  
+    char d_name[256]; /*filename*/    
+};  </code></pre><p>POSIX仅需要d_name字段，其他的都是可选的或者是linux特有的。<br>可移植性的程序应该只访问d_name字段。 </p>
+<p>从Dir可以获得文件描述符： </p>
+<pre><code>#define _BSD_SOURCE  
+#include &lt;sys/types.h&gt;  
+#include &lt;dirent.h&gt;  
+
+int dirfd(DIR *dir);  </code></pre><p>这个是BSD的一个扩展，并不是POSIX标准。 </p>
+<h3 id="访问文件的状态信息"><a href="#访问文件的状态信息" class="headerlink" title="访问文件的状态信息"></a>访问文件的状态信息</h3><p>lstat、stat </p>
+<h2 id="硬链接和软链接"><a href="#硬链接和软链接" class="headerlink" title="硬链接和软链接"></a>硬链接和软链接</h2><p>硬链接：两个path指向同一个inode.<br>软链接：单独的一个文件，里面存储了链接文件的路径。 </p>
+<h3 id="创建和删除一个硬链接"><a href="#创建和删除一个硬链接" class="headerlink" title="创建和删除一个硬链接"></a>创建和删除一个硬链接</h3><pre><code>#include &lt;unistd.h&gt;  
+
+int link(const char *path1, const char *path2);  
+int unlink(const char *path);  </code></pre><p>为有path1指定的文件创建一个新的目录项。 </p>
+<pre><code>#include &lt;stdio.h&gt;  
+#include &lt;unistd.h&gt;  
+
+if (link(&quot;/dirA/name1&quot;,&quot;dirB/name2&quot;) == -1)  
+    perror(&quot;Failed to make a new link in /dirB&quot;);  </code></pre><h3 id="创建和删除一个硬链接-1"><a href="#创建和删除一个硬链接-1" class="headerlink" title="创建和删除一个硬链接"></a>创建和删除一个硬链接</h3><pre><code>#include &lt;unistd.h&gt;  
+
+int symlink(const char *path1, const char *path2);  </code></pre><h2 id="拷贝或者移动文件"><a href="#拷贝或者移动文件" class="headerlink" title="拷贝或者移动文件"></a>拷贝或者移动文件</h2><p>拷贝和移动文件时两个最基本的文件操作任务，可以使用shell命令cp和mv来完成。 </p>
+<h3 id="拷贝文件"><a href="#拷贝文件" class="headerlink" title="拷贝文件"></a>拷贝文件</h3><p>Unix没有提供此操作的系统调用或者库来完成拷贝文件和目录，但可以使用cp命令来手工执行这个任务。<br>拷贝一个文件src到目标dst，要执行的操作步骤： </p>
+<ol>
+<li>打开src </li>
+<li>打开dst，创建如果不存在，清空如果存在。 </li>
+<li>将src读取到内存 </li>
+<li>将从src读取到的内容写入dst </li>
+<li>继续指导所有内容从src写到dst </li>
+<li>关闭dst </li>
+<li>关闭src </li>
+</ol>
+<p>如果拷贝一个目录，递归拷贝目录本身及其子目录通过mkdir及其采用上面步骤拷贝文件。 </p>
+<h3 id="移动"><a href="#移动" class="headerlink" title="移动"></a>移动</h3><p>Unix提供了移动文件的系统调用。ANSI C使用这个调用来移动文件，POSIX标准将其用于文件和目录。 </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+int rename(const char *oldpath, const char *newpath);  </code></pre><p>将路径名称从oldpath改成newpath，内容和inode没有变化。newpath需要在同一文件系统中。<br>成功返回0，失败返回-1，并设置errno。 </p>
+<h2 id="创建临时文件"><a href="#创建临时文件" class="headerlink" title="创建临时文件"></a>创建临时文件</h2><p>ISO C标准定义了两个标准I/O函数来创建临时文件。 </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+char *tmpnam(char *ptr); /*返回执行路径的指针*/  
+FILE *tmpfile(void); /*返回文件指针，错误则为NULL*/  </code></pre><p>tmpnam每次产生一个不同的合法的路径名字。如果ptr是NULL，生成一个存储在静态区域的名字，<br>并返回指向它的指针，所以如果连续调用两次会覆盖前一次的tmpname。<br>如果指定了ptr，则它被假设指向一个数组，并且长度不小于L_tmpnam（&lt;stdio.h&gt;中定义）。<br>例子： </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+int main(void){  
+    char name[L_tmpnam],line[MAXLINE];  
+    FILE *fp;  
+
+    printf(&quot;%s\n&quot;,tmpnam(NULL));  
+    tmpname(name);  
+    printf(&quot;%s\n&quot;,name);  
+
+    if((fp = tmpfile()) == NULL){  
+        perror(&quot;tmpfile&quot;);  
+        return 1;  
+    }  
+
+    fputs(&quot;one line of output\n&quot;,fp);  
+    rewind(fp);  
+
+    if(fgets(line,sizeof(line),fp) == NULL){  
+        perror(&quot;fgets&quot;);  
+        return 1;  
+    }  
+    fputs(line,stdout);  
+
+    return 0;  
+}  </code></pre><p>XSI扩展定义了两个另外的方法来操作临时文件： </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+char *tempnam(const char *directory, const char *prefix);  
+int mkstemp(char *template);  </code></pre><p>tempnam和tmpnam一样，但是可以指定目录和前缀来生成临时文件名。 </p>
+<ol>
+<li>如果环境变量定义了TMPDIR，则使用它作为目录。 </li>
+<li>如果directory不为NULL，则使用它。 </li>
+<li>在&lt;stdio.h&gt;中的P_tmpdir作为目录。 </li>
+<li>本地的目录，通常/tmp被作为临时目录。 </li>
+</ol>
+<p>前缀prefix如果不为NULL，至少5个字节。<br>生成的名字是通过malloc动态申请的内存，所以要使用free释放。 </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+int main(int argc, char *argv[]){  
+    if(argc != 3){  
+        pintf(&quot;usage: %s &lt;directory&gt; &lt;prefix&gt;&quot;,argv[0]);  
+        return 1;  
+    }  
+
+    printf(&quot;%s\n&quot;,tempnam(argv[1][0] != &#39; &#39; ? argv[1] : NULL, argv[2][0] != &#39; &#39; ? argv[2] : NULL));  
+
+    return 0;  
+}  </code></pre><p>mkstemp和tmpfile类似，只是返回了文件描述符，并且mkstemp生成的临时文件不会自动清除。<br>path的后六个字符要设置为XXXXXX，通过替换它来生成不同的名字。 </p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/10/Linux-system-programming-thread/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2484,7 +2903,7 @@ int munlockall(void);</code></pre><h2 id="投机性内存分配策略"><a href="
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2683,7 +3102,7 @@ int pthread_cond_timedwait (pthread_cond_t * cptr, pthread_mutex_t *mptr, const 
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2949,7 +3368,7 @@ printf(&quot;RLIMIT_CORE limits: soft=%ld hard=%ld\n&quot;, rlim.rlim_cur, rlim.
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -3224,7 +3643,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -3267,200 +3686,6 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2014/11/02/Linux-system-programming-03-buffer-io/">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/10/30/Linux-system-programming-03-io/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/10/30/Linux-system-programming-03-io/" class="post-title-link" itemprop="url">Linux系统编程-I/O多路复用</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-10-31 00:00:00" itemprop="dateCreated datePublished" datetime="2014-10-31T00:00:00+08:00">2014-10-31</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux System Programming</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>5.9k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>5 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          Linux系统编程读书笔记1
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2014/10/30/Linux-system-programming-03-io/">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/10/21/p2p-find/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/10/21/p2p-find/" class="post-title-link" itemprop="url">P2P设备和Miracast设备发现过程</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-10-22 00:00:00" itemprop="dateCreated datePublished" datetime="2014-10-22T00:00:00+08:00">2014-10-22</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>7.1k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>6 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          Device Discovery
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2014/10/21/p2p-find/">
                 Read more &raquo;
               </a>
             </div>
@@ -3530,7 +3755,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">442</span>
+          <span class="site-state-item-count">444</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -3603,7 +3828,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:07</span>
+    <span title="Reading time total">18:08</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
   </div>

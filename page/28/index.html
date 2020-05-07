@@ -216,6 +216,141 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/04/04/ecos-cpu-load/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/04/04/ecos-cpu-load/" class="post-title-link" itemprop="url">Ecos Cpu Load[转]</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-04-05 00:00:00" itemprop="dateCreated datePublished" datetime="2015-04-05T00:00:00+08:00">2015-04-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Ecos/" itemprop="url" rel="index">
+                    <span itemprop="name">Ecos</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.7k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p>cpuload组件包提供了一种估算CPU负载的方式。它可以估算最近0.1秒、1秒和10秒内的CPU负载百分比。</p>
+<h3 id="负载测量API"><a href="#负载测量API" class="headerlink" title="负载测量API"></a><strong>负载测量API</strong></h3><p>首先，必须在被测目标机上对测量算法进行校准，一旦校准完成后就可以开始测量。<br>测量是一个连续过程，因此总是提供最近的测量数据，测量过程可以根据需要随时停止。<br>一旦开始测量过程，就可以获取测量结果。</p>
+<p>需要注意的是：如果目标机或CPU执行任何节能措施，例如降低时钟频率或者挂起CPU等，<br>这些节能措施将干扰CPU负载测量，在这种情况下，测量结果是未定义的。<br>Synthetic Target就是这样的情况之一。阅读本文后续实现细节章节可以了解更多。</p>
+<p>『译注』Cortex-M架构的默认实现会在执行空闲任务时挂起CPU，<br>因此默认情况下，测量结果并非是实际的CPU负载，<br>需要重定义HAL_IDLE_THREAD_ACTION宏取消空闲时挂起，<br>HAL_IDLE_THREAD_ACTION宏的默认实现位于hal/cortexm/arch/<version>/include/hal_arch.h:336。</p>
+<p>负载测量不支持SMP系统，仅支持单CPU系统。</p>
+<p>负载测量API可以在cyg/cpuload/cpuload.h中找到。</p>
+<p>『译注』源代码位于services/cpuload</p>
+<h4 id="cyg-cpuload-calibrate"><a href="#cyg-cpuload-calibrate" class="headerlink" title="cyg_cpuload_calibrate"></a><strong>cyg_cpuload_calibrate</strong></h4><p>这个函数用来校准CPU负载测量算法。它执行一次特别的测量过程确定空闲时的CPU性能。</p>
+<pre><code>void cyg_cpuload_calibrate(cyg_uint32* calibration);  </code></pre><p>该函数通过calibration指针返回校准值。<br>这个函数是非常特别的，为了获得正确的校准结果需要满足若干条件。<br>该函数使用了2个最高线程优先级，当该函数被使用时，其它线程不能使用这两个优先级。<br>调用该函数时，内核调度器必须已经启动而且调度器未加锁。<br>该函数将花费0.1秒的时间完成校准操作，在这0.1秒校准期间不能有任何其它线程执行。</p>
+<p>『译注』这个函数使用了线程优先级1和2，为了获得正确的测量结果，<br>其它线程不能使用优先级1和2。eCos的最高线程优先级是0，如果有优先级为0的线程，<br>必须保证在校准过程该线程处于挂起状态，<br>否则校准过程可能被优先级为0的线程抢占而导致错误的校准结果。</p>
+<p>『译注』该函数将会创建一个线程，线程堆栈大小为CYGNUM_HAL_STACK_SIZE_MINIMUM，<br>在Cortex-M架构下约1.5KB，该线程仅在校准过程执行一次，<br>随后被删除永远都不会再执行，如果目标机内存非常有限，<br>应当知晓CPU负载测量校准时使用了1.5KB的堆栈空间。</p>
+<h4 id="cyg-cpuload-create"><a href="#cyg-cpuload-create" class="headerlink" title="cyg_cpuload_create"></a><strong>cyg_cpuload_create</strong></h4><p>这个函数启动CPU负载测量。</p>
+<pre><code>void cyg_cpuload_create(cyg_cpuload_t* cpuload,  
+        cyg_uint32 calibrate,  
+        cyg_handle_t* handle);  </code></pre><p>调用该函数启动测量过程，handle返回操作句柄，通过该句柄可以读取测量结果以及停止测量过程。</p>
+<h4 id="cyg-cpuload-delete"><a href="#cyg-cpuload-delete" class="headerlink" title="cyg_cpuload_delete"></a><strong>cyg_cpuload_delete</strong></h4><p>这个函数停止CPU负载测量。</p>
+<pre><code>void cyg_cpuload_delete(cyg_handle_t handle);  </code></pre><p>handle必须是cyg_cpuload_create函数返回的操作句柄。</p>
+<h4 id="cyg-cpuload-get"><a href="#cyg-cpuload-get" class="headerlink" title="cyg_cpuload_get"></a><strong>cyg_cpuload_get</strong></h4><p>这个函数返回最近的测量结果。</p>
+<pre><code>void cyg_cpuload_get(cyg_handle_t handle,  
+        cyg_uint32* average_point1s,  
+        cyg_uint32* average_1s,  
+        cyg_uint32* average_10s);  </code></pre><p>handle必须是cyg_cpuload_create函数返回的操作句柄。<br>最近0.1秒、1秒和10秒的负载测量结果通过average_point1s、average_1s和average_10s返回。</p>
+<h3 id="实现细节"><a href="#实现细节" class="headerlink" title="实现细节"></a><strong>实现细节</strong></h3><p>这一节给出一些测量过程的实现细节，这些细节可以帮助我们理解测量结果的意义。<br>当没有其它线程可以执行时，eCos将执行空闲线程，空闲线程总是可执行的而且使用最低线程优先级。<br>空闲线程只做一点点事情，它有一个永远都不会退出的循环，每次循环将idle_thread_loops变量加1，<br>然后调用HAL_IDLE_THREAD_ACTION宏。<br>CPU负载测量算法就是使用了idle_thread_loops变量，<br>测量算法周期性地检查idle_thread_loops变量，并记录前后两次检查的差值，<br>系统越空这个差值就越大，通过这个简单的手段就可以确定系统的负载。</p>
+<p>cyg_cpuload_calibrate函数执行空闲任务0.1秒，<br>从而确定系统空闲0.1秒的时间内idle_thread_loops会被累加多少次。<br>cyg_cpuload_create函数启动一个闹钟，这个闹钟每隔0.1秒调用回调函数，<br>回调函数计算idle_thread_loops从上次检查到本次检查的差值，然后根据这个差值以及校准值计算出CPU负载。<br>回调函数用新的计算结果更新cyg_cpuload结构，<br>0.1秒负载只是简单地复制最近的测量结果，然后通过一个简单的滤波计算1秒和10秒负载。<br>由于舍入误差的存在，即使系统满负载，1秒和10秒测量值也永远都不会达到100%，通常看到的是99%。</p>
+<p>如前所述，电源管理代码将干扰上述测量结果。<br>CPU负载测量的基本假设是：空闲线程可以无障碍地运行，而且运行条件与校准时的运行条件保持一致。<br>如果降低CPU时钟频率，那么空闲线程的计数器累加速率将变慢，<br>因此CPU负载测量结果值将偏高，如果CPU被完全挂起，那么CPU负载测量结果将是100%。</p>
+<h3 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a><strong>Ref</strong></h3><ol>
+<li><a href="http://ecos.sourceware.org/docs-3.0/ref/cpuload-functions.html" target="_blank" rel="noopener">Chapter 68. CPU Load Measurements</a></li>
+<li><a href="http://ecos.sourceware.org/docs-3.0/ref/ecos-ref.html" target="_blank" rel="noopener">eCos Reference Manual</a></li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/04/04/ecos-stack-info/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +382,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -499,6 +634,189 @@ while(cyg_thread_get_next(&amp;thread, &amp;id))
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/04/04/ecos-mem-info/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/04/04/ecos-mem-info/" class="post-title-link" itemprop="url">Ecos Mem Info[转]</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-04-05 00:00:00" itemprop="dateCreated datePublished" datetime="2015-04-05T00:00:00+08:00">2015-04-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Ecos/" itemprop="url" rel="index">
+                    <span itemprop="name">Ecos</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.4k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p>嵌入式系统的内存资源是非常有限的，<br>如果配置不当可导致eCos应用程序因为存储空间不足而链接失败。<br>解决这个问题的办法可以是增加更多的内存或者是减少软件对内存资源的使用，通常是后一种办法。<br>既然要减少内存使用量，那么首先要找出都是哪些变量吃光了内存，<br>就是说要对映像符号进行分析，找出最占内存的变量，<br>看看能否避免使用该变量或减少该变量的占用容量。<br>GNU工具链中的nm就是做这个事情用的，按照用户手册的说法，<br>nm是用来解析映像符号的，包括符号使用容量和所在的文件。</p>
+<h2 id="查找最占内存变量"><a href="#查找最占内存变量" class="headerlink" title="查找最占内存变量"></a><strong>查找最占内存变量</strong></h2><pre><code>$ nm --print-size --line-numbers --size-sort app.elf | grep &quot; [dDbB] &quot;  
+......  
+10004154 00000800 b var_data    /cygdrive/f/ecos/hg/packages/net/lwip_tcpip/current/src/ecos/sys_arch.c:84  
+10002fb0 00000b00 b timer_table  
+10001f98 00001000 b main_stack  
+10004994 00001800 b stack_data  /cygdrive/f/ecos/hg/packages/net/lwip_tcpip/current/src/ecos/sys_arch.c:95  
+2007c000 000018b8 b emac_ahb_ram        /cygdrive/f/ecos/hg/packages/devs/eth/arm/lpc2xxx/current/src/if_lpc2xxx.c:357  
+20080388 0000283b b memp_memory /cygdrive/f/ecos/hg/packages/net/lwip_tcpip/current/src/core/memp.c:146  </code></pre><ul>
+<li>–print-size：打印符号符号占用内存量</li>
+<li>–line-numbers：打印符号所在的源文件名及行号</li>
+<li>–size-sort：以符号占用内存量来排序</li>
+<li>app.elf：eCos应用映像文件名</li>
+<li>输出内容按列分别为：符号地址、符号占用内存量、符号类型、所在文件及行号</li>
+<li>grep的作用是过滤不需要的符号，我们这里仅需要存储在RAM中的变量，将常量和函数等过滤掉，<br>注意grep参数的引号和方括号之间有空格。<br>输出结果按照变量内容占用量排序输出，最后输出的是占用量最大的变量。<br>从上面的输出可以看出memp_memory占用的内存最多，通过文件名可以判断这是lwIP内存池，<br>修改lwIP配置减少连接数和缓存数目等可以减少该变量的内存占用量。</li>
+</ul>
+<h2 id="链接失败时的办法"><a href="#链接失败时的办法" class="headerlink" title="链接失败时的办法"></a><strong>链接失败时的办法</strong></h2><p>如果容量超限，压根就不能编译完成，也就谈不上映像文件了，<br>这时候可以修改target.ld文件，修改内存容量，内存容量可以修改成比目标机实际容量更大的值，<br>修改target.ld的目的是可以正确地生成映像文件然后使用nm来分析内存使用情况并进行调整，<br>而不是下载到目标机运行，如果target.ld设定的内存容量比目标机实际内存容量大，<br>即使下载到目标机也不能正常运行。根据nm输出结果及应用需求调整内存使用量，<br>当映像使用的内存容量小于目标机实际内存容量后，恢复target.ld的内存容量设置。</p>
+<h2 id="使用size查看总内存量"><a href="#使用size查看总内存量" class="headerlink" title="使用size查看总内存量"></a><strong>使用size查看总内存量</strong></h2><p>nm打印出每个符号占用的内存量，而size打印映像的总内存量，<br>可以使用size输出快速判断容量是否超限的问题，size还可以显示srec和ihex格式的映像容量。</p>
+<pre><code>$ size app.elf  
+text    data     bss     dec     hex filename  
+158712    1852   43503  204067   31d23 app.elf  </code></pre><h2 id="使用哪个nm？"><a href="#使用哪个nm？" class="headerlink" title="使用哪个nm？"></a><strong>使用哪个nm？</strong></h2><p>nm和size只是对ELF格式的映像文件符号和加载段进行分析，<br>因此跟硬件架构没多大关系，<br>使用nm或arm-eabi-nm的效果是一样的，如果不放心，那就用arm-eabi-nm吧，size同理。</p>
+<h2 id="nm常用参数"><a href="#nm常用参数" class="headerlink" title="nm常用参数"></a><strong>nm常用参数</strong></h2><h3 id="C-–demangle"><a href="#C-–demangle" class="headerlink" title="-C, –demangle"></a><strong>-C, –demangle</strong></h3><p>逆向解析C++符号转换，编译C++源代码时，<br>会将C++符号转换成符号汇编器要求的符号，<br>如果不对C++符号进行逆向解析，那么看到的是汇编符号而不是C++源文件中的符号名。</p>
+<p>使用该参数前，输出汇编符号，晦涩难懂</p>
+<pre><code>$ arm-eabi-nm app.elf  
+......  
+00006adc T _ZN10Cyg_Thread5delayEy  
+......  </code></pre><p>使用该参数后，输出C++符号，与源文件符号一致</p>
+<pre><code>$ arm-eabi-nm -C app.elf  
+    ......  
+00006adc T Cyg_Thread::delay(unsigned long long)  
+    ......  </code></pre><h3 id="l-–line-numbers"><a href="#l-–line-numbers" class="headerlink" title="-l, –line-numbers"></a><strong>-l, –line-numbers</strong></h3><p>输出符号所在的文件名和行号。使用该参数前</p>
+<pre><code>$ arm-eabi-nm app.elf  
+......  
+0001a0c4 T write  </code></pre><p>使用该参数后，行尾追加文件名和行号</p>
+<pre><code>$ arm-eabi-nm -l app.elf  
+......  
+0001a0c4 T write        /cygdrive/f/ecos/hg/packages/io/fileio/current/src/io.cxx:169  </code></pre><h3 id="S-–print-size"><a href="#S-–print-size" class="headerlink" title="-S, –print-size"></a><strong>-S, –print-size</strong></h3><p>输出符号占用内存量。使用该参数前</p>
+<pre><code>$ arm-eabi-nm app.elf  
+......  
+0001a0c4 T write  </code></pre><p>使用该参数后，第2列数字为符号占用内存量</p>
+<pre><code>$ arm-eabi-nm -S app.elf  
+......  
+0001a0c4 00000034 T write  </code></pre><h3 id="n-–numeric-sort"><a href="#n-–numeric-sort" class="headerlink" title="-n, –numeric-sort"></a><strong>-n, –numeric-sort</strong></h3><p>输出结果按照符号地址排序。使用该参数前</p>
+<pre><code>$ arm-eabi-nm app.elf  
+......  
+000202c8 T udp_sendto_if  
+00018ec0 t update_arp_entry  
+10004154 b var_data  
+1000497c b var_handle  
+10004954 b var_mempool  
+00009a60 T vfnprintf  
+0001a0c4 T write  </code></pre><p>使用该参数后，根据第1列数值排序</p>
+<pre><code>$ arm-eabi-nm -n app.elf  
+......  
+100070b0 A __heap1  
+10007fe0 A hal_startup_stack  
+2007c000 A __ahb_sram0_start  
+2007c000 b emac_ahb_ram  
+2007d8b8 A __ahb_sram0_end  
+20080000 A __ahb_sram1_start  
+20080000 b ram_heap  
+20080388 b memp_memory  
+20082bc3 A __ahb_sram1_end  </code></pre><h3 id="–size-sort"><a href="#–size-sort" class="headerlink" title="–size-sort"></a><strong>–size-sort</strong></h3><p>按照内存使用量排序。使用该参数前</p>
+<pre><code>$ arm-eabi-nm -S app.elf  
+......  
+10004154 00000800 b var_data  
+1000497c 00000004 b var_handle  
+10004954 00000028 b var_mempool  
+00009a60 000015f4 T vfnprintf  
+0001a0c4 00000034 T write  </code></pre><p>使用该参数后，根据第2列数值进行排序</p>
+<pre><code>$ arm-eabi-nm -S --size-sort app.elf  
+......  
+10001f98 00001000 b _ZL10main_stack  
+0001cf38 000011dc t tcp_receive  
+00009a60 000015f4 T vfnprintf  
+10004994 00001800 b stack_data  
+2007c000 000018b8 b emac_ahb_ram  
+20080388 0000283b b memp_memory </code></pre>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/03/10/lua-run/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -530,7 +848,7 @@ while(cyg_thread_get_next(&amp;thread, &amp;id))
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -611,145 +929,6 @@ $ luarocks search **</code></pre>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/03/04/cmake-03/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/03/04/cmake-03/" class="post-title-link" itemprop="url">cmake 常用命令</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-03-05 00:00:00" itemprop="dateCreated datePublished" datetime="2015-03-05T00:00:00+08:00">2015-03-05</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>1.6k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p>##Commands</p>
-<p>头文件路径，相当于编译器参数 -Idir1 -Idir2</p>
-<pre><code>INCLUDE_DIRECTORIES( &quot;dir1&quot; &quot;dir2&quot; ... )</code></pre><p>库文件路径。注意：<br>由于历史原因，相对路径会原样传递给链接器。<br>尽量使用FIND_LIBRARY而避免使用这个。</p>
-<pre><code>LINK_DIRECTORIES(&quot;dir1&quot; &quot;dir2&quot;)</code></pre><p>收集目录中的文件名并赋值给变量</p>
-<pre><code>AUX_SOURCE_DIRECTORY( “sourcedir” variable)</code></pre><p>可执行程序目标</p>
-<pre><code>ADD_EXECUTABLE</code></pre><p>库目标</p>
-<pre><code>ADD_LIBRARY</code></pre><p>自定义目标</p>
-<pre><code>ADD_CUSTOM_TARGET</code></pre><p>目标target1依赖于t2 t3</p>
-<pre><code>ADD_DEPENDENCIES( target1 t2 t3 )</code></pre><p>本意是供设置 -D… /D… 等编译预处理需要的宏定义参数，对比 REMOVE_DEFINITIONS()</p>
-<pre><code>ADD_DEFINITIONS( &quot;-Wall -ansi&quot;)</code></pre><p>设置单个目标需要链接的库</p>
-<pre><code>TARGET_LINK_LIBRARIES( target-name lib1 lib2 ...)</code></pre><p>设置所有目标需要链接的库</p>
-<pre><code>LINK_LIBRARIES( lib1 lib2 ...)</code></pre><p>设置目标的属性 OUTPUT_NAME, VERSION, ….</p>
-<pre><code>SET_TARGET_PROPERTIES( ... )</code></pre><p>打印输出信息</p>
-<pre><code>MESSAGE(...)</code></pre><p>DESTINATION 相对于 ${CMAKE_INSTALL_PREFIX}</p>
-<pre><code>INSTALL( FILES “f1” “f2”DESTINATION . )</code></pre><p>变量赋值</p>
-<pre><code>SET( VAR value [CACHE TYPE DOCSTRING [FORCE]])</code></pre><p>列表操作</p>
-<pre><code>LIST( APPEND|INSERT|LENGTH|GET| REMOVE_ITEM|REMOVE_AT|SORT ...)</code></pre><p>字符串操作</p>
-<pre><code>STRING( TOUPPER|TOLOWER|LENGTH| SUBSTRING|REPLACE|REGEX ...)</code></pre><p>转换空格分隔的字符串到列表</p>
-<pre><code>SEPARATE_ARGUMENTS( VAR )</code></pre><p>文件操作</p>
-<pre><code>FILE( WRITE|READ|APPEND|GLOB| GLOB_RECURSE|REMOVE|MAKE_DIRECTORY ...)</code></pre><p>注意 CMAKE_INCLUDE_PATH</p>
-<pre><code>FIND_FILE</code></pre><p>注意 CMAKE_INCLUDE_PATH</p>
-<pre><code>FIND_PATH</code></pre><p>注意 CMAKE_LIBRARY_PATH</p>
-<pre><code>FIND_LIBRARY
-FIND_PROGRAM</code></pre><p>注意 CMAKE_MODULE_PATH</p>
-<pre><code>FIND_PACKAGE</code></pre><p>执行外部程序</p>
-<pre><code>EXEC_PROGRAM( bin [work_dir] ARGS &lt;..&gt; [OUTPUT_VARIABLE var] [RETURN_VALUE var] )</code></pre><p>设置选项</p>
-<pre><code>OPTION( OPTION_VAR “description” [initial value] )</code></pre><p>##Ref</p>
-<p>引用文档：</p>
-<ol>
-<li><a href="http://www.cmake.org/cmake/help/v3.0/manual/cmake-language.7.html#syntax" target="_blank" rel="noopener">cmake syntax</a></li>
-<li><a href="http://www.cmake.org/Wiki/CMake_Useful_Variables" target="_blank" rel="noopener">CMake常用变量列表</a></li>
-<li><a href="http://www.cmake.org/cmake/help/v3.0/manual/cmake-commands.7.html" target="_blank" rel="noopener">cmake command</a></li>
-</ol>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/03/04/cmake-02/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -781,7 +960,7 @@ FIND_PROGRAM</code></pre><p>注意 CMAKE_MODULE_PATH</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1023,7 +1202,7 @@ INSTALL(FILES demo.hpp http.hpp DESTINATION include)</code></pre><h2 id="Ref"><a
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1099,6 +1278,145 @@ $ xclip -sel clip &lt; ~/.ssh/id_rsa.pub</code></pre>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/03/04/cmake-03/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/03/04/cmake-03/" class="post-title-link" itemprop="url">cmake 常用命令</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-03-05 00:00:00" itemprop="dateCreated datePublished" datetime="2015-03-05T00:00:00+08:00">2015-03-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>1.6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p>##Commands</p>
+<p>头文件路径，相当于编译器参数 -Idir1 -Idir2</p>
+<pre><code>INCLUDE_DIRECTORIES( &quot;dir1&quot; &quot;dir2&quot; ... )</code></pre><p>库文件路径。注意：<br>由于历史原因，相对路径会原样传递给链接器。<br>尽量使用FIND_LIBRARY而避免使用这个。</p>
+<pre><code>LINK_DIRECTORIES(&quot;dir1&quot; &quot;dir2&quot;)</code></pre><p>收集目录中的文件名并赋值给变量</p>
+<pre><code>AUX_SOURCE_DIRECTORY( “sourcedir” variable)</code></pre><p>可执行程序目标</p>
+<pre><code>ADD_EXECUTABLE</code></pre><p>库目标</p>
+<pre><code>ADD_LIBRARY</code></pre><p>自定义目标</p>
+<pre><code>ADD_CUSTOM_TARGET</code></pre><p>目标target1依赖于t2 t3</p>
+<pre><code>ADD_DEPENDENCIES( target1 t2 t3 )</code></pre><p>本意是供设置 -D… /D… 等编译预处理需要的宏定义参数，对比 REMOVE_DEFINITIONS()</p>
+<pre><code>ADD_DEFINITIONS( &quot;-Wall -ansi&quot;)</code></pre><p>设置单个目标需要链接的库</p>
+<pre><code>TARGET_LINK_LIBRARIES( target-name lib1 lib2 ...)</code></pre><p>设置所有目标需要链接的库</p>
+<pre><code>LINK_LIBRARIES( lib1 lib2 ...)</code></pre><p>设置目标的属性 OUTPUT_NAME, VERSION, ….</p>
+<pre><code>SET_TARGET_PROPERTIES( ... )</code></pre><p>打印输出信息</p>
+<pre><code>MESSAGE(...)</code></pre><p>DESTINATION 相对于 ${CMAKE_INSTALL_PREFIX}</p>
+<pre><code>INSTALL( FILES “f1” “f2”DESTINATION . )</code></pre><p>变量赋值</p>
+<pre><code>SET( VAR value [CACHE TYPE DOCSTRING [FORCE]])</code></pre><p>列表操作</p>
+<pre><code>LIST( APPEND|INSERT|LENGTH|GET| REMOVE_ITEM|REMOVE_AT|SORT ...)</code></pre><p>字符串操作</p>
+<pre><code>STRING( TOUPPER|TOLOWER|LENGTH| SUBSTRING|REPLACE|REGEX ...)</code></pre><p>转换空格分隔的字符串到列表</p>
+<pre><code>SEPARATE_ARGUMENTS( VAR )</code></pre><p>文件操作</p>
+<pre><code>FILE( WRITE|READ|APPEND|GLOB| GLOB_RECURSE|REMOVE|MAKE_DIRECTORY ...)</code></pre><p>注意 CMAKE_INCLUDE_PATH</p>
+<pre><code>FIND_FILE</code></pre><p>注意 CMAKE_INCLUDE_PATH</p>
+<pre><code>FIND_PATH</code></pre><p>注意 CMAKE_LIBRARY_PATH</p>
+<pre><code>FIND_LIBRARY
+FIND_PROGRAM</code></pre><p>注意 CMAKE_MODULE_PATH</p>
+<pre><code>FIND_PACKAGE</code></pre><p>执行外部程序</p>
+<pre><code>EXEC_PROGRAM( bin [work_dir] ARGS &lt;..&gt; [OUTPUT_VARIABLE var] [RETURN_VALUE var] )</code></pre><p>设置选项</p>
+<pre><code>OPTION( OPTION_VAR “description” [initial value] )</code></pre><p>##Ref</p>
+<p>引用文档：</p>
+<ol>
+<li><a href="http://www.cmake.org/cmake/help/v3.0/manual/cmake-language.7.html#syntax" target="_blank" rel="noopener">cmake syntax</a></li>
+<li><a href="http://www.cmake.org/Wiki/CMake_Useful_Variables" target="_blank" rel="noopener">CMake常用变量列表</a></li>
+<li><a href="http://www.cmake.org/cmake/help/v3.0/manual/cmake-commands.7.html" target="_blank" rel="noopener">cmake command</a></li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/03/03/cmake/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1130,7 +1448,7 @@ $ xclip -sel clip &lt; ~/.ssh/id_rsa.pub</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1349,7 +1667,7 @@ set(var a b c)</code></pre><p>字符串列表可以用 foreach命令叠代（ite
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1454,7 +1772,7 @@ curl_setopt($ch,CURLOPT_CAINFO,dirname(__FILE__).&#39;/cacert.pem&#39;);</code><
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1677,117 +1995,6 @@ end</code></pre><p>上面的例子含义：当x&gt;0时，在foo函数处停下�
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/15/parallel-computing/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/12/15/parallel-computing/" class="post-title-link" itemprop="url">并行计算初识</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-12-16 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-16T00:00:00+08:00">2014-12-16</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>2.3k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <ul>
-<li><strong>MPI</strong>:英文全称是Message Passing Interface，这个就很明了了，信息传递接口，是独立于语言的通信协议（标准），是一个库。<br>MPI的实现有MPICH，MPI-1，MPI-2等等</li>
-<li><strong>openMPI</strong>：英文全称是open Message Passing Interface。openMPI是MPI的一种实现，一种库项目</li>
-<li><strong>OpenMP</strong>：英文全称是Open Multiprocessing，一种应用程序界面（API，即Application Program Interface），<br>是一种并行的实现和方法，也可以认为是共享存储结构上的一种编程模型，<br>可用于共享内存并行系统的多线程程序设计的一套指导性注释（Compiler Directive）。</li>
-</ul>
-<p>在当前的并行机子中，openMP和openMPI都是需要的（从上面的各自概念可以看出），<br>openMP用于本地的并行计算（共享内存内存架构），<br>支持目前所有平台上的c,fortran等的共享内存式并行计算，<br>它相当于是给出了一个让并行编程更加容易实现的模型，<br>而openMPI则是用于机器之间的通信（分布式内存架构）。</p>
-<h3 id="OpenMP"><a href="#OpenMP" class="headerlink" title="OpenMP"></a><strong>OpenMP</strong></h3><p>简单。不用大改源程序，直接加#pragma就行了。<br>只适用于共享式内存。比如一台电脑，4核cpu共享16G内存，可以用Openmp启动4核同时计算。</p>
-<p>OpenMP:线程级（并行粒度）；共享存储；隐式（数据分配方式）；可扩展性差；</p>
-<h3 id="MPI"><a href="#MPI" class="headerlink" title="MPI"></a><strong>MPI</strong></h3><p>稍复杂。需要重新设计程序，学习成本稍高。</p>
-<p>MPI：进程级；分布式存储；显式；可扩展性好。</p>
-<p><strong>OpenMP采用共享存储，意味着它只适应于SMP,DSM机器，不适合于集群。MPI虽适合于各种机器，但它的编程模型复杂</strong></p>
-<p>在并行计算领域内，主要的并行编程模型有三类模型：<br>数据并行、消息传递、共享变量。<br>其中基于消息传递的 MPI 编程模型和基于共享变量的 OpenMP 编程模型是最为流行的并行编程模型。<br>openmp比较简单，修改现有的大段代码也容易。<br>基本上openmp只要在已有程序基础上根据需要加并行语句即可。<br>而mpi有时甚至需要从基本设计思路上重写整个程序，调试也困难得多，涉及到局域网通信这一不确定的因素。<br>不过，openmp虽然简单却只能用于单机多CPU/多核并行，mpi才是用于多主机超级计算机集群的强悍工具，当然复杂。</p>
-<h3 id="MPI＝message-passing-interface"><a href="#MPI＝message-passing-interface" class="headerlink" title="MPI＝message passing interface"></a><strong>MPI＝message passing interface</strong></h3><p>在分布式内存（distributed-memory）之间实现信息通讯的一种 规范/标准/协议（standard）。<br>它是一个库，不是一门语言。可以被fortran，c，c++等调用。<br>MPI 允许静态任务调度，显示并行提供了良好的性能和移植性，用 MPI 编写的程序可直接在多核集群上运行。<br>在集群系统中，集群的各节点之间可以采用 MPI 编程模型进行程序设计，<br>每个节点都有自己的内存，可以对本地的指令和数据直接进行访问，<br>各节点之间通过互联网络进行消息传递，这样设计具有很好的可移植性，<br>完备的异步通信功能，较强的可扩展性等优点。<br>MPI 模型存在一些不足，包括：程序的分解、开发和调试相对困难，<br>而且通常要求对代码做大量的改动；<br>通信会造成很大的开销，为了最小化延迟，通常需要大的代码粒度；<br>细粒度的并行会引发大量的通信；动态负载平衡困难；并行化改进需要大量地修改原有的串行代码，调试难度比较大</p>
-<h3 id="MPICH和OpenMPI"><a href="#MPICH和OpenMPI" class="headerlink" title="MPICH和OpenMPI"></a><strong>MPICH和OpenMPI</strong></h3><p>它们都是采用MPI标准，在并行计算中，实现节点间通信的开源软件。各自有各自的函数，指令和库。</p>
-<p>Reference:</p>
-<p>They are two implementations of the MPI standard.<br>In the late 90s and early 2000s, there were many different MPI implementations,<br>and the implementors started to realize they were all re-inventing the wheel;<br>there was something of a consolidation.<br>The LAM/MPI team joined with the LA/MPI, FT-MPI, and eventually PACX-MPI teams to develop OpenMPI.<br>LAM MPI stopped being developed in 2007.<br>The code base for OpenMPI was completely new,<br>but it brought in ideas and techniques from all the different teams.</p>
-<p>Currently, the two major open-source MPI implementation code-bases are OpenMPI and MPICH2.</p>
-<p>而MPICH2是MPICH的一个版本。</p>
-<p>有的计算机厂商，也会针对旗下机型特点，自主开发基于MPICH的MPI软件，从而使机器的并行计算效率得以提高。</p>
-<h3 id="OpenMP-1"><a href="#OpenMP-1" class="headerlink" title="OpenMP"></a><strong>OpenMP</strong></h3><p>在节点内（多核 SMP）执行的基于共享内存的编程模型。</p>
-<p>OpenMP是针对单主机上多核/多CPU并行计算而设计的工具，<br>换句话说，OpenMP更适合单台计算机共享内存结构上的并行计算。<br>由于使用线程间共享内存的方式协调并行计算，<br>它在多核/多CPU结构上的效率很高、内存开销小、编程语句简洁直观，<br>因此编程容易、编译器实现也容易（现在最新版的C、C++、Fortran编译器基本上都内置OpenMP支持）。<br>不过OpenMP最大的缺点是只能在单台主机上工作，不能用于多台主机间的并行计算</p>
-<p>MPI 负责节点之间的通信（集群系统中的单个计算机通常称为节点）<br>OpenMP负责节点中多核CPU的计算<br>CUDA负责节点中gpu上的计算</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/15/aio/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1819,7 +2026,7 @@ end</code></pre><p>上面的例子含义：当x&gt;0时，在foo函数处停下�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1956,6 +2163,314 @@ struct aiocb {
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/15/parallel-computing/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/12/15/parallel-computing/" class="post-title-link" itemprop="url">并行计算初识</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-12-16 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-16T00:00:00+08:00">2014-12-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.3k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <ul>
+<li><strong>MPI</strong>:英文全称是Message Passing Interface，这个就很明了了，信息传递接口，是独立于语言的通信协议（标准），是一个库。<br>MPI的实现有MPICH，MPI-1，MPI-2等等</li>
+<li><strong>openMPI</strong>：英文全称是open Message Passing Interface。openMPI是MPI的一种实现，一种库项目</li>
+<li><strong>OpenMP</strong>：英文全称是Open Multiprocessing，一种应用程序界面（API，即Application Program Interface），<br>是一种并行的实现和方法，也可以认为是共享存储结构上的一种编程模型，<br>可用于共享内存并行系统的多线程程序设计的一套指导性注释（Compiler Directive）。</li>
+</ul>
+<p>在当前的并行机子中，openMP和openMPI都是需要的（从上面的各自概念可以看出），<br>openMP用于本地的并行计算（共享内存内存架构），<br>支持目前所有平台上的c,fortran等的共享内存式并行计算，<br>它相当于是给出了一个让并行编程更加容易实现的模型，<br>而openMPI则是用于机器之间的通信（分布式内存架构）。</p>
+<h3 id="OpenMP"><a href="#OpenMP" class="headerlink" title="OpenMP"></a><strong>OpenMP</strong></h3><p>简单。不用大改源程序，直接加#pragma就行了。<br>只适用于共享式内存。比如一台电脑，4核cpu共享16G内存，可以用Openmp启动4核同时计算。</p>
+<p>OpenMP:线程级（并行粒度）；共享存储；隐式（数据分配方式）；可扩展性差；</p>
+<h3 id="MPI"><a href="#MPI" class="headerlink" title="MPI"></a><strong>MPI</strong></h3><p>稍复杂。需要重新设计程序，学习成本稍高。</p>
+<p>MPI：进程级；分布式存储；显式；可扩展性好。</p>
+<p><strong>OpenMP采用共享存储，意味着它只适应于SMP,DSM机器，不适合于集群。MPI虽适合于各种机器，但它的编程模型复杂</strong></p>
+<p>在并行计算领域内，主要的并行编程模型有三类模型：<br>数据并行、消息传递、共享变量。<br>其中基于消息传递的 MPI 编程模型和基于共享变量的 OpenMP 编程模型是最为流行的并行编程模型。<br>openmp比较简单，修改现有的大段代码也容易。<br>基本上openmp只要在已有程序基础上根据需要加并行语句即可。<br>而mpi有时甚至需要从基本设计思路上重写整个程序，调试也困难得多，涉及到局域网通信这一不确定的因素。<br>不过，openmp虽然简单却只能用于单机多CPU/多核并行，mpi才是用于多主机超级计算机集群的强悍工具，当然复杂。</p>
+<h3 id="MPI＝message-passing-interface"><a href="#MPI＝message-passing-interface" class="headerlink" title="MPI＝message passing interface"></a><strong>MPI＝message passing interface</strong></h3><p>在分布式内存（distributed-memory）之间实现信息通讯的一种 规范/标准/协议（standard）。<br>它是一个库，不是一门语言。可以被fortran，c，c++等调用。<br>MPI 允许静态任务调度，显示并行提供了良好的性能和移植性，用 MPI 编写的程序可直接在多核集群上运行。<br>在集群系统中，集群的各节点之间可以采用 MPI 编程模型进行程序设计，<br>每个节点都有自己的内存，可以对本地的指令和数据直接进行访问，<br>各节点之间通过互联网络进行消息传递，这样设计具有很好的可移植性，<br>完备的异步通信功能，较强的可扩展性等优点。<br>MPI 模型存在一些不足，包括：程序的分解、开发和调试相对困难，<br>而且通常要求对代码做大量的改动；<br>通信会造成很大的开销，为了最小化延迟，通常需要大的代码粒度；<br>细粒度的并行会引发大量的通信；动态负载平衡困难；并行化改进需要大量地修改原有的串行代码，调试难度比较大</p>
+<h3 id="MPICH和OpenMPI"><a href="#MPICH和OpenMPI" class="headerlink" title="MPICH和OpenMPI"></a><strong>MPICH和OpenMPI</strong></h3><p>它们都是采用MPI标准，在并行计算中，实现节点间通信的开源软件。各自有各自的函数，指令和库。</p>
+<p>Reference:</p>
+<p>They are two implementations of the MPI standard.<br>In the late 90s and early 2000s, there were many different MPI implementations,<br>and the implementors started to realize they were all re-inventing the wheel;<br>there was something of a consolidation.<br>The LAM/MPI team joined with the LA/MPI, FT-MPI, and eventually PACX-MPI teams to develop OpenMPI.<br>LAM MPI stopped being developed in 2007.<br>The code base for OpenMPI was completely new,<br>but it brought in ideas and techniques from all the different teams.</p>
+<p>Currently, the two major open-source MPI implementation code-bases are OpenMPI and MPICH2.</p>
+<p>而MPICH2是MPICH的一个版本。</p>
+<p>有的计算机厂商，也会针对旗下机型特点，自主开发基于MPICH的MPI软件，从而使机器的并行计算效率得以提高。</p>
+<h3 id="OpenMP-1"><a href="#OpenMP-1" class="headerlink" title="OpenMP"></a><strong>OpenMP</strong></h3><p>在节点内（多核 SMP）执行的基于共享内存的编程模型。</p>
+<p>OpenMP是针对单主机上多核/多CPU并行计算而设计的工具，<br>换句话说，OpenMP更适合单台计算机共享内存结构上的并行计算。<br>由于使用线程间共享内存的方式协调并行计算，<br>它在多核/多CPU结构上的效率很高、内存开销小、编程语句简洁直观，<br>因此编程容易、编译器实现也容易（现在最新版的C、C++、Fortran编译器基本上都内置OpenMP支持）。<br>不过OpenMP最大的缺点是只能在单台主机上工作，不能用于多台主机间的并行计算</p>
+<p>MPI 负责节点之间的通信（集群系统中的单个计算机通常称为节点）<br>OpenMP负责节点中多核CPU的计算<br>CUDA负责节点中gpu上的计算</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/Linux-ld/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/12/14/Linux-ld/" class="post-title-link" itemprop="url">GCC静态库链接顺序</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-12-15 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-15T00:00:00+08:00">2014-12-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index">
+                    <span itemprop="name">C</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>866</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>工程中遇到问题，修改配置文件之后发现编译不过，部分符号未定义，检查Makefile如下：</p>
+<pre><code>LDFLAGS += -lui -lenca -lxml -lgxbox -lstdc++ -ljansson -lcurl
+...
+LDFLAGS += -L$(GXSRC_PATH)/lib/$(THIRD_LIB)/ -lkolatv -lpcre</code></pre><p>其中<strong>kolatv库</strong>需要调用<strong>jansson库</strong>，<strong>gxbox库</strong>也需要调用<strong>jansson库</strong>。</p>
+<p>在修改配置文件之前，开启了gxbox的支持，在编译中需要链接gxbox库，从而jansson库可以链接成功。</p>
+<p>在修改配置文件之后，关闭了gxbox的支持，在编译中不会编译gxbox代码，gxbox库链接失败，<br>从而jansson库链接失败，在载入kolatv库时不存在jansson库的符号表。</p>
+<p>GCC：</p>
+<p>-l library</p>
+<p>Search the library named library when linking.<br>(The second alternative with the library as a separate argument is only for POSIX compliance and is not recommended.)</p>
+<p>It makes a difference where in the command you write this option;<br>the linker searches and processes libraries and object files in the order they are specified.<br>Thus, <code>foo.o -lz bar.o&#39; searches library</code>z’ after file foo.o but before bar.o.<br>If bar.o refers to functions in `z’, those functions may not be loaded.</p>
+<p><strong>因此，在链接过程中，链接的库，一定要在使用该库的目标被连接之后，基本的库要放在最后。</strong></p>
+<p>修改如下：</p>
+<pre><code>LDFLAGS += -lui -lenca -lxml -lkolatv -lgxbox -lstdc++ -ljansson -lcurl</code></pre>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/Linux-system-programming-syscall/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/12/14/Linux-system-programming-syscall/" class="post-title-link" itemprop="url">Linux系统调用</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-12-15 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-15T00:00:00+08:00">2014-12-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux System Programming</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>345</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<p>计算机系统内存分为系统空间和用户空间。通常，用户是不能够直接访问系统空间、调用系统函数的，<br>但用户可以通过<strong>系统调用</strong>进入内核空间，获取内核服务。</p>
+<p>用户进程对系统函数的成功调用，将进行相应的用户空间到系统空间的转换。<br>进入内核后，不同的系统调用会找到各自对应的内核函数入口地址，<strong>由内核函数提供服务</strong>。</p>
+<p>以调用系统调用fork()来分析如下：</p>
+<p><img src="http://images.51cto.com/files/uploadimg/20090603/163946908.jpg" alt="fork()系统调用"></p>
+<p>从图中我们可以看出，调用fork()实际上是调用了中断0x80，通过事先初始化好的IDT，<br>程序转移到了_system_call，最终通过一个函数指针数组sys_call_table[]转化成了调用sys_fork()。</p>
+<p>系统调用起到了连接用户进程和操作系统的桥梁作用，由于桥两端处于不同的态，因此需要使用中断来过渡。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/dlopen/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1987,7 +2502,7 @@ struct aiocb {
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2097,622 +2612,6 @@ const char *dlerror(void);</code></pre><p>当动态链接库操作函数执行�
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/socket/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/12/14/socket/" class="post-title-link" itemprop="url">网络编程Socket</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-12-15 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-15T00:00:00+08:00">2014-12-15</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/Socket/" itemprop="url" rel="index">
-                    <span itemprop="name">Socket</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Network/" itemprop="url" rel="index">
-                    <span itemprop="name">Network</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Network/TCP/" itemprop="url" rel="index">
-                    <span itemprop="name">TCP</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>3.7k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>3 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p>网络中的进程通常由一个三元组来标识，包括<strong>协议、本地地址和端口</strong>。</p>
-<p><strong>主机字节次序与网络字节次序</strong></p>
-<p>对于一个4字节的整数：<code>0x11223344</code>，占用四个字节存储单元，在主机中有两种<strong>主机字节次序</strong>：</p>
-<hr>
-<table border="1" width="400" frame="hsides" rules="rows">
-    <tr>
-        <td></td>
-        <td>Bytes3</td>
-        <td>Bytes2</td>
-        <td>Bytes1</td>
-        <td>Bytes0</td>
-    </tr>
-    <tr>
-        <td>Little Endian :</td>
-        <td>11</td>
-        <td>22</td>
-        <td>33</td>
-        <td>44</td>
-    </tr>
-    <tr>
-        <td>Big Endian :</td>
-        <td>44</td>
-        <td>33</td>
-        <td>22</td>
-        <td>11</td>
-    </tr>
-</table>
-
-<hr>
-<p>x86采用小端方式，PowerPC和Sparc采用大端方式。<br>为了保证互连性，要求所有的数据按照统一字节顺序传输，于是出现了<strong>网络字节次序</strong>，规定与x86的主机字节次序相反。</p>
-<p>在UNIX中提供如下API用于转换：</p>
-<pre><code>#include &lt;arpa/inet.h&gt;
-
-uint32_t htonl(uint32_t hostlong);
-uint16_t htons(uint16_t hostshort);
-uint32_t ntohl(uint32_t netlong);
-uint16_t ntohs(uint16_t netshort);</code></pre><p>进程经网络通信时，有两种方法可以选择：</p>
-<ul>
-<li><p><strong>面向连接方式</strong>，就是通信双方在通信时，要事先建立一条通信线路，<br>其过程有建立连接、使用连接和释放连接三个过程。<br>TCP协议就是一种面向连接服务的协议，电话系统是一个面向连接的模式。</p>
-</li>
-<li><p><strong>无连接方式</strong>，就是通信双方不需要事先建立一条通信线路，<br>而是把每个带有目的地址的包（报文分组）送到线路上，由系统选定路线进行传输。<br>IP、UDP协议就是一种无连接协议，邮政系统是一个无连接的模式。</p>
-<p>  #include &lt;sys/types.h&gt;          /* See NOTES */<br>  #include &lt;sys/socket.h&gt;</p>
-<p>  int socket(int domain, int type, int protocol);</p>
-</li>
-</ul>
-<p>Socket类型：</p>
-<ul>
-<li><strong>流套接字，SOCK_STREAM，用于提供面向连接、可靠的数据传输服务</strong></li>
-<li><strong>数据包套接字，SOCK_DGRAM，用于提供无连接服务，不能保证数据的可靠性</strong></li>
-<li><strong>原始套接字，SOCK_RAW</strong></li>
-</ul>
-<p>Raw socket与标准套接字（SOCK_STREAM、SOCK_DGRAM）的区别：</p>
-<p>raw socket可以读写内核没有处理的IP数据包，而流套接字只能读取TCP数据，数据包套接字只能读取UDP数据。<br>使用raw socket可以避开TCP/IP处理机制，被传送的数据包可以被直接传送给需要它的应用程序。</p>
-<p>raw socket植根于操作系统网络核心（Network Core），而标准socket则“悬浮”于TCP和UDP协议的外围。</p>
-<p>套接字寻址API：</p>
-<pre><code>include &lt;netdb.h&gt;
-
-//获取主机名和IP地址
-struct hostent *gethostbyname(const char *name);
-struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type);
-//获取服务与端口地址
-struct servent *getservbyname(const char *name, const char *proto);
-struct servent *getservbyport(int port, const char *proto);</code></pre><p>套接字选项API：</p>
-<pre><code>#include &lt;sys/types.h&gt;
-#include &lt;sys/socket.h&gt;
-
-//获取套接字选项的设置情况
-int getsockopt(int sockfd, int level, int optname, void *optval, socklen_t *optlen);
-//设置套接字选项
-int setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen);</code></pre><p>套接字API：</p>
-<pre><code>#include &lt;sys/types.h&gt;
-#include &lt;sys/socket.h&gt;
-
-int socket(int domain, int type, int protocol);
-int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
-int listen(int sockfd, int backlog);
-int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
-int accept(int sockfd, struct sockaddr *cliaddr, socklen_t addrlen);
-ssize_t send(int sockfd, const void *buf, size_t len, int flags);
-ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
-ssize_t recv(int sockfd, void *buf, size_t len, int flags);
-ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
-int shutdown(int sockfd, int how);</code></pre><p>bind函数使用通用地址结构<code>struct sockaddr</code>来设置套接字地址，<br>而在网络通信时必须使用<code>sockaddr_in</code>来构造一个套接字地址，<br>所以，调用bind时，需要将<code>sockaddr_in</code>结构类型强制转换为<code>struct sockaddr</code>结构类型。</p>
-<p>listen函数仅被TCP服务器调用。当函数<code>socket</code>创建一个套接字时，它被假设为一个主动套接字，<br>listen将此套接字转换为被动套接字，指示内核应接受向此套接字的连接请求，<br>同时维护两个队列（未完成连接队列、已完成连接队列）排队连接请求。</p>
-<p>服务器套接字进入侦听状态后，必须通过函数accept接收客户进程提交的连接请求，从而完成一个套接字的完整连接。</p>
-<p>套接字的数据收发即可以使用文件库函数 read/write ，也可以使用套接字的专用收发函数 recv/send 。</p>
-<p>TCP是面向连接的通信协议，采用客户机-服务器模式。套接字的全部工作流程如下所述：</p>
-<ol>
-<li>服务器启动进程，调用Socket创建一个基于TCP协议的流套接字描述符。</li>
-<li>其次，服务进程调用bind命名套接字，将套接字描述符绑定到本地地址和本地端口上，至此Socket的半相关描述—{协议，本地地址，本地端口}—完成。</li>
-<li>再次，服务器端调用listen，开始侦听客户端的Socket连接请求。</li>
-<li>接下来，客户端创建套接字描述符，并且调用connect向服务端提交连接请求。服务器端接收到客户端连接请求后，调用accept接受，并创建一个新的套接字描述符与客户端建立连接，然后原套接字描述符继续侦听客户端的连接请求。</li>
-<li>客户端与服务器端的新套接字进行数据传送，调用write或send向对方发送数据，调用read或recv接收数据。</li>
-<li>在数据交流完毕后，双方调用close或者shutdown半闭套接字。</li>
-</ol>
-<p>基于TCP（面向连接）的socket编程TCP是面向连接的，可靠的传输协议</p>
-<p>服务器端程序：</p>
-<ol>
-<li>创建套接字（socket）</li>
-<li>将套接字绑定到一个本机地址和端口上（bind）</li>
-<li>将套接字设为监听模式，准备接收客户请求（listen）</li>
-<li>等待客户请求到来，当请求到来后，接受连接请求，返回一个新的对应于此次连接的套接字（accept）</li>
-<li>用返回的套接字和客户端进行通信（send/recv）</li>
-<li>返回，等待另一个用户的请求</li>
-<li>关闭套接字</li>
-</ol>
-<p>客户端程序：</p>
-<ol>
-<li>创建套接字（socket）</li>
-<li>向服务器端发送连接请求（connect）</li>
-<li>和服务器进行通信（recv/send）</li>
-<li>关闭套接字</li>
-</ol>
-<p>基于UDP（面向无连接）的socket编程UDP是无连接的，不可靠的传输协议</p>
-<p>服务器端（接收端）程序：</p>
-<ol>
-<li>创建套接字(socket)</li>
-<li>将套接字绑定到一个本地地址和端口上（bind）</li>
-<li>等待接收数据（recvfrom）</li>
-<li>关闭套接字</li>
-</ol>
-<p>客户端（发送端）程序：</p>
-<ol>
-<li>创建套接字（socket）</li>
-<li>发送数据（sendto）</li>
-<li>关闭套接字</li>
-</ol>
-<hr>
-<ol>
-<li><a href="http://www.cnblogs.com/chengmin/archive/2010/06/10/1755751.html" target="_blank" rel="noopener">socket与TCP/UDP编程</a></li>
-<li><a href="http://blog.163.com/zhangmaochu@126/blog/static/373606222009118103318856/" target="_blank" rel="noopener">基于Socket的UDP和TCP编程介绍</a></li>
-</ol>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/Linux-system-programming-syscall/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/12/14/Linux-system-programming-syscall/" class="post-title-link" itemprop="url">Linux系统调用</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-12-15 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-15T00:00:00+08:00">2014-12-15</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux System Programming</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>345</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
-<p>计算机系统内存分为系统空间和用户空间。通常，用户是不能够直接访问系统空间、调用系统函数的，<br>但用户可以通过<strong>系统调用</strong>进入内核空间，获取内核服务。</p>
-<p>用户进程对系统函数的成功调用，将进行相应的用户空间到系统空间的转换。<br>进入内核后，不同的系统调用会找到各自对应的内核函数入口地址，<strong>由内核函数提供服务</strong>。</p>
-<p>以调用系统调用fork()来分析如下：</p>
-<p><img src="http://images.51cto.com/files/uploadimg/20090603/163946908.jpg" alt="fork()系统调用"></p>
-<p>从图中我们可以看出，调用fork()实际上是调用了中断0x80，通过事先初始化好的IDT，<br>程序转移到了_system_call，最终通过一个函数指针数组sys_call_table[]转化成了调用sys_fork()。</p>
-<p>系统调用起到了连接用户进程和操作系统的桥梁作用，由于桥两端处于不同的态，因此需要使用中断来过渡。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/Linux-ld/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/12/14/Linux-ld/" class="post-title-link" itemprop="url">GCC静态库链接顺序</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-12-15 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-15T00:00:00+08:00">2014-12-15</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/C/" itemprop="url" rel="index">
-                    <span itemprop="name">C</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>866</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>工程中遇到问题，修改配置文件之后发现编译不过，部分符号未定义，检查Makefile如下：</p>
-<pre><code>LDFLAGS += -lui -lenca -lxml -lgxbox -lstdc++ -ljansson -lcurl
-...
-LDFLAGS += -L$(GXSRC_PATH)/lib/$(THIRD_LIB)/ -lkolatv -lpcre</code></pre><p>其中<strong>kolatv库</strong>需要调用<strong>jansson库</strong>，<strong>gxbox库</strong>也需要调用<strong>jansson库</strong>。</p>
-<p>在修改配置文件之前，开启了gxbox的支持，在编译中需要链接gxbox库，从而jansson库可以链接成功。</p>
-<p>在修改配置文件之后，关闭了gxbox的支持，在编译中不会编译gxbox代码，gxbox库链接失败，<br>从而jansson库链接失败，在载入kolatv库时不存在jansson库的符号表。</p>
-<p>GCC：</p>
-<p>-l library</p>
-<p>Search the library named library when linking.<br>(The second alternative with the library as a separate argument is only for POSIX compliance and is not recommended.)</p>
-<p>It makes a difference where in the command you write this option;<br>the linker searches and processes libraries and object files in the order they are specified.<br>Thus, <code>foo.o -lz bar.o&#39; searches library</code>z’ after file foo.o but before bar.o.<br>If bar.o refers to functions in `z’, those functions may not be loaded.</p>
-<p><strong>因此，在链接过程中，链接的库，一定要在使用该库的目标被连接之后，基本的库要放在最后。</strong></p>
-<p>修改如下：</p>
-<pre><code>LDFLAGS += -lui -lenca -lxml -lkolatv -lgxbox -lstdc++ -ljansson -lcurl</code></pre>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/04/fat32/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/12/04/fat32/" class="post-title-link" itemprop="url">FAT32文件系统</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-12-05 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-05T00:00:00+08:00">2014-12-05</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 09:52:13" itemprop="dateModified" datetime="2020-05-07T09:52:13+08:00">2020-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Ecos/" itemprop="url" rel="index">
-                    <span itemprop="name">Ecos</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>4.3k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>4 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><strong>FAT文件系统部分资料，用于开发Ecos FAT接口，&lt;FatFs – FAT&gt; &lt;NTGS-3G – NTFS&gt;</strong></p>
-<hr>
-<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>可怕的问题：FATFS  f_open() 返回可怕的 FR_NO_FILESYS</p>
-<p>SDHC KINGSTON的4G卡 ，在电脑上已经格式化，里面有ABC.TXT文本文件。</p>
-<p>移植好的FATFS文件系统在 万利的EK-STM32F 开发板上 对写SD卡。</p>
-<pre><code>disk_sta=disk_initialize(0);//disk_status        
-f_mount(0, &amp;fatfs[0]);  </code></pre><p>上面两句都运行正常！ 到 </p>
-<pre><code>/* Open source file on the drive 1 */
-res = f_open(&amp;fsrc, &quot;0:/ABC.TXT&quot;, FA_CREATE_NEW | FA_READ);</code></pre><p>就返回可怕的FR_NO_FILESYSTEM</p>
-<p>从网上找来同样的问题的帖子：</p>
-<p>SD卡sector0读出来只有最后两个字节是 55 AA，中间也有几个数据，其他的都是00，<br>check_fs函数返回 FR_NO_FILESYSTEM 无可用的文件系统。<br>网上查了一下FAT系统的资料，发现物理扇区0（MBR）并不是逻辑扇区0，<br>根据第一个sector读出的数据，我的物理扇区的地址应该是0x61而不是0。<br>后来仔细查了一下FATFS的源码，发现只支持 FDISK 和 SFD 格式的FAT系统，<br>于是我猜想如果用fdisk格式化，MBR的物理扇区和逻辑扇区地址就都是0了。<br>然后在linux下用FDISK又格式化了一把，发现情况还是一样。</p>
-<p>我现在在裸机下移植fatfs，出现和你差不多的问题，麻烦楼主能看看</p>
-<pre><code>fmt = check_fs(fs, bsect = 0);                // Check sector 0 if it is a VBR 
-//fmt = check_fs(fs, 243);
-if (fmt == 1) {                                                // Not an FAT-VBR, the disk may be partitioned 
-    // Check the partition listed in top of the partition table 
-    tbl = &amp;fs-&gt;win;        // Partition table 
-    if (tbl) {                                                                        // Is the partition existing? 
-        bsect = LD_DWORD(&amp;tbl);                                        // Partition offset in LBA 
-        fmt = check_fs(fs, bsect);                                        // Check the partition 
-        //fmt = check_fs(fs, 0);
-    }
-}</code></pre><p>第一句话fmt = check_fs(fs, bsect = 0);是去读sd卡的MBR，即第0扇区，数据正常，<br>且根据里面的数据经过bsect = LD_DWORD(&amp;tbl);这句话计算正确得到启动扇区的位置（243），<br>然后fmt = check_fs(fs, bsect);这句话就是去读这个启动扇区内的数据，这里面的数据<br>非常重要，就像我们电脑的C盘，但是返回来全部是0，导致fatfs失败。<br>然后同一张卡在另一块板子的代码上测试正常，里面的数据也正常。<br>那么可以说明一点的是，既然可以读0扇区数据正常那么说明sd的底层读函数是对的，那么为什么读不出来第243扇区的数据？<br>同事怀疑是sd卡初始化中设置成了只能读一次，那么我一开始就读第243扇区，<br>也是返回全0.这就郁闷了。在另一块板子的代码上测试，一开始读243扇区的数据是正常的。<br>最后，我将sd卡格式化，用winhex查看其扇区内容，发现0扇区和243扇区的数据没变。</p>
-<p>FR_NO_FILESYSTEM  问题：</p>
-<p>提示没有在你的目标存储器上建立文件系统，试试res = f_mkfs(0,0,2048);这里的2048是2048 bytes，<br>指的是你的目标存储器的扇区大小 也有可能是你没有执行注册磁盘空间的操作，试试res = f_mount(0,&amp;fs);</p>
-<p>我在读写TF卡的时候也出现过这样的问题，我的解决方式是将卡用卡槽插到PC机上，然后格式化一下，我格式化选择的是FAT格式。</p>
-<p>试试用F_MKFS函数格式化一下<br>未格式化为Fat格式，先在电脑里格式化或者用Fatfs自带的格式化函数格式化SD.记得要格式化为Fatfs支持的格式 </p>
-<p>记得要把文件系统变量放到main函数的外面，比如工作区的变量，文件指针变量等。不这样做会出现一些错误，改了就好。我移植的时候没注意，就一直停顿这里很久，原因不明。</p>
-<p>说明你没有格式化，首先需要执行f_mkfs()函数，此步骤为建立FAT相关的一些表。只需要执行一次就可以了，以后再运行程序不需执行。</p>
-<p>在FATFS中经常用到chk_mount这个函数，主要是对物理驱动器检测它的可用性，即磁盘现在是否可用，避免了磁盘中途掉电的情况，在其中有这么一段程序</p>
-<pre><code>fmt = check_fs(fs, bsect = 0);                // Check sector 0 if it is a VBR /可用的分区记录
-if (fmt == 1) {                                                // Not an FAT-VBR, the disk may be partitioned /
-    //结束符正确，确不是FAT系统，则读取下一个分区的数据，看是否是有效的结束符和FAT系统
-    // Check the partition listed in top of the partition table /
-    tbl = &amp;fs-&gt;win[MBR_Table + LD2PT(vol) * SZ_PTE];// Partition table /下一个分区属性的16字节存储指针
-    if (tbl[4]) {                                                                        // Is the partition existing? /系统ID对于FAT32为0x01，未用是为0
-        bsect = LD_DWORD(&amp;tbl[8]);                                        // Partition offset in LBA /分区偏移地址
-        fmt = check_fs(fs, bsect);        //root record                                // Check the partition /这一句不懂了
-    }
-}        </code></pre><p>这一次它是要检测什么的？？</p>
-<p>后来想了一想，对于我们的硬盘，大多是只有一个分区的，但是有的可能会有多个分区，而对于每一个分区而言，他都有一个MBR区，又称为伪MBR区，存储了这一个分区的引导程序，以及分区的信息，这样的话，如果第一个分区不是FAT系统，我们就查找是否又下一个分区，如果有的话，就开始对下一分区的判断……</p>
-<p>但是为什么它只检测了两个分区呢，可能后面还有分区呢？？？</p>
-<p>if (fmt == 3) return FR_DISK_ERR;<br>if (fmt) return FR_NO_FILESYSTEM; // No FAT volume is found /<br>//两次检测之后还不是FAT系统，就返回错误</p>
-<p>我的理解是：<br>在一些SD1.0中，物理0扇区就是逻辑0扇区，0扇区就是DBR，没有MBR，<br>这种情况也就不存在分区，第一个fmt = check_fs(fs, bsect = 0);会返回0，<br>因为check_fs里的第三个或第四个if判断会检测到DBR里面的FAT系统标识字符串，<br>其中一个会返回0，fmt=0，fmt = check_fs(fs, bsect);就不会执行了 </p>
-<pre><code>if (disk_read(fs-&gt;drive, fs-&gt;win, sect, 1) != RES_OK) // Load boot record  
-    return 3; 
-if (LD_WORD(&amp;fs-&gt;win[BS_55AA]) != 0xAA55) // Check record signature (always placed at offset 510 even if the sector size is &gt;512)  
-    return 2; 
-
-if ((LD_DWORD(&amp;fs-&gt;win[BS_FilSysType]) &amp; 0xFFFFFF) == 0x544146) // Check &quot;FAT&quot; string  
-    return 0; 
-if ((LD_DWORD(&amp;fs-&gt;win[BS_FilSysType32]) &amp; 0xFFFFFF) == 0x544146) 
-    return 0; 
-
-    return 1; </code></pre><p>而在一些有MBR的sd卡中物理0扇区是MBR，mbr里有DBR的偏移信息，<br>执行fmt = check_fs(fs, bsect = 0);的时候，第一个和第二个if会通过，<br>但是mbr里面没有fat标识字符串所以第三个和第四个if不会过，返回1，fmt=1就会执行fmt = check_fs(fs, bsect);<br>其中bsect是从mbr里读出来的逻辑0扇区偏移量，既DBR所在扇区，这次执行就同上面读DBR一样，会再第三个或第三个if返回0.</p>
-<p>chaN的驱动是针对sd，ata，usb，nand的，不单单是sd。我的sd2.0是没有MBR的，0扇区就是DBR。而PC硬盘ata的MBR就在0扇区。<br>我们重装PC的时候硬盘是可以选择NTFS和FAT等格式。<br>在有MBR的前提下，就有DPT，紧接MBR引导代码是DPT和“55AA”，DBR是在偏移X扇区里，X就是代码的tbl[8]的双字（4字节），也就是DPT的OFFSET 8~11。<br>假设有4分区，那么只要第一次检查0扇区是不是DBR，如果不是就检查第二次（只需检查1次即可，无需检查多次，目的是验证是否是FAT），检查偏移X扇区。<br>执行check_fs(fs, bsect);后返回0，则说明第4分区DBR就在X扇区，验证成功，返回！0则错误。</p>
-<p>用电脑上的winhex去看下你的sd卡的0扇区是怎么回事<br>看看是不是mbr，当然 也得了解下这个mbr的结构<br>fat文件系统原理总得知道个大概吧</p>
-<p>可以使用WinHex来查看MBR，方法为：打开WinHex，然后在菜单栏选择“工具”、“打开磁盘”，在“物理驱动器”一栏选择自己的硬盘打开就可以了。</p>
-<p><strong>对U盘的格式化就是按照文件系统的规范完成BUFF的组建，然后写入到指定的扇区中，例如FAT32的DBR、FAT表等。</strong></p>
-<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ol>
-<li><a href="http://velep.com/archives/714.html" target="_blank" rel="noopener">stm32移植ecos #31，ecos sd driver，SD卡驱动（1）</a></li>
-<li><a href="http://velep.com/archives/725.html" target="_blank" rel="noopener">stm32移植ecos #32，ecos sd driver，SD卡驱动（2）</a></li>
-<li><a href="http://velep.com/archives/729.html" target="_blank" rel="noopener">stm32移植ecos #33，ecos sd driver，SD卡驱动（3）</a></li>
-<li><a href="http://velep.com/archives/732.html" target="_blank" rel="noopener">stm32移植ecos #34，ecos sd driver，SD卡驱动（4）</a></li>
-<li><a href="https://www.sourceware.org/ml/ecos-discuss/2012-07/msg00006.html" target="_blank" rel="noopener">reading size and used space on compact flash (CF) card?</a></li>
-<li><a href="http://velep.com/archives/688.html" target="_blank" rel="noopener">SD卡数据结构与FAT文件系统详细分析（上）</a></li>
-<li><a href="http://velep.com/archives/707.html" target="_blank" rel="noopener">SD卡数据结构与FAT文件系统详细分析（下）</a></li>
-<li><a href="http://elm-chan.org/fsw/ff/00index_e.html" target="_blank" rel="noopener">FatFs - Generic FAT File System Module</a></li>
-<li><a href="http://dengqi.blog.51cto.com/5685776/1349327" target="_blank" rel="noopener">FAT32文件系统详解</a></li>
-<li><a href="http://blog.csdn.net/l545045612/article/details/7490260" target="_blank" rel="noopener">FATFS 移植 （应用部分）</a></li>
-<li><a href="http://bbs.21ic.com/icview-619554-1-1.html" target="_blank" rel="noopener">FATFS  f_open() 返回可怕的 FR_NO_FILESYS</a></li>
-<li><a href="">FAT系统原理.pdf</a></li>
-<li><a href="">FAT白皮书中文版.pdf</a></li>
-</ol>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -2763,7 +2662,7 @@ if ((LD_DWORD(&amp;fs-&gt;win[BS_FilSysType32]) &amp; 0xFFFFFF) == 0x544146)
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">442</span>
+          <span class="site-state-item-count">444</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -2836,7 +2735,7 @@ if ((LD_DWORD(&amp;fs-&gt;win[BS_FilSysType32]) &amp; 0xFFFFFF) == 0x544146)
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:07</span>
+    <span title="Reading time total">18:08</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
   </div>
