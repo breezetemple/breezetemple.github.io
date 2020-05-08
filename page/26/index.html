@@ -216,6 +216,266 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/11/18/deal-with-file-by-line/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/11/18/deal-with-file-by-line/" class="post-title-link" itemprop="url">逐行处理内存文本及正则表达式元字符列表</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-11-19 00:00:00" itemprop="dateCreated datePublished" datetime="2015-11-19T00:00:00+08:00">2015-11-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index">
+                    <span itemprop="name">C</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>6.4k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>6 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h2 id="文本内容"><a href="#文本内容" class="headerlink" title="文本内容"></a>文本内容</h2><pre><code>P:013.0:E:11054:H:27500:5DDC29D54BE4D7:F3381AD050DE3A
+P:091.5:E:03960:H:29700:DAE69F8B6E0106:E0DE2F8903AE55
+P:105.5:E:03960:H:27500:CEF7CE422FF89E:E42DB81767E02E
+P:166.0:E:03760:V:27690:7199819B0CF04F:7EE0F00CFFBF66
+P:138.0:E:03703:V:04444:AD5CDBA991505A:1E1376FD07FB13
+P:166.0:E:03830:H:14000:956D98AD9E6E84:842F2801182286</code></pre><p>或者：</p>
+<pre><code>B:042.0:E:11919:V:24444:00012:1000000000000000:TRT3
+B:042.0:E:11954:A:08800:00001:1111110011111800:EINTERCOM
+B:042.0:E:11953:A:02980:00001:1212123312121233:
+B:042.0:E:11996:V:27500:00300:A33130046167824A:Sci-Tech TV
+B:042.0:E:12015:H:27500:00009:1000001010000010:Teledunya 3D
+B:042.0:E:12130:V:27500:00024:1000000000000000:Radio Migros
+B:042.0:E:12130:V:27500:00025:1000000000000000:Radio Tansas</code></pre><h2 id="逐行读取文本strsep"><a href="#逐行读取文本strsep" class="headerlink" title="逐行读取文本strsep"></a>逐行读取文本strsep</h2><pre><code>char *tok = NULL;
+for (tok = strsep(&amp;p, &quot;\n&quot;); tok != NULL; tok = strsep(&amp;p, &quot;\n&quot;))
+{
+    printf(&quot;\033[33m%s\n\033[0m&quot;, tok);
+    //TODO
+}</code></pre><h2 id="处理单行格式化文本sscanf"><a href="#处理单行格式化文本sscanf" class="headerlink" title="处理单行格式化文本sscanf"></a>处理单行格式化文本sscanf</h2><p>sscanf() - 从一个字符串中读进与指定格式相符的数据.　函数原型:</p>
+<pre><code>int sscanf( string str, string fmt, mixed var1, mixed var2 ...  );
+int scanf( const char \*format [,argument]...  );</code></pre><p>说明：</p>
+<p>sscanf与scanf类似，都是用于输入的，只是后者以屏幕(stdin)为输入源，前者以固定字符串为输入源。<br>其中的format可以是一个或多个 %[*] [width] [{h | l | I64 | L}]type | ‘ ‘ | ‘\t’ | ‘\n’ | 非%符号：</p>
+<ol>
+<li>* 亦可用于格式中, (即 %*d 和 %*s) 加了星号 (*) 表示跳过此数据不读入. (也就是不把此数据读入参数中)</li>
+<li>{a|b|c}表示a,b,c中选一，[d],表示可以有d也可以没有d。</li>
+<li>width表示读取宽度。</li>
+<li>{h | l | I64 | L}:参数的size,通常h表示单字节size，I表示2字节size,L表示4字节size(double例外),l64表示8字节size。</li>
+<li>type :这就很多了，就是%s,%d,%c之类。</li>
+<li>特别的：%*[width] [{h | l | I64 | L}]type 表示满足该条件的被过滤掉，不会向目标参数中写入值</li>
+</ol>
+<p>支持集合操作：</p>
+<ol>
+<li>%[a-z] 表示匹配a到z中任意字符，贪婪性(尽可能多的匹配)</li>
+<li>%[A-Z] 表示匹配A到Z中任意字符，贪婪性(尽可能多的匹配)</li>
+<li>%[aB’] 匹配a、B、’中一员，贪婪性</li>
+<li>%[^a] 匹配非a的任意字符，贪婪性</li>
+</ol>
+<p>注意：在读入的字符串是空字符串时，sscanf函数并不改变待读入到的字符串的值。</p>
+<p><strong>针对格式化文本的处理：</strong></p>
+<pre><code>char longitude[6] = {0};
+char direction = 0;
+char frequency[6] = {0};
+char polar = 0;
+char symbol[6] = {0};
+char sid[6] = {0};
+char data0[EMU_KEY_STR_LEN] = {0};
+char data1[EMU_KEY_STR_LEN] = {0};
+
+if (type == 0)
+{
+    //B:004.0:W:11389:A:27500:00011:1A2B3C81C3B2A116:RTR                  
+    sscanf(tok, &quot;%*1c:%5c:%1c:%5c:%1c:%5c:%5c:%16c:%16c&quot;,
+            longitude, &amp;direction, frequency, &amp;polar, symbol, sid, data0, data1);
+}
+else
+{ 
+    //P:105.5:E:03960:H:27500:CEF7CE422FF89E:E42DB81767E02E
+    sscanf(tok, &quot;%*1c:%5c:%1c:%5c:%1c:%5c:%14c:%14c&quot;,
+            longitude, &amp;direction, frequency, &amp;polar, symbol, data0, data1);
+}
+pMinifs-&gt;symbol_rate = atoi(symbol);
+.
+.
+.</code></pre><p>注意：<strong>%s与%c的区别，注意buf的长度包含字符串结束符‘\0’，长度如果不对，后续处理可能出现问题。</strong></p>
+<h2 id="强制内存转换处理格式化文本"><a href="#强制内存转换处理格式化文本" class="headerlink" title="强制内存转换处理格式化文本"></a>强制内存转换处理格式化文本</h2><p>针对格式化文本还有一种内存强制转换的处理方式：</p>
+<pre><code>struct DevData{
+    char tag[2];
+    char longitude[6];
+    char direction[2];
+    char frequency[6];
+    char polar[2];
+    char symbol_rate[6];
+    char service_id[6];
+    char key[KEY_STR_LEN+1];
+    char prog_name[PROG_NAME_LENTH];
+    char line_feed[2];//tail(0x0d0a or 0x0a)
+} __attribute__((packed));
+
+//获取文件数据
+fd = fopen(path, &quot;r&quot;);
+p = (char *)mallocz(size);
+fseek(fd, 0, SEEK_SET);
+fread(fd, p, 1, size);
+
+//强制转换
+struct DevData *pRootData=NULL;
+for(i=0;i&lt;total_num;i++)
+{
+    pRootData = (struct DevData*)p1;
+    .
+    .
+    //处理当前结构体pRootData，并获得偏移量用来取下一个结构体数据
+    memset(atoi_buf,0,sizeof(atoi_buf));
+    memcpy(atoi_buf,pRootData-&gt;symbol_rate,sizeof(pRootData-&gt;symbol_rate)-1);
+    pMinifs-&gt;symbol_rate = atoi(atoi_buf);
+    .
+    p1 += offset;
+}</code></pre><h2 id="正则表达式"><a href="#正则表达式" class="headerlink" title="正则表达式"></a>正则表达式</h2><h3 id="特殊字符"><a href="#特殊字符" class="headerlink" title="特殊字符"></a><strong>特殊字符</strong></h3><h4 id=""><a href="#" class="headerlink" title="\"></a>\</h4><p>转义字符，将下一字符标记为特殊字符、文本、反向引用或八进制转义符</p>
+<pre><code>&#39;\n&#39;匹配换行，
+&#39;\\&#39;匹配&#39;\&#39;</code></pre><h4 id="-1"><a href="#-1" class="headerlink" title="^"></a>^</h4><p>匹配搜索字符串开始的位置。如果标志中包括 m（多行搜索）字符，^ 还将匹配 \n 或 \r 后面的位置。<br>如果将 ^ 用作括号表达式中的第一个字符，则会对字符集求反。</p>
+<pre><code>^\d{3} 与搜索字符串开始处的 3 个数字匹配。
+[^abc] 与除 a、b 和 c 以外的任何字符匹配。</code></pre><h4 id="-2"><a href="#-2" class="headerlink" title="$"></a>$</h4><p>匹配搜索字符串结尾的位置。 如果标志中包括 m（多行搜索）字符，^ 还将匹配 \n 或 \r 前面的位置。</p>
+<pre><code>\d{3}$ 与搜索字符串结尾处的 3 个数字匹配。</code></pre><h4 id="-3"><a href="#-3" class="headerlink" title="*"></a>*</h4><p>零次或多次匹配前面的字符或子表达式。等效于 {0,}。</p>
+<pre><code>zo\* 与“z”和“zoo”匹配。</code></pre><h4 id="-4"><a href="#-4" class="headerlink" title="+"></a>+</h4><p>一次或多次匹配前面的字符或子表达式。 等效于 {1,}。</p>
+<pre><code>zo+ 与“zo”和“zoo”匹配，但与“z”不匹配。</code></pre><h4 id="-5"><a href="#-5" class="headerlink" title="?"></a>?</h4><p>零次或一次匹配前面的字符或子表达式。 等效于 {0,1}。<br>当 ? 紧随任何其他限定符（*、+、?、{n}、{n,} 或 {n,m}）之后时，匹配模式是非贪婪的。<br>非贪婪模式匹配搜索到的、尽可能少的字符串， 而默认的贪婪模式匹配搜索到的、尽可能多的字符串。</p>
+<pre><code>zo? 与“z”和“zo”匹配，但与“zoo”不匹配。
+o+? 只与“oooo”中的单个“o”匹配，而 o+ 与所有“o”匹配。
+do(es)? 与“do”或“does”中的“do”匹配。</code></pre><h4 id="-6"><a href="#-6" class="headerlink" title="."></a>.</h4><p>匹配除换行符 \n 之外的任何单个字符。 若要匹配包括 \n 在内的任意字符，请使用诸如 [\s\S] 之类的模式。</p>
+<pre><code>a.c 与“abc”、“a1c”和“a-c”匹配</code></pre><h4 id="-7"><a href="#-7" class="headerlink" title="[]"></a>[]</h4><p>标记括号表达式的开始和结尾。</p>
+<pre><code>[1-4] 与“1”、“2”、“3”或“4”匹配。 [^aAeEiIoOuU] 与任何非元音字符匹配</code></pre><h4 id="-8"><a href="#-8" class="headerlink" title="{}"></a>{}</h4><p>标记限定符表达式的开始和结尾。</p>
+<pre><code>a{2,3} 与“aa”和“aaa”匹配</code></pre><h4 id="-9"><a href="#-9" class="headerlink" title="()"></a>()</h4><p>标记子表达式的开始和结尾。 可以保存子表达式以备将来之用。</p>
+<pre><code>A(\d) 与“A0”至“A9”匹配。 保存该数字以备将来之用</code></pre><h4 id="-10"><a href="#-10" class="headerlink" title="|"></a>|</h4><p>指示在两个或多个项之间进行选择。</p>
+<pre><code>z|food 与“z”或“food”匹配。 (z|f)ood 与“zood”或“food”匹配</code></pre><h3 id="元字符"><a href="#元字符" class="headerlink" title="元字符"></a>元字符</h3><h4 id="b"><a href="#b" class="headerlink" title="\b"></a>\b</h4><p>与一个字边界匹配；即字与空格间的位置。</p>
+<pre><code>er\b 与“never”中的“er”匹配，但与“verb”中的“er”不匹配</code></pre><h4 id="B"><a href="#B" class="headerlink" title="\B"></a>\B</h4><p>非边界字匹配。</p>
+<pre><code>er\B 与“verb”中的“er”匹配，但与“never”中的“er”不匹配</code></pre><h4 id="d"><a href="#d" class="headerlink" title="\d"></a>\d</h4><p>数字字符匹配。 等效于 [0-9]。</p>
+<pre><code>在搜索字符串“12 345”中，\d{2} 与“12”和“34”匹配。 \d 与“1”、“2”、“3”、“4”和“5”匹配。</code></pre><h4 id="D"><a href="#D" class="headerlink" title="\D"></a>\D</h4><p>非数字字符匹配。 等效于 [^0-9]。</p>
+<pre><code>\D+ 与“abc123 def”中的“abc”和“def”匹配。</code></pre><h4 id="w"><a href="#w" class="headerlink" title="\w"></a>\w</h4><p>与以下任意字符匹配：A-Z、a-z、0-9 和下划线。 等效于 [A-Za-z0-9_]。</p>
+<pre><code>在搜索字符串“The quick brown fox…”中，\w+ 与“The”、“quick”、“brown”和“fox”匹配。</code></pre><h4 id="W"><a href="#W" class="headerlink" title="\W"></a>\W</h4><p>与除 A-Z、a-z、0-9 和下划线以外的任意字符匹配。 等效于 [^A-Za-z0-9_]。</p>
+<pre><code>在搜索字符串“The quick brown fox…”中，\W+ 与“…”和所有空格匹配。</code></pre><h4 id="xyz"><a href="#xyz" class="headerlink" title="[xyz]"></a>[xyz]</h4><p>字符集。 与任何一个指定字符匹配。</p>
+<pre><code>[abc] 与“plain”中的“a”匹配。</code></pre><h4 id="xyz-1"><a href="#xyz-1" class="headerlink" title="[^xyz]"></a>[^xyz]</h4><p>反向字符集。 与未指定的任何字符匹配。</p>
+<pre><code>[^abc] 与“plain”中的“p”、“l”、“i”和“n”匹配。</code></pre><h4 id="a-z"><a href="#a-z" class="headerlink" title="[a-z]"></a>[a-z]</h4><p>字符范围。 匹配指定范围内的任何字符。</p>
+<pre><code>[a-z] 与“a”到“z”范围内的任何小写字母字符匹配。</code></pre><h4 id="a-z-1"><a href="#a-z-1" class="headerlink" title="[^a-z]"></a>[^a-z]</h4><p>反向字符范围。 与不在指定范围内的任何字符匹配。</p>
+<pre><code>[^a-z] 与不在范围“a”到“z”内的任何字符匹配。</code></pre><h4 id="n"><a href="#n" class="headerlink" title="{n}"></a>{n}</h4><p>正好匹配 n 次。 n 是非负整数。</p>
+<pre><code>o{2} 与“Bob”中的“o”不匹配，但与“food”中的两个“o”匹配。</code></pre><h4 id="n-1"><a href="#n-1" class="headerlink" title="{n,}"></a>{n,}</h4><p>至少匹配 n 次。 n 是非负整数。</p>
+<pre><code>* 与 {0,} 相等。
++ 与 {1,} 相等。
+o{2,} 与“Bob”中的“o”不匹配，但与“foooood”中的所有“o”匹配。</code></pre><h4 id="n-m"><a href="#n-m" class="headerlink" title="{n,m}"></a>{n,m}</h4><p>匹配至少 n 次，至多 m 次。 n 和 m 是非负整数，其中 n &lt;= m。 逗号和数字之间不能有空格。</p>
+<pre><code>? 与 {0,1} 相等。
+在搜索字符串“1234567”中，\d{1,3} 与“123”、“456”和“7”匹配。</code></pre><h4 id="pattern"><a href="#pattern" class="headerlink" title="(pattern)"></a>(pattern)</h4><p>与pattern 匹配并保存匹配项。 若要匹配括号字符 (  )，请使用“(”或者“)”。</p>
+<pre><code>(Chapter|Section) [1-9] 与“Chapter 5”匹配，保存“Chapter”以备将来之用。</code></pre><h4 id="pattern-1"><a href="#pattern-1" class="headerlink" title="(?:pattern)"></a>(?:pattern)</h4><p>与pattern 匹配，但不保存匹配项；即不会存储匹配项以备将来之用。 这对于用“or”字符 (|) 组合模式部件的情况很有用。</p>
+<pre><code>industr(?:y|ies) 与 industry|industries 相等。</code></pre><h4 id="pattern-2"><a href="#pattern-2" class="headerlink" title="(?=pattern)"></a>(?=pattern)</h4><p>正预测先行。 找到一个匹配项后，将在匹配文本之前开始搜索下一个匹配项。 不会保存匹配项以备将来之用。</p>
+<pre><code>^(?=.\*\d).{4,8}$ 对密码应用以下限制：其长度必须介于 4 到 8 个字符之间，并且必须至少包含一个数字。</code></pre><p>在该模式中，.*\d 查找后跟有数字的任意多个字符。 对于搜索字符串“abc3qr”，这与“abc3”匹配。<br>从该匹配项之前（而不是之后）开始，.{4,8} 与包含 4-8 个字符的字符串匹配。 这与“abc3qr”匹配。<br>^ 和 $ 指定搜索字符串的开始和结束位置。 这将在搜索字符串包含匹配字符之外的任何字符时阻止匹配。</p>
+<h4 id="pattern-3"><a href="#pattern-3" class="headerlink" title="(?!pattern)"></a>(?!pattern)</h4><p>负预测先行。 匹配与模式 不匹配的搜索字符串。 找到一个匹配项后，将在匹配文本之前开始搜索下一个匹配项。 不会保存匹配项以备将来之用。</p>
+<pre><code>\b(?!th)\w+\b 与不以“th”开头的单词匹配。</code></pre><p>在该模式中，\b 与一个字边界匹配。 对于搜索字符串“ quick ”，这与第一个空格匹配。 (?!th) 与非“th”字符串匹配。 这与“qu”匹配。<br>从该匹配项开始，\w+ 与一个字匹配。 这与“quick”匹配。</p>
+<h4 id="cx"><a href="#cx" class="headerlink" title="\cx"></a>\cx</h4><p>匹配 x 指示的控制字符。 x 的值必须在 A-Z 或 a-z 范围内。 如果不是这样，则假定 c 就是文本“c”字符本身。</p>
+<pre><code>\cM 与 Ctrl+M 或一个回车符匹配。</code></pre><h4 id="xn"><a href="#xn" class="headerlink" title="\xn"></a>\xn</h4><p>匹配 n，此处的 n 是一个十六进制转义码。<br>十六进制转义码必须正好是两位数长。 允许在正则表达式中使用 ASCII 代码。</p>
+<pre><code>\x41 与“A”匹配。 \x041 等效于后跟有“1”的“\x04”（因为 n 必须正好是两位数）。</code></pre><h4 id="num"><a href="#num" class="headerlink" title="\num"></a>\num</h4><p>匹配 num，此处的 num 是一个正整数。 这是对已保存的匹配项的引用。</p>
+<pre><code>(.)\1 与两个连续的相同字符匹配。</code></pre><h4 id="n-2"><a href="#n-2" class="headerlink" title="\n"></a>\n</h4><p>标识一个八进制转义码或反向引用。 如果 \n 前面至少有 n 个捕获子表达式，那么 n 是反向引用。<br>否则，如果 n 是八进制数 (0-7)，那么 n 是八进制转义码。</p>
+<pre><code>(\d)\1 与两个连续的相同数字匹配。</code></pre><h4 id="nm"><a href="#nm" class="headerlink" title="\nm"></a>\nm</h4><p>标识一个八进制转义码或反向引用。 如果 \nm 前面至少有 nm 个捕获子表达式，那么 nm 是反向引用。<br>如果 \nm 前面至少有 n 个捕获子表达式，则 n 是反向引用，后面跟有文本 m。<br>如果上述情况都不存在，当 n 和 m 是八进制数字 (0-7) 时，\nm 匹配八进制转义码 nm。</p>
+<pre><code>\11 与制表符匹配。</code></pre><h4 id="nml"><a href="#nml" class="headerlink" title="\nml"></a>\nml</h4><p>当 n 是八进制数字 (0-3)，m 和 l 是八进制数字 (0-7) 时，匹配八进制转义码 nml。</p>
+<pre><code>\011 与制表符匹配。</code></pre><h4 id="un"><a href="#un" class="headerlink" title="\un"></a>\un</h4><p>匹配 n，其中 n 是以四位十六进制数表示的 Unicode 字符。</p>
+<pre><code>\u00A9 与版权符号 (©) 匹配。</code></pre><h3 id="非打印字符"><a href="#非打印字符" class="headerlink" title="非打印字符"></a>非打印字符</h3><ul>
+<li>\f 换页符。 \x0c 和 \cL</li>
+<li>\n 换行符。 \x0a 和 \cJ</li>
+<li>\r 回车符。 \x0d 和 \cM</li>
+<li>\s 任何空白字符。 其中包括空格、制表符和换页符。 [ \f\n\r\t\v ]</li>
+<li>\S 任何非空白字符。 [^ \f\n\r\t\v]</li>
+<li>\t Tab 字符。 \x09 和 \cI</li>
+<li>\v 垂直制表符。 \x0b 和 \cK</li>
+</ul>
+<ol>
+<li><a href="http://blog.chinaunix.net/uid-26284412-id-3189214.html" target="_blank" rel="noopener">sscanf的高级用法</a></li>
+<li><a href="http://www.cnblogs.com/lyq105/archive/2009/11/28/1612677.html" target="_blank" rel="noopener">C语言函数sscanf()的用法</a></li>
+<li><a href="http://www.kryptosx.info/archives/60.html" target="_blank" rel="noopener">scanf的正则表达式总结</a></li>
+<li><a href="http://blog.csdn.net/tujiaw/article/details/6139896" target="_blank" rel="noopener">scanf、sscanf中的正则表达式</a></li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/11/17/vim-tips-1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +507,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -347,7 +607,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -485,7 +745,7 @@ dump tekhex value filename expression
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -676,7 +936,7 @@ nmap &lt;leader&gt;&lt;leader&gt;q :call CodeFormat()&lt;CR&gt;</code></pre><p>�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -702,14 +962,14 @@ nmap &lt;leader&gt;&lt;leader&gt;q :call CodeFormat()&lt;CR&gt;</code></pre><p>�
                 </span>
                   , 
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/" itemprop="url" rel="index">
-                    <span itemprop="name">Tools</span>
+                  <a href="/categories/Network/TCP/" itemprop="url" rel="index">
+                    <span itemprop="name">TCP</span>
                   </a>
                 </span>
                   , 
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Network/TCP/" itemprop="url" rel="index">
-                    <span itemprop="name">TCP</span>
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
                   </a>
                 </span>
                   , 
@@ -932,7 +1192,7 @@ net.core.wmem_max = 16777216</code></pre><p>一般来说，<strong>理论上的R
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1308,7 +1568,7 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb, int clone_it,
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1423,108 +1683,6 @@ PRI  </code></pre><p>解析如下：</p>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/31/python-Tkinter/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/10/31/python-Tkinter/" class="post-title-link" itemprop="url">python Tkinter编程</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-11-01 00:00:00" itemprop="dateCreated datePublished" datetime="2015-11-01T00:00:00+08:00">2015-11-01</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Python/" itemprop="url" rel="index">
-                    <span itemprop="name">Python</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>2.1k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>python提供了多个图形开发界面的库，几个常用Python GUI库如下：</p>
-<ul>
-<li>Tkinter： Tkinter模块(“Tk 接口”)是Python的标准Tk GUI工具包的接口.<br>Tk和Tkinter可以在大多数的Unix平台下使用,同样可以应用在Windows和Macintosh系统里.<br>Tk8.0的后续版本可以实现本地窗口风格,并良好地运行在绝大多数平台中。</li>
-<li>wxPython：wxPython 是一款开源软件，是 Python 语言的一套优秀的 GUI 图形库，<br>允许 Python 程序员很方便的创建完整的、功能键全的 GUI 用户界面。</li>
-<li>Jython：Jython程序可以和Java无缝集成。除了一些标准模块，Jython使用Java的模块。<br>Jython几乎拥有标准的Python中不依赖于C语言的全部模块。<br>比如，Jython的用户界面将使用Swing，AWT或者SWT。Jython可以被动态或静态地编译成Java字节码。</li>
-</ul>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2015/10/31/python-Tkinter/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/31/python-pyinstaller/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1556,7 +1714,7 @@ PRI  </code></pre><p>解析如下：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1719,7 +1877,7 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/29/python-ImageTK/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/31/python-Tkinter/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -1733,7 +1891,7 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/2015/10/29/python-ImageTK/" class="post-title-link" itemprop="url">python ImageTk加载错误</a>
+            <a href="/2015/10/31/python-Tkinter/" class="post-title-link" itemprop="url">python Tkinter编程</a>
         </h1>
 
         <div class="post-meta">
@@ -1743,14 +1901,14 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
               </span>
               <span class="post-meta-item-text">Posted on</span>
 
-              <time title="Created: 2015-10-30 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-30T00:00:00+08:00">2015-10-30</time>
+              <time title="Created: 2015-11-01 00:00:00" itemprop="dateCreated datePublished" datetime="2015-11-01T00:00:00+08:00">2015-11-01</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1770,14 +1928,14 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>510</span>
+              <span>2.1k</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="fa fa-clock-o"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
+              <span>2 mins.</span>
             </span>
 
         </div>
@@ -1789,18 +1947,20 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>python中使用PIL ImageTK出现以下问题：</p>
-<pre><code>Traceback (most recent call last):
-    File &quot;./ExportXiamiList.py&quot;, line 4, in &lt;module&gt;
-        from tkinter import *
-ImportError: No module named tkinter</code></pre><p>Ubuntu下环境：</p>
-<pre><code>ExportXiamiList-master &gt; python
-python            python2.7         python2-config    python3.3         python3.4         python3m                          
-python2           python2.7-config  python3           python3.3m        python3.4m        python-config            </code></pre><p>安装如下包，不起作用：</p>
-<pre><code>sudo apt-get install python-pil python-pil.imagetk --reinstall</code></pre><p>继续安装如下包解决问题：</p>
-<pre><code>sudo apt-get install python3-pil python3-pil.imagetk</code></pre><p>python中ImageTK用法如下：</p>
-<pre><code>from PIL import Image
-from PIL import ImageTk</code></pre>
+          <p>python提供了多个图形开发界面的库，几个常用Python GUI库如下：</p>
+<ul>
+<li>Tkinter： Tkinter模块(“Tk 接口”)是Python的标准Tk GUI工具包的接口.<br>Tk和Tkinter可以在大多数的Unix平台下使用,同样可以应用在Windows和Macintosh系统里.<br>Tk8.0的后续版本可以实现本地窗口风格,并良好地运行在绝大多数平台中。</li>
+<li>wxPython：wxPython 是一款开源软件，是 Python 语言的一套优秀的 GUI 图形库，<br>允许 Python 程序员很方便的创建完整的、功能键全的 GUI 用户界面。</li>
+<li>Jython：Jython程序可以和Java无缝集成。除了一些标准模块，Jython使用Java的模块。<br>Jython几乎拥有标准的Python中不依赖于C语言的全部模块。<br>比如，Jython的用户界面将使用Swing，AWT或者SWT。Jython可以被动态或静态地编译成Java字节码。</li>
+</ul>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2015/10/31/python-Tkinter/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -1850,7 +2010,7 @@ from PIL import ImageTk</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1940,6 +2100,273 @@ pip install pyinstaller</code></pre><p>均正确，解决此问题</p>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/29/python-ImageTK/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/10/29/python-ImageTK/" class="post-title-link" itemprop="url">python ImageTk加载错误</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-10-30 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-30T00:00:00+08:00">2015-10-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Python/" itemprop="url" rel="index">
+                    <span itemprop="name">Python</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>510</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>python中使用PIL ImageTK出现以下问题：</p>
+<pre><code>Traceback (most recent call last):
+    File &quot;./ExportXiamiList.py&quot;, line 4, in &lt;module&gt;
+        from tkinter import *
+ImportError: No module named tkinter</code></pre><p>Ubuntu下环境：</p>
+<pre><code>ExportXiamiList-master &gt; python
+python            python2.7         python2-config    python3.3         python3.4         python3m                          
+python2           python2.7-config  python3           python3.3m        python3.4m        python-config            </code></pre><p>安装如下包，不起作用：</p>
+<pre><code>sudo apt-get install python-pil python-pil.imagetk --reinstall</code></pre><p>继续安装如下包解决问题：</p>
+<pre><code>sudo apt-get install python3-pil python3-pil.imagetk</code></pre><p>python中ImageTK用法如下：</p>
+<pre><code>from PIL import Image
+from PIL import ImageTk</code></pre>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/27/shell-name-suffix/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/10/27/shell-name-suffix/" class="post-title-link" itemprop="url">shell提取文件扩展名或文件名</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-10-28 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-28T00:00:00+08:00">2015-10-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Shell/" itemprop="url" rel="index">
+                    <span itemprop="name">Shell</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>1.4k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p>在shell中用于提取文件名或后缀，需要用到以下几个操作符： <strong>%、%%、#、##</strong></p>
+<h2 id="和-操作符"><a href="#和-操作符" class="headerlink" title="% 和 %% 操作符"></a><strong>% 和 %% 操作符</strong></h2><p>用法：</p>
+<pre><code>${VAR%.*}
+${VAR%%.*}</code></pre><p><strong>${VAR%.*}</strong>含义：从<strong>$VAR</strong>中<strong>删除</strong>位于 <strong>%</strong> 右侧的通配符左右匹配的字符串，<strong>通配符从右向左进行匹配</strong>。</p>
+<ul>
+<li><strong>% 属于非贪婪操作符</strong>，从右向左匹配最短结果</li>
+<li><strong>%% 属于贪婪操作符</strong>，从右向左匹配符合条件的最长字符串</li>
+</ul>
+<p>示例如下：</p>
+<pre><code>file=&quot;abc.c&quot;
+name=${file%.*}
+echo file name is: $name
+
+输出结果：
+file name is: abc</code></pre><p>变量 name 赋值abc.c，那么通配符从右向左就会匹配到 .c，所有从 $VAR 中删除匹配结果。</p>
+<pre><code>file=&quot;text.gif.bak.2012&quot;
+name=${file%.*}
+name2=${file%%.*}
+echo file name is: $name
+echo file name is: $name2
+
+输出结果：
+file name is: text.gif.bak    //使用 %
+file name is: text            //使用 %%</code></pre><p>操作符 %% 使用 .* 从右向左贪婪匹配到 .gif.bak.2012</p>
+<h2 id="和-操作符-1"><a href="#和-操作符-1" class="headerlink" title="# 和 ## 操作符"></a><strong># 和 ## 操作符</strong></h2><p>用法：</p>
+<pre><code>${VAR#*.}
+${VAR##*.}</code></pre><p><strong>${VAR#*.}</strong> 含义：从 <strong>$VAR</strong> 中<strong>删除</strong>位于 <strong>#</strong> 右侧的通配符所匹配的字符串，<strong>通配符是左向右进行匹配</strong>。</p>
+<ul>
+<li><strong># 属于非贪婪操作符</strong>，从左向右匹配最短结果</li>
+<li><strong>## 属于贪婪操作符</strong>，从左向右匹配符合条件的最长字符串</li>
+</ul>
+<p>符示例：</p>
+<pre><code>file=&quot;text.gif&quot;
+suffix=${file#*.}
+echo suffix is: $suffix
+
+输出结果：
+suffix is: gif
+
+
+file=&quot;text.gif.bak.2012.txt&quot;
+suffix=${file#*.}
+suffix2=${file##*.}
+echo suffix is: $suffix
+echo suffix is: $suffix2
+
+输出结果：
+suffix is: text.gif.bak.2012     //使用 #
+suffix2 is: txt                  //使用 ##</code></pre><p>操作符 ## 使用 *. 从左向右贪婪匹配到 text.gif.bak.2012</p>
+<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><pre><code>url=&quot;www.baidu.com&quot;
+
+echo ${url%.*}      #移除 .* 所匹配的最右边的内容。
+www.baidu
+
+echo ${url%%.*}     #将从右边开始一直匹配到最左边的 *. 移除，贪婪操作符。
+www
+
+echo ${url#*.}      #移除 *. 所有匹配的最左边的内容。
+baidu.com
+
+echo ${url##*.}     #将从左边开始一直匹配到最右边的 *. 移除，贪婪操作符。
+com</code></pre>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/27/shell-getopts/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1971,7 +2398,7 @@ pip install pyinstaller</code></pre><p>均正确，解决此问题</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2146,173 +2573,6 @@ test3</code></pre>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/27/shell-name-suffix/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/10/27/shell-name-suffix/" class="post-title-link" itemprop="url">shell提取文件扩展名或文件名</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-10-28 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-28T00:00:00+08:00">2015-10-28</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Shell/" itemprop="url" rel="index">
-                    <span itemprop="name">Shell</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>1.4k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p>在shell中用于提取文件名或后缀，需要用到以下几个操作符： <strong>%、%%、#、##</strong></p>
-<h2 id="和-操作符"><a href="#和-操作符" class="headerlink" title="% 和 %% 操作符"></a><strong>% 和 %% 操作符</strong></h2><p>用法：</p>
-<pre><code>${VAR%.*}
-${VAR%%.*}</code></pre><p><strong>${VAR%.*}</strong>含义：从<strong>$VAR</strong>中<strong>删除</strong>位于 <strong>%</strong> 右侧的通配符左右匹配的字符串，<strong>通配符从右向左进行匹配</strong>。</p>
-<ul>
-<li><strong>% 属于非贪婪操作符</strong>，从右向左匹配最短结果</li>
-<li><strong>%% 属于贪婪操作符</strong>，从右向左匹配符合条件的最长字符串</li>
-</ul>
-<p>示例如下：</p>
-<pre><code>file=&quot;abc.c&quot;
-name=${file%.*}
-echo file name is: $name
-
-输出结果：
-file name is: abc</code></pre><p>变量 name 赋值abc.c，那么通配符从右向左就会匹配到 .c，所有从 $VAR 中删除匹配结果。</p>
-<pre><code>file=&quot;text.gif.bak.2012&quot;
-name=${file%.*}
-name2=${file%%.*}
-echo file name is: $name
-echo file name is: $name2
-
-输出结果：
-file name is: text.gif.bak    //使用 %
-file name is: text            //使用 %%</code></pre><p>操作符 %% 使用 .* 从右向左贪婪匹配到 .gif.bak.2012</p>
-<h2 id="和-操作符-1"><a href="#和-操作符-1" class="headerlink" title="# 和 ## 操作符"></a><strong># 和 ## 操作符</strong></h2><p>用法：</p>
-<pre><code>${VAR#*.}
-${VAR##*.}</code></pre><p><strong>${VAR#*.}</strong> 含义：从 <strong>$VAR</strong> 中<strong>删除</strong>位于 <strong>#</strong> 右侧的通配符所匹配的字符串，<strong>通配符是左向右进行匹配</strong>。</p>
-<ul>
-<li><strong># 属于非贪婪操作符</strong>，从左向右匹配最短结果</li>
-<li><strong>## 属于贪婪操作符</strong>，从左向右匹配符合条件的最长字符串</li>
-</ul>
-<p>符示例：</p>
-<pre><code>file=&quot;text.gif&quot;
-suffix=${file#*.}
-echo suffix is: $suffix
-
-输出结果：
-suffix is: gif
-
-
-file=&quot;text.gif.bak.2012.txt&quot;
-suffix=${file#*.}
-suffix2=${file##*.}
-echo suffix is: $suffix
-echo suffix is: $suffix2
-
-输出结果：
-suffix is: text.gif.bak.2012     //使用 #
-suffix2 is: txt                  //使用 ##</code></pre><p>操作符 ## 使用 *. 从左向右贪婪匹配到 text.gif.bak.2012</p>
-<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><pre><code>url=&quot;www.baidu.com&quot;
-
-echo ${url%.*}      #移除 .* 所匹配的最右边的内容。
-www.baidu
-
-echo ${url%%.*}     #将从右边开始一直匹配到最左边的 *. 移除，贪婪操作符。
-www
-
-echo ${url#*.}      #移除 *. 所有匹配的最左边的内容。
-baidu.com
-
-echo ${url##*.}     #将从左边开始一直匹配到最右边的 *. 移除，贪婪操作符。
-com</code></pre>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/25/makefile-and-shell/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2344,7 +2604,7 @@ com</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2666,7 +2926,7 @@ files := $(shell echo *.c)</code></pre><p>注意，这个函数会新生成一�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
+                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2754,196 +3014,6 @@ module/cascam/adapter/cascam_osd_adapter.c:295:5: warning: (near initialization 
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/20/gdb-disassemble-debug/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/10/20/gdb-disassemble-debug/" class="post-title-link" itemprop="url">使用反汇编定位未开源库问题</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-10-21 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-21T00:00:00+08:00">2015-10-21</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-07 13:16:38" itemprop="dateModified" datetime="2020-05-07T13:16:38+08:00">2020-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/C/" itemprop="url" rel="index">
-                    <span itemprop="name">C</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>2.6k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>整合版本时，遇到一个必现死机问题，每次出现问题都是调用库中的一个函数。<br>经过排查，初步怀疑是库存在一些问题，或者与外部使用配合出现问题。</p>
-<h2 id="定位问题"><a href="#定位问题" class="headerlink" title="定位问题"></a>定位问题</h2><pre><code>(gdb) set $pc=$epc
-(gdb) i r r10
-r10            0x970038656
-(gdb) info registers 
-r0             0x90972c100x90972c10
-r1             0x90486564-1874303644
-r2             0x970038656
-r3             0xff255
-r4             0x904895de-1874291234
-r5             0xae174
-r6             0x00
-r7             0x00
-r8             0x904d03a0-1874000992
-r9             0x11110009286326793
-r10            0x970038656
-r11            0x6096
-r12            0x11
-r13            0x904d03a0-1874000992
-r14            0x904d02a0-1874001248
-r15            0x90142750-1877727408
-pc             0x9000060a0x9000060a &lt;__default_14&gt;
-epc            0x902abd300x902abd30 &lt;inflate_fast+708&gt;
-psr            0x8f0e0010-1894907888
-epsr           0x800e0150-2146565808
-(gdb) pc
-#0  0x9014279cin xxx_xxm()at xx.c:574
-#1  0x90142750in xxx_xxm()at xx.c:568
-#2  0x9014144ein xxx_xx()at xx.c:2659
-#3  0x90141446in xxx_xx()at xx.c:2658
-#4  0x9014143ein xxx_xx()at xx.c:2657
-#5  0x901413f2in xxx_xx()at xx.c:2657
-#6  0x901413dein xxx_xx()at xx.c:2652
-#7  0x901413d2in xxx_xx()at xx.c:2652
-(gdb) disassemble $pc-10,$pc+10
-Dump of assembler code from 0x90000600 to 0x90000614:
-0x90000600 &lt;__hardware_accelerator+2&gt;:br0x90000600
-0x90000602 &lt;__trap0+0&gt;:bkpt
-0x90000604 &lt;__trap0+2&gt;:br0x90000604
-0x90000606 &lt;__default_13+0&gt;:bkpt
-0x90000608 &lt;__default_13+2&gt;:br0x90000608
-=&gt; 0x9000060a &lt;__default_14+0&gt;:bkpt
-0x9000060c &lt;__default_14+2&gt;:br0x9000060c
-0x9000060e &lt;__default_15+0&gt;:bkpt
-0x90000610 &lt;__default_15+2&gt;:br0x90000610
-0x90000612 &lt;__default_17+0&gt;:bkpt
-End of assembler dump.
-(gdb) bt
-#0  0x9000060a in __default_14 ()
-#1  0x90142750 in xxx_xxm () at xx.c:568
-#2  0x9013cfb8 in func () at c1.c:167
-#3  0x9013f394 in main_entry (args=&lt;value optimized out&gt;) at init.c:14
-#4  0x9008724c in default_thread_function (arg=0x907f32b8) at os/ecos/osapi.c:371
-#5  0x901232f2 in pthread_entry(unsigned int) ()
-#6  0x90127030 in Cyg_HardwareThread::thread_entry(Cyg_Thread*) ()
-#7  0x9012701c in Cyg_Thread::exit() ()
-#8  0xb0b6ccd0 in ?? ()</code></pre><p>可以判断出r10中值出现问题，并且问题出现在文件xx.c的函数xxx_xxm()中，重启跟踪代码：</p>
-<pre><code>(gdb) b xxx_xxm 
-Breakpoint 3 at 0x901425f4: file xx.c, line 524.
-(gdb) c
-Continuing.
-
-Breakpoint 3, xxx_xxm () at xx.c:524
-524xx.c: 没有那个文件或目录.
-in xx.c
-(gdb) display /i $r10
-1: x/i $r10
-0x1111000a:ldm r3-r15, (r0)
-(gdb) display /i $pc
-2: x/i $pc
-=&gt; 0x901425f4 &lt;xxx_xxm+20&gt;:lrw r7, 0x903BA9CC
-(gdb) n
-526in xx.c
-(gdb) 
-574in xx.c
-2: x/i $pc
-=&gt; 0x9014279c &lt;xxx_xxm+444&gt;:mov r7, r2
-1: x/i $r10
-0x1111000a:movi r4, 86
-(gdb) 
-575in xx.c
-2: x/i $pc
-=&gt; 0x901427a6 &lt;xxx_xxm+454&gt;:mov r2, r10
-1: x/i $r10
-0x9700:movi r4, 86</code></pre><p><strong>问题很可能出现在源文件xx.c的574行</strong>，执行过这一行之后，r10的值修改为0x9700，最后请客户检查代码，确认为野指针。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -2994,7 +3064,7 @@ in xx.c
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">444</span>
+          <span class="site-state-item-count">445</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -3007,7 +3077,7 @@ in xx.c
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">474</span>
+        <span class="site-state-item-count">476</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -3067,7 +3137,7 @@ in xx.c
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:08</span>
+    <span title="Reading time total">18:09</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
   </div>

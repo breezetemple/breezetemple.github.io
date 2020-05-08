@@ -640,30 +640,6 @@ echo</code></pre>]]></content>
       </tags>
   </entry>
   <entry>
-    <title>GCC静态库链接顺序</title>
-    <url>/2014/12/14/Linux-ld/</url>
-    <content><![CDATA[<p>工程中遇到问题，修改配置文件之后发现编译不过，部分符号未定义，检查Makefile如下：</p>
-<pre><code>LDFLAGS += -lui -lenca -lxml -lgxbox -lstdc++ -ljansson -lcurl
-...
-LDFLAGS += -L$(GXSRC_PATH)/lib/$(THIRD_LIB)/ -lkolatv -lpcre</code></pre><p>其中<strong>kolatv库</strong>需要调用<strong>jansson库</strong>，<strong>gxbox库</strong>也需要调用<strong>jansson库</strong>。</p>
-<p>在修改配置文件之前，开启了gxbox的支持，在编译中需要链接gxbox库，从而jansson库可以链接成功。</p>
-<p>在修改配置文件之后，关闭了gxbox的支持，在编译中不会编译gxbox代码，gxbox库链接失败，<br>从而jansson库链接失败，在载入kolatv库时不存在jansson库的符号表。</p>
-<p>GCC：</p>
-<p>-l library</p>
-<p>Search the library named library when linking.<br>(The second alternative with the library as a separate argument is only for POSIX compliance and is not recommended.)</p>
-<p>It makes a difference where in the command you write this option;<br>the linker searches and processes libraries and object files in the order they are specified.<br>Thus, <code>foo.o -lz bar.o&#39; searches library</code>z’ after file foo.o but before bar.o.<br>If bar.o refers to functions in `z’, those functions may not be loaded.</p>
-<p><strong>因此，在链接过程中，链接的库，一定要在使用该库的目标被连接之后，基本的库要放在最后。</strong></p>
-<p>修改如下：</p>
-<pre><code>LDFLAGS += -lui -lenca -lxml -lkolatv -lgxbox -lstdc++ -ljansson -lcurl</code></pre>]]></content>
-      <categories>
-        <category>C</category>
-      </categories>
-      <tags>
-        <tag>ld</tag>
-        <tag>gcc</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Linux系统调用</title>
     <url>/2014/12/14/Linux-system-programming-syscall/</url>
     <content><![CDATA[<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
@@ -1372,6 +1348,30 @@ set(var a b c)</code></pre><p>字符串列表可以用 foreach命令叠代（ite
       </tags>
   </entry>
   <entry>
+    <title>GCC静态库链接顺序</title>
+    <url>/2014/12/14/Linux-ld/</url>
+    <content><![CDATA[<p>工程中遇到问题，修改配置文件之后发现编译不过，部分符号未定义，检查Makefile如下：</p>
+<pre><code>LDFLAGS += -lui -lenca -lxml -lgxbox -lstdc++ -ljansson -lcurl
+...
+LDFLAGS += -L$(GXSRC_PATH)/lib/$(THIRD_LIB)/ -lkolatv -lpcre</code></pre><p>其中<strong>kolatv库</strong>需要调用<strong>jansson库</strong>，<strong>gxbox库</strong>也需要调用<strong>jansson库</strong>。</p>
+<p>在修改配置文件之前，开启了gxbox的支持，在编译中需要链接gxbox库，从而jansson库可以链接成功。</p>
+<p>在修改配置文件之后，关闭了gxbox的支持，在编译中不会编译gxbox代码，gxbox库链接失败，<br>从而jansson库链接失败，在载入kolatv库时不存在jansson库的符号表。</p>
+<p>GCC：</p>
+<p>-l library</p>
+<p>Search the library named library when linking.<br>(The second alternative with the library as a separate argument is only for POSIX compliance and is not recommended.)</p>
+<p>It makes a difference where in the command you write this option;<br>the linker searches and processes libraries and object files in the order they are specified.<br>Thus, <code>foo.o -lz bar.o&#39; searches library</code>z’ after file foo.o but before bar.o.<br>If bar.o refers to functions in `z’, those functions may not be loaded.</p>
+<p><strong>因此，在链接过程中，链接的库，一定要在使用该库的目标被连接之后，基本的库要放在最后。</strong></p>
+<p>修改如下：</p>
+<pre><code>LDFLAGS += -lui -lenca -lxml -lkolatv -lgxbox -lstdc++ -ljansson -lcurl</code></pre>]]></content>
+      <categories>
+        <category>C</category>
+      </categories>
+      <tags>
+        <tag>ld</tag>
+        <tag>gcc</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>cmake 常用命令</title>
     <url>/2015/03/04/cmake-03/</url>
     <content><![CDATA[<script type="text/javascript">
@@ -1713,8 +1713,8 @@ $ csky-elf-objdump -h -t output/out.elf</code></pre>
         <category>Linker</category>
       </categories>
       <tags>
-        <tag>gcc</tag>
         <tag>debug</tag>
+        <tag>gcc</tag>
         <tag>nm</tag>
         <tag>tools</tag>
       </tags>
@@ -2484,8 +2484,8 @@ in xx.c
         <category>C</category>
       </categories>
       <tags>
-        <tag>gcc</tag>
         <tag>gdb</tag>
+        <tag>gcc</tag>
         <tag>disassemble</tag>
       </tags>
   </entry>
@@ -3223,25 +3223,6 @@ nmap &lt;leader&gt;&lt;leader&gt;q :call CodeFormat()&lt;CR&gt;</code></pre><p>�
       </tags>
   </entry>
   <entry>
-    <title>vim中使用grep、sed删除匹配行</title>
-    <url>/2015/11/17/vim-tips-1/</url>
-    <content><![CDATA[<p>在调试过程中经常需要分析打印、数据等等，在大量文本中仅仅需要提取需要关心的部分，使用用例如下：</p>
-<p><strong>删除匹配行：</strong></p>
-<pre><code>%!grep -v &quot;cscope&quot;
-%!sed &#39;/cscope/&#39;d</code></pre><p><strong>只保留匹配行：</strong></p>
-<pre><code>%!grep &quot;cscope&quot;</code></pre><p>grep、sed可以使用正则表达式来完成复杂匹配。</p>
-]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Editor</category>
-      </categories>
-      <tags>
-        <tag>grep</tag>
-        <tag>vim</tag>
-        <tag>sed</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>gdb dump内存数据</title>
     <url>/2015/11/16/gdb-dump-memory/</url>
     <content><![CDATA[<p><strong>gdb调试过程中从内存中dump出相关数据用于分析</strong></p>
@@ -3299,6 +3280,25 @@ dump tekhex value filename expression
       </categories>
       <tags>
         <tag>gdb</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>vim中使用grep、sed删除匹配行</title>
+    <url>/2015/11/17/vim-tips-1/</url>
+    <content><![CDATA[<p>在调试过程中经常需要分析打印、数据等等，在大量文本中仅仅需要提取需要关心的部分，使用用例如下：</p>
+<p><strong>删除匹配行：</strong></p>
+<pre><code>%!grep -v &quot;cscope&quot;
+%!sed &#39;/cscope/&#39;d</code></pre><p><strong>只保留匹配行：</strong></p>
+<pre><code>%!grep &quot;cscope&quot;</code></pre><p>grep、sed可以使用正则表达式来完成复杂匹配。</p>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Editor</category>
+      </categories>
+      <tags>
+        <tag>grep</tag>
+        <tag>vim</tag>
+        <tag>sed</tag>
       </tags>
   </entry>
   <entry>
@@ -3980,37 +3980,6 @@ commit1: add test1.c</code></pre><p><strong>运行git st， 没有任何变化�
       </tags>
   </entry>
   <entry>
-    <title>Git详解系列</title>
-    <url>/2016/04/20/git-lists/</url>
-    <content><![CDATA[<h2 id=""><a href="#" class="headerlink" title=""></a></h2><ol start="0">
-<li><a href="https://github.com/GitbookIO/git/blob/master/zh/SUMMARY.md" target="_blank" rel="noopener">Scott Chacon’s book: Pro Git</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328069609436.html" target="_blank" rel="noopener">Git详解之一 Git起步</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328069733264.html" target="_blank" rel="noopener">Git详解之二 Git基础</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328069889514.html" target="_blank" rel="noopener">Git详解之三 Git分支</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328069988843.html" target="_blank" rel="noopener">Git详解之四 服务器上的Git</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328070090108.html" target="_blank" rel="noopener">Git详解之五 分布式Git</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328070367499.html" target="_blank" rel="noopener">Git详解之六 Git工具</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328070404827.html" target="_blank" rel="noopener">Git详解之七 自定义Git</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328070454218.html" target="_blank" rel="noopener">Git详解之八 Git与其他系统</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328070620202.html" target="_blank" rel="noopener">Git详解之九 Git内部原理</a></li>
-</ol>
-<p>##</p>
-<ol>
-<li><a href="http://www.open-open.com/lib/view/open1427092544277.html" target="_blank" rel="noopener">Git 基本原理与常用命令</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1449149989405.html" target="_blank" rel="noopener">高质量的Git中文教程</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1402748724087.html" target="_blank" rel="noopener">Git远程操作详解</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Git</category>
-      </categories>
-      <tags>
-        <tag>git</tag>
-        <tag>webs</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Pandoc 实现 markdown 多格式自由转换</title>
     <url>/2016/04/18/markdown-to-html/</url>
     <content><![CDATA[<p>Pandoc 是由 John MacFarlane 开发的标记语言转换工具，可实现不同标记语言间的格式转换</p>
@@ -4065,6 +4034,37 @@ pandoc math.text -s --katex   -o mathKaTeX.html</code></pre></li>
         <tag>markdown</tag>
         <tag>html</tag>
         <tag>pandoc</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Git详解系列</title>
+    <url>/2016/04/20/git-lists/</url>
+    <content><![CDATA[<h2 id=""><a href="#" class="headerlink" title=""></a></h2><ol start="0">
+<li><a href="https://github.com/GitbookIO/git/blob/master/zh/SUMMARY.md" target="_blank" rel="noopener">Scott Chacon’s book: Pro Git</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328069609436.html" target="_blank" rel="noopener">Git详解之一 Git起步</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328069733264.html" target="_blank" rel="noopener">Git详解之二 Git基础</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328069889514.html" target="_blank" rel="noopener">Git详解之三 Git分支</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328069988843.html" target="_blank" rel="noopener">Git详解之四 服务器上的Git</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328070090108.html" target="_blank" rel="noopener">Git详解之五 分布式Git</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328070367499.html" target="_blank" rel="noopener">Git详解之六 Git工具</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328070404827.html" target="_blank" rel="noopener">Git详解之七 自定义Git</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328070454218.html" target="_blank" rel="noopener">Git详解之八 Git与其他系统</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328070620202.html" target="_blank" rel="noopener">Git详解之九 Git内部原理</a></li>
+</ol>
+<p>##</p>
+<ol>
+<li><a href="http://www.open-open.com/lib/view/open1427092544277.html" target="_blank" rel="noopener">Git 基本原理与常用命令</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1449149989405.html" target="_blank" rel="noopener">高质量的Git中文教程</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1402748724087.html" target="_blank" rel="noopener">Git远程操作详解</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Git</category>
+      </categories>
+      <tags>
+        <tag>git</tag>
+        <tag>webs</tag>
       </tags>
   </entry>
   <entry>
@@ -4221,68 +4221,6 @@ $(document).ready(function(){
       </tags>
   </entry>
   <entry>
-    <title>git中的撤销操作</title>
-    <url>/2016/04/29/git-rebase/</url>
-    <content><![CDATA[<h2 id="git-rebase"><a href="#git-rebase" class="headerlink" title="git rebase"></a><strong>git rebase</strong></h2><p><strong>git rebase是对commit history的改写</strong>。<br>当你要改写的commit history还没有被提交到远程repo的时候，<br>也就是说，<strong>还没有与他人共享之前，commit history是你私人所有的，那么想怎么改写都可以</strong>。</p>
-<p>而<strong>一旦被提交到远程后，这时如果再改写history，那么势必和他人的history长的就不一样了</strong>。<br>git push的时候，git会比较commit history，如果不一致，<br>commit动作会被拒绝，唯一的办法就是带上-f参数，<br>强制要求commit，这时git会以committer的history覆写远程repo，<br>从而完成代码的提交。虽然代码提交上去了，<br>但是<strong>这样可能会造成别人工作成果的丢失，所以使用-f参数要慎重</strong>。</p>
-<h2 id="注意点"><a href="#注意点" class="headerlink" title="注意点"></a><strong>注意点</strong></h2><ol>
-<li>除非只有自己一个人用，不然用 push –force 的都该去死</li>
-<li>慎用 push -f！</li>
-<li>每个人提交前，都应该把自己的修改rebase到服务器的最新代码之上，遵守这个规则就不会有任何问题。<br>如果你需要force push，说明你做反了，把服务器代码rebase到你本地分支之上才会需要force push，这是错误的用法。</li>
-<li>一旦分支中的提交对象发布到公共仓库，就千万不要对该分支进行衍合操作</li>
-<li>如果 rebase 完后，需要使用 push -f 的话，一定代表该 rebase 操作是不合适。除非你是有意在修改提交历史</li>
-<li>除非某个分支只有你自己搞，你怎么rebase都是没有问题的，但是如果你在master或者develop这种分支上来rebase，<br>估计团队里每个人都想拍死你</li>
-<li>当你在某个分支进行团队合作的时候， 常用rebase真的是不合理。而且容易出问题。慎用 push –force</li>
-<li>git rebase 一般自己一个人开发时使用，用来保持提交记录的整洁。一旦上传到github后，不应该使用git rebase</li>
-<li><strong>一旦分支中的提交对象发布到公共仓库，就千万不要对该分支进行衍合操作。<br>如果你遵循这条金科玉律，就不会出差错。否则，人民群众会仇恨你，你的朋友和家人也会嘲笑你，唾弃你</strong></li>
-<li>不需要push -f啊，如果分支落后就用pull –rebase</li>
-</ol>
-<h2 id="例子"><a href="#例子" class="headerlink" title="例子"></a><strong>例子</strong></h2><p>假设楼主的team中有两个developer：tom和jerry，他们共同使用一个远程repo，<br>并各自clone到自己的机器上，为了简化描述，这里假设只有一个branch：master。</p>
-<p>这时tom机器的repo有两个branch: <strong>master, origin/master</strong></p>
-<p>而jerry的机器上也是有两个branch: <strong>master, origin/master</strong></p>
-<p>均如下图所示</p>
-<p><img src="http://segmentfault.com/img/bVb0wO" alt="1"></p>
-<p>tom和jerry分别各自开发自己的新feature，<br>不断有新的commit提交到他们各自私有的commit history中，<br>所以他们的master指针不断的向前推移，分别指向不同的commit。<br><strong>而又由于他们都没有git fetch和git push，所以他们的origin/master都维持不变</strong>。</p>
-<p>jerry的repo如下</p>
-<p><img src="http://segmentfault.com/img/bVb0wQ" alt="2"></p>
-<p>tom的repo如下，注意T1和上图的J1，分别是两个不同的commit</p>
-<p><img src="http://segmentfault.com/img/bVb0wR" alt="3"></p>
-<p>这时Tom首先把他的commit提交的远程repo中，那么他本机origin/master指针则会前进，和master指针保持一致，如下</p>
-<p><img src="http://segmentfault.com/img/bVb0wT" alt="4"></p>
-<p>远程repo如下</p>
-<p><img src="http://segmentfault.com/img/bVb0wS" alt="5"></p>
-<p>现在jerry也想把他的commit提交到远程repo上去，<br><strong>运行git push，毫无意外的失败了，所以他git fetch了一下，把远程repo，也就是之前tom提交的T1给拉到了他本机repo中</strong>，如下</p>
-<p><img src="http://segmentfault.com/img/bVb0wU" alt="6"></p>
-<p>commit history出现了分叉，要想把tom之前提交的内容包含到自己的工作中来，<br>有一个方法就是<strong>git merge，它会自动生成一个commit，既包含tom的提交，也包含jerry的提交</strong>，<br>这样就把两个分叉的commit重新又合并在一起。但是<strong>这个自动生成的commit会有两个parent</strong>，<br>review代码的时候必须要比较两次，很不方便。</p>
-<p>jerry<strong>为了保证commit history的线性</strong>，决定采用另外一种方法，就是<strong>git rebase</strong>。<br>jerry的<strong>提交J1这时还没有被提交到远程repo上去，也就是他完全私有的一个commit，<br>所以使用git rebase改写J1的history完全没有问题</strong>，改写之后，如下</p>
-<p><img src="http://segmentfault.com/img/bVb0wV" alt="7"></p>
-<p>注意J1被改写到T1后面了，变成了J1`</p>
-<p>git push后，本机repo</p>
-<p><img src="http://segmentfault.com/img/bVb0wW" alt="8"></p>
-<p>而远程repo</p>
-<p><img src="http://segmentfault.com/img/bVb0wX" alt="9"></p>
-<p>异常的轻松，一条直线，没有-f</p>
-<p>所以，<strong>在不用-f的前提下，想维持树的整洁，方法就是：在git push之前，先git fetch，再git rebase</strong>。</p>
-<pre><code>git fetch origin master
-git rebase origin/master
-git push</code></pre><ol>
-<li><a href="http://www.oschina.net/translate/10-tips-git-next-level" target="_blank" rel="noopener">10 个迅速提升你 Git 水平的提示</a></li>
-<li><a href="https://segmentfault.com/q/1010000000430041" target="_blank" rel="noopener">团队开发里频繁使用 git rebase 来保持树的整洁好吗?</a></li>
-<li><a href="http://nvie.com/posts/a-successful-git-branching-model/" target="_blank" rel="noopener">a-successful-git-branching-model</a></li>
-<li><a href="https://git-scm.com/book/zh/v1/Git-%E5%88%86%E6%94%AF-%E5%88%86%E6%94%AF%E7%9A%84%E8%A1%8D%E5%90%88" target="_blank" rel="noopener">Git-分支-分支的衍合</a></li>
-<li><a href="http://codecampo.com/topics/379?comment_id=1354#comment-1354" target="_blank" rel="noopener">构造干净的 Git 历史线索</a></li>
-<li><a href="http://guides.github.com/overviews/flow/" target="_blank" rel="noopener">Github workflow</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Git</category>
-      </categories>
-      <tags>
-        <tag>git</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>常见排序算法可视化实现</title>
     <url>/2016/04/27/programmer-sorting-algorithms/</url>
     <content><![CDATA[<script type="text/javascript">
@@ -4380,6 +4318,68 @@ $(document).ready(function(){
       <tags>
         <tag>sorting</tag>
         <tag>algor</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>git中的撤销操作</title>
+    <url>/2016/04/29/git-rebase/</url>
+    <content><![CDATA[<h2 id="git-rebase"><a href="#git-rebase" class="headerlink" title="git rebase"></a><strong>git rebase</strong></h2><p><strong>git rebase是对commit history的改写</strong>。<br>当你要改写的commit history还没有被提交到远程repo的时候，<br>也就是说，<strong>还没有与他人共享之前，commit history是你私人所有的，那么想怎么改写都可以</strong>。</p>
+<p>而<strong>一旦被提交到远程后，这时如果再改写history，那么势必和他人的history长的就不一样了</strong>。<br>git push的时候，git会比较commit history，如果不一致，<br>commit动作会被拒绝，唯一的办法就是带上-f参数，<br>强制要求commit，这时git会以committer的history覆写远程repo，<br>从而完成代码的提交。虽然代码提交上去了，<br>但是<strong>这样可能会造成别人工作成果的丢失，所以使用-f参数要慎重</strong>。</p>
+<h2 id="注意点"><a href="#注意点" class="headerlink" title="注意点"></a><strong>注意点</strong></h2><ol>
+<li>除非只有自己一个人用，不然用 push –force 的都该去死</li>
+<li>慎用 push -f！</li>
+<li>每个人提交前，都应该把自己的修改rebase到服务器的最新代码之上，遵守这个规则就不会有任何问题。<br>如果你需要force push，说明你做反了，把服务器代码rebase到你本地分支之上才会需要force push，这是错误的用法。</li>
+<li>一旦分支中的提交对象发布到公共仓库，就千万不要对该分支进行衍合操作</li>
+<li>如果 rebase 完后，需要使用 push -f 的话，一定代表该 rebase 操作是不合适。除非你是有意在修改提交历史</li>
+<li>除非某个分支只有你自己搞，你怎么rebase都是没有问题的，但是如果你在master或者develop这种分支上来rebase，<br>估计团队里每个人都想拍死你</li>
+<li>当你在某个分支进行团队合作的时候， 常用rebase真的是不合理。而且容易出问题。慎用 push –force</li>
+<li>git rebase 一般自己一个人开发时使用，用来保持提交记录的整洁。一旦上传到github后，不应该使用git rebase</li>
+<li><strong>一旦分支中的提交对象发布到公共仓库，就千万不要对该分支进行衍合操作。<br>如果你遵循这条金科玉律，就不会出差错。否则，人民群众会仇恨你，你的朋友和家人也会嘲笑你，唾弃你</strong></li>
+<li>不需要push -f啊，如果分支落后就用pull –rebase</li>
+</ol>
+<h2 id="例子"><a href="#例子" class="headerlink" title="例子"></a><strong>例子</strong></h2><p>假设楼主的team中有两个developer：tom和jerry，他们共同使用一个远程repo，<br>并各自clone到自己的机器上，为了简化描述，这里假设只有一个branch：master。</p>
+<p>这时tom机器的repo有两个branch: <strong>master, origin/master</strong></p>
+<p>而jerry的机器上也是有两个branch: <strong>master, origin/master</strong></p>
+<p>均如下图所示</p>
+<p><img src="http://segmentfault.com/img/bVb0wO" alt="1"></p>
+<p>tom和jerry分别各自开发自己的新feature，<br>不断有新的commit提交到他们各自私有的commit history中，<br>所以他们的master指针不断的向前推移，分别指向不同的commit。<br><strong>而又由于他们都没有git fetch和git push，所以他们的origin/master都维持不变</strong>。</p>
+<p>jerry的repo如下</p>
+<p><img src="http://segmentfault.com/img/bVb0wQ" alt="2"></p>
+<p>tom的repo如下，注意T1和上图的J1，分别是两个不同的commit</p>
+<p><img src="http://segmentfault.com/img/bVb0wR" alt="3"></p>
+<p>这时Tom首先把他的commit提交的远程repo中，那么他本机origin/master指针则会前进，和master指针保持一致，如下</p>
+<p><img src="http://segmentfault.com/img/bVb0wT" alt="4"></p>
+<p>远程repo如下</p>
+<p><img src="http://segmentfault.com/img/bVb0wS" alt="5"></p>
+<p>现在jerry也想把他的commit提交到远程repo上去，<br><strong>运行git push，毫无意外的失败了，所以他git fetch了一下，把远程repo，也就是之前tom提交的T1给拉到了他本机repo中</strong>，如下</p>
+<p><img src="http://segmentfault.com/img/bVb0wU" alt="6"></p>
+<p>commit history出现了分叉，要想把tom之前提交的内容包含到自己的工作中来，<br>有一个方法就是<strong>git merge，它会自动生成一个commit，既包含tom的提交，也包含jerry的提交</strong>，<br>这样就把两个分叉的commit重新又合并在一起。但是<strong>这个自动生成的commit会有两个parent</strong>，<br>review代码的时候必须要比较两次，很不方便。</p>
+<p>jerry<strong>为了保证commit history的线性</strong>，决定采用另外一种方法，就是<strong>git rebase</strong>。<br>jerry的<strong>提交J1这时还没有被提交到远程repo上去，也就是他完全私有的一个commit，<br>所以使用git rebase改写J1的history完全没有问题</strong>，改写之后，如下</p>
+<p><img src="http://segmentfault.com/img/bVb0wV" alt="7"></p>
+<p>注意J1被改写到T1后面了，变成了J1`</p>
+<p>git push后，本机repo</p>
+<p><img src="http://segmentfault.com/img/bVb0wW" alt="8"></p>
+<p>而远程repo</p>
+<p><img src="http://segmentfault.com/img/bVb0wX" alt="9"></p>
+<p>异常的轻松，一条直线，没有-f</p>
+<p>所以，<strong>在不用-f的前提下，想维持树的整洁，方法就是：在git push之前，先git fetch，再git rebase</strong>。</p>
+<pre><code>git fetch origin master
+git rebase origin/master
+git push</code></pre><ol>
+<li><a href="http://www.oschina.net/translate/10-tips-git-next-level" target="_blank" rel="noopener">10 个迅速提升你 Git 水平的提示</a></li>
+<li><a href="https://segmentfault.com/q/1010000000430041" target="_blank" rel="noopener">团队开发里频繁使用 git rebase 来保持树的整洁好吗?</a></li>
+<li><a href="http://nvie.com/posts/a-successful-git-branching-model/" target="_blank" rel="noopener">a-successful-git-branching-model</a></li>
+<li><a href="https://git-scm.com/book/zh/v1/Git-%E5%88%86%E6%94%AF-%E5%88%86%E6%94%AF%E7%9A%84%E8%A1%8D%E5%90%88" target="_blank" rel="noopener">Git-分支-分支的衍合</a></li>
+<li><a href="http://codecampo.com/topics/379?comment_id=1354#comment-1354" target="_blank" rel="noopener">构造干净的 Git 历史线索</a></li>
+<li><a href="http://guides.github.com/overviews/flow/" target="_blank" rel="noopener">Github workflow</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Git</category>
+      </categories>
+      <tags>
+        <tag>git</tag>
       </tags>
   </entry>
   <entry>
@@ -4515,74 +4515,6 @@ $(document).ready(function(){
       </tags>
   </entry>
   <entry>
-    <title>FontCreator编辑字库</title>
-    <url>/2016/05/11/how-to-use-fontcreator/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p>FreeType 中函数 <code>FT_Get_Kerning</code></p>
-<ul>
-<li><strong>Backtrack(后迹)</strong> — This is the sequence of things that occur before the target in the rule.<br>This sequence can be composed of glyphs, classes or a mix of both.</li>
-<li><strong>Lookahead(前瞻)</strong> — This is the sequence of glyphs that occur after the target in the rule.<br>Like the backtrack, this sequence can be composed of glyphs, classes or a mix of both.</li>
-</ul>
-<hr>
-<h2 id="名词"><a href="#名词" class="headerlink" title="名词"></a><strong>名词</strong></h2><p><strong>FontCreator</strong>字库编辑工具，使用Ctrl-F8（OpenType设计工具）可以编辑TTF字库相关信息：</p>
-<h3 id="GSUB"><a href="#GSUB" class="headerlink" title="GSUB"></a><strong>GSUB</strong></h3><p>The OpenType Layout Feature specification<br><strong>describes eight types of substitution lookups in the glyph substitution table (GSUB)</strong>.<br>The following table shows those currently supported by FontCreator:</p>
-<ol>
-<li>Single Substitute a single glyph by another single glyph (a -&gt; b)</li>
-<li>Multiple Substitute a single glyph by other multiple glyphs (a -&gt; xyz)</li>
-<li>Alternate Substitute a single glyph by one of multiple alternates (a -&gt; x or y or z)</li>
-<li>Ligature Substitute multiple glyphs by a single ligature (f f i -&gt; ffi)</li>
-<li>Context Substitute one or more glyphs in context</li>
-<li>Chaining Context Substitute context specific glyphs (3rd -&gt; 3rd)</li>
-<li>Extension Substitution </li>
-<li>Reverse chaining context Applied in reverse order, replace single glyph in chaining context</li>
-</ol>
-<h3 id="GPOS"><a href="#GPOS" class="headerlink" title="GPOS"></a><strong>GPOS</strong></h3><p>The OpenType Layout Feature specification<br><strong>describes nine types of positioning lookups in the glyph positioning table (GPOS)</strong>.<br>The following table shows those currently supported by FontCreator:</p>
-<ol>
-<li>Single adjustment Change the position of a single glyph (sub/superscript)</li>
-<li>Pair adjustment Mostly used to define kerning pairs</li>
-<li>Cursive attachment </li>
-<li>Mark to base attachment Attach a combining mark such as a diacritic to a base glyph</li>
-<li>Mark to ligature attachment Attach a combining mark to a ligature</li>
-<li>Mark to mark attachment Attach a combining mark to another mark</li>
-<li>Context Positioning Position one or more glyphs in context</li>
-<li>Chained Context Positioning Position one or more glyphs in chained context</li>
-<li>Extension Substitution</li>
-</ol>
-<ol>
-<li><a href="http://www.high-logic.com/fontcreator/manual/index.html?kerning_overview.html" target="_blank" rel="noopener">FontCreator Help</a></li>
-<li><a href="http://www.high-logic.com/fontcreator/manual9/index.html?otlfsupportedsubstitutions.html" target="_blank" rel="noopener">OpenType Layout Features - Supported types of substitution and positioning</a></li>
-<li><a href="https://www.microsoft.com/typography/otfntdev/khmerot/features.aspx" target="_blank" rel="noopener">Developing OpenType Fonts for Khmer Script (3 of 3): Features</a></li>
-<li><a href="http://www.high-logic.com/fontcreator/manual9/index.html?otlfsupportedsubstitutions.html" target="_blank" rel="noopener">OpenType Designer</a></li>
-<li><a href="https://www.microsoft.com/typography/otspec/gsub.htm" target="_blank" rel="noopener">GSUB - The Glyph Substitution Table</a></li>
-<li><a href="http://opentypecookbook.com/rules.html" target="_blank" rel="noopener">opentypecookbook</a></li>
-<li><a href="https://www.microsoft.com/typography/otspec/recom.htm" target="_blank" rel="noopener">Recommendations for OpenType Fonts</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Font</category>
-      </categories>
-      <tags>
-        <tag>font</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>HTTP状态码</title>
     <url>/2016/05/09/http-status-code/</url>
     <content><![CDATA[<img src="/images/http/http-status-code.jpg" height="600" width="800" />
@@ -4667,6 +4599,74 @@ $(document).ready(function(){
       <tags>
         <tag>network</tag>
         <tag>http</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>FontCreator编辑字库</title>
+    <url>/2016/05/11/how-to-use-fontcreator/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p>FreeType 中函数 <code>FT_Get_Kerning</code></p>
+<ul>
+<li><strong>Backtrack(后迹)</strong> — This is the sequence of things that occur before the target in the rule.<br>This sequence can be composed of glyphs, classes or a mix of both.</li>
+<li><strong>Lookahead(前瞻)</strong> — This is the sequence of glyphs that occur after the target in the rule.<br>Like the backtrack, this sequence can be composed of glyphs, classes or a mix of both.</li>
+</ul>
+<hr>
+<h2 id="名词"><a href="#名词" class="headerlink" title="名词"></a><strong>名词</strong></h2><p><strong>FontCreator</strong>字库编辑工具，使用Ctrl-F8（OpenType设计工具）可以编辑TTF字库相关信息：</p>
+<h3 id="GSUB"><a href="#GSUB" class="headerlink" title="GSUB"></a><strong>GSUB</strong></h3><p>The OpenType Layout Feature specification<br><strong>describes eight types of substitution lookups in the glyph substitution table (GSUB)</strong>.<br>The following table shows those currently supported by FontCreator:</p>
+<ol>
+<li>Single Substitute a single glyph by another single glyph (a -&gt; b)</li>
+<li>Multiple Substitute a single glyph by other multiple glyphs (a -&gt; xyz)</li>
+<li>Alternate Substitute a single glyph by one of multiple alternates (a -&gt; x or y or z)</li>
+<li>Ligature Substitute multiple glyphs by a single ligature (f f i -&gt; ffi)</li>
+<li>Context Substitute one or more glyphs in context</li>
+<li>Chaining Context Substitute context specific glyphs (3rd -&gt; 3rd)</li>
+<li>Extension Substitution </li>
+<li>Reverse chaining context Applied in reverse order, replace single glyph in chaining context</li>
+</ol>
+<h3 id="GPOS"><a href="#GPOS" class="headerlink" title="GPOS"></a><strong>GPOS</strong></h3><p>The OpenType Layout Feature specification<br><strong>describes nine types of positioning lookups in the glyph positioning table (GPOS)</strong>.<br>The following table shows those currently supported by FontCreator:</p>
+<ol>
+<li>Single adjustment Change the position of a single glyph (sub/superscript)</li>
+<li>Pair adjustment Mostly used to define kerning pairs</li>
+<li>Cursive attachment </li>
+<li>Mark to base attachment Attach a combining mark such as a diacritic to a base glyph</li>
+<li>Mark to ligature attachment Attach a combining mark to a ligature</li>
+<li>Mark to mark attachment Attach a combining mark to another mark</li>
+<li>Context Positioning Position one or more glyphs in context</li>
+<li>Chained Context Positioning Position one or more glyphs in chained context</li>
+<li>Extension Substitution</li>
+</ol>
+<ol>
+<li><a href="http://www.high-logic.com/fontcreator/manual/index.html?kerning_overview.html" target="_blank" rel="noopener">FontCreator Help</a></li>
+<li><a href="http://www.high-logic.com/fontcreator/manual9/index.html?otlfsupportedsubstitutions.html" target="_blank" rel="noopener">OpenType Layout Features - Supported types of substitution and positioning</a></li>
+<li><a href="https://www.microsoft.com/typography/otfntdev/khmerot/features.aspx" target="_blank" rel="noopener">Developing OpenType Fonts for Khmer Script (3 of 3): Features</a></li>
+<li><a href="http://www.high-logic.com/fontcreator/manual9/index.html?otlfsupportedsubstitutions.html" target="_blank" rel="noopener">OpenType Designer</a></li>
+<li><a href="https://www.microsoft.com/typography/otspec/gsub.htm" target="_blank" rel="noopener">GSUB - The Glyph Substitution Table</a></li>
+<li><a href="http://opentypecookbook.com/rules.html" target="_blank" rel="noopener">opentypecookbook</a></li>
+<li><a href="https://www.microsoft.com/typography/otspec/recom.htm" target="_blank" rel="noopener">Recommendations for OpenType Fonts</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Font</category>
+      </categories>
+      <tags>
+        <tag>font</tag>
       </tags>
   </entry>
   <entry>
@@ -10324,105 +10324,32 @@ void show_registers(struct pt_regs *fp)    </code></pre><h2 id="分析函数show
       </tags>
   </entry>
   <entry>
-    <title>Movian Plugin Development</title>
-    <url>/2018/01/10/movian-plugin-development/</url>
-    <content><![CDATA[<p>Movian Development</p>
+    <title>linux-user-backtrace</title>
+    <url>/2017/12/08/linux-user-backtrace/</url>
+    <content><![CDATA[<p>在Linux用户态中打印<code>backtrace</code>需要两个支持</p>
+<ol>
+<li>编译工具链支持backtrace</li>
+<li>-rdynamic</li>
+</ol>
 <a id="more"></a>
 
-<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
-<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
-<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
-<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
-<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
-<pre><code class="json">{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;apiversion&quot;: 1,
-  &quot;id&quot;: &quot;headweb&quot;,
-  &quot;file&quot;: &quot;headweb.js&quot;,
-  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
-  &quot;version&quot;: &quot;1.5.3&quot;,
-  &quot;author&quot;: &quot;Andreas Öman&quot;,
-  &quot;title&quot;: &quot;Headweb&quot;,
-  &quot;icon&quot;: &quot;headweb_square.png&quot;,
-  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
-  &quot;category&quot;: &quot;video&quot;,
-  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
-  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
-}</code></pre>
-<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
-<ul>
-<li>ecmascript - loads the plugin using Duktape.</li>
-<li>views - used for user interface (screen keyboard plugin)</li>
-</ul>
-<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
-<ul>
-<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
-<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
-</ul>
-<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
-<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
-<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
-<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
-<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
-<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
-<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
-<ul>
-<li>“tv” - online TV</li>
-<li>“video” - streaming video</li>
-<li>“music” - streaming music</li>
-<li>“glwview” - UI extentions</li>
-<li>“subtitles” - subtitles</li>
-<li>“glwosk” - on screen keyboard</li>
-</ul>
-<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
-<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
-<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
-<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
-<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
-<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
-<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
-<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
-<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
-<pre><code>{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;file&quot;: &quot;testplugin.js&quot;,
-  &quot;id&quot;: &quot;testplugin&quot;
-}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
-<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
-  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
-})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
-<pre><code>(function(plugin) {
-  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
-    showtime.print(&quot;I was called&quot;);
-  })
-})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
-<p><code>somafa</code> 中的 <code>start URI</code></p>
-<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
-...
-}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
-<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
-<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
-<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
-<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
-<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
-<ul>
-<li>Direct URL</li>
-<li>Via a video page</li>
-</ul>
-<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
-<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
-<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
-<p>To use it first do:</p>
-<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
+
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://www.lenky.info/archives/2013/01/2190" target="_blank" rel="noopener">gcc选项-g与-rdynamic的异同</a></li>
+<li><a href="http://tsecer.blog.163.com/blog/static/15018172012031113824877/" target="_blank" rel="noopener">从glibc中backtrace实现看gcc内联汇编</a></li>
+<li><a href="http://blog.csdn.net/jxgz_leo/article/details/53458366" target="_blank" rel="noopener"><strong>在Linux中如何利用backtrace信息解决问题</strong></a></li>
+<li><a href="https://stackoverflow.com/questions/3676322/what-flags-do-you-set-for-your-gfortran-debugger-compiler-to-catch-faulty-code" target="_blank" rel="noopener">What flags do you set for your GFORTRAN debugger/compiler to catch faulty code?</a></li>
+<li><a href="http://blog.csdn.net/jasonsungblog/article/details/49132291" target="_blank" rel="noopener">linux用户程序调用栈打印backtrace</a></li>
+<li><a href="http://www.skyscribe.me/blog/2012/11/27/linuxshang-ru-he-cong-c-plus-plus-cheng-xu-zhong-huo-qu-backtracexin-xi/" target="_blank" rel="noopener"><strong>Linux上如何从C++程序中获取backtrace信息</strong></a></li>
+<li><a href="http://blog.csdn.net/ctthuangcheng/article/details/18269995" target="_blank" rel="noopener">Linux下利用backtrace追踪函数调用堆栈以及定位段错</a></li>
+</ol>
+]]></content>
       <categories>
-        <category>Movian</category>
+        <category>Linux</category>
       </categories>
       <tags>
-        <tag>movian</tag>
+        <tag>linux</tag>
+        <tag>backtrace</tag>
       </tags>
   </entry>
   <entry>
@@ -11938,8 +11865,8 @@ git push / repo upload .</code></pre><h2 id="Ref"><a href="#Ref" class="headerli
         <category>Linux</category>
         <category>Socket</category>
         <category>Network</category>
-        <category>Tools</category>
         <category>TCP</category>
+        <category>Tools</category>
         <category>Network</category>
       </categories>
       <tags>
@@ -13639,6 +13566,47 @@ curl -u guowei:38e2427ac39d5a5f810c83c6fd39ee80 -H &quot;$CRUMB&quot; -X POST &q
       </tags>
   </entry>
   <entry>
+    <title>静态库链接选项</title>
+    <url>/2018/09/05/gnu-ld-options-static-lib/</url>
+    <content><![CDATA[<p>本文介绍两对 <code>ld</code> 选项</p>
+<ul>
+<li>–whole-archive</li>
+<li>–no-whole-archive</li>
+<li>–start-group</li>
+<li>–end-group</li>
+</ul>
+<a id="more"></a>
+
+<p>这四个都是链接器的选项，所以在编译的时候要用 <code>-Wl,[options]</code> 来传递给链接器，不然编译器会不认得这个选项。</p>
+<h2 id="I"><a href="#I" class="headerlink" title="I"></a>I</h2><ul>
+<li>–whole-archive</li>
+<li>–no-whole-archive</li>
+</ul>
+<p>参数 <code>--whole-archive</code> 来告诉链接器，将后面库中所有符号都链接进来，参数 <code>-no-whole-archive</code> 则是重置，以避免后面库的所有符号被链接进来。</p>
+<pre><code class="makefile">g++ -Wl,--whole-archive -L. -la -Wl,--no-whole-archive main.cpp -o main</code></pre>
+<p>将 liba.a 中的所有.o 中的符号都链接进来</p>
+<h2 id="II"><a href="#II" class="headerlink" title="II"></a>II</h2><ul>
+<li>–start-group</li>
+<li>–end-group</li>
+</ul>
+<blockquote>
+<p>The archives should be a list of archive files. They may be either explicit file names, or -l options.</p>
+</blockquote>
+<p>The specified archives are searched repeatedly until no new undefined references are created. Normally, an archive is searched only once in the order that it is specified on the command line. If a symbol in that archive is needed to resolve an undefined symbol referred to by an object in an archive that appears later on the command line, the linker would not be able to resolve that reference. By grouping the archives, they all be searched repeatedly until all possible references are resolved.</p>
+<p>Using this option has a significant performance cost. It is best to use it only when there are unavoidable circular references between two or more archives</p>
+<p><code>ld</code> 可能会遇到 <code>循环链接</code>，这样就需要使用 <code>--start-group</code> 和 <code>--end-group</code> 反复在 <code>group</code> 中进行搜索直到所有的未定义字符都被找到为止，而不是默认的只搜索一次。</p>
+]]></content>
+      <categories>
+        <category>C</category>
+        <category>Linker</category>
+      </categories>
+      <tags>
+        <tag>ld</tag>
+        <tag>--whole-archive</tag>
+        <tag>--start-group</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>vim-highlight-syntax</title>
     <url>/2017/12/19/vim-highlight-syntax/</url>
     <content><![CDATA[<a id="more"></a>
@@ -13735,73 +13703,105 @@ cStatement     xxx return goto asm continue break
       </tags>
   </entry>
   <entry>
-    <title>linux-user-backtrace</title>
-    <url>/2017/12/08/linux-user-backtrace/</url>
-    <content><![CDATA[<p>在Linux用户态中打印<code>backtrace</code>需要两个支持</p>
-<ol>
-<li>编译工具链支持backtrace</li>
-<li>-rdynamic</li>
-</ol>
+    <title>Movian Plugin Development</title>
+    <url>/2018/01/10/movian-plugin-development/</url>
+    <content><![CDATA[<p>Movian Development</p>
 <a id="more"></a>
 
-
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="http://www.lenky.info/archives/2013/01/2190" target="_blank" rel="noopener">gcc选项-g与-rdynamic的异同</a></li>
-<li><a href="http://tsecer.blog.163.com/blog/static/15018172012031113824877/" target="_blank" rel="noopener">从glibc中backtrace实现看gcc内联汇编</a></li>
-<li><a href="http://blog.csdn.net/jxgz_leo/article/details/53458366" target="_blank" rel="noopener"><strong>在Linux中如何利用backtrace信息解决问题</strong></a></li>
-<li><a href="https://stackoverflow.com/questions/3676322/what-flags-do-you-set-for-your-gfortran-debugger-compiler-to-catch-faulty-code" target="_blank" rel="noopener">What flags do you set for your GFORTRAN debugger/compiler to catch faulty code?</a></li>
-<li><a href="http://blog.csdn.net/jasonsungblog/article/details/49132291" target="_blank" rel="noopener">linux用户程序调用栈打印backtrace</a></li>
-<li><a href="http://www.skyscribe.me/blog/2012/11/27/linuxshang-ru-he-cong-c-plus-plus-cheng-xu-zhong-huo-qu-backtracexin-xi/" target="_blank" rel="noopener"><strong>Linux上如何从C++程序中获取backtrace信息</strong></a></li>
-<li><a href="http://blog.csdn.net/ctthuangcheng/article/details/18269995" target="_blank" rel="noopener">Linux下利用backtrace追踪函数调用堆栈以及定位段错</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>backtrace</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>静态库链接选项</title>
-    <url>/2018/09/05/gnu-ld-options-static-lib/</url>
-    <content><![CDATA[<p>本文介绍两对 <code>ld</code> 选项</p>
+<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
+<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
+<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
+<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
+<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
+<pre><code class="json">{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;apiversion&quot;: 1,
+  &quot;id&quot;: &quot;headweb&quot;,
+  &quot;file&quot;: &quot;headweb.js&quot;,
+  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
+  &quot;version&quot;: &quot;1.5.3&quot;,
+  &quot;author&quot;: &quot;Andreas Öman&quot;,
+  &quot;title&quot;: &quot;Headweb&quot;,
+  &quot;icon&quot;: &quot;headweb_square.png&quot;,
+  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
+  &quot;category&quot;: &quot;video&quot;,
+  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
+  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
+}</code></pre>
+<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
 <ul>
-<li>–whole-archive</li>
-<li>–no-whole-archive</li>
-<li>–start-group</li>
-<li>–end-group</li>
+<li>ecmascript - loads the plugin using Duktape.</li>
+<li>views - used for user interface (screen keyboard plugin)</li>
 </ul>
-<a id="more"></a>
-
-<p>这四个都是链接器的选项，所以在编译的时候要用 <code>-Wl,[options]</code> 来传递给链接器，不然编译器会不认得这个选项。</p>
-<h2 id="I"><a href="#I" class="headerlink" title="I"></a>I</h2><ul>
-<li>–whole-archive</li>
-<li>–no-whole-archive</li>
+<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
+<ul>
+<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
+<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
 </ul>
-<p>参数 <code>--whole-archive</code> 来告诉链接器，将后面库中所有符号都链接进来，参数 <code>-no-whole-archive</code> 则是重置，以避免后面库的所有符号被链接进来。</p>
-<pre><code class="makefile">g++ -Wl,--whole-archive -L. -la -Wl,--no-whole-archive main.cpp -o main</code></pre>
-<p>将 liba.a 中的所有.o 中的符号都链接进来</p>
-<h2 id="II"><a href="#II" class="headerlink" title="II"></a>II</h2><ul>
-<li>–start-group</li>
-<li>–end-group</li>
+<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
+<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
+<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
+<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
+<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
+<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
+<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
+<ul>
+<li>“tv” - online TV</li>
+<li>“video” - streaming video</li>
+<li>“music” - streaming music</li>
+<li>“glwview” - UI extentions</li>
+<li>“subtitles” - subtitles</li>
+<li>“glwosk” - on screen keyboard</li>
 </ul>
-<blockquote>
-<p>The archives should be a list of archive files. They may be either explicit file names, or -l options.</p>
-</blockquote>
-<p>The specified archives are searched repeatedly until no new undefined references are created. Normally, an archive is searched only once in the order that it is specified on the command line. If a symbol in that archive is needed to resolve an undefined symbol referred to by an object in an archive that appears later on the command line, the linker would not be able to resolve that reference. By grouping the archives, they all be searched repeatedly until all possible references are resolved.</p>
-<p>Using this option has a significant performance cost. It is best to use it only when there are unavoidable circular references between two or more archives</p>
-<p><code>ld</code> 可能会遇到 <code>循环链接</code>，这样就需要使用 <code>--start-group</code> 和 <code>--end-group</code> 反复在 <code>group</code> 中进行搜索直到所有的未定义字符都被找到为止，而不是默认的只搜索一次。</p>
-]]></content>
+<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
+<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
+<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
+<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
+<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
+<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
+<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
+<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
+<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
+<pre><code>{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;file&quot;: &quot;testplugin.js&quot;,
+  &quot;id&quot;: &quot;testplugin&quot;
+}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
+<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
+  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
+})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
+<pre><code>(function(plugin) {
+  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
+    showtime.print(&quot;I was called&quot;);
+  })
+})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
+<p><code>somafa</code> 中的 <code>start URI</code></p>
+<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
+...
+}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
+<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
+<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
+<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
+<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
+<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
+<ul>
+<li>Direct URL</li>
+<li>Via a video page</li>
+</ul>
+<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
+<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
+<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
+<p>To use it first do:</p>
+<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
       <categories>
-        <category>C</category>
-        <category>Linker</category>
+        <category>Movian</category>
       </categories>
       <tags>
-        <tag>ld</tag>
-        <tag>--whole-archive</tag>
-        <tag>--start-group</tag>
+        <tag>movian</tag>
       </tags>
   </entry>
   <entry>
@@ -14303,6 +14303,175 @@ if (len &gt;= sizeof(path))
       </tags>
   </entry>
   <entry>
+    <title>pyenv-and-pyenv-virtualenv</title>
+    <url>/2018/10/08/pyenv-and-pyenv-virtualenv/</url>
+    <content><![CDATA[<p>使用 <code>pyenv</code> 和 <code>pyenv-virtualenv</code> 来管理 <code>python</code> 版本</p>
+<p><a href="https://github.com/pyenv/pyenv" target="_blank" rel="noopener">pyenv</a> 是个 <code>shell</code> 脚本，能够轻松得实现各个不同版本 <code>python</code> 的相互间切换，而且各个版本的 <code>python</code> 切换不限于全局切换，甚至不同文件夹都可以拥有不同的 <code>python</code> 版本。</p>
+<p><a href="https://github.com/pyenv/pyenv-virtualenv" target="_blank" rel="noopener">pyenv-virtualenv</a> 是 <code>pyenv</code> 的插件，为 <code>pyenv</code> 设置的 <code>python</code> 版本提供隔离的虚拟环境，设置虚拟环境后，在这个目录下面安装的第三方库及修改库搜索路径都不会影响其他环境，相当于一个沙盒环境，互相不影响。</p>
+<a id="more"></a>
+
+<h2 id="pyenv"><a href="#pyenv" class="headerlink" title="pyenv"></a>pyenv</h2><ul>
+<li>进行全局的 Python 版本切换</li>
+<li>为单个项目提供对应的 Python 版本</li>
+<li>只依赖 Python 本身</li>
+<li>能够进行 virtualenv 管理</li>
+<li>提供下载不同的 Python 版本和衍生版本</li>
+</ul>
+<p>使用 <code>pyenv --help</code> 查看具体命令</p>
+<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><ol>
+<li><p>确定你想把 <code>pyenv</code> 安装在哪。推荐安装在 <code>$HOME/.pyenv</code>，但你也可以安装在任意位置</p>
+<pre><code class="shell">$ git clone https://github.com/pyenv/pyenv.git ~/.pyenv</code></pre>
+</li>
+<li><p>定义你 <code>PYENV_ROOT</code> 的环境变量来指定你把 <code>pyenv</code> 仓库克隆到了哪，并把 <code>$PYENV_ROOT/bin</code> 添加到你的 <code>$PATH</code> 中，这样就能在命令行使用 <code>pyenv</code> 命令</p>
+<pre><code class="shell">$ echo &#39;export PYENV_ROOT=&quot;$HOME/.pyenv&quot;&#39; &gt;&gt; ~/.zshrc
+$ echo &#39;export PATH=&quot;$PYENV_ROOT/bin:$PATH&quot;&#39; &gt;&gt; ~/.zshrc</code></pre>
+</li>
+<li><p>设置启动 shell 时自动加载 <code>pyenv</code> 脚本。在 shell 配置文件的最后面加上 <code>eval &quot;$(pyenv init -)&quot;</code></p>
+<pre><code class="shell">$ echo &#39;eval &quot;$(pyenv init -)&quot;&#39; &gt;&gt; ~/.zshrc</code></pre>
+</li>
+<li><p>重启 shell，使脚本生效</p>
+<pre><code class="shell">$ exec &quot;$SHELL&quot;</code></pre>
+</li>
+<li><p>安装不同的 <code>python</code> 版本到 <code>$(pyenv root)/versions</code> 文件夹<br>在 <code>pyenv</code> 安装之前的所有 <code>python</code> 版本都归为 <code>system</code> 版本。可以用 <code>pyenv versions</code> 查看当前安装的 <code>python</code> 版本）。<br>在安装 <code>python</code> 之前，可以使用 <code>pyenv install -l</code> 查看当前可以安装哪些 <code>python</code> 版本。<br>然后使用 <code>pyenv install 选择的版本</code> 来安装你所选择的 <code>python</code> 版本。比如 <code>pyenv install 3.6.1</code> 安装 <code>python</code> 官网的版本。</p>
+</li>
+</ol>
+<h3 id="基本操作"><a href="#基本操作" class="headerlink" title="基本操作"></a>基本操作</h3><ul>
+<li><code>pyenv versions</code> 查看当前已安装的 python 版本</li>
+<li><code>pyenv install ...</code> 安装指定版本的 python</li>
+<li><code>pyenv global python 版本</code> 切换全局 python 版本</li>
+<li><code>pyenv local python 版本</code> 切换当前文件夹下的 python 版本</li>
+<li><code>pyenv shell python 版本</code> 切换当前 shell 中的 python 版本</li>
+<li><code>pyenv version</code> 查看当前使用的 python 版本</li>
+</ul>
+<h3 id="安装指定版本"><a href="#安装指定版本" class="headerlink" title="安装指定版本"></a>安装指定版本</h3><p><code>pyenv install</code> 命令在安装的时候是下载源代码到本地编译安装的，所以需要安装相关的开发库及依赖包</p>
+<p><a href="https://github.com/pyenv/pyenv/wiki" target="_blank" rel="noopener">pyenv wiki</a></p>
+<pre><code class="shell">$ sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev \
+libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
+xz-utils tk-dev libffi-dev liblzma-dev
+$ sudo apt install libedit-dev</code></pre>
+<p>安装指定版本</p>
+<pre><code class="shell">$ pyenv install 2.7.14
+Downloading Python-2.7.14.tar.xz...
+-&gt; https://www.python.org/ftp/python/2.7.14/Python-2.7.14.tar.xz
+error: failed to download Python-2.7.14.tar.xz
+
+BUILD FAILED (Ubuntu 17.10 using python-build 1.2.7-7-g21c75c19)</code></pre>
+<p>解决方法</p>
+<p><a href="https://github.com/pyenv/pyenv/issues/303" target="_blank" rel="noopener">pyenv install fails at download stage</a></p>
+<pre><code class="shell">$ cat /tmp/python-build.20181008151222.32112.log
+/tmp/python-build.20181008151222.32112 ~/.pyenv
+curl: (1) Protocol &quot;https&quot; not supported or disabled in libcurl
+
+$ wget https://curl.haxx.se/download/curl-7.61.1.tar.gz
+$ tar xf curl-7.61.1.tar.gz
+$ cd curl-7.61.1
+$ ./configure --with-ssl &amp; make &amp; sudo make install
+$ curl --version
+curl 7.61.1 (x86_64-pc-linux-gnu) libcurl/7.61.1 OpenSSL/1.0.2g zlib/1.2.11
+Release-Date: 2018-09-05
+Protocols: dict file ftp ftps gopher http https imap imaps pop3 pop3s rtsp smb smbs smtp smtps telnet tftp
+Features: AsynchDNS IPv6 Largefile NTLM NTLM_WB SSL libz TLS-SRP UnixSockets HTTPS-proxy</code></pre>
+<p>安装完成之后需要刷新数据库</p>
+<pre><code class="shell">pyenv rehash</code></pre>
+<p>安装 <code>python2</code> 和 <code>python3</code></p>
+<pre><code class="shell">$ pyenv install -l
+$ pyenv install 2.7.14
+$ pyenv install 3.6.6
+$ pyenv versions
+* system (set by /home/yanwzh/.pyenv/version)
+  2.7.14
+  3.6.6</code></pre>
+<h3 id="卸载指定版本"><a href="#卸载指定版本" class="headerlink" title="卸载指定版本"></a>卸载指定版本</h3><pre><code class="shell">pyenv uninstall x.x.x</code></pre>
+<h3 id="版本切换"><a href="#版本切换" class="headerlink" title="版本切换"></a>版本切换</h3><ul>
+<li>全局版本切换 <code>pyenv global 2.7.14</code></li>
+<li>局部版本切换 <code>pyenv local 3.6.6</code> #在某目录下执行，只在该目录下生效</li>
+<li>取消当前设置的版本使用 <code>pyenv local --unset</code></li>
+</ul>
+<p>例如设置指定文件夹为 <code>3.6.6</code></p>
+<pre><code class="shell">$ mkdir 3.6.6
+$ pyenv local
+pyenv: no local version configured for this directory
+$ pyenv local 3.6.6
+$ pyenv local
+3.6.6
+$ python
+Python 3.6.6 (default, Oct  8 2018, 15:46:38)
+[GCC 7.2.0] on linux
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt;
+$ cd ..
+$ python
+Python 2.7.14 (default, Sep 23 2017, 22:06:14)
+[GCC 7.2.0] on linux2
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt;
+$ cd -
+$ pyenv local --unset
+$ python
+Python 2.7.14 (default, Sep 23 2017, 22:06:14)
+[GCC 7.2.0] on linux2
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt;</code></pre>
+<h3 id="更新-pyenv"><a href="#更新-pyenv" class="headerlink" title="更新 pyenv"></a>更新 pyenv</h3><pre><code class="shell">$ cd $(pyenv root)
+$ git pull</code></pre>
+<h3 id="卸载-pyenv"><a href="#卸载-pyenv" class="headerlink" title="卸载 pyenv"></a>卸载 pyenv</h3><ol>
+<li>禁用 <code>pyenv</code> , 把 <code>pyenv init</code> 从 shell 的配置文件中移除，然后重启 shell （移除后 <code>pyenv</code> 命令仍然能使用，但是版本切换命令不会生效）</li>
+<li>卸载 <code>pyenv</code> , 执行上一步，然后把 <code>pyenv</code> 的根目录删除即可</li>
+</ol>
+<h2 id="pyenv-virtualenv"><a href="#pyenv-virtualenv" class="headerlink" title="pyenv-virtualenv"></a>pyenv-virtualenv</h2><h3 id="安装-1"><a href="#安装-1" class="headerlink" title="安装"></a>安装</h3><ol>
+<li>需要将 <code>pyenv-virtualenv</code> 克隆到 <code>pyenv</code> 的 <code>plugin</code> 文件夹下<pre><code class="shell">$ git clone https://github.com/pyenv/pyenv-virtualenv.git $(pyenv root)/plugins/pyenv-virtualenv</code></pre>
+</li>
+<li>(OPTIONAL) 添加 <code>pyenv virtualenv-init</code> 到你的 <code>shell</code> 配置文件中，这样进入指定文件夹自动进入虚拟环境，离开文件夹退出虚拟环境<pre><code class="shell">$ echo &#39;eval &quot;$(pyenv virtualenv-init -)&quot;&#39; &gt;&gt; ~/.zshrc</code></pre>
+</li>
+<li><code>exec &quot;$SHELL&quot;</code></li>
+</ol>
+<h3 id="创建虚拟环境"><a href="#创建虚拟环境" class="headerlink" title="创建虚拟环境"></a>创建虚拟环境</h3><ul>
+<li><code>pyenv virtualenv x.x.x name</code></li>
+</ul>
+<p>如果不指定版本 <code>x.x.x</code> , 则默认使用当前 <code>pyenv version</code> 的 python 版本</p>
+<p>创建的虚拟环境位于 <code>$(pyenv root)/versions/</code> 下的指定 python 版本的文件夹中 <code>envs/</code> 文件夹下</p>
+<h3 id="激活虚拟环境"><a href="#激活虚拟环境" class="headerlink" title="激活虚拟环境"></a>激活虚拟环境</h3><h4 id="自动激活"><a href="#自动激活" class="headerlink" title="自动激活"></a>自动激活</h4><ol>
+<li>在 <code>.zshrc</code> 添加 <code>eval &quot;$(pyenv virtualenv-init -)&quot;</code>，然后 <code>exec &quot;$SHELL&quot;</code> 重启 shell</li>
+<li>在想要激活虚拟环境的文件夹中新建 <code>.python-version</code> 文件，并写入虚拟环境的名字</li>
+<li>以后进入该的文件夹就会自动激活虚拟环境，离开该文件夹就会退出虚拟环境。</li>
+</ol>
+<h4 id="手动激活"><a href="#手动激活" class="headerlink" title="手动激活"></a>手动激活</h4><ul>
+<li><code>pyenv activate name</code> 激活虚拟环境。</li>
+<li><code>pyenv deactivate</code> 退出虚拟环境</li>
+</ul>
+<h3 id="删除虚拟环境"><a href="#删除虚拟环境" class="headerlink" title="删除虚拟环境"></a>删除虚拟环境</h3><ol>
+<li>删除 <code>$(pyenv root)/versions</code> 和 <code>$(pyenv root)/versions/{version}/envs</code> 的相关文件夹即可</li>
+<li>命令行运行 <code>pyenv uninstall name</code></li>
+</ol>
+<h3 id="列出现有-virtualenvs"><a href="#列出现有-virtualenvs" class="headerlink" title="列出现有 virtualenvs"></a>列出现有 virtualenvs</h3><pre><code class="shell">$ pyenv virtualenvs
+  3.6.6/envs/P-env-3.6.6 (created from ~/.pyenv/versions/3.6.6)
+* P-env-3.6.6 (created from ~/.pyenv/versions/3.6.6)</code></pre>
+<p>每个 <code>virtualenv</code> 有两个条目，较短的一个只是一个符号链接</p>
+<h3 id="Example"><a href="#Example" class="headerlink" title="Example"></a>Example</h3><pre><code class="shell">$ pyenv virtualenv 3.6.6 P-env-3.6.6
+$ mkdir 3.6.6
+$ cd 3.6.6
+$ touch .python-version
+$ echo P-env-3.6.6 &gt; .python-version
+$ pyenv local
+P-env-3.6.6</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://www.jianshu.com/p/5e00ca8a10d5" target="_blank" rel="noopener">pyenv 及 pyenv-virtualenv 安装</a></li>
+<li><a href="https://www.liaoxuefeng.com/wiki/0014316089557264a6b348958f449949df42a6d3a2e542c000/001432712108300322c61f256c74803b43bfd65c6f8d0d0000" target="_blank" rel="noopener">virtualenv</a></li>
+<li><a href="http://www.airghc.top/2017/01/17/haha/" target="_blank" rel="noopener">Linux 下多版本 python 共存</a></li>
+<li><a href="https://www.jianshu.com/p/526a9ff5a43d" target="_blank" rel="noopener">Python 版本控制神器</a></li>
+<li><a href="https://www.jianshu.com/p/60f361822a7e" target="_blank" rel="noopener">Python 版本管理</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Python</category>
+      </categories>
+      <tags>
+        <tag>python</tag>
+        <tag>pyenv</tag>
+        <tag>pyenv-virtualenv</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>自动生成和安装 requirements.txt 依赖</title>
     <url>/2018/10/09/python-auto-generate-requirements/</url>
     <content><![CDATA[<p>使用 <code>requirements.txt</code> 来管理 python 工程依赖包</p>
@@ -14476,175 +14645,6 @@ class Weekday(Enum):
       <tags>
         <tag>python</tag>
         <tag>OOP</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>pyenv-and-pyenv-virtualenv</title>
-    <url>/2018/10/08/pyenv-and-pyenv-virtualenv/</url>
-    <content><![CDATA[<p>使用 <code>pyenv</code> 和 <code>pyenv-virtualenv</code> 来管理 <code>python</code> 版本</p>
-<p><a href="https://github.com/pyenv/pyenv" target="_blank" rel="noopener">pyenv</a> 是个 <code>shell</code> 脚本，能够轻松得实现各个不同版本 <code>python</code> 的相互间切换，而且各个版本的 <code>python</code> 切换不限于全局切换，甚至不同文件夹都可以拥有不同的 <code>python</code> 版本。</p>
-<p><a href="https://github.com/pyenv/pyenv-virtualenv" target="_blank" rel="noopener">pyenv-virtualenv</a> 是 <code>pyenv</code> 的插件，为 <code>pyenv</code> 设置的 <code>python</code> 版本提供隔离的虚拟环境，设置虚拟环境后，在这个目录下面安装的第三方库及修改库搜索路径都不会影响其他环境，相当于一个沙盒环境，互相不影响。</p>
-<a id="more"></a>
-
-<h2 id="pyenv"><a href="#pyenv" class="headerlink" title="pyenv"></a>pyenv</h2><ul>
-<li>进行全局的 Python 版本切换</li>
-<li>为单个项目提供对应的 Python 版本</li>
-<li>只依赖 Python 本身</li>
-<li>能够进行 virtualenv 管理</li>
-<li>提供下载不同的 Python 版本和衍生版本</li>
-</ul>
-<p>使用 <code>pyenv --help</code> 查看具体命令</p>
-<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><ol>
-<li><p>确定你想把 <code>pyenv</code> 安装在哪。推荐安装在 <code>$HOME/.pyenv</code>，但你也可以安装在任意位置</p>
-<pre><code class="shell">$ git clone https://github.com/pyenv/pyenv.git ~/.pyenv</code></pre>
-</li>
-<li><p>定义你 <code>PYENV_ROOT</code> 的环境变量来指定你把 <code>pyenv</code> 仓库克隆到了哪，并把 <code>$PYENV_ROOT/bin</code> 添加到你的 <code>$PATH</code> 中，这样就能在命令行使用 <code>pyenv</code> 命令</p>
-<pre><code class="shell">$ echo &#39;export PYENV_ROOT=&quot;$HOME/.pyenv&quot;&#39; &gt;&gt; ~/.zshrc
-$ echo &#39;export PATH=&quot;$PYENV_ROOT/bin:$PATH&quot;&#39; &gt;&gt; ~/.zshrc</code></pre>
-</li>
-<li><p>设置启动 shell 时自动加载 <code>pyenv</code> 脚本。在 shell 配置文件的最后面加上 <code>eval &quot;$(pyenv init -)&quot;</code></p>
-<pre><code class="shell">$ echo &#39;eval &quot;$(pyenv init -)&quot;&#39; &gt;&gt; ~/.zshrc</code></pre>
-</li>
-<li><p>重启 shell，使脚本生效</p>
-<pre><code class="shell">$ exec &quot;$SHELL&quot;</code></pre>
-</li>
-<li><p>安装不同的 <code>python</code> 版本到 <code>$(pyenv root)/versions</code> 文件夹<br>在 <code>pyenv</code> 安装之前的所有 <code>python</code> 版本都归为 <code>system</code> 版本。可以用 <code>pyenv versions</code> 查看当前安装的 <code>python</code> 版本）。<br>在安装 <code>python</code> 之前，可以使用 <code>pyenv install -l</code> 查看当前可以安装哪些 <code>python</code> 版本。<br>然后使用 <code>pyenv install 选择的版本</code> 来安装你所选择的 <code>python</code> 版本。比如 <code>pyenv install 3.6.1</code> 安装 <code>python</code> 官网的版本。</p>
-</li>
-</ol>
-<h3 id="基本操作"><a href="#基本操作" class="headerlink" title="基本操作"></a>基本操作</h3><ul>
-<li><code>pyenv versions</code> 查看当前已安装的 python 版本</li>
-<li><code>pyenv install ...</code> 安装指定版本的 python</li>
-<li><code>pyenv global python 版本</code> 切换全局 python 版本</li>
-<li><code>pyenv local python 版本</code> 切换当前文件夹下的 python 版本</li>
-<li><code>pyenv shell python 版本</code> 切换当前 shell 中的 python 版本</li>
-<li><code>pyenv version</code> 查看当前使用的 python 版本</li>
-</ul>
-<h3 id="安装指定版本"><a href="#安装指定版本" class="headerlink" title="安装指定版本"></a>安装指定版本</h3><p><code>pyenv install</code> 命令在安装的时候是下载源代码到本地编译安装的，所以需要安装相关的开发库及依赖包</p>
-<p><a href="https://github.com/pyenv/pyenv/wiki" target="_blank" rel="noopener">pyenv wiki</a></p>
-<pre><code class="shell">$ sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev \
-libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
-xz-utils tk-dev libffi-dev liblzma-dev
-$ sudo apt install libedit-dev</code></pre>
-<p>安装指定版本</p>
-<pre><code class="shell">$ pyenv install 2.7.14
-Downloading Python-2.7.14.tar.xz...
--&gt; https://www.python.org/ftp/python/2.7.14/Python-2.7.14.tar.xz
-error: failed to download Python-2.7.14.tar.xz
-
-BUILD FAILED (Ubuntu 17.10 using python-build 1.2.7-7-g21c75c19)</code></pre>
-<p>解决方法</p>
-<p><a href="https://github.com/pyenv/pyenv/issues/303" target="_blank" rel="noopener">pyenv install fails at download stage</a></p>
-<pre><code class="shell">$ cat /tmp/python-build.20181008151222.32112.log
-/tmp/python-build.20181008151222.32112 ~/.pyenv
-curl: (1) Protocol &quot;https&quot; not supported or disabled in libcurl
-
-$ wget https://curl.haxx.se/download/curl-7.61.1.tar.gz
-$ tar xf curl-7.61.1.tar.gz
-$ cd curl-7.61.1
-$ ./configure --with-ssl &amp; make &amp; sudo make install
-$ curl --version
-curl 7.61.1 (x86_64-pc-linux-gnu) libcurl/7.61.1 OpenSSL/1.0.2g zlib/1.2.11
-Release-Date: 2018-09-05
-Protocols: dict file ftp ftps gopher http https imap imaps pop3 pop3s rtsp smb smbs smtp smtps telnet tftp
-Features: AsynchDNS IPv6 Largefile NTLM NTLM_WB SSL libz TLS-SRP UnixSockets HTTPS-proxy</code></pre>
-<p>安装完成之后需要刷新数据库</p>
-<pre><code class="shell">pyenv rehash</code></pre>
-<p>安装 <code>python2</code> 和 <code>python3</code></p>
-<pre><code class="shell">$ pyenv install -l
-$ pyenv install 2.7.14
-$ pyenv install 3.6.6
-$ pyenv versions
-* system (set by /home/yanwzh/.pyenv/version)
-  2.7.14
-  3.6.6</code></pre>
-<h3 id="卸载指定版本"><a href="#卸载指定版本" class="headerlink" title="卸载指定版本"></a>卸载指定版本</h3><pre><code class="shell">pyenv uninstall x.x.x</code></pre>
-<h3 id="版本切换"><a href="#版本切换" class="headerlink" title="版本切换"></a>版本切换</h3><ul>
-<li>全局版本切换 <code>pyenv global 2.7.14</code></li>
-<li>局部版本切换 <code>pyenv local 3.6.6</code> #在某目录下执行，只在该目录下生效</li>
-<li>取消当前设置的版本使用 <code>pyenv local --unset</code></li>
-</ul>
-<p>例如设置指定文件夹为 <code>3.6.6</code></p>
-<pre><code class="shell">$ mkdir 3.6.6
-$ pyenv local
-pyenv: no local version configured for this directory
-$ pyenv local 3.6.6
-$ pyenv local
-3.6.6
-$ python
-Python 3.6.6 (default, Oct  8 2018, 15:46:38)
-[GCC 7.2.0] on linux
-Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
-&gt;&gt;&gt;
-$ cd ..
-$ python
-Python 2.7.14 (default, Sep 23 2017, 22:06:14)
-[GCC 7.2.0] on linux2
-Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
-&gt;&gt;&gt;
-$ cd -
-$ pyenv local --unset
-$ python
-Python 2.7.14 (default, Sep 23 2017, 22:06:14)
-[GCC 7.2.0] on linux2
-Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
-&gt;&gt;&gt;</code></pre>
-<h3 id="更新-pyenv"><a href="#更新-pyenv" class="headerlink" title="更新 pyenv"></a>更新 pyenv</h3><pre><code class="shell">$ cd $(pyenv root)
-$ git pull</code></pre>
-<h3 id="卸载-pyenv"><a href="#卸载-pyenv" class="headerlink" title="卸载 pyenv"></a>卸载 pyenv</h3><ol>
-<li>禁用 <code>pyenv</code> , 把 <code>pyenv init</code> 从 shell 的配置文件中移除，然后重启 shell （移除后 <code>pyenv</code> 命令仍然能使用，但是版本切换命令不会生效）</li>
-<li>卸载 <code>pyenv</code> , 执行上一步，然后把 <code>pyenv</code> 的根目录删除即可</li>
-</ol>
-<h2 id="pyenv-virtualenv"><a href="#pyenv-virtualenv" class="headerlink" title="pyenv-virtualenv"></a>pyenv-virtualenv</h2><h3 id="安装-1"><a href="#安装-1" class="headerlink" title="安装"></a>安装</h3><ol>
-<li>需要将 <code>pyenv-virtualenv</code> 克隆到 <code>pyenv</code> 的 <code>plugin</code> 文件夹下<pre><code class="shell">$ git clone https://github.com/pyenv/pyenv-virtualenv.git $(pyenv root)/plugins/pyenv-virtualenv</code></pre>
-</li>
-<li>(OPTIONAL) 添加 <code>pyenv virtualenv-init</code> 到你的 <code>shell</code> 配置文件中，这样进入指定文件夹自动进入虚拟环境，离开文件夹退出虚拟环境<pre><code class="shell">$ echo &#39;eval &quot;$(pyenv virtualenv-init -)&quot;&#39; &gt;&gt; ~/.zshrc</code></pre>
-</li>
-<li><code>exec &quot;$SHELL&quot;</code></li>
-</ol>
-<h3 id="创建虚拟环境"><a href="#创建虚拟环境" class="headerlink" title="创建虚拟环境"></a>创建虚拟环境</h3><ul>
-<li><code>pyenv virtualenv x.x.x name</code></li>
-</ul>
-<p>如果不指定版本 <code>x.x.x</code> , 则默认使用当前 <code>pyenv version</code> 的 python 版本</p>
-<p>创建的虚拟环境位于 <code>$(pyenv root)/versions/</code> 下的指定 python 版本的文件夹中 <code>envs/</code> 文件夹下</p>
-<h3 id="激活虚拟环境"><a href="#激活虚拟环境" class="headerlink" title="激活虚拟环境"></a>激活虚拟环境</h3><h4 id="自动激活"><a href="#自动激活" class="headerlink" title="自动激活"></a>自动激活</h4><ol>
-<li>在 <code>.zshrc</code> 添加 <code>eval &quot;$(pyenv virtualenv-init -)&quot;</code>，然后 <code>exec &quot;$SHELL&quot;</code> 重启 shell</li>
-<li>在想要激活虚拟环境的文件夹中新建 <code>.python-version</code> 文件，并写入虚拟环境的名字</li>
-<li>以后进入该的文件夹就会自动激活虚拟环境，离开该文件夹就会退出虚拟环境。</li>
-</ol>
-<h4 id="手动激活"><a href="#手动激活" class="headerlink" title="手动激活"></a>手动激活</h4><ul>
-<li><code>pyenv activate name</code> 激活虚拟环境。</li>
-<li><code>pyenv deactivate</code> 退出虚拟环境</li>
-</ul>
-<h3 id="删除虚拟环境"><a href="#删除虚拟环境" class="headerlink" title="删除虚拟环境"></a>删除虚拟环境</h3><ol>
-<li>删除 <code>$(pyenv root)/versions</code> 和 <code>$(pyenv root)/versions/{version}/envs</code> 的相关文件夹即可</li>
-<li>命令行运行 <code>pyenv uninstall name</code></li>
-</ol>
-<h3 id="列出现有-virtualenvs"><a href="#列出现有-virtualenvs" class="headerlink" title="列出现有 virtualenvs"></a>列出现有 virtualenvs</h3><pre><code class="shell">$ pyenv virtualenvs
-  3.6.6/envs/P-env-3.6.6 (created from ~/.pyenv/versions/3.6.6)
-* P-env-3.6.6 (created from ~/.pyenv/versions/3.6.6)</code></pre>
-<p>每个 <code>virtualenv</code> 有两个条目，较短的一个只是一个符号链接</p>
-<h3 id="Example"><a href="#Example" class="headerlink" title="Example"></a>Example</h3><pre><code class="shell">$ pyenv virtualenv 3.6.6 P-env-3.6.6
-$ mkdir 3.6.6
-$ cd 3.6.6
-$ touch .python-version
-$ echo P-env-3.6.6 &gt; .python-version
-$ pyenv local
-P-env-3.6.6</code></pre>
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="https://www.jianshu.com/p/5e00ca8a10d5" target="_blank" rel="noopener">pyenv 及 pyenv-virtualenv 安装</a></li>
-<li><a href="https://www.liaoxuefeng.com/wiki/0014316089557264a6b348958f449949df42a6d3a2e542c000/001432712108300322c61f256c74803b43bfd65c6f8d0d0000" target="_blank" rel="noopener">virtualenv</a></li>
-<li><a href="http://www.airghc.top/2017/01/17/haha/" target="_blank" rel="noopener">Linux 下多版本 python 共存</a></li>
-<li><a href="https://www.jianshu.com/p/526a9ff5a43d" target="_blank" rel="noopener">Python 版本控制神器</a></li>
-<li><a href="https://www.jianshu.com/p/60f361822a7e" target="_blank" rel="noopener">Python 版本管理</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Python</category>
-      </categories>
-      <tags>
-        <tag>python</tag>
-        <tag>pyenv</tag>
-        <tag>pyenv-virtualenv</tag>
       </tags>
   </entry>
   <entry>
@@ -17254,6 +17254,35 @@ ENDFUNCTION(ADD_N_LIBRARY name)</code></pre>
 ]]></content>
   </entry>
   <entry>
+    <title>udhcpc 不能正常工作</title>
+    <url>/2018/12/07/udhcpc-default-scripts/</url>
+    <content><![CDATA[<p>嵌入式环境下使用 <code>udhcpc</code> 不能正确获取地址，记录解决过程</p>
+<a id="more"></a>
+
+<p>使用命令如下</p>
+<pre><code class="shell">udhcpc -t 10 -T 3 -n -q -i &quot;$dev&quot;</code></pre>
+<p>执行命令之后无返回， <code>ps</code> 如下</p>
+<pre><code> 1783 root     {default.script} /bin/sh /usr/share/udhcpc/default.script bound
+ 1784 root     ifconfig eth0 192.168.110.25 netmask 255.255.254.0 broadcast +
+ 3677 root     /bin/sh -c wired_start eth0
+ 3678 root     {wired_start} /bin/sh /usr/local/sbin/wired_start eth0
+ 3731 root     {if_set_cfg} /bin/sh /usr/local/sbin/if_set_cfg /tmp/ethernet/mo
+ 3746 root     udhcpc -t 20 -T 1 -n -q -i eth0
+ 3749 root     {default.script} /bin/sh /usr/share/udhcpc/default.script bound
+ 3750 root     ifconfig eth0 192.168.110.25 netmask 255.255.254.0 broadcast +</code></pre><p><code>default.script</code> 为 <code>udhcpc</code> 调用的脚本，卡在 <code>ifconfig eth0 192.168.110.25 netmask 255.255.254.0 broadcast +</code> 此处</p>
+<p>经测试原因为使用参数 <code>broadcast +</code></p>
+<p>查找 <code>busybox</code> 配置，发现选项 <code>CONFIG_FEATURE_IFCONFIG_BROADCAST_PLUS</code> 未打开，打开此选项以支持 <code>broadcast +</code> 解决问题</p>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>dhcp</tag>
+        <tag>ifconfig</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>CPU hotplug in the Kernel</title>
     <url>/2018/12/11/linux-cpu-hotplug/</url>
     <content><![CDATA[<p><code>Linux</code> 支持多核 <code>CPU</code> 热插拔</p>
@@ -17375,35 +17404,6 @@ ENDFUNCTION(ADD_N_LIBRARY name)</code></pre>
         <tag>stack</tag>
         <tag>debugfs</tag>
         <tag>tracer</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>udhcpc 不能正常工作</title>
-    <url>/2018/12/07/udhcpc-default-scripts/</url>
-    <content><![CDATA[<p>嵌入式环境下使用 <code>udhcpc</code> 不能正确获取地址，记录解决过程</p>
-<a id="more"></a>
-
-<p>使用命令如下</p>
-<pre><code class="shell">udhcpc -t 10 -T 3 -n -q -i &quot;$dev&quot;</code></pre>
-<p>执行命令之后无返回， <code>ps</code> 如下</p>
-<pre><code> 1783 root     {default.script} /bin/sh /usr/share/udhcpc/default.script bound
- 1784 root     ifconfig eth0 192.168.110.25 netmask 255.255.254.0 broadcast +
- 3677 root     /bin/sh -c wired_start eth0
- 3678 root     {wired_start} /bin/sh /usr/local/sbin/wired_start eth0
- 3731 root     {if_set_cfg} /bin/sh /usr/local/sbin/if_set_cfg /tmp/ethernet/mo
- 3746 root     udhcpc -t 20 -T 1 -n -q -i eth0
- 3749 root     {default.script} /bin/sh /usr/share/udhcpc/default.script bound
- 3750 root     ifconfig eth0 192.168.110.25 netmask 255.255.254.0 broadcast +</code></pre><p><code>default.script</code> 为 <code>udhcpc</code> 调用的脚本，卡在 <code>ifconfig eth0 192.168.110.25 netmask 255.255.254.0 broadcast +</code> 此处</p>
-<p>经测试原因为使用参数 <code>broadcast +</code></p>
-<p>查找 <code>busybox</code> 配置，发现选项 <code>CONFIG_FEATURE_IFCONFIG_BROADCAST_PLUS</code> 未打开，打开此选项以支持 <code>broadcast +</code> 解决问题</p>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>dhcp</tag>
-        <tag>ifconfig</tag>
       </tags>
   </entry>
   <entry>
@@ -18205,8 +18205,8 @@ network={
 ]]></content>
       <categories>
         <category>Network</category>
-        <category>Tools</category>
         <category>TCP</category>
+        <category>Tools</category>
         <category>Network</category>
       </categories>
       <tags>
@@ -22262,8 +22262,8 @@ gcc/x86_64-linux-gnu/7/libgcc.a</code></pre>
         <category>Make</category>
       </categories>
       <tags>
-        <tag>gcc</tag>
         <tag>cmake</tag>
+        <tag>gcc</tag>
         <tag>make</tag>
         <tag>bear</tag>
       </tags>
@@ -23588,6 +23588,59 @@ $7 = {{10, 11, 12, 13, 14}, {15, 16, 17, 18, 19}}
       </tags>
   </entry>
   <entry>
+    <title>基于 coc.nvim python 补全</title>
+    <url>/2020/05/08/coc-python-completion/</url>
+    <content><![CDATA[<p>使用 <code>coc.nvim</code> 配置 python 补全</p>
+<ul>
+<li>coc-jedi</li>
+<li>coc-python <em>配置失败</em></li>
+<li>python LSP <em>配置失败</em></li>
+</ul>
+<a id="more"></a>
+
+<h2 id="python-LSP"><a href="#python-LSP" class="headerlink" title="python LSP"></a>python LSP</h2><ul>
+<li><a href="https://github.com/neoclide/coc.nvim/wiki/Language-servers" target="_blank" rel="noopener">Python LS</a></li>
+<li><a href="https://github.com/palantir/python-language-server" target="_blank" rel="noopener">python-language-server</a></li>
+</ul>
+<p>需要配置 <code>coc-settings.json</code></p>
+<p><strong>LSP重启5次失败</strong></p>
+<h2 id="coc-python"><a href="#coc-python" class="headerlink" title="coc-python"></a>coc-python</h2><p><strong>推荐使用</strong>，<code>coc-settings.json</code> 中不能配置 <code>LSP</code></p>
+<ul>
+<li><a href="https://github.com/neoclide/coc.nvim/wiki/Language-servers" target="_blank" rel="noopener">Python LS</a></li>
+<li><a href="https://github.com/neoclide/coc-python" target="_blank" rel="noopener">coc-python</a></li>
+</ul>
+<p>支持两种：</p>
+<ol>
+<li>jedi (工作不正常)</li>
+<li>MPLS (网络原因，不能正常下载)</li>
+</ol>
+<h2 id="coc-jedi"><a href="#coc-jedi" class="headerlink" title="coc-jedi"></a>coc-jedi</h2><ul>
+<li><a href="https://github.com/neoclide/coc.nvim/wiki/Using-coc-extensions" target="_blank" rel="noopener">coc-extensions</a></li>
+<li><a href="https://github.com/pappasam/coc-jedi" target="_blank" rel="noopener">coc-jedi</a></li>
+<li><a href="https://github.com/pappasam/jedi-language-server" target="_blank" rel="noopener">jedi-language-server</a></li>
+</ul>
+<p><strong>与 <code>coc-python</code> 冲突，需要先卸载</strong>，基于 <code>jedi-language-server</code></p>
+<pre><code class="shell">$ python3 -m pip install --user pipx
+$ pipx install jedi-language-server</code></pre>
+<p><code>coc-settings.json</code> 配置如下</p>
+<pre><code class="json">  &quot;jedi.enable&quot;: true,
+  &quot;jedi.trace.server&quot;: &quot;messages&quot;,
+  &quot;jedi.diagnostics.enable&quot;: true,
+  &quot;jedi.diagnostics.didOpen&quot;: true,
+  &quot;jedi.diagnostics.didChange&quot;: true,
+  &quot;jedi.diagnostics.didSave&quot;: true</code></pre>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Editor</category>
+      </categories>
+      <tags>
+        <tag>lsp</tag>
+        <tag>coc</tag>
+        <tag>jedi</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>wpa_supplicant模块及代码结构</title>
     <url>/2014/10/19/wpa-supplicant-introduction/</url>
     <content><![CDATA[<p>wpa_supplicant is a WPA(Wi-Fi Protected Access) Supplicant for Linux,<br>BSD and Windows with support for WPA and WPA2 (IEEE 802.11i / RSN).<br>Supplicant is the IEEE 802.1X/WPA component that <strong>is used in the client stations</strong>.<br>It implements key negotiation with a WPA Authenticator<br>and it can optionally control roaming<br>and IEEE 802.11 authentication/association of the wlan driver.</p>
@@ -24391,8 +24444,8 @@ int main(void)
       </tags>
   </entry>
   <entry>
-    <title>Linux系统编程-线程</title>
-    <url>/2014/11/10/Linux-system-programming-thread/</url>
+    <title>Linux系统编程-进程管理</title>
+    <url>/2014/11/03/Linux-system-programming-process/</url>
     <content><![CDATA[<script type="text/javascript">
 $(document).ready(function(){
         $("h2,h3,h4,h5,h6").each(function(i,item){
@@ -24411,104 +24464,180 @@ $(document).ready(function(){
 
 <hr>
 <p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
-<p>线程是指在单个进程内，多路并行执行的创建和管理单元。由于线程引入了数据竞争和死锁，相关的编程错误不计其数。</p>
-<h2 id="进程和线程"><a href="#进程和线程" class="headerlink" title="进程和线程"></a><strong>进程和线程</strong></h2><p>现代操作系统包括了两种对用户空间的基础的虚拟抽象：<strong>虚拟内存和虚拟处理器</strong>。<br>它们使进程认为自己独占机器资源。</p>
-<p>虚拟内存为每个进程提供独立的内存地址空间，该内存地址连续映射到物理内存上。<br>虚拟处理器使得进程“感觉”只有自己正在运行，操作系统对其“隐藏”了事实：多个进程在可能多个处理器上以多任务方式同时运行。</p>
-<p>虚拟内存是和进程相关的，与线程无关。<br>因此，每个进程有独立的内存空间，而进程中的所有线程共享这份空间。</p>
-<p>虚拟处理器是和线程相关的，与进程无关。每个线程都是可独立调度的实体，支持单个进程每次“处理”多个操作。</p>
-<p>和进程一样，线程也“感觉”自己独占一个处理器。<br>但是，和进程不一样的是，线程没有“感觉”自己独占内存–进程中的所有线程共享内存空间。</p>
-<h2 id="多线程"><a href="#多线程" class="headerlink" title="多线程"></a><strong>多线程</strong></h2><p>进程是正在运行的程序的抽象。但是，为什么要分离执行单元，引入线程？多线程机制有以下优点：</p>
-<ul>
-<li>编程抽象：将工作分为多个模块，每个模块分配一个执行单元（线程）。<br>利用这种方法的设计模式包括“每个连接一个线程”和线程池模式</li>
-<li>并发性：对多处理器提供了实现“真正并发”的高效方式。<br>每个线程有自己的虚拟处理器，作为独立的调度实体，可以在多处理器上运行多个线程，从而提高系统吞吐量</li>
-<li>提高响应能力：单线程进程中，一个长时间运行的任务会影响应用对用户输入的响应，多线程中可以有一条线程响应用户输入</li>
-<li>I/O阻塞：单线程中，I/O阻塞会影响整个进程</li>
-<li>上下文切换：线程间切换的代价显著低于进程间的上下文切换</li>
-<li>内存保存：线程提供了一种可以共享内存，并同时利用多个执行单元的高效方式</li>
-</ul>
-<p><strong>上下文切换</strong>：线程的一大性能优势是同一进程内的线程之间切换代价很低。<br>在任何系统上，进程内切换的代价低于进程间切换，前者通常是后者的一部分。<br>在非Linux系统上，这种差别非常明显，进程间通信（IPC）代价非常高。<br>因此，很多系统上，称线程为“轻量级进程”。在Linux中，进程间切换代价并不高，而进程内切换的成本接近于0：<br>接近进入和退出内核的代价。进程的代价不高，但是线程的代价更低。</p>
-<h2 id="线程模型"><a href="#线程模型" class="headerlink" title="线程模型"></a><strong>线程模型</strong></h2><p>在系统上实现线程模型的方式有好几种，因内核和用户空间提供的支持而有一定程度的级别差异。</p>
-<p>最简单的是内核为线程提供了本地支持的情况，每个内核线程直接转换成用户空间的线程。<br>这种模型称为“1:1线程模型”，也称为“内核级线程模型”。<br>在Linux中只是简单的将线程实现成能够共享资源的进程。<br>线程库通过系统调用clone()创建一个新的线程，返回的“进程”直接作为用户空间的线程。</p>
-<p>“用户级线程模型”是“N:1线程模型”，一个N个线程的进程只会映射到一个内核进程。</p>
-<p>“混合式线程模型”是“N:M线程模型”，上述两中的综合，但是模型过于复杂。</p>
-<p>Linux上普遍的线程模型是第一种。</p>
-<h2 id="线程模式"><a href="#线程模式" class="headerlink" title="线程模式"></a><strong>线程模式</strong></h2><p>创建多线程应用最重要的一步是确定线程模式，线程模式也是应用程序的逻辑处理和I/O模式，<br>可能存在很多抽象和实现细节，但两个核心的编程模式是：</p>
-<ul>
-<li><strong>每个连接对应一个线程（thread-per-connection）</strong></li>
-<li><strong>事件驱动（event-driven）</strong></li>
-</ul>
-<h2 id="并发性、并行性和竞争"><a href="#并发性、并行性和竞争" class="headerlink" title="并发性、并行性和竞争"></a><strong>并发性、并行性和竞争</strong></h2><p>并发性与并行性？？</p>
-<p><strong>竞争条件</strong>是指由两个或多个线程对共享资源的非同步访问而导致错误的程序行为。<br>共享资源可以是系统硬件、内核资源或内存中的数据。后者最常见，称为数据竞争（date race）。<br>竞争发生的窗口–需要同步的代码–成为“临界区”。</p>
-<h2 id="同步，互斥和死锁"><a href="#同步，互斥和死锁" class="headerlink" title="同步，互斥和死锁"></a><strong>同步，互斥和死锁</strong></h2><p>最常用来完成同步，实现临界区原子操作的技术是锁（lock），在Pthreads中称之为“互斥（mutexes）”。</p>
-<p><strong>锁住数据，而不是代码</strong>，当锁和代码关联起来时，锁的语义就很难理解。<br>随着时间变化，锁和数据之间的关系就不会很清晰，程序员会为数据引入新的使用方式，而不会包含相应的锁。<br>把锁和数据关联，这个映射就会很清晰。</p>
-<p>互斥的引入会带来编程BUG：死锁。</p>
-<p>避免死锁需要从一开始的设计中为多线程设计好锁的机制。<br>互斥体应该和数据关联，而不是和代码关联，从而有清晰的数据层。<br>针对死锁（ABBA）问题，需要明确互斥获取的顺序。</p>
-<h2 id="Pthreads"><a href="#Pthreads" class="headerlink" title="Pthreads"></a><strong>Pthreads</strong></h2><p>Linux内核只为线程的支持提供了底层原语，比如clone()系统调用。<br>POSIX对线程库进行了标准化，称之为POSIX线程，简称为Pthreads。<br>是UNIX系统上C／C++语言的主要线程解决方案。</p>
-<h3 id="Pthread-API"><a href="#Pthread-API" class="headerlink" title="Pthread API"></a><strong>Pthread API</strong></h3><p>Pthreads是由glibc提供，存在于独立库libpthread中，使用时需要显示链接：</p>
-<pre><code>gcc -Wall -Werror -pthread b.c -o b</code></pre><p>Pthread API在文件&lt;pthread.h&gt;中定义，每个函数前缀都是pthread_，可以分为两大类：<br><strong>线程管理（创建、销毁、连接和detach线程等）</strong>和<strong>同步（互斥、条件变量等）</strong>。</p>
-<pre><code>#include &lt;pthread.h&gt;
+<h2 id="程序、进程和线程"><a href="#程序、进程和线程" class="headerlink" title="程序、进程和线程"></a><strong>程序、进程和线程</strong></h2><p>程序（program）是指编译过的、可执行的二进制代码，保存在介质上，不运行。</p>
+<p>进程（process）是指正在运行的程序。进程包括二进制镜像，加载到内存中，<br>还涉及到虚拟内存实例、内核资源、安全上下文，以及一个或多个线程。</p>
+<p>线程（thread）是进程内的活动单元。每个线程包含自己的虚拟存储器，包括栈、进程状态如寄存器，以及指令指针。</p>
+<p>在单线程的进程中，进程即线程。一个进程只有一个虚拟内存实例，一个虚拟处理器。<br>在多线程的进程中，由于虚拟内存是和进程关联的，所有线程共享相同的内存地址空间。</p>
+<h2 id="进程ID"><a href="#进程ID" class="headerlink" title="进程ID"></a><strong>进程ID</strong></h2><p>创建新进程的那个进程称为父进程，而新进程称为子进程。</p>
+<p>获取进程ID和父进程ID：</p>
+<pre><code>#include &lt;sys/types.h&gt;
+#inlcude &lt;unistd.h&gt;
 
-int pthread_create(pthread_t *tid, const pthread_attr_t *attr, void *(*func) (void *), void *arg);
-int pthread_join (pthread_t tid, void ** status);
-pthread_t pthread_self (void);
-int pthread_equal(pthread_t t1, pthread_t t2);
-int pthread_detach (pthread_t tid);
-void pthread_exit (void *status);
-int pthread_cancel(pthread_t thread);
+pid_t getpid(void);
+pid_t getppid(void);</code></pre><h2 id="运行新进程"><a href="#运行新进程" class="headerlink" title="运行新进程"></a><strong>运行新进程</strong></h2><p>在UNIX中，将程序载入内存并执行程序映像的操作与创建新进程的操作是分离的。<br>一次系统调用会将二进制程序加载到内存中，替换地址空间原来的内容，<br>并开始执行。这个过程成为“执行（executing）”一个新的程序，是通过exec系列函数完成。</p>
+<p>另一个不同的系统调用用于创建新的进程，相当于复制其父进程。<br>通常情况下，<strong>新的进程会立即执行新的程序</strong>。<br>创建新进程的操作称为派生（fork），是系统调用fork()来完成的。</p>
+<p>在新进程中执行一个新的程序需要执行两个步骤：fork()和exec系列函数。</p>
+<h3 id="exec系统调用"><a href="#exec系统调用" class="headerlink" title="exec系统调用"></a><strong>exec系统调用</strong></h3><p>函数原型如下：</p>
+<pre><code>#include &lt;unistd.h&gt;
 
-int pthread_mutex_lock(pthread_mutex_t * mptr); 
-int pthread_mutex_unlock(pthread_mutex_t * mptr); 
+int execl(const char *path, const char *arg, ...);
+int execlp(const char *file, const char *arg, ...);
+int execle(const char *path, const char *arg, ..., char *const envp[]);
+int execv(const char *path, char *const argv[]);
+int execvp(const char *file, char *const argv[]);
+int execve(const char *filename, char *const argv[], char *const envp[]);</code></pre><p>exec系列函数只有execve()是真正的系统调用，其他都是基于该系统调用在C库中的封装函数。</p>
+<p>这些函数如果调用成功则加载新的程序并跳转到新的程序入口点开始执行，不再返回，如果调用出错则返回-1。<br>所以，<strong>exec函数只有出错的返回值而没有成功的返回值</strong>。</p>
+<p>函数名和参数解析：</p>
+<ul>
+<li>l和v分别表示参数以列表或数组（向量）方式提供，两种形式的最后一个参数必须为NULL。<br>由于execl、execlp、execle这三个函数都是可变参数函数，所以NULL应该转换为(char <em>)NULL或(char</em>)0</li>
+<li>p表示会在用户的绝对路径path下查找可执行文件，不需要输入完整路径</li>
+<li>…表示可变长度的参数列表</li>
+<li>e表示会为新进程提供新的环境变量</li>
+</ul>
+<p>exec示例代码：</p>
+<pre><code>#include &lt;unistd.h&gt;   
 
-int pthread_cond_wait(pthread_cond_t *cptr, pthread_mutex_t *mptr); 
-int pthread_cond_signal(pthread_cond_t *cptr); 
-int pthread_cond_broadcast (pthread_cond_t * cptr);
-int pthread_cond_timedwait (pthread_cond_t * cptr, pthread_mutex_t *mptr, const struct timespec *abstime);</code></pre><p>pthread_create用于创建一个线程，成功返回0，否则返回错误码（不使用errno）。</p>
+char *const ps_argv[] = {&quot;ps&quot;, &quot;-o&quot;, &quot;pid,ppid,pgrp,session,tpgid,comm&quot;, NULL};   
+char *const ps_envp[] = {&quot;PATH=/bin:/usr/bin&quot;, &quot;TERM=console&quot;, NULL};  
+
+execl(&quot;/bin/ps&quot;, &quot;ps&quot;, &quot;-o&quot;, &quot;pid,ppid,pgrp,session,tpgid,comm&quot;, NULL);   
+execlp(&quot;ps&quot;, &quot;ps&quot;, &quot;-o&quot;, &quot;pid,ppid,pgrp,session,tpgid,comm&quot;, (char*)0); 
+execle(&quot;/bin/ps&quot;, &quot;ps&quot;, &quot;-o&quot;, &quot;pid,ppid,pgrp,session,tpgid,comm&quot;, NULL, ps_envp);   
+
+execv(&quot;/bin/ps&quot;, ps_argv);    
+execvp(&quot;ps&quot;, ps_argv); 
+execve(&quot;/bin/ps&quot;, ps_argv, ps_envp); </code></pre><p>函数关系图如下：</p>
+<p><img src="http://s12.sinaimg.cn/middle/674b5aaeg9a45c6c0bcbb&690" alt=""></p>
+<h3 id="fork-系统调用"><a href="#fork-系统调用" class="headerlink" title="fork()系统调用"></a><strong>fork()系统调用</strong></h3><p>通过fork()系统调用可以创建一个和当前进程一样的新进程：</p>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;unistd.h&gt;
+
+pid_t fork(void);</code></pre><p>当fork()调用成功时，会创建一个新的进程，几乎与调用fork()的进程完全相同。<br>这两个进程都会继续运行，调用者进程从fork()返回后，还是照常运行。此处产生分叉点！</p>
+<p>fork调用的一个奇妙之处就是它仅仅被调用一次，却能够返回两次，它可能有三种不同的返回值：</p>
 <ul>
-<li>pthread_t <em>tid：线程id的类型为pthread_t，通常为无符号整型，当调用pthread_create成功时，通过</em>tid指针返回。</li>
-<li>const pthread_attr_t *attr：指定创建线程的属性，如线程优先级、初始栈大小、是否为守护进程等。<br>可以使用NULL来使用默认值，通常情况下我们都是使用默认值。</li>
-<li>void <em>(</em>func) (void *)：函数指针func，指定当新的线程创建之后，将执行的函数。</li>
-<li>void *arg：线程将执行的函数的参数。如果想传递多个参数，请将它们封装在一个结构体中。</li>
+<li>在父进程中，fork返回新创建子进程的进程ID；</li>
+<li>在子进程中，fork返回0；</li>
+<li>如果出现错误，fork返回一个负值-1；</li>
 </ul>
-<p>pthread_join用于等待某个线程退出，成功返回0，否则返回错误码（不使用errno）。<br>成功调用时，调用线程会被阻塞，直到由tid指定的线程终止，用于线程同步。</p>
+<p>可以通过fork返回的值来判断当前进程是子进程还是父进程,fork()系统调用用法：</p>
+<pre><code>pid_t pid;
+
+pid = fork();
+if(pid &gt; 0)
+    printf(&quot;I am the parent of pid=%d!\n&quot;, pid);
+else if(0 == pid)
+    printf(&quot;I am the child!\n&quot;);
+else if(-1 == pid)
+    printf(&quot;fork&quot;);</code></pre><p>一个进程调用fork()函数后，系统先给新的进程分配资源，<br>例如存储数据和代码的空间。然后把原来的进程的所有值都复制到新的新进程中，<br>只有少数值与原来的进程的值不同。相当于克隆了一个自己。<br>在Linux中，采用写时复制（copy-on-write，COW）的方式，而不是对父进程空间的整体复制。</p>
+<h2 id="终止进程"><a href="#终止进程" class="headerlink" title="终止进程"></a><strong>终止进程</strong></h2><p>标准函数，用于终止当前进程：</p>
+<pre><code>#include &lt;stdlib.h&gt;
+
+void exit(int status);</code></pre><p>status值为0表示终止程序成功，用非0值表示异常终止。<br>标准C语言中数值0和宏EXIT_SCCESS的值表示终止成功，<br>宏EXIT_FAILURE的值表示终止不成功，其他值的含义由实现定义。<br>从函数main返回一个整数值相当于用这个值调用exit函数。</p>
+<p>在终止进程之前，C库会安顺序执行一下操作步骤：</p>
 <ul>
-<li>pthread_t tid：指定要等待的线程ID</li>
-<li>void ** status：如果不为NULL，那么线程的返回值存储在status指向的空间中（这就是为什么status是二级指针的原因！这种才参数也称为“值-结果”参数）。</li>
+<li>所有通过atexit()或on_exit()函数（废止？）注册的函数按与注册时相反的顺序调用，注册几次就调用几次。</li>
+<li>刷新打开的是输出流，关闭所有打开的数据流。</li>
+<li>删除tmpfile()函数生成的临时文件。</li>
+<li>完成用户空间需要做的所有工作，调用系统调用_exit()，内核可以处理终止进程的剩余工作。</li>
 </ul>
-<p>默认情况下，线程是创建成可join的。<br>pthread_detach用于是指定线程变为分离状态（不可join），就像进程脱离终端而变为后台进程类似。<br>成功返回0，否则返回错误码（不使用errno）。变为分离状态的线程，如果线程退出，它的所有资源将全部释放。<br>而如果不是分离状态，线程必须保留它的线程ID，退出状态直到其它线程对它调用了pthread_join。</p>
-<p><strong>pthread_join()或pthread_detach()都应该在进程中每个线程上调用，这样当线程终止时，也会释放资源。</strong></p>
-<p>pthread_self用于返回当前线程的ID</p>
-<p>pthread_equal用于比较两个线程ID是否一样，如果不同返回0</p>
-<p>pthread_exit用于终止线程，可以指定返回值，以便其他线程通过pthread_join函数获取该线程的返回值。</p>
-<p>pthread_cancel用于通过其他线程调用来结束线程。</p>
-<p>在对临界资源进行操作之前需要pthread_mutex_lock先加锁，操作完之后pthread_mutex_unlock再解锁。<br>而且在这之前需要声明一个pthread_mutex_t类型的变量，用作前面两个函数的参数。</p>
-<pre><code>int withdraw(struct account *account, int amount)
+<p>很多时候我们需要在程序退出的时候做一些诸如释放资源的操作，但程序退出的方式有很多种，<br>比如main()函数运行结束、在程序的某个地方用exit()结束程序、用户通过Ctrl+C或Ctrl+break操作来终止程序等等，<br>因此需要有一种与程序退出方式无关的方法来进行程序退出时的必要处理。<br>方法就是用atexit()函数来注册程序正常终止时要被调用的函数。</p>
+<p>atexit()函数的参数是一个函数指针，<br>函数指针指向一个没有参数也没有返回值的函数。atexit()的函数原型是：</p>
+<pre><code>int atexit (void (*function)(void));</code></pre><p>在一个程序中最多可以用atexit()注册32个处理函数，<br>这些处理函数的调用顺序与其注册的顺序相反，也即最先注册的最后调用，最后注册的最先调用。<br><strong>如果进程调用了exec函数，会清空所注册的函数列表。<br>如果进程是通过信号结束(SIGTERM和SIGKILL)，就不会调用这些注册的函数。</strong></p>
+<h2 id="等待子进程结束"><a href="#等待子进程结束" class="headerlink" title="等待子进程结束"></a><strong>等待子进程结束</strong></h2><pre><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/wait.h&gt;
+
+pid_t wait(int *status);
+pid_t waitpid(pid_t pid, int *status, int options);</code></pre><p><strong>僵尸进程</strong>：已经终止，但是它的父进程还没有获取到其状态的进程。<br>僵尸进程会消耗一些系统资源–仅仅是描述进程之前状态的一些概要信息。<br>主要是为父进程查询子进程状态时提供相应信息。<br>一旦父进程得到了想要的信息，内核就清除这些信息，僵尸进程终止。</p>
+<h2 id="创建并等待新进程"><a href="#创建并等待新进程" class="headerlink" title="创建并等待新进程"></a><strong>创建并等待新进程</strong></h2><pre><code>#include &lt;stdlib.h&gt;
+
+int system(const char *command);</code></pre><p>创建新进程并等待它结束，可以看作是同步创建进程。</p>
+<p>调用system()会执行参数command所提供的命令，而且还可以为该命令指定参数。<br>“/bin/sh -c”会作为前缀添加到command参数前面。<br>通过这种方式，再把整个命令传递给shell。</p>
+<p>实际上system()函数执行了三步操作：</p>
+<ul>
+<li>fork一个子进程</li>
+<li>在子进程中调用exec函数去执行command</li>
+<li>在父进程中调用wait去等待子进程结束</li>
+</ul>
+<h2 id="会话（Session）和进程组"><a href="#会话（Session）和进程组" class="headerlink" title="会话（Session）和进程组"></a><strong>会话（Session）和进程组</strong></h2><p>进程组：</p>
+<ul>
+<li>每个进程都属于某一个进程组</li>
+<li>每个进程组都有一个进程组号，该号等于该进程组组长的PID号</li>
+<li>一个进程只能为它自己或子进程设置进程组ID号</li>
+</ul>
+<p>会话(session)是一个或多个进程组的集合。<br>setsid()函数可以建立一个会话：</p>
+<p>如果，调用setsid的进程不是一个进程组的组长，此函数创建一个新的会话。</p>
+<ul>
+<li>此进程变成该对话期的首进程</li>
+<li>此进程变成一个新进程组的组长进程。</li>
+<li>此进程没有控制终端，如果在调用setsid前，该进程有控制终端，那么与该终端的联系被解除。<br>如果该进程是一个进程组的组长，此函数返回错误。</li>
+<li>使任何进程不成为组长的方式：先调用fork()然后exit()父进程，此时只有子进程在运行</li>
+</ul>
+<h2 id="守护进程"><a href="#守护进程" class="headerlink" title="守护进程"></a><strong>守护进程</strong></h2><p>Linux Daemon（守护进程）是运行在后台的一种特殊进程。<br>它独立于控制终端并且周期性地执行某种任务或等待处理某些发生的事件。<br>它不需要用户输入就能运行而且提供某种服务，不是对整个系统就是对某个用户程序提供服务。<br>Linux系统的大多数服务器就是通过守护进程实现的。<br>常见的守护进程包括系统日志进程syslogd、 web服务器httpd、邮件服务器sendmail和数据库服务器mysqld等。</p>
+<p>守护进程一般在系统启动时开始运行，除非强行终止，否则直到系统关机都保持运行。<br>守护进程经常以超级用户（root）权限运行，因为它们要使用特殊的端口（1-1024）或访问某些特殊的资源。</p>
+<p>一个守护进程的父进程是init进程，因为它真正的父进程在fork出子进程后就先于子进程exit退出了，<br>所以它是一个由init继承的孤儿进程。<br>守护进程是非交互式程序，没有控制终端，所以任何输出，<br>无论是向标准输出设备stdout还是标准出错设备stderr的输出都需要特殊处理。</p>
+<p>守护进程的名称通常以d结尾，比如sshd、xinetd、crond等</p>
+<p>守护进程不想是任何已存在会话的成员，也不想拥有控制终端，创建守护进程所需步骤：</p>
+<ul>
+<li>调用fork，创建新进程，该进程将会成为守护进程</li>
+<li>在守护进程的父进程中调用exit。确保父进程的父进程在其子进程结束时会退出，<br>保证了守护进程的父进程不再继续运行，而且守护进程不是首进程</li>
+<li>调用setsid函数，使守护进程有一个新的进程组和会话，并作为两者的首进程。<br>保证了不存在和守护进程相关连的控制终端</li>
+<li>调用chdir函数，让根目录成为守护进程的工作目录</li>
+<li>关闭所有文件描述符</li>
+<li>打开文件描述符0、1和2，并重定向到/dev/null</li>
+</ul>
+<p>代码如下：</p>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;linux/fs.h&gt;
+
+int main(void)
 {
-    pthread_mutex_lock(&amp;account-&gt;mutex);
-    const int balance = account-&gt;balance;
-    if(balance &lt; amount)
-    {
-        pthread_mutex_unlock(&amp;account-&gt;mutex);
+    pid_t pid;
+    int i;
+
+    //Create New Process
+    pid = fork();
+    if(-1 == pid)
         return -1;
-    }
+    else if(0 == pid)
+        exit(0);
 
-    account-&gt;balance = balance - amount;
-    pthread_mutex_unlock(&amp;account-&gt;mutex);
+    //Create new session and process group
+    if(setsid() == -1)
+        return -1;
 
-    disburse_money(amount);
+    //Set the working dir to &quot;/&quot;
+    if(chdir(&quot;/&quot;) == -1)
+        return -1;
 
-    return 0;
-}</code></pre><p>在这个例子中，不是使用全局锁，而是在结构体中定义一把锁，这样每个account实例都有自己的锁，实现对数据的加锁。</p>
-<p>条件变量是一种同步机制，允许线程挂起，直到共享数据上的某些条件得到满足。<br>条件变量上的基本操作有：触发条件(当条件变为 true 时)；等待条件，挂起线程直到其他线程触发条件。<br>条件变量要和互斥量相联结，以避免出现条件竞争–一个线程预备等待一个条件变量，<br>当它在真正进入等待之前，另一个线程恰好触发了该条件。</p>
-<h2 id="References"><a href="#References" class="headerlink" title="References"></a>References</h2><ul>
-<li><a href="http://fanqiang.chinaunix.net/a4/b8/20010811/0905001105.html" target="_blank" rel="noopener">Linux下的多线程编程</a></li>
-<li><a href="http://www.cnblogs.com/skynet/archive/2010/10/30/1865267.HTML" target="_blank" rel="noopener">Linux多线程编程-吴秦</a></li>
+    //Close all open files
+    for(i = 0; i &lt; NR_OPEN; i++)
+        close(i);
+
+    //Redirect fd&#39;s 0,1,2 to /dev/null
+    open(&quot;/dev/null&quot;, O_RDWR);  //stdin
+    dup(0); //stdout
+    dup(0); //stderr
+
+    //do its daemon thing ...
+}</code></pre><p>其实我们完全可以利用daemon()函数创建守护进程，其函数原型：</p>
+<pre><code>#include &lt;unistd.h&gt;
+
+int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
+<ul>
+<li>nochdir：=0将当前目录更改至“/”</li>
+<li>noclose：=0将标准输入、标准输出、标准错误重定向至“/dev/null”</li>
 </ul>
 ]]></content>
       <categories>
         <category>Linux System Programming</category>
       </categories>
       <tags>
-        <tag>thread</tag>
+        <tag>进程管理</tag>
       </tags>
   </entry>
   <entry>
@@ -24698,6 +24827,392 @@ printf(&quot;RLIMIT_CORE limits: soft=%ld hard=%ld\n&quot;, rlim.rlim_cur, rlim.
       <tags>
         <tag>进程管理</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>Linux系统编程-线程</title>
+    <url>/2014/11/10/Linux-system-programming-thread/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<p>线程是指在单个进程内，多路并行执行的创建和管理单元。由于线程引入了数据竞争和死锁，相关的编程错误不计其数。</p>
+<h2 id="进程和线程"><a href="#进程和线程" class="headerlink" title="进程和线程"></a><strong>进程和线程</strong></h2><p>现代操作系统包括了两种对用户空间的基础的虚拟抽象：<strong>虚拟内存和虚拟处理器</strong>。<br>它们使进程认为自己独占机器资源。</p>
+<p>虚拟内存为每个进程提供独立的内存地址空间，该内存地址连续映射到物理内存上。<br>虚拟处理器使得进程“感觉”只有自己正在运行，操作系统对其“隐藏”了事实：多个进程在可能多个处理器上以多任务方式同时运行。</p>
+<p>虚拟内存是和进程相关的，与线程无关。<br>因此，每个进程有独立的内存空间，而进程中的所有线程共享这份空间。</p>
+<p>虚拟处理器是和线程相关的，与进程无关。每个线程都是可独立调度的实体，支持单个进程每次“处理”多个操作。</p>
+<p>和进程一样，线程也“感觉”自己独占一个处理器。<br>但是，和进程不一样的是，线程没有“感觉”自己独占内存–进程中的所有线程共享内存空间。</p>
+<h2 id="多线程"><a href="#多线程" class="headerlink" title="多线程"></a><strong>多线程</strong></h2><p>进程是正在运行的程序的抽象。但是，为什么要分离执行单元，引入线程？多线程机制有以下优点：</p>
+<ul>
+<li>编程抽象：将工作分为多个模块，每个模块分配一个执行单元（线程）。<br>利用这种方法的设计模式包括“每个连接一个线程”和线程池模式</li>
+<li>并发性：对多处理器提供了实现“真正并发”的高效方式。<br>每个线程有自己的虚拟处理器，作为独立的调度实体，可以在多处理器上运行多个线程，从而提高系统吞吐量</li>
+<li>提高响应能力：单线程进程中，一个长时间运行的任务会影响应用对用户输入的响应，多线程中可以有一条线程响应用户输入</li>
+<li>I/O阻塞：单线程中，I/O阻塞会影响整个进程</li>
+<li>上下文切换：线程间切换的代价显著低于进程间的上下文切换</li>
+<li>内存保存：线程提供了一种可以共享内存，并同时利用多个执行单元的高效方式</li>
+</ul>
+<p><strong>上下文切换</strong>：线程的一大性能优势是同一进程内的线程之间切换代价很低。<br>在任何系统上，进程内切换的代价低于进程间切换，前者通常是后者的一部分。<br>在非Linux系统上，这种差别非常明显，进程间通信（IPC）代价非常高。<br>因此，很多系统上，称线程为“轻量级进程”。在Linux中，进程间切换代价并不高，而进程内切换的成本接近于0：<br>接近进入和退出内核的代价。进程的代价不高，但是线程的代价更低。</p>
+<h2 id="线程模型"><a href="#线程模型" class="headerlink" title="线程模型"></a><strong>线程模型</strong></h2><p>在系统上实现线程模型的方式有好几种，因内核和用户空间提供的支持而有一定程度的级别差异。</p>
+<p>最简单的是内核为线程提供了本地支持的情况，每个内核线程直接转换成用户空间的线程。<br>这种模型称为“1:1线程模型”，也称为“内核级线程模型”。<br>在Linux中只是简单的将线程实现成能够共享资源的进程。<br>线程库通过系统调用clone()创建一个新的线程，返回的“进程”直接作为用户空间的线程。</p>
+<p>“用户级线程模型”是“N:1线程模型”，一个N个线程的进程只会映射到一个内核进程。</p>
+<p>“混合式线程模型”是“N:M线程模型”，上述两中的综合，但是模型过于复杂。</p>
+<p>Linux上普遍的线程模型是第一种。</p>
+<h2 id="线程模式"><a href="#线程模式" class="headerlink" title="线程模式"></a><strong>线程模式</strong></h2><p>创建多线程应用最重要的一步是确定线程模式，线程模式也是应用程序的逻辑处理和I/O模式，<br>可能存在很多抽象和实现细节，但两个核心的编程模式是：</p>
+<ul>
+<li><strong>每个连接对应一个线程（thread-per-connection）</strong></li>
+<li><strong>事件驱动（event-driven）</strong></li>
+</ul>
+<h2 id="并发性、并行性和竞争"><a href="#并发性、并行性和竞争" class="headerlink" title="并发性、并行性和竞争"></a><strong>并发性、并行性和竞争</strong></h2><p>并发性与并行性？？</p>
+<p><strong>竞争条件</strong>是指由两个或多个线程对共享资源的非同步访问而导致错误的程序行为。<br>共享资源可以是系统硬件、内核资源或内存中的数据。后者最常见，称为数据竞争（date race）。<br>竞争发生的窗口–需要同步的代码–成为“临界区”。</p>
+<h2 id="同步，互斥和死锁"><a href="#同步，互斥和死锁" class="headerlink" title="同步，互斥和死锁"></a><strong>同步，互斥和死锁</strong></h2><p>最常用来完成同步，实现临界区原子操作的技术是锁（lock），在Pthreads中称之为“互斥（mutexes）”。</p>
+<p><strong>锁住数据，而不是代码</strong>，当锁和代码关联起来时，锁的语义就很难理解。<br>随着时间变化，锁和数据之间的关系就不会很清晰，程序员会为数据引入新的使用方式，而不会包含相应的锁。<br>把锁和数据关联，这个映射就会很清晰。</p>
+<p>互斥的引入会带来编程BUG：死锁。</p>
+<p>避免死锁需要从一开始的设计中为多线程设计好锁的机制。<br>互斥体应该和数据关联，而不是和代码关联，从而有清晰的数据层。<br>针对死锁（ABBA）问题，需要明确互斥获取的顺序。</p>
+<h2 id="Pthreads"><a href="#Pthreads" class="headerlink" title="Pthreads"></a><strong>Pthreads</strong></h2><p>Linux内核只为线程的支持提供了底层原语，比如clone()系统调用。<br>POSIX对线程库进行了标准化，称之为POSIX线程，简称为Pthreads。<br>是UNIX系统上C／C++语言的主要线程解决方案。</p>
+<h3 id="Pthread-API"><a href="#Pthread-API" class="headerlink" title="Pthread API"></a><strong>Pthread API</strong></h3><p>Pthreads是由glibc提供，存在于独立库libpthread中，使用时需要显示链接：</p>
+<pre><code>gcc -Wall -Werror -pthread b.c -o b</code></pre><p>Pthread API在文件&lt;pthread.h&gt;中定义，每个函数前缀都是pthread_，可以分为两大类：<br><strong>线程管理（创建、销毁、连接和detach线程等）</strong>和<strong>同步（互斥、条件变量等）</strong>。</p>
+<pre><code>#include &lt;pthread.h&gt;
+
+int pthread_create(pthread_t *tid, const pthread_attr_t *attr, void *(*func) (void *), void *arg);
+int pthread_join (pthread_t tid, void ** status);
+pthread_t pthread_self (void);
+int pthread_equal(pthread_t t1, pthread_t t2);
+int pthread_detach (pthread_t tid);
+void pthread_exit (void *status);
+int pthread_cancel(pthread_t thread);
+
+int pthread_mutex_lock(pthread_mutex_t * mptr); 
+int pthread_mutex_unlock(pthread_mutex_t * mptr); 
+
+int pthread_cond_wait(pthread_cond_t *cptr, pthread_mutex_t *mptr); 
+int pthread_cond_signal(pthread_cond_t *cptr); 
+int pthread_cond_broadcast (pthread_cond_t * cptr);
+int pthread_cond_timedwait (pthread_cond_t * cptr, pthread_mutex_t *mptr, const struct timespec *abstime);</code></pre><p>pthread_create用于创建一个线程，成功返回0，否则返回错误码（不使用errno）。</p>
+<ul>
+<li>pthread_t <em>tid：线程id的类型为pthread_t，通常为无符号整型，当调用pthread_create成功时，通过</em>tid指针返回。</li>
+<li>const pthread_attr_t *attr：指定创建线程的属性，如线程优先级、初始栈大小、是否为守护进程等。<br>可以使用NULL来使用默认值，通常情况下我们都是使用默认值。</li>
+<li>void <em>(</em>func) (void *)：函数指针func，指定当新的线程创建之后，将执行的函数。</li>
+<li>void *arg：线程将执行的函数的参数。如果想传递多个参数，请将它们封装在一个结构体中。</li>
+</ul>
+<p>pthread_join用于等待某个线程退出，成功返回0，否则返回错误码（不使用errno）。<br>成功调用时，调用线程会被阻塞，直到由tid指定的线程终止，用于线程同步。</p>
+<ul>
+<li>pthread_t tid：指定要等待的线程ID</li>
+<li>void ** status：如果不为NULL，那么线程的返回值存储在status指向的空间中（这就是为什么status是二级指针的原因！这种才参数也称为“值-结果”参数）。</li>
+</ul>
+<p>默认情况下，线程是创建成可join的。<br>pthread_detach用于是指定线程变为分离状态（不可join），就像进程脱离终端而变为后台进程类似。<br>成功返回0，否则返回错误码（不使用errno）。变为分离状态的线程，如果线程退出，它的所有资源将全部释放。<br>而如果不是分离状态，线程必须保留它的线程ID，退出状态直到其它线程对它调用了pthread_join。</p>
+<p><strong>pthread_join()或pthread_detach()都应该在进程中每个线程上调用，这样当线程终止时，也会释放资源。</strong></p>
+<p>pthread_self用于返回当前线程的ID</p>
+<p>pthread_equal用于比较两个线程ID是否一样，如果不同返回0</p>
+<p>pthread_exit用于终止线程，可以指定返回值，以便其他线程通过pthread_join函数获取该线程的返回值。</p>
+<p>pthread_cancel用于通过其他线程调用来结束线程。</p>
+<p>在对临界资源进行操作之前需要pthread_mutex_lock先加锁，操作完之后pthread_mutex_unlock再解锁。<br>而且在这之前需要声明一个pthread_mutex_t类型的变量，用作前面两个函数的参数。</p>
+<pre><code>int withdraw(struct account *account, int amount)
+{
+    pthread_mutex_lock(&amp;account-&gt;mutex);
+    const int balance = account-&gt;balance;
+    if(balance &lt; amount)
+    {
+        pthread_mutex_unlock(&amp;account-&gt;mutex);
+        return -1;
+    }
+
+    account-&gt;balance = balance - amount;
+    pthread_mutex_unlock(&amp;account-&gt;mutex);
+
+    disburse_money(amount);
+
+    return 0;
+}</code></pre><p>在这个例子中，不是使用全局锁，而是在结构体中定义一把锁，这样每个account实例都有自己的锁，实现对数据的加锁。</p>
+<p>条件变量是一种同步机制，允许线程挂起，直到共享数据上的某些条件得到满足。<br>条件变量上的基本操作有：触发条件(当条件变为 true 时)；等待条件，挂起线程直到其他线程触发条件。<br>条件变量要和互斥量相联结，以避免出现条件竞争–一个线程预备等待一个条件变量，<br>当它在真正进入等待之前，另一个线程恰好触发了该条件。</p>
+<h2 id="References"><a href="#References" class="headerlink" title="References"></a>References</h2><ul>
+<li><a href="http://fanqiang.chinaunix.net/a4/b8/20010811/0905001105.html" target="_blank" rel="noopener">Linux下的多线程编程</a></li>
+<li><a href="http://www.cnblogs.com/skynet/archive/2010/10/30/1865267.HTML" target="_blank" rel="noopener">Linux多线程编程-吴秦</a></li>
+</ul>
+]]></content>
+      <categories>
+        <category>Linux System Programming</category>
+      </categories>
+      <tags>
+        <tag>thread</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Linux系统编程-文件和目录管理</title>
+    <url>/2014/11/11/Linux-system-programming-File-and-Directory-Management/</url>
+    <content><![CDATA[<ul>
+<li>toc<br>{:toc}</li>
+</ul>
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<h2 id="获得文件metadata的Stat家族"><a href="#获得文件metadata的Stat家族" class="headerlink" title="获得文件metadata的Stat家族"></a>获得文件metadata的Stat家族</h2><pre><code>#include &lt;sys/types.h&gt;  
+#include &lt;sys/stat.h&gt;  
+#include &lt;unistd.h&gt;  
+
+struct stat{  
+    dev_t st_dev; /*包含文件的设备号*/  
+    ino_t st_ino; /*文件inode序列号 */  
+    mode_t st_mode;/*文件的mode*/  
+    nlink_t st_nlink; /*硬链接的数量*/  
+    uid_t st_uid; /*文件的用户id*/  
+    gid_t st_gid; /*文件的goup id*/  
+    off_t st_size;/*文件大小*/  
+
+    time_t st_atime;/*最后一次访问时间*/  
+    time_t st_mtime;/*最后一次修改时间*/  
+    time_t st_ctime;/*最后一次状态改变时间*/  
+}  
+
+int lstat(const char * restrict path, struct stat * restrict buf);  
+int stat(const char *restrict path, struct stat * restrict buf);  
+int fstat(int fd,struct stat *buf);  </code></pre><p>对于软链来说： </p>
+<ul>
+<li>lstat返回软链本身的状态 </li>
+<li>stat返回软链所指文件的状态 </li>
+</ul>
+<p>例子： </p>
+<pre><code>#include &lt;stdio.h&gt;  
+#include &lt;time.h&gt;  
+#include &lt;sys/stat.h&gt;  
+
+int isdirectory(char *path) {  
+    struct stat statbuf;  
+
+    if (stat(path, &amp;statbuf) == -1)  
+        return 0;  
+    else  
+        return S_ISDIR(statbuf.st_mode);  
+}  </code></pre><h2 id="文件权限"><a href="#文件权限" class="headerlink" title="文件权限"></a>文件权限</h2><p>设置文件权限的系统调用： </p>
+<pre><code>#include &lt;sys/types.h&gt;  
+#include &lt;sys/stat.h&gt;  
+
+int chmod(const char *path, mode_t mode);  
+int fchmod(int fd,mode_t mode);  </code></pre><p>成功返回0，失败返回-1，并设置errno： </p>
+<ul>
+<li>EACCESS：没有搜索path的权限 </li>
+<li>EBADF：fd不合法的文件描述符（仅fchmod) </li>
+<li>EFAULT:path不合法的指针（仅chmod) </li>
+<li>EIO：文件系统内部I/O错误 </li>
+<li>ELOOP：由于symbolic link导致解析path死循环 </li>
+<li>ENAMETOOLONG：path太长（仅chmod) </li>
+<li>ENOENT：path不存在 </li>
+<li>ENOME：内存不足 </li>
+<li>ENOTDIR：不是一个目录（仅chmod) </li>
+<li>EPERM:进程不是文件的owner或者缺少CAP_FOWNER能力。 </li>
+<li>EROFS：文件在只读文件系统中。 </li>
+</ul>
+<h2 id="文件的所有者"><a href="#文件的所有者" class="headerlink" title="文件的所有者"></a>文件的所有者</h2><p>stat结构中st_uid和st_gid提供了文件的所有者和group，以下系统调用可以改变所有者： </p>
+<pre><code>#include &lt;sys/types.h&gt;  
+#include &lt;unistd.h&gt;  
+
+int chown(const char *path, uid_t owner, gid_t group);  
+int lchown(const char *path, uid_t owner, gid_t group);  
+int fchown(int fd, uid_t owner, gid_t group);  </code></pre><p>chown和lchown区别：chown会follow simbolic link，改变link的目标文件，lchmod改变符号链接本身。<br>成功过返回0，失败返回-1，并设置errno。 </p>
+<pre><code>struct group *gr;  
+int ret;  
+
+gr = getgrnam(&quot;officers&quot;);  
+if(! gr){  
+    perror(&quot;getgrnam&quot;);  
+    return 1;  
+}  
+
+ret = chmod(&quot;manifest.txt&quot;,-1,gr-&gt;gr_gid);  
+if(ret){  
+    perror(&quot;chmod&quot;);  
+    return 1;  
+}  </code></pre><p>设置为root拥有者： </p>
+<pre><code>int make_root_owner(int fd){  
+    int ret;  
+
+    ret = fchown(fd,0,0);  
+    if(ret)  
+        perror(&quot;fchown&quot;);  
+    return ret;  
+}  </code></pre><p>进程需要有CAP_CHOWN能力，也就是必须是root为所有。 </p>
+<h2 id="文件系统Navigation"><a href="#文件系统Navigation" class="headerlink" title="文件系统Navigation"></a>文件系统Navigation</h2><h3 id="改变当前的工作目录"><a href="#改变当前的工作目录" class="headerlink" title="改变当前的工作目录"></a>改变当前的工作目录</h3><pre><code>#include &lt;unistd.h&gt;  
+
+int chdir(const char *path);  
+int fchdir(int fd);  </code></pre><p>将当前的工作目录指定为path：</p>
+<pre><code>char *dir = &quot;/tmp&quot;;  
+if(chdir(dir) == -1)  
+    perror(&quot;Failed to change current working directory to /tmp&quot;);  </code></pre><h3 id="获得当前工作目录"><a href="#获得当前工作目录" class="headerlink" title="获得当前工作目录"></a>获得当前工作目录</h3><pre><code>#include &lt;unistd.h&gt;  
+
+char *getcwd(char *buf, size_t size);  
+
+例子： 
+
+#include &lt;limits.h&gt;  
+#include &lt;stdio.h&gt;  
+#include &lt;unistd.h&gt;  
+#ifndef PATH_MAX  
+#define PATH_MAX 255  
+#endif  
+
+int main(void)
+{  
+    char mycwd[PATH_MAX];  
+    if(getcwd(mycwd,PATH_MAX) == NULL){  
+        perror(&quot;Failed to get current working directory&quot;);  
+        return 1;  
+    }  
+    printf(&quot;Current working directory: %s\n&quot;,mycwd);  
+    return 0;  
+}  </code></pre><h3 id="path-conf"><a href="#path-conf" class="headerlink" title="path conf"></a>path conf</h3><pre><code>#include &lt;unistd.h&gt;  
+
+long fpathconf(int fd, int name);  
+long pathconf(const char *path,int name);  
+sysconf(int name);  </code></pre><h2 id="创建目录"><a href="#创建目录" class="headerlink" title="创建目录"></a>创建目录</h2><pre><code>#include &lt;sys/stat.h&gt;  
+#include &lt;sys/types.h&gt;  
+
+int mkdir(const char *path, mode_t mode);  </code></pre><p>成功返回0，失败返回-1，并设置好errno。没有可以递归删除与rm -r等价的系统调用。<br>如果目录非空，失败设置errno为ENOTEMPTY。 </p>
+<pre><code>int ret;  
+
+ret = rmdir(&quot;/home/fuliang/test&quot;);  
+if(ret)  
+    perror(&quot;rmdir&quot;);  </code></pre><h2 id="删除目录"><a href="#删除目录" class="headerlink" title="删除目录"></a>删除目录</h2><pre><code>#include &lt;unistd.h&gt;  
+
+int rmdir(const char *path);  
+
+成功返回0，失败返回-1 </code></pre><h2 id="文件夹访问"><a href="#文件夹访问" class="headerlink" title="文件夹访问"></a>文件夹访问</h2><h3 id="opendir-closedir-readdir"><a href="#opendir-closedir-readdir" class="headerlink" title="opendir closedir, readdir"></a>opendir closedir, readdir</h3><pre><code>#include &lt;dirent.h&gt;  
+DIR *opendir(const char *dirname);  
+struct dirent *readdir(DIR *dirp);  
+int closedir(DIR *dirp);  
+void rewinddir(DIR *dirp);  </code></pre><p>例子：显示pathname下的文件： </p>
+<pre><code>#include &lt;dirent.h&gt;  
+#include &lt;errno.h&gt;  
+#include &lt;stdio.h&gt;  
+
+int main(int argc, char *argv[])
+{  
+    struct dirent *direntp;  
+    DIR *dirp;  
+
+    if(argc != 2){  
+        fprintf(stderr,&quot;Usage %s directory_name\n&quot;, argv[0]);  
+    }  
+
+    if((dirp = opendir(argv[1])) == NULL){  
+        perror(&quot;Failed to open directory&quot;);  
+        return 1;  
+    }  
+
+    while((direntp = readdir(dirp)) != NULL)  
+        printf(&quot;%s\n&quot;, direntp-&gt;d_name);  
+    while((closedir(dirp) == -1) &amp;&amp; (errno == EINTR)) ;  
+    return 0;   
+}  </code></pre><p>dirent结构： </p>
+<pre><code>struct dirent{  
+    ino_t d_ino; /* inode number */  
+    off_t d_off; /* offset to the next dirent */  
+    unsigned short d_reclen; /* length of this record */  
+    unsigned char d_type; /* type of file */  
+    char d_name[256]; /*filename*/    
+};  </code></pre><p>POSIX仅需要d_name字段，其他的都是可选的或者是linux特有的。<br>可移植性的程序应该只访问d_name字段。 </p>
+<p>从Dir可以获得文件描述符： </p>
+<pre><code>#define _BSD_SOURCE  
+#include &lt;sys/types.h&gt;  
+#include &lt;dirent.h&gt;  
+
+int dirfd(DIR *dir);  </code></pre><p>这个是BSD的一个扩展，并不是POSIX标准。 </p>
+<h3 id="访问文件的状态信息"><a href="#访问文件的状态信息" class="headerlink" title="访问文件的状态信息"></a>访问文件的状态信息</h3><p>lstat、stat </p>
+<h2 id="硬链接和软链接"><a href="#硬链接和软链接" class="headerlink" title="硬链接和软链接"></a>硬链接和软链接</h2><p>硬链接：两个path指向同一个inode.<br>软链接：单独的一个文件，里面存储了链接文件的路径。 </p>
+<h3 id="创建和删除一个硬链接"><a href="#创建和删除一个硬链接" class="headerlink" title="创建和删除一个硬链接"></a>创建和删除一个硬链接</h3><pre><code>#include &lt;unistd.h&gt;  
+
+int link(const char *path1, const char *path2);  
+int unlink(const char *path);  </code></pre><p>为有path1指定的文件创建一个新的目录项。 </p>
+<pre><code>#include &lt;stdio.h&gt;  
+#include &lt;unistd.h&gt;  
+
+if (link(&quot;/dirA/name1&quot;,&quot;dirB/name2&quot;) == -1)  
+    perror(&quot;Failed to make a new link in /dirB&quot;);  </code></pre><h3 id="创建和删除一个硬链接-1"><a href="#创建和删除一个硬链接-1" class="headerlink" title="创建和删除一个硬链接"></a>创建和删除一个硬链接</h3><pre><code>#include &lt;unistd.h&gt;  
+
+int symlink(const char *path1, const char *path2);  </code></pre><h2 id="拷贝或者移动文件"><a href="#拷贝或者移动文件" class="headerlink" title="拷贝或者移动文件"></a>拷贝或者移动文件</h2><p>拷贝和移动文件时两个最基本的文件操作任务，可以使用shell命令cp和mv来完成。 </p>
+<h3 id="拷贝文件"><a href="#拷贝文件" class="headerlink" title="拷贝文件"></a>拷贝文件</h3><p>Unix没有提供此操作的系统调用或者库来完成拷贝文件和目录，但可以使用cp命令来手工执行这个任务。<br>拷贝一个文件src到目标dst，要执行的操作步骤： </p>
+<ol>
+<li>打开src </li>
+<li>打开dst，创建如果不存在，清空如果存在。 </li>
+<li>将src读取到内存 </li>
+<li>将从src读取到的内容写入dst </li>
+<li>继续指导所有内容从src写到dst </li>
+<li>关闭dst </li>
+<li>关闭src </li>
+</ol>
+<p>如果拷贝一个目录，递归拷贝目录本身及其子目录通过mkdir及其采用上面步骤拷贝文件。 </p>
+<h3 id="移动"><a href="#移动" class="headerlink" title="移动"></a>移动</h3><p>Unix提供了移动文件的系统调用。ANSI C使用这个调用来移动文件，POSIX标准将其用于文件和目录。 </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+int rename(const char *oldpath, const char *newpath);  </code></pre><p>将路径名称从oldpath改成newpath，内容和inode没有变化。newpath需要在同一文件系统中。<br>成功返回0，失败返回-1，并设置errno。 </p>
+<h2 id="创建临时文件"><a href="#创建临时文件" class="headerlink" title="创建临时文件"></a>创建临时文件</h2><p>ISO C标准定义了两个标准I/O函数来创建临时文件。 </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+char *tmpnam(char *ptr); /*返回执行路径的指针*/  
+FILE *tmpfile(void); /*返回文件指针，错误则为NULL*/  </code></pre><p>tmpnam每次产生一个不同的合法的路径名字。如果ptr是NULL，生成一个存储在静态区域的名字，<br>并返回指向它的指针，所以如果连续调用两次会覆盖前一次的tmpname。<br>如果指定了ptr，则它被假设指向一个数组，并且长度不小于L_tmpnam（&lt;stdio.h&gt;中定义）。<br>例子： </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+int main(void){  
+    char name[L_tmpnam],line[MAXLINE];  
+    FILE *fp;  
+
+    printf(&quot;%s\n&quot;,tmpnam(NULL));  
+    tmpname(name);  
+    printf(&quot;%s\n&quot;,name);  
+
+    if((fp = tmpfile()) == NULL){  
+        perror(&quot;tmpfile&quot;);  
+        return 1;  
+    }  
+
+    fputs(&quot;one line of output\n&quot;,fp);  
+    rewind(fp);  
+
+    if(fgets(line,sizeof(line),fp) == NULL){  
+        perror(&quot;fgets&quot;);  
+        return 1;  
+    }  
+    fputs(line,stdout);  
+
+    return 0;  
+}  </code></pre><p>XSI扩展定义了两个另外的方法来操作临时文件： </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+char *tempnam(const char *directory, const char *prefix);  
+int mkstemp(char *template);  </code></pre><p>tempnam和tmpnam一样，但是可以指定目录和前缀来生成临时文件名。 </p>
+<ol>
+<li>如果环境变量定义了TMPDIR，则使用它作为目录。 </li>
+<li>如果directory不为NULL，则使用它。 </li>
+<li>在&lt;stdio.h&gt;中的P_tmpdir作为目录。 </li>
+<li>本地的目录，通常/tmp被作为临时目录。 </li>
+</ol>
+<p>前缀prefix如果不为NULL，至少5个字节。<br>生成的名字是通过malloc动态申请的内存，所以要使用free释放。 </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+int main(int argc, char *argv[]){  
+    if(argc != 3){  
+        pintf(&quot;usage: %s &lt;directory&gt; &lt;prefix&gt;&quot;,argv[0]);  
+        return 1;  
+    }  
+
+    printf(&quot;%s\n&quot;,tempnam(argv[1][0] != &#39; &#39; ? argv[1] : NULL, argv[2][0] != &#39; &#39; ? argv[2] : NULL));  
+
+    return 0;  
+}  </code></pre><p>mkstemp和tmpfile类似，只是返回了文件描述符，并且mkstemp生成的临时文件不会自动清除。<br>path的后六个字符要设置为XXXXXX，通过替换它来生成不同的名字。 </p>
+]]></content>
+      <categories>
+        <category>Linux System Programming</category>
+      </categories>
   </entry>
   <entry>
     <title>Linux系统编程-多线程同步条件变量</title>
@@ -26317,8 +26832,8 @@ net.core.wmem_max = 16777216</code></pre><p>一般来说，<strong>理论上的R
         <category>Linux</category>
         <category>Socket</category>
         <category>Network</category>
-        <category>Tools</category>
         <category>TCP</category>
+        <category>Tools</category>
         <category>Network</category>
       </categories>
       <tags>
@@ -27412,468 +27927,6 @@ int main() {
       </categories>
       <tags>
         <tag>float</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Linux系统编程-文件和目录管理</title>
-    <url>/2014/11/11/Linux-system-programming-File-and-Directory-Management/</url>
-    <content><![CDATA[<ul>
-<li>toc<br>{:toc}</li>
-</ul>
-<hr>
-<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
-<h2 id="获得文件metadata的Stat家族"><a href="#获得文件metadata的Stat家族" class="headerlink" title="获得文件metadata的Stat家族"></a>获得文件metadata的Stat家族</h2><pre><code>#include &lt;sys/types.h&gt;  
-#include &lt;sys/stat.h&gt;  
-#include &lt;unistd.h&gt;  
-
-struct stat{  
-    dev_t st_dev; /*包含文件的设备号*/  
-    ino_t st_ino; /*文件inode序列号 */  
-    mode_t st_mode;/*文件的mode*/  
-    nlink_t st_nlink; /*硬链接的数量*/  
-    uid_t st_uid; /*文件的用户id*/  
-    gid_t st_gid; /*文件的goup id*/  
-    off_t st_size;/*文件大小*/  
-
-    time_t st_atime;/*最后一次访问时间*/  
-    time_t st_mtime;/*最后一次修改时间*/  
-    time_t st_ctime;/*最后一次状态改变时间*/  
-}  
-
-int lstat(const char * restrict path, struct stat * restrict buf);  
-int stat(const char *restrict path, struct stat * restrict buf);  
-int fstat(int fd,struct stat *buf);  </code></pre><p>对于软链来说： </p>
-<ul>
-<li>lstat返回软链本身的状态 </li>
-<li>stat返回软链所指文件的状态 </li>
-</ul>
-<p>例子： </p>
-<pre><code>#include &lt;stdio.h&gt;  
-#include &lt;time.h&gt;  
-#include &lt;sys/stat.h&gt;  
-
-int isdirectory(char *path) {  
-    struct stat statbuf;  
-
-    if (stat(path, &amp;statbuf) == -1)  
-        return 0;  
-    else  
-        return S_ISDIR(statbuf.st_mode);  
-}  </code></pre><h2 id="文件权限"><a href="#文件权限" class="headerlink" title="文件权限"></a>文件权限</h2><p>设置文件权限的系统调用： </p>
-<pre><code>#include &lt;sys/types.h&gt;  
-#include &lt;sys/stat.h&gt;  
-
-int chmod(const char *path, mode_t mode);  
-int fchmod(int fd,mode_t mode);  </code></pre><p>成功返回0，失败返回-1，并设置errno： </p>
-<ul>
-<li>EACCESS：没有搜索path的权限 </li>
-<li>EBADF：fd不合法的文件描述符（仅fchmod) </li>
-<li>EFAULT:path不合法的指针（仅chmod) </li>
-<li>EIO：文件系统内部I/O错误 </li>
-<li>ELOOP：由于symbolic link导致解析path死循环 </li>
-<li>ENAMETOOLONG：path太长（仅chmod) </li>
-<li>ENOENT：path不存在 </li>
-<li>ENOME：内存不足 </li>
-<li>ENOTDIR：不是一个目录（仅chmod) </li>
-<li>EPERM:进程不是文件的owner或者缺少CAP_FOWNER能力。 </li>
-<li>EROFS：文件在只读文件系统中。 </li>
-</ul>
-<h2 id="文件的所有者"><a href="#文件的所有者" class="headerlink" title="文件的所有者"></a>文件的所有者</h2><p>stat结构中st_uid和st_gid提供了文件的所有者和group，以下系统调用可以改变所有者： </p>
-<pre><code>#include &lt;sys/types.h&gt;  
-#include &lt;unistd.h&gt;  
-
-int chown(const char *path, uid_t owner, gid_t group);  
-int lchown(const char *path, uid_t owner, gid_t group);  
-int fchown(int fd, uid_t owner, gid_t group);  </code></pre><p>chown和lchown区别：chown会follow simbolic link，改变link的目标文件，lchmod改变符号链接本身。<br>成功过返回0，失败返回-1，并设置errno。 </p>
-<pre><code>struct group *gr;  
-int ret;  
-
-gr = getgrnam(&quot;officers&quot;);  
-if(! gr){  
-    perror(&quot;getgrnam&quot;);  
-    return 1;  
-}  
-
-ret = chmod(&quot;manifest.txt&quot;,-1,gr-&gt;gr_gid);  
-if(ret){  
-    perror(&quot;chmod&quot;);  
-    return 1;  
-}  </code></pre><p>设置为root拥有者： </p>
-<pre><code>int make_root_owner(int fd){  
-    int ret;  
-
-    ret = fchown(fd,0,0);  
-    if(ret)  
-        perror(&quot;fchown&quot;);  
-    return ret;  
-}  </code></pre><p>进程需要有CAP_CHOWN能力，也就是必须是root为所有。 </p>
-<h2 id="文件系统Navigation"><a href="#文件系统Navigation" class="headerlink" title="文件系统Navigation"></a>文件系统Navigation</h2><h3 id="改变当前的工作目录"><a href="#改变当前的工作目录" class="headerlink" title="改变当前的工作目录"></a>改变当前的工作目录</h3><pre><code>#include &lt;unistd.h&gt;  
-
-int chdir(const char *path);  
-int fchdir(int fd);  </code></pre><p>将当前的工作目录指定为path：</p>
-<pre><code>char *dir = &quot;/tmp&quot;;  
-if(chdir(dir) == -1)  
-    perror(&quot;Failed to change current working directory to /tmp&quot;);  </code></pre><h3 id="获得当前工作目录"><a href="#获得当前工作目录" class="headerlink" title="获得当前工作目录"></a>获得当前工作目录</h3><pre><code>#include &lt;unistd.h&gt;  
-
-char *getcwd(char *buf, size_t size);  
-
-例子： 
-
-#include &lt;limits.h&gt;  
-#include &lt;stdio.h&gt;  
-#include &lt;unistd.h&gt;  
-#ifndef PATH_MAX  
-#define PATH_MAX 255  
-#endif  
-
-int main(void)
-{  
-    char mycwd[PATH_MAX];  
-    if(getcwd(mycwd,PATH_MAX) == NULL){  
-        perror(&quot;Failed to get current working directory&quot;);  
-        return 1;  
-    }  
-    printf(&quot;Current working directory: %s\n&quot;,mycwd);  
-    return 0;  
-}  </code></pre><h3 id="path-conf"><a href="#path-conf" class="headerlink" title="path conf"></a>path conf</h3><pre><code>#include &lt;unistd.h&gt;  
-
-long fpathconf(int fd, int name);  
-long pathconf(const char *path,int name);  
-sysconf(int name);  </code></pre><h2 id="创建目录"><a href="#创建目录" class="headerlink" title="创建目录"></a>创建目录</h2><pre><code>#include &lt;sys/stat.h&gt;  
-#include &lt;sys/types.h&gt;  
-
-int mkdir(const char *path, mode_t mode);  </code></pre><p>成功返回0，失败返回-1，并设置好errno。没有可以递归删除与rm -r等价的系统调用。<br>如果目录非空，失败设置errno为ENOTEMPTY。 </p>
-<pre><code>int ret;  
-
-ret = rmdir(&quot;/home/fuliang/test&quot;);  
-if(ret)  
-    perror(&quot;rmdir&quot;);  </code></pre><h2 id="删除目录"><a href="#删除目录" class="headerlink" title="删除目录"></a>删除目录</h2><pre><code>#include &lt;unistd.h&gt;  
-
-int rmdir(const char *path);  
-
-成功返回0，失败返回-1 </code></pre><h2 id="文件夹访问"><a href="#文件夹访问" class="headerlink" title="文件夹访问"></a>文件夹访问</h2><h3 id="opendir-closedir-readdir"><a href="#opendir-closedir-readdir" class="headerlink" title="opendir closedir, readdir"></a>opendir closedir, readdir</h3><pre><code>#include &lt;dirent.h&gt;  
-DIR *opendir(const char *dirname);  
-struct dirent *readdir(DIR *dirp);  
-int closedir(DIR *dirp);  
-void rewinddir(DIR *dirp);  </code></pre><p>例子：显示pathname下的文件： </p>
-<pre><code>#include &lt;dirent.h&gt;  
-#include &lt;errno.h&gt;  
-#include &lt;stdio.h&gt;  
-
-int main(int argc, char *argv[])
-{  
-    struct dirent *direntp;  
-    DIR *dirp;  
-
-    if(argc != 2){  
-        fprintf(stderr,&quot;Usage %s directory_name\n&quot;, argv[0]);  
-    }  
-
-    if((dirp = opendir(argv[1])) == NULL){  
-        perror(&quot;Failed to open directory&quot;);  
-        return 1;  
-    }  
-
-    while((direntp = readdir(dirp)) != NULL)  
-        printf(&quot;%s\n&quot;, direntp-&gt;d_name);  
-    while((closedir(dirp) == -1) &amp;&amp; (errno == EINTR)) ;  
-    return 0;   
-}  </code></pre><p>dirent结构： </p>
-<pre><code>struct dirent{  
-    ino_t d_ino; /* inode number */  
-    off_t d_off; /* offset to the next dirent */  
-    unsigned short d_reclen; /* length of this record */  
-    unsigned char d_type; /* type of file */  
-    char d_name[256]; /*filename*/    
-};  </code></pre><p>POSIX仅需要d_name字段，其他的都是可选的或者是linux特有的。<br>可移植性的程序应该只访问d_name字段。 </p>
-<p>从Dir可以获得文件描述符： </p>
-<pre><code>#define _BSD_SOURCE  
-#include &lt;sys/types.h&gt;  
-#include &lt;dirent.h&gt;  
-
-int dirfd(DIR *dir);  </code></pre><p>这个是BSD的一个扩展，并不是POSIX标准。 </p>
-<h3 id="访问文件的状态信息"><a href="#访问文件的状态信息" class="headerlink" title="访问文件的状态信息"></a>访问文件的状态信息</h3><p>lstat、stat </p>
-<h2 id="硬链接和软链接"><a href="#硬链接和软链接" class="headerlink" title="硬链接和软链接"></a>硬链接和软链接</h2><p>硬链接：两个path指向同一个inode.<br>软链接：单独的一个文件，里面存储了链接文件的路径。 </p>
-<h3 id="创建和删除一个硬链接"><a href="#创建和删除一个硬链接" class="headerlink" title="创建和删除一个硬链接"></a>创建和删除一个硬链接</h3><pre><code>#include &lt;unistd.h&gt;  
-
-int link(const char *path1, const char *path2);  
-int unlink(const char *path);  </code></pre><p>为有path1指定的文件创建一个新的目录项。 </p>
-<pre><code>#include &lt;stdio.h&gt;  
-#include &lt;unistd.h&gt;  
-
-if (link(&quot;/dirA/name1&quot;,&quot;dirB/name2&quot;) == -1)  
-    perror(&quot;Failed to make a new link in /dirB&quot;);  </code></pre><h3 id="创建和删除一个硬链接-1"><a href="#创建和删除一个硬链接-1" class="headerlink" title="创建和删除一个硬链接"></a>创建和删除一个硬链接</h3><pre><code>#include &lt;unistd.h&gt;  
-
-int symlink(const char *path1, const char *path2);  </code></pre><h2 id="拷贝或者移动文件"><a href="#拷贝或者移动文件" class="headerlink" title="拷贝或者移动文件"></a>拷贝或者移动文件</h2><p>拷贝和移动文件时两个最基本的文件操作任务，可以使用shell命令cp和mv来完成。 </p>
-<h3 id="拷贝文件"><a href="#拷贝文件" class="headerlink" title="拷贝文件"></a>拷贝文件</h3><p>Unix没有提供此操作的系统调用或者库来完成拷贝文件和目录，但可以使用cp命令来手工执行这个任务。<br>拷贝一个文件src到目标dst，要执行的操作步骤： </p>
-<ol>
-<li>打开src </li>
-<li>打开dst，创建如果不存在，清空如果存在。 </li>
-<li>将src读取到内存 </li>
-<li>将从src读取到的内容写入dst </li>
-<li>继续指导所有内容从src写到dst </li>
-<li>关闭dst </li>
-<li>关闭src </li>
-</ol>
-<p>如果拷贝一个目录，递归拷贝目录本身及其子目录通过mkdir及其采用上面步骤拷贝文件。 </p>
-<h3 id="移动"><a href="#移动" class="headerlink" title="移动"></a>移动</h3><p>Unix提供了移动文件的系统调用。ANSI C使用这个调用来移动文件，POSIX标准将其用于文件和目录。 </p>
-<pre><code>#include &lt;stdio.h&gt;  
-
-int rename(const char *oldpath, const char *newpath);  </code></pre><p>将路径名称从oldpath改成newpath，内容和inode没有变化。newpath需要在同一文件系统中。<br>成功返回0，失败返回-1，并设置errno。 </p>
-<h2 id="创建临时文件"><a href="#创建临时文件" class="headerlink" title="创建临时文件"></a>创建临时文件</h2><p>ISO C标准定义了两个标准I/O函数来创建临时文件。 </p>
-<pre><code>#include &lt;stdio.h&gt;  
-
-char *tmpnam(char *ptr); /*返回执行路径的指针*/  
-FILE *tmpfile(void); /*返回文件指针，错误则为NULL*/  </code></pre><p>tmpnam每次产生一个不同的合法的路径名字。如果ptr是NULL，生成一个存储在静态区域的名字，<br>并返回指向它的指针，所以如果连续调用两次会覆盖前一次的tmpname。<br>如果指定了ptr，则它被假设指向一个数组，并且长度不小于L_tmpnam（&lt;stdio.h&gt;中定义）。<br>例子： </p>
-<pre><code>#include &lt;stdio.h&gt;  
-
-int main(void){  
-    char name[L_tmpnam],line[MAXLINE];  
-    FILE *fp;  
-
-    printf(&quot;%s\n&quot;,tmpnam(NULL));  
-    tmpname(name);  
-    printf(&quot;%s\n&quot;,name);  
-
-    if((fp = tmpfile()) == NULL){  
-        perror(&quot;tmpfile&quot;);  
-        return 1;  
-    }  
-
-    fputs(&quot;one line of output\n&quot;,fp);  
-    rewind(fp);  
-
-    if(fgets(line,sizeof(line),fp) == NULL){  
-        perror(&quot;fgets&quot;);  
-        return 1;  
-    }  
-    fputs(line,stdout);  
-
-    return 0;  
-}  </code></pre><p>XSI扩展定义了两个另外的方法来操作临时文件： </p>
-<pre><code>#include &lt;stdio.h&gt;  
-
-char *tempnam(const char *directory, const char *prefix);  
-int mkstemp(char *template);  </code></pre><p>tempnam和tmpnam一样，但是可以指定目录和前缀来生成临时文件名。 </p>
-<ol>
-<li>如果环境变量定义了TMPDIR，则使用它作为目录。 </li>
-<li>如果directory不为NULL，则使用它。 </li>
-<li>在&lt;stdio.h&gt;中的P_tmpdir作为目录。 </li>
-<li>本地的目录，通常/tmp被作为临时目录。 </li>
-</ol>
-<p>前缀prefix如果不为NULL，至少5个字节。<br>生成的名字是通过malloc动态申请的内存，所以要使用free释放。 </p>
-<pre><code>#include &lt;stdio.h&gt;  
-
-int main(int argc, char *argv[]){  
-    if(argc != 3){  
-        pintf(&quot;usage: %s &lt;directory&gt; &lt;prefix&gt;&quot;,argv[0]);  
-        return 1;  
-    }  
-
-    printf(&quot;%s\n&quot;,tempnam(argv[1][0] != &#39; &#39; ? argv[1] : NULL, argv[2][0] != &#39; &#39; ? argv[2] : NULL));  
-
-    return 0;  
-}  </code></pre><p>mkstemp和tmpfile类似，只是返回了文件描述符，并且mkstemp生成的临时文件不会自动清除。<br>path的后六个字符要设置为XXXXXX，通过替换它来生成不同的名字。 </p>
-]]></content>
-      <categories>
-        <category>Linux System Programming</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>Linux系统编程-进程管理</title>
-    <url>/2014/11/03/Linux-system-programming-process/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
-<h2 id="程序、进程和线程"><a href="#程序、进程和线程" class="headerlink" title="程序、进程和线程"></a><strong>程序、进程和线程</strong></h2><p>程序（program）是指编译过的、可执行的二进制代码，保存在介质上，不运行。</p>
-<p>进程（process）是指正在运行的程序。进程包括二进制镜像，加载到内存中，<br>还涉及到虚拟内存实例、内核资源、安全上下文，以及一个或多个线程。</p>
-<p>线程（thread）是进程内的活动单元。每个线程包含自己的虚拟存储器，包括栈、进程状态如寄存器，以及指令指针。</p>
-<p>在单线程的进程中，进程即线程。一个进程只有一个虚拟内存实例，一个虚拟处理器。<br>在多线程的进程中，由于虚拟内存是和进程关联的，所有线程共享相同的内存地址空间。</p>
-<h2 id="进程ID"><a href="#进程ID" class="headerlink" title="进程ID"></a><strong>进程ID</strong></h2><p>创建新进程的那个进程称为父进程，而新进程称为子进程。</p>
-<p>获取进程ID和父进程ID：</p>
-<pre><code>#include &lt;sys/types.h&gt;
-#inlcude &lt;unistd.h&gt;
-
-pid_t getpid(void);
-pid_t getppid(void);</code></pre><h2 id="运行新进程"><a href="#运行新进程" class="headerlink" title="运行新进程"></a><strong>运行新进程</strong></h2><p>在UNIX中，将程序载入内存并执行程序映像的操作与创建新进程的操作是分离的。<br>一次系统调用会将二进制程序加载到内存中，替换地址空间原来的内容，<br>并开始执行。这个过程成为“执行（executing）”一个新的程序，是通过exec系列函数完成。</p>
-<p>另一个不同的系统调用用于创建新的进程，相当于复制其父进程。<br>通常情况下，<strong>新的进程会立即执行新的程序</strong>。<br>创建新进程的操作称为派生（fork），是系统调用fork()来完成的。</p>
-<p>在新进程中执行一个新的程序需要执行两个步骤：fork()和exec系列函数。</p>
-<h3 id="exec系统调用"><a href="#exec系统调用" class="headerlink" title="exec系统调用"></a><strong>exec系统调用</strong></h3><p>函数原型如下：</p>
-<pre><code>#include &lt;unistd.h&gt;
-
-int execl(const char *path, const char *arg, ...);
-int execlp(const char *file, const char *arg, ...);
-int execle(const char *path, const char *arg, ..., char *const envp[]);
-int execv(const char *path, char *const argv[]);
-int execvp(const char *file, char *const argv[]);
-int execve(const char *filename, char *const argv[], char *const envp[]);</code></pre><p>exec系列函数只有execve()是真正的系统调用，其他都是基于该系统调用在C库中的封装函数。</p>
-<p>这些函数如果调用成功则加载新的程序并跳转到新的程序入口点开始执行，不再返回，如果调用出错则返回-1。<br>所以，<strong>exec函数只有出错的返回值而没有成功的返回值</strong>。</p>
-<p>函数名和参数解析：</p>
-<ul>
-<li>l和v分别表示参数以列表或数组（向量）方式提供，两种形式的最后一个参数必须为NULL。<br>由于execl、execlp、execle这三个函数都是可变参数函数，所以NULL应该转换为(char <em>)NULL或(char</em>)0</li>
-<li>p表示会在用户的绝对路径path下查找可执行文件，不需要输入完整路径</li>
-<li>…表示可变长度的参数列表</li>
-<li>e表示会为新进程提供新的环境变量</li>
-</ul>
-<p>exec示例代码：</p>
-<pre><code>#include &lt;unistd.h&gt;   
-
-char *const ps_argv[] = {&quot;ps&quot;, &quot;-o&quot;, &quot;pid,ppid,pgrp,session,tpgid,comm&quot;, NULL};   
-char *const ps_envp[] = {&quot;PATH=/bin:/usr/bin&quot;, &quot;TERM=console&quot;, NULL};  
-
-execl(&quot;/bin/ps&quot;, &quot;ps&quot;, &quot;-o&quot;, &quot;pid,ppid,pgrp,session,tpgid,comm&quot;, NULL);   
-execlp(&quot;ps&quot;, &quot;ps&quot;, &quot;-o&quot;, &quot;pid,ppid,pgrp,session,tpgid,comm&quot;, (char*)0); 
-execle(&quot;/bin/ps&quot;, &quot;ps&quot;, &quot;-o&quot;, &quot;pid,ppid,pgrp,session,tpgid,comm&quot;, NULL, ps_envp);   
-
-execv(&quot;/bin/ps&quot;, ps_argv);    
-execvp(&quot;ps&quot;, ps_argv); 
-execve(&quot;/bin/ps&quot;, ps_argv, ps_envp); </code></pre><p>函数关系图如下：</p>
-<p><img src="http://s12.sinaimg.cn/middle/674b5aaeg9a45c6c0bcbb&690" alt=""></p>
-<h3 id="fork-系统调用"><a href="#fork-系统调用" class="headerlink" title="fork()系统调用"></a><strong>fork()系统调用</strong></h3><p>通过fork()系统调用可以创建一个和当前进程一样的新进程：</p>
-<pre><code>#include &lt;sys/types.h&gt;
-#include &lt;unistd.h&gt;
-
-pid_t fork(void);</code></pre><p>当fork()调用成功时，会创建一个新的进程，几乎与调用fork()的进程完全相同。<br>这两个进程都会继续运行，调用者进程从fork()返回后，还是照常运行。此处产生分叉点！</p>
-<p>fork调用的一个奇妙之处就是它仅仅被调用一次，却能够返回两次，它可能有三种不同的返回值：</p>
-<ul>
-<li>在父进程中，fork返回新创建子进程的进程ID；</li>
-<li>在子进程中，fork返回0；</li>
-<li>如果出现错误，fork返回一个负值-1；</li>
-</ul>
-<p>可以通过fork返回的值来判断当前进程是子进程还是父进程,fork()系统调用用法：</p>
-<pre><code>pid_t pid;
-
-pid = fork();
-if(pid &gt; 0)
-    printf(&quot;I am the parent of pid=%d!\n&quot;, pid);
-else if(0 == pid)
-    printf(&quot;I am the child!\n&quot;);
-else if(-1 == pid)
-    printf(&quot;fork&quot;);</code></pre><p>一个进程调用fork()函数后，系统先给新的进程分配资源，<br>例如存储数据和代码的空间。然后把原来的进程的所有值都复制到新的新进程中，<br>只有少数值与原来的进程的值不同。相当于克隆了一个自己。<br>在Linux中，采用写时复制（copy-on-write，COW）的方式，而不是对父进程空间的整体复制。</p>
-<h2 id="终止进程"><a href="#终止进程" class="headerlink" title="终止进程"></a><strong>终止进程</strong></h2><p>标准函数，用于终止当前进程：</p>
-<pre><code>#include &lt;stdlib.h&gt;
-
-void exit(int status);</code></pre><p>status值为0表示终止程序成功，用非0值表示异常终止。<br>标准C语言中数值0和宏EXIT_SCCESS的值表示终止成功，<br>宏EXIT_FAILURE的值表示终止不成功，其他值的含义由实现定义。<br>从函数main返回一个整数值相当于用这个值调用exit函数。</p>
-<p>在终止进程之前，C库会安顺序执行一下操作步骤：</p>
-<ul>
-<li>所有通过atexit()或on_exit()函数（废止？）注册的函数按与注册时相反的顺序调用，注册几次就调用几次。</li>
-<li>刷新打开的是输出流，关闭所有打开的数据流。</li>
-<li>删除tmpfile()函数生成的临时文件。</li>
-<li>完成用户空间需要做的所有工作，调用系统调用_exit()，内核可以处理终止进程的剩余工作。</li>
-</ul>
-<p>很多时候我们需要在程序退出的时候做一些诸如释放资源的操作，但程序退出的方式有很多种，<br>比如main()函数运行结束、在程序的某个地方用exit()结束程序、用户通过Ctrl+C或Ctrl+break操作来终止程序等等，<br>因此需要有一种与程序退出方式无关的方法来进行程序退出时的必要处理。<br>方法就是用atexit()函数来注册程序正常终止时要被调用的函数。</p>
-<p>atexit()函数的参数是一个函数指针，<br>函数指针指向一个没有参数也没有返回值的函数。atexit()的函数原型是：</p>
-<pre><code>int atexit (void (*function)(void));</code></pre><p>在一个程序中最多可以用atexit()注册32个处理函数，<br>这些处理函数的调用顺序与其注册的顺序相反，也即最先注册的最后调用，最后注册的最先调用。<br><strong>如果进程调用了exec函数，会清空所注册的函数列表。<br>如果进程是通过信号结束(SIGTERM和SIGKILL)，就不会调用这些注册的函数。</strong></p>
-<h2 id="等待子进程结束"><a href="#等待子进程结束" class="headerlink" title="等待子进程结束"></a><strong>等待子进程结束</strong></h2><pre><code>#include &lt;sys/types.h&gt;
-#include &lt;sys/wait.h&gt;
-
-pid_t wait(int *status);
-pid_t waitpid(pid_t pid, int *status, int options);</code></pre><p><strong>僵尸进程</strong>：已经终止，但是它的父进程还没有获取到其状态的进程。<br>僵尸进程会消耗一些系统资源–仅仅是描述进程之前状态的一些概要信息。<br>主要是为父进程查询子进程状态时提供相应信息。<br>一旦父进程得到了想要的信息，内核就清除这些信息，僵尸进程终止。</p>
-<h2 id="创建并等待新进程"><a href="#创建并等待新进程" class="headerlink" title="创建并等待新进程"></a><strong>创建并等待新进程</strong></h2><pre><code>#include &lt;stdlib.h&gt;
-
-int system(const char *command);</code></pre><p>创建新进程并等待它结束，可以看作是同步创建进程。</p>
-<p>调用system()会执行参数command所提供的命令，而且还可以为该命令指定参数。<br>“/bin/sh -c”会作为前缀添加到command参数前面。<br>通过这种方式，再把整个命令传递给shell。</p>
-<p>实际上system()函数执行了三步操作：</p>
-<ul>
-<li>fork一个子进程</li>
-<li>在子进程中调用exec函数去执行command</li>
-<li>在父进程中调用wait去等待子进程结束</li>
-</ul>
-<h2 id="会话（Session）和进程组"><a href="#会话（Session）和进程组" class="headerlink" title="会话（Session）和进程组"></a><strong>会话（Session）和进程组</strong></h2><p>进程组：</p>
-<ul>
-<li>每个进程都属于某一个进程组</li>
-<li>每个进程组都有一个进程组号，该号等于该进程组组长的PID号</li>
-<li>一个进程只能为它自己或子进程设置进程组ID号</li>
-</ul>
-<p>会话(session)是一个或多个进程组的集合。<br>setsid()函数可以建立一个会话：</p>
-<p>如果，调用setsid的进程不是一个进程组的组长，此函数创建一个新的会话。</p>
-<ul>
-<li>此进程变成该对话期的首进程</li>
-<li>此进程变成一个新进程组的组长进程。</li>
-<li>此进程没有控制终端，如果在调用setsid前，该进程有控制终端，那么与该终端的联系被解除。<br>如果该进程是一个进程组的组长，此函数返回错误。</li>
-<li>使任何进程不成为组长的方式：先调用fork()然后exit()父进程，此时只有子进程在运行</li>
-</ul>
-<h2 id="守护进程"><a href="#守护进程" class="headerlink" title="守护进程"></a><strong>守护进程</strong></h2><p>Linux Daemon（守护进程）是运行在后台的一种特殊进程。<br>它独立于控制终端并且周期性地执行某种任务或等待处理某些发生的事件。<br>它不需要用户输入就能运行而且提供某种服务，不是对整个系统就是对某个用户程序提供服务。<br>Linux系统的大多数服务器就是通过守护进程实现的。<br>常见的守护进程包括系统日志进程syslogd、 web服务器httpd、邮件服务器sendmail和数据库服务器mysqld等。</p>
-<p>守护进程一般在系统启动时开始运行，除非强行终止，否则直到系统关机都保持运行。<br>守护进程经常以超级用户（root）权限运行，因为它们要使用特殊的端口（1-1024）或访问某些特殊的资源。</p>
-<p>一个守护进程的父进程是init进程，因为它真正的父进程在fork出子进程后就先于子进程exit退出了，<br>所以它是一个由init继承的孤儿进程。<br>守护进程是非交互式程序，没有控制终端，所以任何输出，<br>无论是向标准输出设备stdout还是标准出错设备stderr的输出都需要特殊处理。</p>
-<p>守护进程的名称通常以d结尾，比如sshd、xinetd、crond等</p>
-<p>守护进程不想是任何已存在会话的成员，也不想拥有控制终端，创建守护进程所需步骤：</p>
-<ul>
-<li>调用fork，创建新进程，该进程将会成为守护进程</li>
-<li>在守护进程的父进程中调用exit。确保父进程的父进程在其子进程结束时会退出，<br>保证了守护进程的父进程不再继续运行，而且守护进程不是首进程</li>
-<li>调用setsid函数，使守护进程有一个新的进程组和会话，并作为两者的首进程。<br>保证了不存在和守护进程相关连的控制终端</li>
-<li>调用chdir函数，让根目录成为守护进程的工作目录</li>
-<li>关闭所有文件描述符</li>
-<li>打开文件描述符0、1和2，并重定向到/dev/null</li>
-</ul>
-<p>代码如下：</p>
-<pre><code>#include &lt;sys/types.h&gt;
-#include &lt;sys/stat.h&gt;
-#include &lt;stdlib.h&gt;
-#include &lt;stdio.h&gt;
-#include &lt;fcntl.h&gt;
-#include &lt;unistd.h&gt;
-#include &lt;linux/fs.h&gt;
-
-int main(void)
-{
-    pid_t pid;
-    int i;
-
-    //Create New Process
-    pid = fork();
-    if(-1 == pid)
-        return -1;
-    else if(0 == pid)
-        exit(0);
-
-    //Create new session and process group
-    if(setsid() == -1)
-        return -1;
-
-    //Set the working dir to &quot;/&quot;
-    if(chdir(&quot;/&quot;) == -1)
-        return -1;
-
-    //Close all open files
-    for(i = 0; i &lt; NR_OPEN; i++)
-        close(i);
-
-    //Redirect fd&#39;s 0,1,2 to /dev/null
-    open(&quot;/dev/null&quot;, O_RDWR);  //stdin
-    dup(0); //stdout
-    dup(0); //stderr
-
-    //do its daemon thing ...
-}</code></pre><p>其实我们完全可以利用daemon()函数创建守护进程，其函数原型：</p>
-<pre><code>#include &lt;unistd.h&gt;
-
-int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
-<ul>
-<li>nochdir：=0将当前目录更改至“/”</li>
-<li>noclose：=0将标准输入、标准输出、标准错误重定向至“/dev/null”</li>
-</ul>
-]]></content>
-      <categories>
-        <category>Linux System Programming</category>
-      </categories>
-      <tags>
-        <tag>进程管理</tag>
       </tags>
   </entry>
   <entry>
@@ -33322,8 +33375,8 @@ rtsp://192.168.128.5/?src=1&amp;fe=1&amp;freq=12720&amp;pol=v&amp;msys=dvbs2&amp
 ]]></content>
       <categories>
         <category>Network</category>
-        <category>Tools</category>
         <category>TCP</category>
+        <category>Tools</category>
         <category>HTTP</category>
         <category>Network</category>
       </categories>
