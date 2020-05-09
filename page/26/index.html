@@ -216,6 +216,200 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/11/25/gdb-disassemble-debug/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/11/25/gdb-disassemble-debug/" class="post-title-link" itemprop="url">gdb反汇编调试</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-11-26 00:00:00" itemprop="dateCreated datePublished" datetime="2015-11-26T00:00:00+08:00">2015-11-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index">
+                    <span itemprop="name">C</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.7k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p><strong>重点命令</strong>：<strong>display /i $pc</strong></p>
+<h2 id="gdb-命令"><a href="#gdb-命令" class="headerlink" title="gdb 命令"></a><strong>gdb 命令</strong></h2><ul>
+<li>file &lt;文件名&gt;加载被调试的可执行程序文件。</li>
+<li>r Run的简写，运行被调试的程序。</li>
+<li>c Continue的简写，继续执行被调试程序， 直至下一个断点或程序结束。</li>
+<li>b &lt;行号&gt;</li>
+<li>b &lt;函数名称&gt;</li>
+<li>b *&lt;函数名称&gt;</li>
+<li>b *&lt;代码地址&gt;</li>
+<li>b: Breakpoint的简写，设置断点。两可以使用“行号”“函数名称”“执行地址”等方式指定断点位置。<br>其中在函数名称前面加“*”符号表示将断点设置在“由编译器生成的prolog代码处”。</li>
+<li>d [编号] Delete breakpoint的简写，删除指定编号的某个断点，或删除所有断点。断点编号从1开始递增。</li>
+<li>s: 执行一行源程序代码，如果此行代码中有函数调用，则进入该函数；<br>s 相当于其它调试器中的“Step Into (单步跟踪进入)”；</li>
+<li>n: 执行一行源程序代码，此行代码中的函数调用也一并执行。<br>n 相当于其它调试器中的“Step Over (单步跟踪)”。</li>
+<li>si命令类似于s命令，ni命令类似于n命令。 所不同的是，这两个命令（si/ni）所针对的是汇编指令，而s/n针对的是源代码。</li>
+<li>p &lt;变量名称&gt;Print的简写，显示指定变量（临时变量或全 局变量）的值。</li>
+<li>display，设置程序中断后欲显示的数据及 其格式。<br>例如，<strong>如果希望每次程序中断后可以看到即将被执行的下一条汇编指令，可以使用命令<br>“display /i $pc”<br>其中 $pc 代表当前汇编指令，/i 表示以十六进行显示。当需要关心汇编代码时，此命令相当有用。</strong></li>
+<li>undispaly，取消先前的display设 置，编号从1开始递增。</li>
+<li>i Info的简写，用于显示各类信息，详情请查阅 “help i”。</li>
+<li>q Quit的简写，退出GDB调试环境。</li>
+<li>help [命令名称]GDB帮助命令，提供对GDB名种命令的解释说明。<br>如果指定了“命令名称”参数，则显示该命令的详细说明；如果没有指定参数，则分类显示所有GDB命令，供用户进一步浏览和查询。</li>
+</ul>
+<h2 id="反汇编调试"><a href="#反汇编调试" class="headerlink" title="反汇编调试"></a><strong>反汇编调试</strong></h2><p>　</p>
+<h3 id="显示汇编命令-display-i-pc"><a href="#显示汇编命令-display-i-pc" class="headerlink" title="显示汇编命令 display /i $pc"></a><strong>显示汇编命令 display /i $pc</strong></h3><pre><code>(gdb) display /i $pc
+(gdb) si
+20 n++;
+1: x/i $pc 0x8048363 &lt;main+23&gt;: lea 0xfffffffc(%ebp),%eax
+(gdb) si
+0x08048366 20 n++;
+1: x/i $pc 0x8048366 &lt;main+26&gt;: incl (%eax)
+(gdb) si
+21 n--;
+1: x/i $pc 0x8048368 &lt;main+28&gt;: lea 0xfffffffc(%ebp),%eax
+(gdb) si
+0x0804836b 21 n--;
+1: x/i $pc 0x804836b &lt;main+31&gt;: decl (%eax)
+(gdb) si
+23 nGlobalVar += 100;
+1: x/i $pc 0x804836d &lt;main+33&gt;: addl $0x64,0x80494fc</code></pre><p>　</p>
+<h3 id="汇编断点设置"><a href="#汇编断点设置" class="headerlink" title="汇编断点设置"></a><strong>汇编断点设置</strong></h3><p>使用命令“b *main”在 main 函数的 prolog 代码处设置断点<br>（<strong>prolog、epilog，分别表示编译器在每个函数的开头和结尾自行插入的代码</strong>）：</p>
+<pre><code>(gdb) b *main
+Breakpoint 4 at 0x804834c: file gdb-sample.c, line 17.
+(gdb) r
+The program being debugged has been started already.
+Start it from the beginning? (y or n) y
+Starting program: /home/liigo/temp/test_jmp/test_jmp/gdb-sample
+
+Breakpoint 4, main () at gdb-sample.c:17
+17 {
+1: x/i $pc 0x804834c &lt;main&gt;: push %ebp
+(gdb) si
+0x0804834d 17 {
+1: x/i $pc 0x804834d &lt;main+1&gt;: mov %esp,%ebp
+(gdb) si
+0x0804834f in main () at gdb-sample.c:17
+17 {
+1: x/i $pc 0x804834f &lt;main+3&gt;: sub $0x8,%esp
+(gdb) si
+0x08048352 17 {
+1: x/i $pc 0x8048352 &lt;main+6&gt;: and $0xfffffff0,%esp
+(gdb) si
+0x08048355 17 {
+1: x/i $pc 0x8048355 &lt;main+9&gt;: mov $0x0,%eax
+(gdb) si
+0x0804835a 17 {
+1: x/i $pc 0x804835a &lt;main+14&gt;: sub %eax,%esp
+(gdb) si
+19 n = 1;
+1: x/i $pc 0x804835c &lt;main+16&gt;: movl $0x1,0xfffffffc(%ebp)</code></pre><p>此时可以使用“i r”命令显示寄存器中的当前值———“i r”即“Infomation Register”：</p>
+<pre><code>(gdb) i r
+eax 0xbffff6a4 -1073744220
+ecx 0x42015554 1107383636
+edx 0x40016bc8 1073834952
+ebx 0x42130a14 1108544020
+esp 0xbffff6a0 0xbffff6a0
+ebp 0xbffff6a8 0xbffff6a8
+esi 0x40015360 1073828704
+edi 0x80483f0 134513648
+eip 0x8048366 0x8048366
+eflags 0x386 902
+cs 0x23 35
+ss 0x2b 43
+ds 0x2b 43
+es 0x2b 43
+fs 0x0 0
+gs 0x33 51
+当然也可以显示任意一个指定的寄存器值：
+(gdb) i r eax
+eax 0xbffff6a4 -1073744220</code></pre><p>　<br>1.<a href="http://blog.csdn.net/winterttr/article/details/5537638" target="_blank" rel="noopener">gdb中汇编调试</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/11/18/deal-with-file-by-line/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +441,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
+                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -507,7 +701,7 @@ o{2,} 与“Bob”中的“o”不匹配，但与“foooood”中的所有“o�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
+                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -607,7 +801,7 @@ o{2,} 与“Bob”中的“o”不匹配，但与“foooood”中的所有“o�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
+                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -745,7 +939,7 @@ dump tekhex value filename expression
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
+                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -936,7 +1130,7 @@ nmap &lt;leader&gt;&lt;leader&gt;q :call CodeFormat()&lt;CR&gt;</code></pre><p>�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
+                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -962,14 +1156,14 @@ nmap &lt;leader&gt;&lt;leader&gt;q :call CodeFormat()&lt;CR&gt;</code></pre><p>�
                 </span>
                   , 
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Network/TCP/" itemprop="url" rel="index">
-                    <span itemprop="name">TCP</span>
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
                   </a>
                 </span>
                   , 
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/" itemprop="url" rel="index">
-                    <span itemprop="name">Tools</span>
+                  <a href="/categories/Network/TCP/" itemprop="url" rel="index">
+                    <span itemprop="name">TCP</span>
                   </a>
                 </span>
                   , 
@@ -1192,7 +1386,7 @@ net.core.wmem_max = 16777216</code></pre><p>一般来说，<strong>理论上的R
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
+                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1568,7 +1762,7 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb, int clone_it,
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
+                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1714,7 +1908,7 @@ PRI  </code></pre><p>解析如下：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
+                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1908,7 +2102,7 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
+                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2010,7 +2204,7 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
+                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2131,7 +2325,7 @@ pip install pyinstaller</code></pre><p>均正确，解决此问题</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
+                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2231,7 +2425,7 @@ from PIL import ImageTk</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
+                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2398,7 +2592,7 @@ com</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
+                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2604,7 +2798,7 @@ test3</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
+                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2891,129 +3085,6 @@ files := $(shell echo *.c)</code></pre><p>注意，这个函数会新生成一�
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/21/compile-warning/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/10/21/compile-warning/" class="post-title-link" itemprop="url">解决C编译警告</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-10-22 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-22T00:00:00+08:00">2015-10-22</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-08 13:55:35" itemprop="dateModified" datetime="2020-05-08T13:55:35+08:00">2020-05-08</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/C/" itemprop="url" rel="index">
-                    <span itemprop="name">C</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>2.3k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<h2 id="implicit-declaration-of-function"><a href="#implicit-declaration-of-function" class="headerlink" title="implicit declaration of function"></a>implicit declaration of function</h2><pre><code>warning: implicit declaration of function &#39;app_create_dialog&#39;</code></pre><p>包含函数’app_create_dialog’定义的头文件解决警告。<br>如果没有声明头文件，可以将函数extern声明一下。</p>
-<h2 id="unused-variable"><a href="#unused-variable" class="headerlink" title="unused variable"></a>unused variable</h2><pre><code>warning: unused variable &#39;buf&#39;</code></pre><p>删除不使用的变量</p>
-<h2 id="initialization-discards-qualifiers-from-pointer-target-type"><a href="#initialization-discards-qualifiers-from-pointer-target-type" class="headerlink" title="initialization discards qualifiers from pointer target type"></a>initialization discards qualifiers from pointer target type</h2><pre><code>xx.c: In function &#39;cmm_cascam_create_dialog1&#39;:
-xx.c:95:26: warning: initialization discards qualifiers from pointer target type</code></pre><p>添加类型强制转换</p>
-<h2 id="pointer-targets-in-return-differ-in-signedness"><a href="#pointer-targets-in-return-differ-in-signedness" class="headerlink" title="pointer targets in return differ in signedness"></a>pointer targets in return differ in signedness</h2><pre><code>xx.c: In function &#39;cmm_ca_get_notice_str&#39;:
-xx.c:58:5: warning: pointer targets in return differ in signedness</code></pre><p>数据类型不匹配，强制转换</p>
-<h2 id="assignment-discards-qualifiers-from-pointer-target-type"><a href="#assignment-discards-qualifiers-from-pointer-target-type" class="headerlink" title="assignment discards qualifiers from pointer target type"></a>assignment discards qualifiers from pointer target type</h2><pre><code>ca/common_menu/cmm_cascam_dialog3.c: In function &#39;_create_dialog_check&#39;:
-ca/common_menu/cmm_cascam_dialog3.c:150:17: warning: assignment discards qualifiers from pointer target type</code></pre><p>强制转换解决</p>
-<h2 id="defined-but-not-used"><a href="#defined-but-not-used" class="headerlink" title="defined but not used"></a>defined but not used</h2><pre><code>x.c:59:12: warning: &#39;_mutex_delete&#39; defined but not used</code></pre><p>删除无用代码</p>
-<h2 id="control-reaches-end-of-non-void-function"><a href="#control-reaches-end-of-non-void-function" class="headerlink" title="control reaches end of non-void function"></a>control reaches end of non-void function</h2><pre><code>module/cascam/cas/thinew/adapter/tnt_demux.c: In function &#39;_nit_set_equal_filter&#39;:
-module/cascam/cas/thinew/adapter/tnt_demux.c:600:1: warning: control reaches end of non-void function</code></pre><p>添加</p>
-<pre><code>return ret;</code></pre><h2 id="pointer-targets-in-passing-argument-1-of-‘cascam-strlen’-differ-in-signedness"><a href="#pointer-targets-in-passing-argument-1-of-‘cascam-strlen’-differ-in-signedness" class="headerlink" title="pointer targets in passing argument 1 of ‘cascam_strlen’ differ in signedness"></a>pointer targets in passing argument 1 of ‘cascam_strlen’ differ in signedness</h2><pre><code>module/cascam/cas/thinew/adapter/tnt_baseinfo.c: In function &#39;_get_basic_information&#39;:
-module/cascam/cas/thinew/adapter/tnt_baseinfo.c:45:9: warning: pointer targets in passing argument 1 of &#39;cascam_strlen&#39; differ in signedness
-module/cascam/cas/thinew/adapter/../../../include/cascam_os.h:61:14: note: expected &#39;char *&#39; but argument is of type &#39;unsigned char *&#39;</code></pre><p>形参与实参类型不匹配，强制转换</p>
-<h2 id="warning-missing-braces-around-initializer"><a href="#warning-missing-braces-around-initializer" class="headerlink" title="warning: missing braces around initializer"></a>warning: missing braces around initializer</h2><pre><code>module/cascam/adapter/cascam_osd_adapter.c: In function &#39;cascam_osd_pop_dialog5&#39;:
-module/cascam/adapter/cascam_osd_adapter.c:295:5: warning: missing braces around initializer
-module/cascam/adapter/cascam_osd_adapter.c:295:5: warning: (near initialization for &#39;para.title&#39;)</code></pre><p>初始化大括号不明确，内部加上一个大括号，二维数组初始化。</p>
-<h2 id="may-be-used-uninitialized-in-this-function"><a href="#may-be-used-uninitialized-in-this-function" class="headerlink" title="may be used uninitialized in this function"></a>may be used uninitialized in this function</h2><p>初始化变量</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -3064,7 +3135,7 @@ module/cascam/adapter/cascam_osd_adapter.c:295:5: warning: (near initialization 
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">445</span>
+          <span class="site-state-item-count">446</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -3077,7 +3148,7 @@ module/cascam/adapter/cascam_osd_adapter.c:295:5: warning: (near initialization 
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">476</span>
+        <span class="site-state-item-count">477</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -3137,7 +3208,7 @@ module/cascam/adapter/cascam_osd_adapter.c:295:5: warning: (near initialization 
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:09</span>
+    <span title="Reading time total">18:11</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
   </div>

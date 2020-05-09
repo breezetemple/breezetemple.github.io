@@ -640,6 +640,30 @@ echo</code></pre>]]></content>
       </tags>
   </entry>
   <entry>
+    <title>GCC静态库链接顺序</title>
+    <url>/2014/12/14/Linux-ld/</url>
+    <content><![CDATA[<p>工程中遇到问题，修改配置文件之后发现编译不过，部分符号未定义，检查Makefile如下：</p>
+<pre><code>LDFLAGS += -lui -lenca -lxml -lgxbox -lstdc++ -ljansson -lcurl
+...
+LDFLAGS += -L$(GXSRC_PATH)/lib/$(THIRD_LIB)/ -lkolatv -lpcre</code></pre><p>其中<strong>kolatv库</strong>需要调用<strong>jansson库</strong>，<strong>gxbox库</strong>也需要调用<strong>jansson库</strong>。</p>
+<p>在修改配置文件之前，开启了gxbox的支持，在编译中需要链接gxbox库，从而jansson库可以链接成功。</p>
+<p>在修改配置文件之后，关闭了gxbox的支持，在编译中不会编译gxbox代码，gxbox库链接失败，<br>从而jansson库链接失败，在载入kolatv库时不存在jansson库的符号表。</p>
+<p>GCC：</p>
+<p>-l library</p>
+<p>Search the library named library when linking.<br>(The second alternative with the library as a separate argument is only for POSIX compliance and is not recommended.)</p>
+<p>It makes a difference where in the command you write this option;<br>the linker searches and processes libraries and object files in the order they are specified.<br>Thus, <code>foo.o -lz bar.o&#39; searches library</code>z’ after file foo.o but before bar.o.<br>If bar.o refers to functions in `z’, those functions may not be loaded.</p>
+<p><strong>因此，在链接过程中，链接的库，一定要在使用该库的目标被连接之后，基本的库要放在最后。</strong></p>
+<p>修改如下：</p>
+<pre><code>LDFLAGS += -lui -lenca -lxml -lkolatv -lgxbox -lstdc++ -ljansson -lcurl</code></pre>]]></content>
+      <categories>
+        <category>C</category>
+      </categories>
+      <tags>
+        <tag>ld</tag>
+        <tag>gcc</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Linux系统调用</title>
     <url>/2014/12/14/Linux-system-programming-syscall/</url>
     <content><![CDATA[<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
@@ -1348,30 +1372,6 @@ set(var a b c)</code></pre><p>字符串列表可以用 foreach命令叠代（ite
       </tags>
   </entry>
   <entry>
-    <title>GCC静态库链接顺序</title>
-    <url>/2014/12/14/Linux-ld/</url>
-    <content><![CDATA[<p>工程中遇到问题，修改配置文件之后发现编译不过，部分符号未定义，检查Makefile如下：</p>
-<pre><code>LDFLAGS += -lui -lenca -lxml -lgxbox -lstdc++ -ljansson -lcurl
-...
-LDFLAGS += -L$(GXSRC_PATH)/lib/$(THIRD_LIB)/ -lkolatv -lpcre</code></pre><p>其中<strong>kolatv库</strong>需要调用<strong>jansson库</strong>，<strong>gxbox库</strong>也需要调用<strong>jansson库</strong>。</p>
-<p>在修改配置文件之前，开启了gxbox的支持，在编译中需要链接gxbox库，从而jansson库可以链接成功。</p>
-<p>在修改配置文件之后，关闭了gxbox的支持，在编译中不会编译gxbox代码，gxbox库链接失败，<br>从而jansson库链接失败，在载入kolatv库时不存在jansson库的符号表。</p>
-<p>GCC：</p>
-<p>-l library</p>
-<p>Search the library named library when linking.<br>(The second alternative with the library as a separate argument is only for POSIX compliance and is not recommended.)</p>
-<p>It makes a difference where in the command you write this option;<br>the linker searches and processes libraries and object files in the order they are specified.<br>Thus, <code>foo.o -lz bar.o&#39; searches library</code>z’ after file foo.o but before bar.o.<br>If bar.o refers to functions in `z’, those functions may not be loaded.</p>
-<p><strong>因此，在链接过程中，链接的库，一定要在使用该库的目标被连接之后，基本的库要放在最后。</strong></p>
-<p>修改如下：</p>
-<pre><code>LDFLAGS += -lui -lenca -lxml -lkolatv -lgxbox -lstdc++ -ljansson -lcurl</code></pre>]]></content>
-      <categories>
-        <category>C</category>
-      </categories>
-      <tags>
-        <tag>ld</tag>
-        <tag>gcc</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>cmake 常用命令</title>
     <url>/2015/03/04/cmake-03/</url>
     <content><![CDATA[<script type="text/javascript">
@@ -1713,8 +1713,8 @@ $ csky-elf-objdump -h -t output/out.elf</code></pre>
         <category>Linker</category>
       </categories>
       <tags>
-        <tag>debug</tag>
         <tag>gcc</tag>
+        <tag>debug</tag>
         <tag>nm</tag>
         <tag>tools</tag>
       </tags>
@@ -2484,8 +2484,8 @@ in xx.c
         <category>C</category>
       </categories>
       <tags>
-        <tag>gdb</tag>
         <tag>gcc</tag>
+        <tag>gdb</tag>
         <tag>disassemble</tag>
       </tags>
   </entry>
@@ -11865,8 +11865,8 @@ git push / repo upload .</code></pre><h2 id="Ref"><a href="#Ref" class="headerli
         <category>Linux</category>
         <category>Socket</category>
         <category>Network</category>
-        <category>TCP</category>
         <category>Tools</category>
+        <category>TCP</category>
         <category>Network</category>
       </categories>
       <tags>
@@ -13607,204 +13607,6 @@ curl -u guowei:38e2427ac39d5a5f810c83c6fd39ee80 -H &quot;$CRUMB&quot; -X POST &q
       </tags>
   </entry>
   <entry>
-    <title>vim-highlight-syntax</title>
-    <url>/2017/12/19/vim-highlight-syntax/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
-<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
-<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
-<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
-<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
-<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
-<pre><code>:syntax
---- 语法项目 ---
-cLabel         xxx default case
-cStructure     xxx union struct typedef enum
-cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
-                   _Thread_local auto
-cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
-cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
-cStatement     xxx return goto asm continue break
-                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
-<p><code>:help group-name</code></p>
-<pre><code>:help group-name
-
-(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
-
-        *Comment        any comment
-
-        *Constant       any constant
-         String         a string constant: &quot;this is a string&quot;
-         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
-         Number         a number constant: 234, 0xff
-         Boolean        a boolean constant: TRUE, false
-         Float          a floating point constant: 2.3e10
-
-        *Identifier     any variable name
-         Function       function name (also: methods for classes)
-        *Statement      any statement
-         Conditional    if, then, else, endif, switch, etc.
-         Repeat         for, do, while, etc.
-         Label          case, default, etc.
-         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
-         Keyword        any other keyword
-         Exception      try, catch, throw
-
-        *PreProc        generic Preprocessor
-         Include        preprocessor #include
-         Define         preprocessor #define
-         Macro          same as Define
-         PreCondit      preprocessor #if, #else, #endif, etc.
-
-        *Type           int, long, char, etc.
-         StorageClass   static, register, volatile, etc.
-         Structure      struct, union, enum, etc.
-         Typedef        A typedef
-
-        *Special        any special symbol
-         SpecialChar    special character in a constant
-         Tag            you can use CTRL-] on this
-         Delimiter      character that needs attention
-         SpecialComment special things inside a comment
-         Debug          debugging statements
-
-        *Underlined     text that stands out, HTML links
-
-        *Ignore         left blank, hidden  hl-Ignore
-
-        *Error          any erroneous construct
-        *Todo           anything that needs extra attention; mostly the
-                        keywords TODO FIXME and XXX</code></pre>]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Editor</category>
-      </categories>
-      <tags>
-        <tag>vim</tag>
-        <tag>highlight</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>proc-pid-intro</title>
-    <url>/2017/12/14/proc-pid-intro/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
-<li><a href="https://github.com/NanXiao/gnu-linux-proc-pid-intro" target="_blank" rel="noopener">GNU/Linux下的/proc/[pid]目录下的文件分析</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>proc</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Movian Plugin Development</title>
-    <url>/2018/01/10/movian-plugin-development/</url>
-    <content><![CDATA[<p>Movian Development</p>
-<a id="more"></a>
-
-<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
-<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
-<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
-<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
-<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
-<pre><code class="json">{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;apiversion&quot;: 1,
-  &quot;id&quot;: &quot;headweb&quot;,
-  &quot;file&quot;: &quot;headweb.js&quot;,
-  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
-  &quot;version&quot;: &quot;1.5.3&quot;,
-  &quot;author&quot;: &quot;Andreas Öman&quot;,
-  &quot;title&quot;: &quot;Headweb&quot;,
-  &quot;icon&quot;: &quot;headweb_square.png&quot;,
-  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
-  &quot;category&quot;: &quot;video&quot;,
-  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
-  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
-}</code></pre>
-<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
-<ul>
-<li>ecmascript - loads the plugin using Duktape.</li>
-<li>views - used for user interface (screen keyboard plugin)</li>
-</ul>
-<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
-<ul>
-<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
-<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
-</ul>
-<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
-<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
-<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
-<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
-<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
-<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
-<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
-<ul>
-<li>“tv” - online TV</li>
-<li>“video” - streaming video</li>
-<li>“music” - streaming music</li>
-<li>“glwview” - UI extentions</li>
-<li>“subtitles” - subtitles</li>
-<li>“glwosk” - on screen keyboard</li>
-</ul>
-<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
-<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
-<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
-<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
-<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
-<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
-<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
-<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
-<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
-<pre><code>{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;file&quot;: &quot;testplugin.js&quot;,
-  &quot;id&quot;: &quot;testplugin&quot;
-}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
-<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
-  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
-})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
-<pre><code>(function(plugin) {
-  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
-    showtime.print(&quot;I was called&quot;);
-  })
-})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
-<p><code>somafa</code> 中的 <code>start URI</code></p>
-<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
-...
-}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
-<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
-<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
-<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
-<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
-<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
-<ul>
-<li>Direct URL</li>
-<li>Via a video page</li>
-</ul>
-<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
-<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
-<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
-<p>To use it first do:</p>
-<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
-      <categories>
-        <category>Movian</category>
-      </categories>
-      <tags>
-        <tag>movian</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>jenkins 权限控制</title>
     <url>/2018/09/05/jenkins-permissions/</url>
     <content><![CDATA[<p><code>Jenkins</code> 本身权限管理比较粗放，无法实现用户指定显示视图或者视图中指定的 jobs。可以通过插件 <code>Role Strategy Plugin</code> 实现不同用户组显示对应视图 views 中不同的 jobs。</p>
@@ -14212,6 +14014,39 @@ if (len &gt;= sizeof(path))
       </tags>
   </entry>
   <entry>
+    <title>HTTPS 加密算法与 CA 证书签名算法</title>
+    <url>/2018/10/06/https-encrypt-and-ca/</url>
+    <content><![CDATA[<p>加密算法和签名算法</p>
+<a id="more"></a>
+
+<h2 id="对称加密算法"><a href="#对称加密算法" class="headerlink" title="对称加密算法"></a>对称加密算法</h2><p>性能高，密钥泄露风险高</p>
+<p>常用的算法：DES、3DES、AES、Blowfish、IDEA、RC5、RC6</p>
+<h2 id="非对称加密算法"><a href="#非对称加密算法" class="headerlink" title="非对称加密算法"></a>非对称加密算法</h2><p>计算量大，需要消耗大量的系统资源，性能低。知道公钥，也无法计算出来密钥</p>
+<p>常用的算法：RSA、Elgamal、背包算法、Rabin、D-H、ECC（椭圆曲线加密算法）</p>
+<h2 id="加密"><a href="#加密" class="headerlink" title="加密"></a>加密</h2><p>加密是为了保护传输数据</p>
+<h2 id="签名"><a href="#签名" class="headerlink" title="签名"></a>签名</h2><p>签名是为了校验身份以及验证信息的内容是否被篡改</p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://imququ.com/post/ecc-certificate.html" target="_blank" rel="noopener">开始使用 ECC 证书</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/33195438" target="_blank" rel="noopener">数字签名算法介绍和区别</a></li>
+<li><a href="https://www.jianshu.com/p/67bcb140d804" target="_blank" rel="noopener">HTTPS 原理 - 内容加密</a></li>
+<li><a href="https://juejin.im/post/5b38dc2de51d455eff37ec5f" target="_blank" rel="noopener">HTTPS 详解 - 加密算法</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Network</category>
+        <category>SSL</category>
+        <category>Security</category>
+      </categories>
+      <tags>
+        <tag>http</tag>
+        <tag>https</tag>
+        <tag>ssl</tag>
+        <tag>tls</tag>
+        <tag>ca</tag>
+        <tag>openssl</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>加密和哈希</title>
     <url>/2018/10/05/encrypt-and-hash/</url>
     <content><![CDATA[<p>安全相关概念： <code>加密 Encrypt</code> 与 <code>哈希 Hash</code></p>
@@ -14267,39 +14102,6 @@ if (len &gt;= sizeof(path))
       <tags>
         <tag>encrypt</tag>
         <tag>hash</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>HTTPS 加密算法与 CA 证书签名算法</title>
-    <url>/2018/10/06/https-encrypt-and-ca/</url>
-    <content><![CDATA[<p>加密算法和签名算法</p>
-<a id="more"></a>
-
-<h2 id="对称加密算法"><a href="#对称加密算法" class="headerlink" title="对称加密算法"></a>对称加密算法</h2><p>性能高，密钥泄露风险高</p>
-<p>常用的算法：DES、3DES、AES、Blowfish、IDEA、RC5、RC6</p>
-<h2 id="非对称加密算法"><a href="#非对称加密算法" class="headerlink" title="非对称加密算法"></a>非对称加密算法</h2><p>计算量大，需要消耗大量的系统资源，性能低。知道公钥，也无法计算出来密钥</p>
-<p>常用的算法：RSA、Elgamal、背包算法、Rabin、D-H、ECC（椭圆曲线加密算法）</p>
-<h2 id="加密"><a href="#加密" class="headerlink" title="加密"></a>加密</h2><p>加密是为了保护传输数据</p>
-<h2 id="签名"><a href="#签名" class="headerlink" title="签名"></a>签名</h2><p>签名是为了校验身份以及验证信息的内容是否被篡改</p>
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="https://imququ.com/post/ecc-certificate.html" target="_blank" rel="noopener">开始使用 ECC 证书</a></li>
-<li><a href="https://zhuanlan.zhihu.com/p/33195438" target="_blank" rel="noopener">数字签名算法介绍和区别</a></li>
-<li><a href="https://www.jianshu.com/p/67bcb140d804" target="_blank" rel="noopener">HTTPS 原理 - 内容加密</a></li>
-<li><a href="https://juejin.im/post/5b38dc2de51d455eff37ec5f" target="_blank" rel="noopener">HTTPS 详解 - 加密算法</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Network</category>
-        <category>SSL</category>
-        <category>Security</category>
-      </categories>
-      <tags>
-        <tag>http</tag>
-        <tag>https</tag>
-        <tag>ssl</tag>
-        <tag>tls</tag>
-        <tag>ca</tag>
-        <tag>openssl</tag>
       </tags>
   </entry>
   <entry>
@@ -15278,6 +15080,204 @@ Transmission Control Protocol, Src Port: 35720, Dst Port: 443, Seq: 1, Ack: 5402
       </categories>
       <tags>
         <tag>wireshark</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Movian Plugin Development</title>
+    <url>/2018/01/10/movian-plugin-development/</url>
+    <content><![CDATA[<p>Movian Development</p>
+<a id="more"></a>
+
+<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
+<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
+<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
+<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
+<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
+<pre><code class="json">{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;apiversion&quot;: 1,
+  &quot;id&quot;: &quot;headweb&quot;,
+  &quot;file&quot;: &quot;headweb.js&quot;,
+  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
+  &quot;version&quot;: &quot;1.5.3&quot;,
+  &quot;author&quot;: &quot;Andreas Öman&quot;,
+  &quot;title&quot;: &quot;Headweb&quot;,
+  &quot;icon&quot;: &quot;headweb_square.png&quot;,
+  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
+  &quot;category&quot;: &quot;video&quot;,
+  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
+  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
+}</code></pre>
+<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
+<ul>
+<li>ecmascript - loads the plugin using Duktape.</li>
+<li>views - used for user interface (screen keyboard plugin)</li>
+</ul>
+<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
+<ul>
+<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
+<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
+</ul>
+<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
+<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
+<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
+<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
+<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
+<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
+<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
+<ul>
+<li>“tv” - online TV</li>
+<li>“video” - streaming video</li>
+<li>“music” - streaming music</li>
+<li>“glwview” - UI extentions</li>
+<li>“subtitles” - subtitles</li>
+<li>“glwosk” - on screen keyboard</li>
+</ul>
+<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
+<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
+<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
+<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
+<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
+<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
+<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
+<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
+<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
+<pre><code>{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;file&quot;: &quot;testplugin.js&quot;,
+  &quot;id&quot;: &quot;testplugin&quot;
+}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
+<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
+  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
+})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
+<pre><code>(function(plugin) {
+  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
+    showtime.print(&quot;I was called&quot;);
+  })
+})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
+<p><code>somafa</code> 中的 <code>start URI</code></p>
+<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
+...
+}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
+<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
+<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
+<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
+<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
+<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
+<ul>
+<li>Direct URL</li>
+<li>Via a video page</li>
+</ul>
+<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
+<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
+<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
+<p>To use it first do:</p>
+<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
+      <categories>
+        <category>Movian</category>
+      </categories>
+      <tags>
+        <tag>movian</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>vim-highlight-syntax</title>
+    <url>/2017/12/19/vim-highlight-syntax/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
+<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
+<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
+<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
+<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
+<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
+<pre><code>:syntax
+--- 语法项目 ---
+cLabel         xxx default case
+cStructure     xxx union struct typedef enum
+cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
+                   _Thread_local auto
+cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
+cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
+cStatement     xxx return goto asm continue break
+                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
+<p><code>:help group-name</code></p>
+<pre><code>:help group-name
+
+(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
+
+        *Comment        any comment
+
+        *Constant       any constant
+         String         a string constant: &quot;this is a string&quot;
+         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
+         Number         a number constant: 234, 0xff
+         Boolean        a boolean constant: TRUE, false
+         Float          a floating point constant: 2.3e10
+
+        *Identifier     any variable name
+         Function       function name (also: methods for classes)
+        *Statement      any statement
+         Conditional    if, then, else, endif, switch, etc.
+         Repeat         for, do, while, etc.
+         Label          case, default, etc.
+         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
+         Keyword        any other keyword
+         Exception      try, catch, throw
+
+        *PreProc        generic Preprocessor
+         Include        preprocessor #include
+         Define         preprocessor #define
+         Macro          same as Define
+         PreCondit      preprocessor #if, #else, #endif, etc.
+
+        *Type           int, long, char, etc.
+         StorageClass   static, register, volatile, etc.
+         Structure      struct, union, enum, etc.
+         Typedef        A typedef
+
+        *Special        any special symbol
+         SpecialChar    special character in a constant
+         Tag            you can use CTRL-] on this
+         Delimiter      character that needs attention
+         SpecialComment special things inside a comment
+         Debug          debugging statements
+
+        *Underlined     text that stands out, HTML links
+
+        *Ignore         left blank, hidden  hl-Ignore
+
+        *Error          any erroneous construct
+        *Todo           anything that needs extra attention; mostly the
+                        keywords TODO FIXME and XXX</code></pre>]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Editor</category>
+      </categories>
+      <tags>
+        <tag>vim</tag>
+        <tag>highlight</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>proc-pid-intro</title>
+    <url>/2017/12/14/proc-pid-intro/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
+<li><a href="https://github.com/NanXiao/gnu-linux-proc-pid-intro" target="_blank" rel="noopener">GNU/Linux下的/proc/[pid]目录下的文件分析</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>proc</tag>
       </tags>
   </entry>
   <entry>
@@ -18205,8 +18205,8 @@ network={
 ]]></content>
       <categories>
         <category>Network</category>
-        <category>TCP</category>
         <category>Tools</category>
+        <category>TCP</category>
         <category>Network</category>
       </categories>
       <tags>
@@ -22262,8 +22262,8 @@ gcc/x86_64-linux-gnu/7/libgcc.a</code></pre>
         <category>Make</category>
       </categories>
       <tags>
-        <tag>cmake</tag>
         <tag>gcc</tag>
+        <tag>cmake</tag>
         <tag>make</tag>
         <tag>bear</tag>
       </tags>
@@ -23467,6 +23467,107 @@ end</code></pre><h2 id="Python-脚本"><a href="#Python-脚本" class="headerlin
       </categories>
       <tags>
         <tag>gdb</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>GDB Tips</title>
+    <url>/2020/05/07/gdb-ptype/</url>
+    <content><![CDATA[<p>GDB 使用技巧</p>
+<ul>
+<li>启动</li>
+<li>dump</li>
+<li>ptype</li>
+<li>set</li>
+<li>info</li>
+<li>disassemble</li>
+</ul>
+<a id="more"></a>
+
+<h2 id="启动GDB"><a href="#启动GDB" class="headerlink" title="启动GDB"></a>启动GDB</h2><p>默认读取当前目录下的 <code>.gdbinit</code>，使用 <code>-nx</code>不读取 <code>.gdbinit</code> 配置</p>
+<pre><code class="shell">$ gdb test # 常用于下载调试test
+$ gdb -nx test # 常用于查看当前状态</code></pre>
+<h2 id="独立调试信息记载"><a href="#独立调试信息记载" class="headerlink" title="独立调试信息记载"></a>独立调试信息记载</h2><p><code>test</code> 编译参数为 <code>-O0 -g -ggdb</code></p>
+<ul>
+<li>获取调试信息 <code>objcopy --only-keep-debug test test.debug</code></li>
+<li>gdb 中加载 <code>symbol-file test.debug</code></li>
+<li>分离的调试信息重新链接到可执行问题 <code>objcopy --add-gnu-debuglink test.debug test</code></li>
+</ul>
+<h2 id="Dump-Memory"><a href="#Dump-Memory" class="headerlink" title="Dump Memory"></a>Dump Memory</h2><pre><code class="gdb">(gdb) help dump
+Dump target code/data to a local file.
+
+List of dump subcommands:
+
+dump binary -- Write target code/data to a raw binary file
+dump ihex -- Write target code/data to an intel hex file
+dump memory -- Write contents of memory to a raw binary file
+dump srec -- Write target code/data to an srec file
+dump tekhex -- Write target code/data to a tekhex file
+dump value -- Write the value of an expression to a raw binary file
+dump verilog -- Write target code/data to a verilog hex file
+
+Type &quot;help dump&quot; followed by dump subcommand name for full documentation.
+Type &quot;apropos word&quot; to search for commands related to &quot;word&quot;.
+Command name abbreviations are allowed if unambiguous.
+(gdb) help dump memory
+Write contents of memory to a raw binary file.
+Arguments are FILE START STOP.  Writes the contents of memory within the
+range [START .. STOP) to the specified FILE in raw target ordered bytes.</code></pre>
+<p>语法 <code>dump memory file $START $END</code></p>
+<h2 id="汇编"><a href="#汇编" class="headerlink" title="汇编"></a>汇编</h2><ul>
+<li><code>b *func</code> 断点在 <code>func</code> 入栈之前</li>
+<li><code>ni/si</code> 汇编指令级单步执行</li>
+<li><code>disassemble func</code> 反汇编 func</li>
+<li><code>disassemble /m func</code> 反汇编 func，带有源代码信息</li>
+<li><code>disassemble $pc-20,$pc+20</code> 反汇编执行区间代码</li>
+<li><code>watch *(int *)0x8049aa4</code> 内存读写断点</li>
+<li><code>rwatch *(int *)0x8049aa4</code> 内存读断点</li>
+<li><code>awatch *(int *)0x8049aa4</code> 内存读写断点</li>
+<li><code>display /i $pc</code> 显示当前汇编指令</li>
+<li><code>info r</code> 查看寄存器</li>
+<li><code>i r rx</code> 查看rx寄存器</li>
+</ul>
+<h2 id="ptype-查看类型"><a href="#ptype-查看类型" class="headerlink" title="ptype 查看类型"></a>ptype 查看类型</h2><p>用于查看符号类型 <code>ptype symbol|var</code></p>
+<pre><code class="gdb">(gdb) ptype struct file
+type = struct file {
+    cyg_uint32 f_flag;
+    cyg_uint16 f_ucount;
+    cyg_uint16 f_type;
+    cyg_uint32 f_syncmode;
+    fileops *f_ops;
+    off_t f_offset;
+    CYG_ADDRWORD f_data;
+    CYG_ADDRWORD f_xops;
+    cyg_mtab_entry *f_mte;
+    list_head f_node;
+    cyg_uint8 f_valid;
+}</code></pre>
+<p>使用 <code>set print type xxx</code> 配置</p>
+<h2 id="whatis-查看类型"><a href="#whatis-查看类型" class="headerlink" title="whatis 查看类型"></a>whatis 查看类型</h2><p><code>whatis var</code></p>
+<h2 id="info-address"><a href="#info-address" class="headerlink" title="info address"></a>info address</h2><p><code>info address symbol</code></p>
+<blockquote>
+<p>Describe where the data for symbol is stored. For a register variable, this says which register it is kept in. For a non-register local variable, this prints the stack-frame offset at which the variable is always stored.</p>
+</blockquote>
+<p>查找给定符号的存储地址</p>
+<h2 id="info-symbol"><a href="#info-symbol" class="headerlink" title="info symbol"></a>info symbol</h2><p><code>info symbol addr</code></p>
+<blockquote>
+<p>Print the name of a symbol which is stored at the address addr. If no symbol is stored exactly at addr, GDB prints the nearest symbol and an offset from it</p>
+<pre><code class="gdb">(gdb) info symbol 0x54320
+_initialize_vx + 396 in section .text</code></pre>
+</blockquote>
+<p>查找给定地址的变量或函数的名称</p>
+<h2 id="Refs"><a href="#Refs" class="headerlink" title="Refs"></a>Refs</h2><ol>
+<li><a href="https://www.cnblogs.com/zengkefu/p/5618041.html" target="_blank" rel="noopener">GDB技巧整理</a></li>
+<li><a href="https://sourceware.org/gdb/current/onlinedocs/gdb/Symbols.html" target="_blank" rel="noopener">16 Examining the Symbol Table</a></li>
+<li><a href="https://stackoverflow.com/questions/866721/how-to-generate-gcc-debug-symbol-outside-the-build-target" target="_blank" rel="noopener">How to generate gcc debug symbol outside the build target?</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>GDB</category>
+      </categories>
+      <tags>
+        <tag>gdb</tag>
+        <tag>ptype</tag>
       </tags>
   </entry>
   <entry>
@@ -26832,8 +26933,8 @@ net.core.wmem_max = 16777216</code></pre><p>一般来说，<strong>理论上的R
         <category>Linux</category>
         <category>Socket</category>
         <category>Network</category>
-        <category>TCP</category>
         <category>Tools</category>
+        <category>TCP</category>
         <category>Network</category>
       </categories>
       <tags>
@@ -33375,8 +33476,8 @@ rtsp://192.168.128.5/?src=1&amp;fe=1&amp;freq=12720&amp;pol=v&amp;msys=dvbs2&amp
 ]]></content>
       <categories>
         <category>Network</category>
-        <category>TCP</category>
         <category>Tools</category>
+        <category>TCP</category>
         <category>HTTP</category>
         <category>Network</category>
       </categories>
