@@ -216,6 +216,334 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/12/02/linux-device_drivers/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/12/02/linux-device_drivers/" class="post-title-link" itemprop="url">Linux设备驱动程序基础</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-12-03 00:00:00" itemprop="dateCreated datePublished" datetime="2015-12-03T00:00:00+08:00">2015-12-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-12 10:31:13" itemprop="dateModified" datetime="2020-05-12T10:31:13+08:00">2020-05-12</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>8.6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>8 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h2 id="Linux设备驱动程序示例"><a href="#Linux设备驱动程序示例" class="headerlink" title="Linux设备驱动程序示例"></a>Linux设备驱动程序示例</h2><p>源代码：</p>
+<pre><code>#include &lt;linux/kernel.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/proc_fs.h&gt;
+#include &lt;linux/init.h&gt;
+#include &lt;linux/vmalloc.h&gt;
+
+static int num = 1;                                                                                                                 
+static char *mode = &quot;show&quot;;
+
+static int __init hello_module_init(void)
+{
+    printk(&quot;Hello,world\n&quot;);
+}
+
+static void __exit hello_module_exit(void)
+{
+    printk(&quot;Good Bye\n&quot;);
+}
+
+module_init(hello_module_init);
+module_exit(hello_module_exit);
+module_param(mode, charp, S_IRUGO);
+module_param(num, int, S_IRUGO);
+
+MODULE_DESCRIPTION(&quot;driver for the Hello World.&quot;);
+MODULE_AUTHOR(&quot;Hello&quot;);
+MODULE_LICENSE(&quot;GPL&quot;);</code></pre><p>Makefile：</p>
+<pre><code>obj-m += hello.o    #设置模块名
+hello-objs := bsp_hello.o hello_mod_linux.o
+
+all:
+    $(MAKE) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KERNEL_PATH) SUBDIRS=`pwd`
+
+clean:
+    rm -rf *.ko *.o *.mod.c .tmp_versions Module.symvers modules.order .tmp_versions
+    find ../ -name &quot;*.cmd&quot; -delete
+
+install:
+    cp $(HELLO_TARGET) $(OUTDIR) -f</code></pre><p><strong>Tips:obj-m += (module name).o</strong></p>
+<h2 id="相关宏定义"><a href="#相关宏定义" class="headerlink" title="相关宏定义"></a>相关宏定义</h2><p>Linux设备驱动编译时，如果<strong>MODULE</strong>未定义，表明设备驱动是<strong>build-in</strong>模式。<br>相应的<strong>module_init/module_exit</strong>宏定义展开不同。</p>
+<p>linux对只需要初始化运行一次的函数都加上<strong>init属性，<br>__init 宏告诉编译器如果这个模块被编译到内核则把这个函数放到（.init.text）段，<br>module_exit的参数卸载时同</strong>init类似，如果驱动被编译进内核，<br>则<strong>exit宏会忽略清理函数，因为编译进内核的模块不需要做清理工作，<br>**显然</strong>init和__exit对动态加载的模块是无效的，只支持完全编译进内核**。</p>
+<p>在kernel初始化后期，释放所有这些函数代码所占的内存空间。<br>连接器把带__init属性的函数放在同一个section里，在用完以后，把整个section释放掉。<br>当函数初始化完成后这个区域可以被清除掉以节约系统内存。<br>Kenrel启动时看到的消息“Freeing unused kernel memory: xxxk freed”同它有关。</p>
+<p>start_kernel-&gt;rest_init-&gt;kernel_init-&gt;init_post-&gt;free_initmem()来释放初始化代码和数据。</p>
+<h3 id="特殊宏定义"><a href="#特殊宏定义" class="headerlink" title="特殊宏定义"></a>特殊宏定义</h3><ul>
+<li>MODULE_LICENSE(license)           代码使用的许可证</li>
+<li>MODULE_AUTHOR(author)             描述模块作者</li>
+<li>MODULE_DESCRIPTION(description)   说明模块用途的简短描述</li>
+<li>MODULE_VERSION(version_string)    代码修订号</li>
+<li>MODULE_DEVICE_TABLE(table_info)   告诉用户空间模块所支持的设备</li>
+<li>MODULE_ALIAS(alternate_name)      模块的别名</li>
+</ul>
+<h3 id="加载函数宏定义module-init"><a href="#加载函数宏定义module-init" class="headerlink" title="加载函数宏定义module_init()"></a>加载函数宏定义<strong>module_init()</strong></h3><p>module_init定义如下：</p>
+<pre><code>include/linux/init.h
+#ifndef MODULE
+/**
+ * module_init() - driver initialization entry point
+ * @x: function to be run at kernel boot time or module insertion
+ * 
+ * module_init() will either be called during do_initcalls() (if
+ * builtin) or at module insertion time (if a module).  There can only
+ * be one per module.
+ */
+#define module_init(x)  __initcall(x);
+#else /* MODULE */
+/* Each module must use one module_init(). */
+#define module_init(initfn)                     \
+    static inline initcall_t __inittest(void)   \
+    { return initfn;  }                         \                                                                                           
+    int init_module(void) __attribute__((alias(#initfn)));
+#endif</code></pre><h4 id="build-in分支"><a href="#build-in分支" class="headerlink" title="build-in分支"></a><strong>build-in分支</strong></h4><pre><code>#define __initcall(fn) device_initcall(fn)
+#define device_initcall(fn)     __define_initcall(&quot;6&quot;,fn,6)
+#define __define_initcall(level,fn,id) \                                                                                            
+    static initcall_t __initcall_##fn##id __used \
+    __attribute__((__section__(&quot;.initcall&quot; level &quot;.init&quot;))) = fn</code></pre><p>因此使用module_init修饰的hello_module_init最终展开为：</p>
+<pre><code>static initcall_t  __initcall_hello_module_init6 __used __attribute__((__section__(&quot;.initcall6.init&quot;))) = hello_module_init;</code></pre><p>就是声明一类型为<strong>initcall_t（typedef int (*initcall_t)(void)）</strong>函数指针类型的变量<br><strong>__initcall_hello_module_init6</strong>并将<strong>hello_module_init</strong>赋值与它。</p>
+<p>其中<strong><strong>attribute</strong>((<strong>section</strong>(“.initcall6.init”)))</strong>表明变量<strong>__initcall_hello_module_init6</strong>放入section .initcall6.init中。</p>
+<p>在文件<strong>vmlinux.lds</strong>中有以下定义：</p>
+<pre><code>.initcall.init : AT(ADDR(.initcall.init) - 0) {                                                                                    
+ __initcall_start = .;
+ *(.initcallearly.init) __early_initcall_end = .; *(.initcall0.init) *(.initcall0s.init) *(.initcall1.init) 
+                                                *(.initcall1s.init) *(.initcall2.init) *(.initcall2s.init) 
+                                                *(.initcall3.init) *(.initcall3s.init) *(.initcall4.init) 
+                                                *(.initcall4s.init) *(.initcall5.init) *(.initcall5s.init)
+                                                *(.initcallrootfs.init) *(.initcall6.init) *(.initcall6s.init) 
+                                                *(.initcall7.init) *(.initcall7s.init)
+ __initcall_end = .;
+}</code></pre><p><strong>启动顺序</strong></p>
+<pre><code>init/main.c
+start_kernel()-&gt;rest_init()-&gt;kernel_init()-&gt;do_basic_setup()-&gt;do_initcalls()
+
+static void __init do_initcalls(void)
+{ 
+    initcall_t *call;
+
+    for (call = __early_initcall_end; call &lt; __initcall_end; call++)
+        do_one_initcall(*call);                                                                                                     
+
+    /* Make sure there is no pending stuff from the initcall sequence */
+    flush_scheduled_work();
+} </code></pre><p>do_initcalls()将按顺序从由<strong>early_initcall_end开始，<br>到</strong>initcall_end结束的section中<strong>以函数指针的形式取出这些编译到内核的驱动模块中初始化函数起始地址</strong>，<br>来依次完成相应的初始化。</p>
+<p>内核初始化函数do_basic_setup(): do_initcalls() 将从.initcall.init 中，<br>也就是这几个section中依次取出所有的函数指针，并调用这些函数指针所指向的函数，来完成内核的一些相关的初始化。</p>
+<p><strong>内核的加载的时候，会搜索”.initcall”中的所有条目，并按优先级加载它们，普通驱动程序的优先级是6。<br>其它模块优先级列出如下：值越小，越先加载。</strong></p>
+<h4 id="Module分支"><a href="#Module分支" class="headerlink" title="Module分支"></a><strong>Module分支</strong></h4><pre><code>/* Each module must use one module_init(). */
+#define module_init(initfn)                     \
+    static inline initcall_t __inittest(void)   \
+    { return initfn;  }                         \                                                                                           
+    int init_module(void) __attribute__((alias(#initfn)));
+
+typedef int (*initcall_t)(void)</code></pre><p>其中</p>
+<pre><code>typedef int (*initcall_t)(void)
+#define module_init(initfn)                     \
+    static inline initcall_t __inittest(void)   \
+    { return initfn;  }                         \                                                                                           </code></pre><p>用于对传入的initfn进行类型检测，类型必须为 int (*initcall_t)(void) 的函数指针，然后通过alias将initfn变名为init_module：</p>
+<pre><code>/* type newname __attribute__((alias(&quot;oldname&quot;))); */
+int init_module(void) __attribute__((alias(#initfn)));</code></pre><p>当调用insmod和rmmod时，只与init_module和cleanup_module有关，insmod和rmmod中调用这两个函数。</p>
+<pre><code>busybox/modutils/insmod.c:insmod_main()
+rc = bb_init_module(filename, parse_cmdline_module_options(argv, /*quote_spaces:*/ 0));
+.
+busybox/modutils/modutils.c:bb_init_module()
+init_module(image, image_size, options);
+.
+# define init_module(mod, len, opts) syscall(__NR_init_module, mod, len, opts)</code></pre><p>insmod最终会调用到 syscall <strong>__NR_init_module</strong>。</p>
+<p>在Kernel中，各个arch下的文件unistd.h有如下定义：</p>
+<pre><code>#define __NR_init_module        128
+#define __NR_delete_module      129
+#define __NR_get_kernel_syms    130
+#define __NR_quotactl           131
+#define __NR_getpgid            132</code></pre><p>然后，文件entry.S下有定义：</p>
+<pre><code>.data
+ALIGN
+sys_call_table:
+    .
+    .
+    .long sys_mprotect      /* 125 */
+    .long sys_sigprocmask
+    .long sys_ni_syscall    /* old &quot;create_module&quot; */
+    .long sys_init_module
+    .long sys_delete_module
+    .long sys_ni_syscall    /* 130 - old &quot;get_kernel_syms&quot; */
+    .long sys_quotactl
+    .
+    .</code></pre><p><strong>当insmod调用到系统调用号128时，sys_call_table中取出128地址的函数指针进行执行，及sys_init_module。</strong></p>
+<p>现在来看系统调用<strong>sys_init_module</strong>：</p>
+<pre><code>kernel/module.c
+SYSCALL_DEFINE3(init_module, void __user *, umod, unsigned long, len, const char __user *, uargs)
+.
+#define SYSCALL_DEFINE3(name, ...) SYSCALL_DEFINEx(3, _##name, __VA_ARGS__)
+#define SYSCALL_DEFINEx(x, name, ...)                   \                                                                           
+    asmlinkage long sys##name(__SC_DECL##x(__VA_ARGS__))</code></pre><p>宏定义<strong>__SC_DECL##x</strong>作用是将参数之间的‘，’去掉，定义如下：</p>
+<pre><code>#define __SC_DECL1(t1, a1)  t1 a1
+#define __SC_DECL2(t2, a2, ...) t2 a2, __SC_DECL1(__VA_ARGS__)
+#define __SC_DECL3(t3, a3, ...) t3 a3, __SC_DECL2(__VA_ARGS__)                                                                      
+#define __SC_DECL4(t4, a4, ...) t4 a4, __SC_DECL3(__VA_ARGS__)
+#define __SC_DECL5(t5, a5, ...) t5 a5, __SC_DECL4(__VA_ARGS__)
+#define __SC_DECL6(t6, a6, ...) t6 a6, __SC_DECL5(__VA_ARGS__)</code></pre><p>宏定义中的‘##’为<strong>（token-pasting）符号连接操作符</strong>，全部展开之后为：</p>
+<pre><code>asmlinkage long sys_init_module(void __user * umod, unsigned long len, const char __user * uargs)</code></pre><p>在文件<strong>include/linux/syscalls.h</strong>中可以看到所有的展开的系统调用，例如：</p>
+<pre><code>asmlinkage long sys_init_module(void __user *umod, unsigned long len,                                                               
+                const char __user *uargs);
+asmlinkage long sys_delete_module(const char __user *name_user,
+                unsigned int flags);
+
+asmlinkage long sys_rt_sigprocmask(int how, sigset_t __user *set,
+                sigset_t __user *oset, size_t sigsetsize);
+asmlinkage long sys_rt_sigpending(sigset_t __user *set, size_t sigsetsize);
+asmlinkage long sys_rt_sigtimedwait(const sigset_t __user *uthese,
+                siginfo_t __user *uinfo,
+                const struct timespec __user *uts,
+                size_t sigsetsize);</code></pre><p>在系统调用<strong>sys_init_module</strong>中：</p>
+<pre><code>.
+mod = load_module(umod, len, uargs);  //主要过程都在这儿
+.
+.
+/* Start the module */
+if (mod-&gt;init != NULL)
+    ret = do_one_initcall(mod-&gt;init);</code></pre><p>load_module做了绝大部分的工作，将驱动拷贝到内核，重定位等等，do_one_initcall调用module注册的init函数。</p>
+<h3 id="卸载函数宏定义module-exit"><a href="#卸载函数宏定义module-exit" class="headerlink" title="卸载函数宏定义module_exit()"></a>卸载函数宏定义<strong>module_exit()</strong></h3><pre><code>#ifndef MODULE
+/**
+ * module_exit() - driver exit entry point
+ * @x: function to be run when driver is removed
+ * 
+ * module_exit() will wrap the driver clean-up code
+ * with cleanup_module() when used with rmmod when
+ * the driver is a module.  If the driver is statically
+ * compiled into the kernel, module_exit() has no effect.
+ * There can only be one per module.
+ */
+#define module_exit(x)  __exitcall(x);
+#else /* MODULE */
+/* This is only required if you want to be unloadable. */
+#define module_exit(exitfn)                 \
+    static inline exitcall_t __exittest(void)       \
+    { return exitfn;  }                  \
+    void cleanup_module(void) __attribute__((alias(#exitfn)));
+#endif</code></pre><h4 id="build-in"><a href="#build-in" class="headerlink" title="build-in"></a>build-in</h4><p>无效，没有意义</p>
+<h4 id="module"><a href="#module" class="headerlink" title="module"></a>module</h4><p>busybox:</p>
+<pre><code># define delete_module(mod, flags) syscall(__NR_delete_module, mod, flags)</code></pre><p>kernel:</p>
+<pre><code>.long sys_delete_module
+#define __NR_delete_module      129
+
+SYSCALL_DEFINE2(delete_module, const char __user *, name_user, unsigned int, flags)
+{
+    .
+    if (mod-&gt;exit != NULL)
+        mod-&gt;exit();
+    .
+}
+
+asmlinkage long sys_delete_module(const char __user *name_user, unsigned int flags);</code></pre><h3 id="模块传参宏定义module-param"><a href="#模块传参宏定义module-param" class="headerlink" title="模块传参宏定义module_param()"></a>模块传参宏定义<strong>module_param()</strong></h3><pre><code>include/linux/moduleparam.h
+#define module_param(name, type, perm)              \                                                                               
+    module_param_named(name, name, type, perm)</code></pre><p>用于向模块传递参数，其允许驱动程序声明参数，并且用户在系统启动或模块装载时为参数指定相应值，<br>在驱动程序里，参数的用法如同全局变量。</p>
+<ul>
+<li>name既是用户看到的参数名，又是模块内接受参数的变量;</li>
+<li>type表示参数的数据类型，是下列之一：byte, short, ushort, int, uint, long, ulong, charp, bool, invbool;</li>
+<li>perm指定了在sysfs中相应文件的访问权限。<br>访问权限与linux文件爱你访问权限相同的方式管理，如0644，或使用stat.h中的宏如S_IRUGO表示。0表示完全关闭在sysfs中相对应的项。</li>
+</ul>
+<p>这些宏不会声明变量，因此在使用宏之前，必须声明变量，典型地用法如下：</p>
+<pre><code>static unsigned int int_var = 0;
+module_param(int_var, uint, S_IRUGO);</code></pre><h2 id="Tips"><a href="#Tips" class="headerlink" title="Tips"></a>Tips</h2><ul>
+<li>mod-&gt;exit()怎么调用到 <strong>alias 为 cleanup_module</strong>的函数</li>
+<li>mod-&gt;init()怎么调用到 <strong>alias 为 init_module</strong>的函数</li>
+</ul>
+<p>接下来分析module具体组成</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/11/25/gdb-disassemble-debug/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +575,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
+                <time title="Modified: 2020-05-12 10:31:13" itemprop="dateModified" datetime="2020-05-12T10:31:13+08:00">2020-05-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -441,7 +769,7 @@ eax 0xbffff6a4 -1073744220</code></pre><p>　<br>1.<a href="http://blog.csdn.net
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
+                <time title="Modified: 2020-05-12 10:31:13" itemprop="dateModified" datetime="2020-05-12T10:31:13+08:00">2020-05-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -701,7 +1029,7 @@ o{2,} 与“Bob”中的“o”不匹配，但与“foooood”中的所有“o�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
+                <time title="Modified: 2020-05-12 10:31:13" itemprop="dateModified" datetime="2020-05-12T10:31:13+08:00">2020-05-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -801,7 +1129,7 @@ o{2,} 与“Bob”中的“o”不匹配，但与“foooood”中的所有“o�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
+                <time title="Modified: 2020-05-12 10:31:13" itemprop="dateModified" datetime="2020-05-12T10:31:13+08:00">2020-05-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -939,7 +1267,7 @@ dump tekhex value filename expression
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
+                <time title="Modified: 2020-05-12 10:31:13" itemprop="dateModified" datetime="2020-05-12T10:31:13+08:00">2020-05-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1130,7 +1458,7 @@ nmap &lt;leader&gt;&lt;leader&gt;q :call CodeFormat()&lt;CR&gt;</code></pre><p>�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
+                <time title="Modified: 2020-05-12 10:31:13" itemprop="dateModified" datetime="2020-05-12T10:31:13+08:00">2020-05-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1386,7 +1714,7 @@ net.core.wmem_max = 16777216</code></pre><p>一般来说，<strong>理论上的R
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
+                <time title="Modified: 2020-05-12 10:31:13" itemprop="dateModified" datetime="2020-05-12T10:31:13+08:00">2020-05-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1762,7 +2090,7 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb, int clone_it,
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
+                <time title="Modified: 2020-05-12 10:31:13" itemprop="dateModified" datetime="2020-05-12T10:31:13+08:00">2020-05-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1877,6 +2205,108 @@ PRI  </code></pre><p>解析如下：</p>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/31/python-Tkinter/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/10/31/python-Tkinter/" class="post-title-link" itemprop="url">python Tkinter编程</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-11-01 00:00:00" itemprop="dateCreated datePublished" datetime="2015-11-01T00:00:00+08:00">2015-11-01</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-12 10:31:13" itemprop="dateModified" datetime="2020-05-12T10:31:13+08:00">2020-05-12</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Python/" itemprop="url" rel="index">
+                    <span itemprop="name">Python</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.1k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>python提供了多个图形开发界面的库，几个常用Python GUI库如下：</p>
+<ul>
+<li>Tkinter： Tkinter模块(“Tk 接口”)是Python的标准Tk GUI工具包的接口.<br>Tk和Tkinter可以在大多数的Unix平台下使用,同样可以应用在Windows和Macintosh系统里.<br>Tk8.0的后续版本可以实现本地窗口风格,并良好地运行在绝大多数平台中。</li>
+<li>wxPython：wxPython 是一款开源软件，是 Python 语言的一套优秀的 GUI 图形库，<br>允许 Python 程序员很方便的创建完整的、功能键全的 GUI 用户界面。</li>
+<li>Jython：Jython程序可以和Java无缝集成。除了一些标准模块，Jython使用Java的模块。<br>Jython几乎拥有标准的Python中不依赖于C语言的全部模块。<br>比如，Jython的用户界面将使用Swing，AWT或者SWT。Jython可以被动态或静态地编译成Java字节码。</li>
+</ul>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2015/10/31/python-Tkinter/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/31/python-pyinstaller/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1908,7 +2338,7 @@ PRI  </code></pre><p>解析如下：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
+                <time title="Modified: 2020-05-12 10:31:13" itemprop="dateModified" datetime="2020-05-12T10:31:13+08:00">2020-05-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2071,7 +2501,7 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/31/python-Tkinter/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/29/python-ImageTK/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -2085,7 +2515,7 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/2015/10/31/python-Tkinter/" class="post-title-link" itemprop="url">python Tkinter编程</a>
+            <a href="/2015/10/29/python-ImageTK/" class="post-title-link" itemprop="url">python ImageTk加载错误</a>
         </h1>
 
         <div class="post-meta">
@@ -2095,14 +2525,14 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
               </span>
               <span class="post-meta-item-text">Posted on</span>
 
-              <time title="Created: 2015-11-01 00:00:00" itemprop="dateCreated datePublished" datetime="2015-11-01T00:00:00+08:00">2015-11-01</time>
+              <time title="Created: 2015-10-30 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-30T00:00:00+08:00">2015-10-30</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
+                <time title="Modified: 2020-05-12 10:31:13" itemprop="dateModified" datetime="2020-05-12T10:31:13+08:00">2020-05-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2122,14 +2552,14 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>2.1k</span>
+              <span>510</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="fa fa-clock-o"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
+              <span>1 mins.</span>
             </span>
 
         </div>
@@ -2141,20 +2571,18 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>python提供了多个图形开发界面的库，几个常用Python GUI库如下：</p>
-<ul>
-<li>Tkinter： Tkinter模块(“Tk 接口”)是Python的标准Tk GUI工具包的接口.<br>Tk和Tkinter可以在大多数的Unix平台下使用,同样可以应用在Windows和Macintosh系统里.<br>Tk8.0的后续版本可以实现本地窗口风格,并良好地运行在绝大多数平台中。</li>
-<li>wxPython：wxPython 是一款开源软件，是 Python 语言的一套优秀的 GUI 图形库，<br>允许 Python 程序员很方便的创建完整的、功能键全的 GUI 用户界面。</li>
-<li>Jython：Jython程序可以和Java无缝集成。除了一些标准模块，Jython使用Java的模块。<br>Jython几乎拥有标准的Python中不依赖于C语言的全部模块。<br>比如，Jython的用户界面将使用Swing，AWT或者SWT。Jython可以被动态或静态地编译成Java字节码。</li>
-</ul>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2015/10/31/python-Tkinter/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
+          <p>python中使用PIL ImageTK出现以下问题：</p>
+<pre><code>Traceback (most recent call last):
+    File &quot;./ExportXiamiList.py&quot;, line 4, in &lt;module&gt;
+        from tkinter import *
+ImportError: No module named tkinter</code></pre><p>Ubuntu下环境：</p>
+<pre><code>ExportXiamiList-master &gt; python
+python            python2.7         python2-config    python3.3         python3.4         python3m                          
+python2           python2.7-config  python3           python3.3m        python3.4m        python-config            </code></pre><p>安装如下包，不起作用：</p>
+<pre><code>sudo apt-get install python-pil python-pil.imagetk --reinstall</code></pre><p>继续安装如下包解决问题：</p>
+<pre><code>sudo apt-get install python3-pil python3-pil.imagetk</code></pre><p>python中ImageTK用法如下：</p>
+<pre><code>from PIL import Image
+from PIL import ImageTk</code></pre>
       
     </div>
 
@@ -2204,7 +2632,7 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
+                <time title="Modified: 2020-05-12 10:31:13" itemprop="dateModified" datetime="2020-05-12T10:31:13+08:00">2020-05-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2294,106 +2722,6 @@ pip install pyinstaller</code></pre><p>均正确，解决此问题</p>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/29/python-ImageTK/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/10/29/python-ImageTK/" class="post-title-link" itemprop="url">python ImageTk加载错误</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-10-30 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-30T00:00:00+08:00">2015-10-30</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Python/" itemprop="url" rel="index">
-                    <span itemprop="name">Python</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>510</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>python中使用PIL ImageTK出现以下问题：</p>
-<pre><code>Traceback (most recent call last):
-    File &quot;./ExportXiamiList.py&quot;, line 4, in &lt;module&gt;
-        from tkinter import *
-ImportError: No module named tkinter</code></pre><p>Ubuntu下环境：</p>
-<pre><code>ExportXiamiList-master &gt; python
-python            python2.7         python2-config    python3.3         python3.4         python3m                          
-python2           python2.7-config  python3           python3.3m        python3.4m        python-config            </code></pre><p>安装如下包，不起作用：</p>
-<pre><code>sudo apt-get install python-pil python-pil.imagetk --reinstall</code></pre><p>继续安装如下包解决问题：</p>
-<pre><code>sudo apt-get install python3-pil python3-pil.imagetk</code></pre><p>python中ImageTK用法如下：</p>
-<pre><code>from PIL import Image
-from PIL import ImageTk</code></pre>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/27/shell-name-suffix/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2425,7 +2753,7 @@ from PIL import ImageTk</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
+                <time title="Modified: 2020-05-12 10:31:13" itemprop="dateModified" datetime="2020-05-12T10:31:13+08:00">2020-05-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2592,7 +2920,7 @@ com</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
+                <time title="Modified: 2020-05-12 10:31:13" itemprop="dateModified" datetime="2020-05-12T10:31:13+08:00">2020-05-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2763,328 +3091,6 @@ test3</code></pre>
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/25/makefile-and-shell/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/10/25/makefile-and-shell/" class="post-title-link" itemprop="url">Makefile中嵌入一段shell脚本及函数列表</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-10-26 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-26T00:00:00+08:00">2015-10-26</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-09 10:47:23" itemprop="dateModified" datetime="2020-05-09T10:47:23+08:00">2020-05-09</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/" itemprop="url" rel="index">
-                    <span itemprop="name">Tools</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Shell/" itemprop="url" rel="index">
-                    <span itemprop="name">Shell</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/Make/" itemprop="url" rel="index">
-                    <span itemprop="name">Make</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>9.8k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>9 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-
-<p>Makefile中需要在编译前进行一些处理，shell可以方便完成。以下为在Makefile中使用shell需要注意的一些事项：</p>
-<h2 id="makefile和shell区别"><a href="#makefile和shell区别" class="headerlink" title="makefile和shell区别"></a>makefile和shell区别</h2><h3 id="变量引用"><a href="#变量引用" class="headerlink" title="变量引用"></a>变量引用</h3><p>shell中所有引用<strong>以$打头的变量其后要加{}</strong>,而在Makefile中的变量是<strong>以$打头的后加()</strong>。如下：</p>
-<pre><code>Makefile
-PATH=&quot;/data/&quot;
-SUBPATH=$(PATH)
-
-Shell
-PATH=&quot;/data/&quot;
-SUBPATH=${PATH}</code></pre><h3 id="引用shell变量"><a href="#引用shell变量" class="headerlink" title="引用shell变量"></a>引用shell变量</h3><p>Makefile中所有以$打头的单词都会被解释成Makefile中的变量。<br>如果<strong>需要调用shell中的变量（或者正则表达式中锚定句位$），都需要加两个$符号（$$）</strong>。如下：</p>
-<pre><code>PATH=&quot;/data/&quot;
-all:
-    echo $(PATH)
-    echo $$PATH</code></pre><p>第一个$(PATH)引用的是Makefile中的变量，而不是shell中的PATH环境变量，后者引用的是Shell中的PATH环境变量。</p>
-<h3 id="通配符区别"><a href="#通配符区别" class="headerlink" title="通配符区别"></a>通配符区别</h3><p>shell 中通配符*表示所有的字符；Makefile 中通配符%表示所有的字符</p>
-<h3 id="打印输出"><a href="#打印输出" class="headerlink" title="打印输出"></a>打印输出</h3><p>在Makefile中只能在target中调用Shell脚本，其他地方是不能输出的。比如如下代码就是没有任何输出：</p>
-<pre><code>VAR=&quot;Hello&quot;
-echo &quot;$VAR&quot;
-all:</code></pre><p>以上代码任何时候都不会输出，没有在target内，如果上述代码改为如下：</p>
-<pre><code>VAR=&quot;Hello&quot;
-all:
-    echo &quot;$VAR&quot;</code></pre><p>以上代码，在make all的时候将会执行echo命令。</p>
-<h3 id="代码片段"><a href="#代码片段" class="headerlink" title="代码片段"></a>代码片段</h3><p>Makefile中的shell，每一行是一个进程，不同行之间变量值不能传递。所以，Makefile中的shell不管多长也要写在一行<br>在Makefile中执行shell命令，一行创建一个进程来执行。<br>不同行之间变量值不能传递。<br>这也是为什么很多Makefile中有很多行的末尾都是“;\”，<br>以此来保证代码是一行而不是多行，这样Makefile可以在一个进程中执行，例如：</p>
-<pre><code>SUBDIR=src example
-all:
-    @for subdir in $(SUBDIR); \     #shell代码开始
-    do\
-        echo &quot;building &quot;; \
-    done</code></pre><p>上述可以看出for循环中每行都是以”; \”结尾的。</p>
-<h3 id="shell代码范围"><a href="#shell代码范围" class="headerlink" title="shell代码范围"></a>shell代码范围</h3><p>在Makefile文件的目标项冒号后的另起一行的代码才是shell代码。</p>
-<pre><code>xx = xx1       #这里时makefile代码
-yy：xx = xx2   #这是是makefile代码，makefile允许变量赋值时，&#39;=&#39;号两边留空格
-yy：
-    xx=xx3     #只有这里是shell代码 ，shell不允许‘=’号两边有空格哦。
-
-有一个例外：
-xx=$(shell 这里的代码也是shell代码)</code></pre><h3 id="makefile总的反引号"><a href="#makefile总的反引号" class="headerlink" title="makefile总的反引号`"></a>makefile总的反引号<strong>`</strong></h3><p>反引号括起来的字符串被shell解释为命令行，<br>在执行时，shell首先执行该命令行，并以它的标准输出结果取代整个反引号（包括两个反引号）部分</p>
-<pre><code>PATH=`pwd`
-TODAY=`date`
-
-#等同于
-PATH=$(shell pwd)
-TODAY=$(shell date)</code></pre><h2 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h2><p><strong>获取当前目录</strong></p>
-<pre><code>TOPDIR:=$(shell pwd)</code></pre><p><strong>获取日期</strong></p>
-<pre><code>DATE:=$(shell date +%Y%m%d)</code></pre><p><strong>获取源文件列表</strong></p>
-<pre><code>SRC += $(shell find . -iname &quot;*.c&quot;  | grep -v &quot;./opensource/*&quot;)
-SRC += $(shell find . -iname &quot;*.cpp&quot;)
-
-PRE_SRC=$(shell find -name &quot;*.c&quot; | xargs grep &quot;HANDLER&quot; | awk -F &#39;:&#39; &#39;{print $$1}&#39; | sort -u) #注意awk中使用的是 $$1</code></pre><p><strong>Makefile打印输出</strong></p>
-<pre><code>print_version:
-    @echo $(BR2_VERSION_FULL)</code></pre><p><strong>Makefile嵌入脚本</strong></p>
-<pre><code>env:                                                                                                                                
-    sh $(SRC_PATH)/scripts/connect.sh
-    find $(SRC_PATH) -name &quot;sysinfo.o&quot; | xargs rm -f
-
-signalpre:                                                                                                                          
-    sed -i &#39;s/HANDLER/HANDLER HANDLERX/g&#39; $(LIB_PATH)/include/core.h
-    @mkdir -p $(SRC_PATH)/output/signalpres
-    @echo &quot;\033[031msignale handler processor...\033[0m&quot;
-    @for f in $(PRE_SRC); do \
-        OBJ=$(SRC_PATH)/output/signalpres/`basename $$f|sed -e &#39;s/\.c/\.i/&#39;`; \
-        $(CC) $(CFLAGS) -E $$f -o $$OBJ;\
-        echo -n &quot;.&quot;;\
-    done
-    sed -i &#39;s/HANDLER HANDLERX/HANDLER/g&#39; $(LIB_PATH)/include/core.h
-    echo &quot;\n&quot;
-
-prepare_config:
-    @chmod +x scripts/proj.sh
-    @scripts/proj.sh
-    @chmod +x scripts/theme.sh
-    @scripts/theme.sh</code></pre><p><strong>Makefile中的exec执行脚本</strong></p>
-<pre><code>format:
-    @echo &quot;Makeing format...&quot;;
-    @find -name &quot;*.c&quot; -exec dos2unix -qU 2&gt;d2utmp1 {} \;
-    @find -name &quot;*.h&quot; -exec dos2unix -qU 2&gt;d2utmp1 {} \; 
-#   @find -name &quot;*.c&quot; -exec indent -npro -kr -i8 -sob -l120 -ss -ncs  {} \;
-    @find -name &quot;*~&quot; -exec rm {} \;
-    @find -name &quot;d2utmp*&quot; -exec rm {} \;
-    @find -name &quot;deps*&quot; -exec rm {} \;</code></pre><p><strong>循环处理文件行</strong></p>
-<pre><code>cat config_tmp | while read line
-do
-    echo &quot;${line}&quot;
-
-    MACRO=$(echo ${line} | awk -F &#39; &#39; &#39;{print $2}&#39;)
-    VALUE=$(echo ${line} | awk -F &#39; &#39; &#39;{print $3}&#39;)
-    echo &quot;Macro: $MACRO Value: $VALUE\n&quot;
-
-    #cat &quot;$SIGNALE_HANDLER_FILE&quot; | sed -e &quot;s/$MACRO/$VALUE/g&quot; &gt; signal_tmp
-    sed -i &quot;s/$MACRO/$VALUE/g&quot; ${SIGNALE_HANDLER_FILE}
-done</code></pre><p><strong>grep反选</strong></p>
-<pre><code>cat $CONFIG_FILE | sed -s &#39;/^$/d&#39; | grep -v -e &quot;LangName&quot; -e &quot;__CONFIG_H__&quot; -e &quot;#endif&quot; -e &quot;//&quot; &gt; config_tmp</code></pre><p><strong>Makefile依赖规则</strong></p>
-<pre><code>OBJS=$(addprefix $(SRC_PATH)/objects/, $(addsuffix .o, $(basename $(notdir $(SRC)))))
-
-deps: $(SRC)
-    @-rm -f deps;
-    @for f in $(SRC); do \
-        OBJ=$(SRC_PATH)/objects/`basename $$f|sed -e &#39;s/\.c/\.o/&#39;`; \
-        echo $$OBJ: $$f&gt;&gt; deps; \
-        echo &#39;  @echo -e &quot;compiling \033[032m[$(CC)]\033[0m&quot;: &#39; $$f &gt;&gt; deps; \
-        echo &#39;  $(CC) $$(CFLAGS) -c -o $$@ $$^&#39;&gt;&gt; deps; \
-    done</code></pre><p><strong>Makefile模式规则</strong></p>
-<pre><code>%.d: %.c
-    @set -e; rm -f $@; \
-    $(CC) -M $(CPPFLAGS) $&lt; &gt; $@.$$$$; \
-    sed &#39;s,\($*\)\.o[ : ]*,\1.o $@ : ,g&#39; &lt; $@.$$$$ &gt; $@; \
-    rm -f $@.$$$$</code></pre><p>这个规则的意思是，所有的[.d]文件依赖于[.c]文件，“rm -f $@”的意思是删除所有的目标，也就是[.d]文件，<br>第二行的意思是，为每个依赖文件“$&lt;”，也就是[.c]文件生成依赖文件，“$@”表示模式“%.d”文件，<br>如果有一个C文件是name.c，那么“%”就是 “name”，“$$$$”意为一个随机编号，<br>第二行生成的文件有可能是“name.d.12345”，<br>第三行使用sed命令做了一个替换，关于sed命令的用法请参看相关的使用文档。<br>第四行就是删除临时文件。</p>
-<p><strong>变量值的替换</strong></p>
-<pre><code>foo := a.o b.o c.o
-bar := $(foo:.o=.c)
-
-foo := a.o b.o c.o
-bar := $(foo:%.o=%.c)</code></pre><p>变量<em>.o替换为</em>.c</p>
-<h2 id="makefile函数列表"><a href="#makefile函数列表" class="headerlink" title="makefile函数列表"></a>makefile函数列表</h2><p>函数调用，很像变量的使用，也是以“$”来标识的，其語法如下：</p>
-<pre><code>$(&lt;function&gt; &lt;arguments&gt;)</code></pre><p>或是</p>
-<pre><code>${&lt;function&gt; &lt;arguments&gt;}</code></pre><p>这里，&lt;function&gt;就是函数名，make支持的函数不多。<br>&lt;arguments&gt;为函数的参数，参数间以逗号“,”分隔，而函数名和参数之间以“空格”分隔。<br>函数调用以“$”开头，以圆括号或花括号把函数名和参数括起。<br>感觉很像一个变量，是不是？函数中的参数可以使用变量，为了风格的统一，函数和变量的括号最好一样，<br>如使用“$(subst a,b,$(x))”这样的形式，而不是“$(subst a,b, ${x})”的形式。<br>因为统一会更清楚，也会减少一些不必要的麻烦。</p>
-<h3 id="字符串处理函数"><a href="#字符串处理函数" class="headerlink" title="字符串处理函数"></a>字符串处理函数</h3><ul>
-<li>$(subst &lt;from&gt;,&lt;to&gt;,&lt;text&gt;), 字符串替换函数</li>
-<li>$(patsubst &lt;pattern&gt;,&lt;replacement&gt;,&lt;text&gt;), 模式字符串替换函数</li>
-<li>$(strip &lt;string&gt;), 去空格函数,字串中开头和结尾的空字符</li>
-<li>$(findstring &lt;find&gt;,&lt;in&gt;), 查找字符串函数</li>
-<li>$(filter &lt;pattern…&gt;,&lt;text&gt;), 以&lt;pattern&gt;模式过滤&lt;text&gt;字符串中的单词，保留符合模式&lt;pattern&gt;的单词。可以有多个模式</li>
-<li>$(filter-out &lt;pattern…&gt;,&lt;text&gt;), 以&lt;pattern&gt;模式过滤&lt;text&gt;字符串中的单词，去除符合模式&lt;pattern&gt;的单词。可以有多个模式</li>
-<li>$(sort &lt;list&gt;), 给字符串&lt;list&gt;中的单词排序（升序）。</li>
-<li>$(word &lt;n&gt;,&lt;text&gt;), 取字符串&lt;text&gt;中第&lt;n&gt;个单词。（从一开始）</li>
-<li>$(wordlist &lt;ss&gt;,&lt;e&gt;,&lt;text&gt;), 从字符串&lt;text&gt;中取从&lt;ss&gt;开始到&lt;e&gt;的单词串。&lt;ss&gt;和&lt;e&gt;是一个数字</li>
-<li>$(words &lt;text&gt;), 统计&lt;text&gt;中字符串中的单词个数</li>
-<li>$(firstword &lt;text&gt;), 取字符串&lt;text&gt;中的第一个单词</li>
-</ul>
-<p>搭配使用：</p>
-<pre><code>override CFLAGS += $(patsubst %,-I%,$(subst :, ,$(VPATH)))</code></pre><p>如果我们的“$(VPATH)”值是“src:../headers”，<br>那么“$(patsubst %,-I%,$(subst :, ,$(VPATH)))”将返回“-Isrc -I../headers”，这正是cc或gcc搜索头文件路径的参数</p>
-<h3 id="文件名操作函数"><a href="#文件名操作函数" class="headerlink" title="文件名操作函数"></a>文件名操作函数</h3><ul>
-<li><p>$(dir &lt;names…&gt;), 从文件名序列&lt;names&gt;中取出目录部分。目录部分是指最后一个反斜杠（“/”）之前的部分。如果没有反斜杠，那么返回“./”</p>
-</li>
-<li><p>$(notdir &lt;names…&gt;), 从文件名序列&lt;names&gt;中取出非目录部分。非目录部分是指最後一个反斜杠（“/”）之后的部分</p>
-</li>
-<li><p>$(suffix &lt;names…&gt;) , 从文件名序列&lt;names&gt;中取出各个文件名的后缀</p>
-</li>
-<li><p>$(basename &lt;names…&gt;), 从文件名序列&lt;names&gt;中取出各个文件名的前缀部分</p>
-</li>
-<li><p>$(addsuffix &lt;suffix&gt;,&lt;names…&gt;), 把后缀&lt;suffix&gt;加到&lt;names&gt;中的每个单词后面</p>
-</li>
-<li><p>$(addprefix &lt;prefix&gt;,&lt;names…&gt;), 把前缀&lt;prefix&gt;加到&lt;names&gt;中的每个单词后面</p>
-</li>
-<li><p>$(join &lt;list1&gt;,&lt;list2&gt;), 把&lt;list2&gt;中的单词对应地加到&lt;list1&gt;的单词后面。<br>如果&lt;list1&gt;的单词个数要比&lt;list2&gt;的多，那么，&lt;list1&gt;中的多出来的单词将保持原样。<br>如果&lt;list2&gt;的单词个数要比&lt;list1&gt;多，那么，&lt;list2&gt;多出来的单词将被复制到&lt;list1&gt;中</p>
-<p>  $(join aaa bbb , 111 222 333)返回值是“aaa111 bbb222 333”</p>
-</li>
-</ul>
-<h3 id="foreach-函数"><a href="#foreach-函数" class="headerlink" title="foreach 函数"></a>foreach 函数</h3><p>foreach函数和别的函数非常的不一样。<br>因为这个函数是用来做循环用的，<br>Makefile中的foreach函数几乎是仿照于Unix标准 Shell（/bin/sh）中的for语句，<br>或是C-Shell（/bin/csh）中的foreach语句而构建的。它的语法是：</p>
-<pre><code>$(foreach   &lt;var&gt;,&lt;list&gt;,&lt;text&gt;)</code></pre><p>这个函数的意思是，把参数&lt;list&gt;中的单词逐一取出放到参数&lt;var&gt;所指定的变量中，<br>然后再执行&lt; text&gt;所包含的表达式。<br>每一次&lt;text&gt;会返回一个字符串，循环过程中，&lt;text&gt;的所返回的每个字符串会以空格分隔，<br>最后当整个循环结束时，<br>&lt;text&gt;所返回的每个字符串所组成的整个字符串（以空格分隔）将会是foreach函数的返回值。</p>
-<p>所以，&lt;var&gt;最好是一个变量名，&lt;list&gt;可以是一个表达式，而&lt;text&gt;中一般会使用&lt;var&gt;这个参数来依次枚举&lt;list&gt;中的单词。举个例子：</p>
-<pre><code>names := a b c d
-files := $(foreach n,$(names),$(n).o)</code></pre><p>上面的例子中，$(name)中的单词会被挨个取出，并存到变量“n”中，“$(n).o”每次根据“$(n)”计算出一个值，<br>这些值以空格分隔，最后作为foreach函数的返回，所以，$(files)的值是“a.o b.o c.o d.o”。</p>
-<p>注意，foreach中的&lt;var&gt;参数是一个临时的局部变量，foreach函数执行完后，参数&lt;var&gt;的变量将不在作用，其作用域只在foreach函数当中。</p>
-<h3 id="if-函数"><a href="#if-函数" class="headerlink" title="if 函数"></a>if 函数</h3><p>if函数很像GNU的make所支持的条件语句——ifeq，if函数的语法是：</p>
-<pre><code>$(if &lt;condition&gt;,&lt;then-part&gt;) </code></pre><p>或是</p>
-<pre><code>$(if &lt;condition&gt;,&lt;then-part&gt;,&lt;else-part&gt;)</code></pre><h3 id="call函数"><a href="#call函数" class="headerlink" title="call函数"></a>call函数</h3><p>call函数是唯一一个可以用来创建新的参数化的函数。<br>你可以写一个非常复杂的表达式，这个表达式中，你可以定义许多参数，然后你可以用call函数来向这个表达式传递参数。其语法是：</p>
-<pre><code>$(call &lt;expression&gt;;,&lt;parm1&gt;;,&lt;parm2&gt;;,&lt;parm3&gt;;...)</code></pre><p>当make执行这个函数时，&lt;expression&gt;;参数中的变量，<br>如$(1)，$(2)，$(3)等，会被参数&lt; parm1&gt;;，&lt;parm2&gt;;，&lt;parm3&gt;;依次取代。<br>而&lt;expression&gt;;的返回值就是 call函数的返回值。例如：</p>
-<pre><code>reverse =  $(1) $(2)
-foo = $(call reverse,a,b)</code></pre><p>那么，foo的值就是“a b”。当然，参数的次序是可以自定义的，不一定是顺序的，如：</p>
-<pre><code>reverse =  $(2) $(1)
-foo = $(call reverse,a,b)</code></pre><p>此时的foo的值就是“b a”。</p>
-<h3 id="origin函数"><a href="#origin函数" class="headerlink" title="origin函数"></a>origin函数</h3><p>origin函数不像其它的函数，他并不操作变量的值，他只是告诉你你的这个变量是哪里来的？其语法是：</p>
-<pre><code>$(origin &lt;variable&gt;;)</code></pre><p>注意，&lt;variable&gt;;是变量的名字，不应该是引用。<br>所以你最好不要在&lt;variable&gt;;中使用“$”字符。<br>Origin函数会以其返回值来告诉你这个变量的“出生情况”，下面，是origin函数的返回值:</p>
-<ul>
-<li>“undefined” 如果&lt;variable&gt;;从来没有定义过，origin函数返回这个值“undefined”。</li>
-<li>“default” 如果&lt;variable&gt;;是一个默认的定义，比如“CC”这个变量，这种变量我们将在后面讲述。</li>
-<li>“environment” 如果&lt;variable&gt;;是一个环境变量，并且当Makefile被执行时，“-e”参数没有被打开。</li>
-<li>“file” 如果&lt;variable&gt;;这个变量被定义在Makefile中。</li>
-<li>“command line” 如果&lt;variable&gt;;这个变量是被命令行定义的。</li>
-<li>“override” 如果&lt;variable&gt;;是被override指示符重新定义的。</li>
-<li>“automatic” 如果&lt;variable&gt;;是一个命令运行中的自动化变量。关于自动化变量将在后面讲述。</li>
-</ul>
-<p>这些信息对于我们编写Makefile是非常有用的，<br>例如，假设我们有一个Makefile其包了一个定义文件Make.def，<br>在 Make.def中定义了一个变量“bletch”，而我们的环境中也有一个环境变量“bletch”，<br>此时，我们想判断一下，如果变量来源于环境，那么我们就把之重定义了，<br>如果来源于Make.def或是命令行等非环境的，那么我们就不重新定义它。于是，在我们的Makefile中，我们可以这样写：</p>
-<pre><code>ifdef bletch
-    ifeq &quot;$(origin bletch)&quot; &quot;environment&quot;
-        bletch = barf, gag, etc.
-    endif
-endif</code></pre><h3 id="shell函数"><a href="#shell函数" class="headerlink" title="shell函数"></a>shell函数</h3><p>它的参数应该就是操作系统Shell的命令。它和反引号<strong>`</strong>是相同的功能。<br>这就是说，shell函数把执行操作系统命令后的输出作为函数返回。<br>于是，我们可以用操作系统命令以及字符串处理命令awk，sed等等命令来生成一个变量，如：</p>
-<pre><code>contents := $(shell cat foo)
-files := $(shell echo *.c)</code></pre><p>注意，这个函数会新生成一个Shell程序来执行命令，所以你要注意其运行性能，<br>如果你的Makefile中有一些比较复杂的规则，并大量使用了这个函数，那么对于你的系统性能是有害的。<br>特别是Makefile的隐晦的规则可能会让你的shell函数执行的次数比你想像的多得多。</p>
-<h2 id="自动化变量"><a href="#自动化变量" class="headerlink" title="自动化变量"></a>自动化变量</h2><ul>
-<li><p>$@ 表示规则中的目标文件集。在模式规则中，如果有多个目标，那么，”$@”就是匹配于目标中模式定义的集合。</p>
-</li>
-<li><p>$% 仅当目标是函数库文件中，表示规则中的目标成员名。<br>例如，如果一个目标是”foo.a(bar.o)”，那么，”$%”就是 “bar.o”，”$@”就是”foo.a”。<br>如果目标不是函数库文件（Unix下是[.a]，Windows下是[.lib]），那么，其值为空。</p>
-</li>
-<li><p>$&lt; 依赖目标中的第一个目标名字。如果依赖目标是以模式（即”%”）定义的，那么”$&lt;”将是符合模式的一系列的文件集。<br>注意，其是一个一个取出来的。</p>
-</li>
-<li><p>$? 所有比目标新的依赖目标的集合。以空格分隔。</p>
-</li>
-<li><p>$^ 所有的依赖目标的集合。以空格分隔。如果在依赖目标中有多个重复的，那个这个变量会去除重复的依赖目标，只保留一份。</p>
-</li>
-<li><p>$+ 这个变量很像”$^”，也是所有依赖目标的集合。只是它不去除重复的依赖目标。</p>
-</li>
-<li><p>$* 这个变量表示目标模式中”%”及其之前的部分。如果目标是”dir/a.foo.b”，并且目标的模式是”a.%.b”，<br>那么，”$*“的值就是”dir/a.foo”。这个变量对于构造有关联的文件名是比较有较。如果目标中没有模式的定义，<br>那么”$*“也就不能被推导出，但是，如果目标文件的后缀是make所识别的，那么”$*“就是除了后缀的那一部分。<br>例如：如果目标是”foo.c”，因为”.c”是make所能识别的后缀名，<br>所以，” $*“的值就是”foo”。这个特性是GNU make的，很有可能不兼容于其它版本的make，<br>所以，你应该尽量避免使用”$*“，除非是在隐含规则或是静态模式中。如果目标中的后缀是make所不能识别的，那么”$*“就是空值。<br>当你希望只对更新过的依赖文件进行操作时，”$?”在显式规则中很有用，<br>例如，假设有一个函数库文件叫”lib”，其由其它几个object文件更新。那么把object文件打包的比较有效率的Makefile规则是：</p>
-<p>  lib : foo.o bar.o lose.o win.o</p>
-<pre><code>  ar r lib $?</code></pre></li>
-</ul>
-<p>在上述所列出来的自动量变量中。四个变量（$@、$&lt;、$%、$*）在扩展时只会有一个文件，<br>而另三个的值是一个文件列表。</p>
-<p>对于”$&lt;”，为了避免产生不必要的麻烦，我们最好给$后面的那个特定字符都加上圆括号，比如，”$(&lt;)”就要比”$&lt;”要好一些。</p>
-<ol>
-<li><a href="http://wiki.ubuntu.org.cn/%E8%B7%9F%E6%88%91%E4%B8%80%E8%B5%B7%E5%86%99Makefile:%E4%BD%BF%E7%94%A8%E5%87%BD%E6%95%B0#shell.E5.87.BD.E6.95.B0" target="_blank" rel="noopener">makefile:使用函数</a></li>
-<li><a href="http://wiki.ubuntu.org.cn/%E8%B7%9F%E6%88%91%E4%B8%80%E8%B5%B7%E5%86%99Makefile" target="_blank" rel="noopener">跟我一起写Makefile</a></li>
-<li><a href="http://wiki.ubuntu.org.cn/%E8%B7%9F%E6%88%91%E4%B8%80%E8%B5%B7%E5%86%99Makefile:%E9%9A%90%E5%90%AB%E8%A7%84%E5%88%99#.E4.BD.BF.E7.94.A8.E9.9A.90.E5.90.AB.E8.A7.84.E5.88.99" target="_blank" rel="noopener">makefile:隐含规则</a></li>
-</ol>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -3135,7 +3141,7 @@ files := $(shell echo *.c)</code></pre><p>注意，这个函数会新生成一�
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">446</span>
+          <span class="site-state-item-count">447</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -3148,7 +3154,7 @@ files := $(shell echo *.c)</code></pre><p>注意，这个函数会新生成一�
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">477</span>
+        <span class="site-state-item-count">478</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -3208,7 +3214,7 @@ files := $(shell echo *.c)</code></pre><p>注意，这个函数会新生成一�
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:11</span>
+    <span title="Reading time total">18:12</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
   </div>
