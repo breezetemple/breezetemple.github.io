@@ -59,7 +59,7 @@
 <meta property="og:description" content="使用 scrapy 爬虫框架编写爬虫">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2020-03-30T05:40:08.000Z">
-<meta property="article:modified_time" content="2020-05-12T02:31:13.450Z">
+<meta property="article:modified_time" content="2020-05-13T02:55:30.254Z">
 <meta property="article:author" content="Breeze.Temple">
 <meta property="article:tag" content="python">
 <meta property="article:tag" content="spider">
@@ -251,7 +251,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-12 10:31:13" itemprop="dateModified" datetime="2020-05-12T10:31:13+08:00">2020-05-12</time>
+                <time title="Modified: 2020-05-13 10:55:30" itemprop="dateModified" datetime="2020-05-13T10:55:30+08:00">2020-05-13</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -284,14 +284,14 @@
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>3.1k</span>
+              <span>4.9k</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="fa fa-clock-o"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>3 mins.</span>
+              <span>4 mins.</span>
             </span>
 
         </div>
@@ -343,15 +343,10 @@ $ tree
 │   ├── items.py
 │   ├── middlewares.py
 │   ├── pipelines.py
-│   ├── __pycache__
-│   │   ├── __init__.cpython-36.pyc
-│   │   └── settings.cpython-36.pyc
 │   ├── settings.py
 │   └── spiders
 │       ├── demo.py
-│       ├── __init__.py
-│       └── __pycache__
-│           └── __init__.cpython-36.pyc
+│       └── __init__.py
 └── scrapy.cfg
 
 4 directories, 11 files</code></pre>
@@ -372,7 +367,6 @@ $ tree
 <h2 id="爬虫实现"><a href="#爬虫实现" class="headerlink" title="爬虫实现"></a>爬虫实现</h2><p>生成的爬虫文件如下</p>
 <pre><code class="python"># -*- coding: utf-8 -*-
 import scrapy
-
 
 class DemoSpider(scrapy.Spider):
     name = &#39;demo&#39;
@@ -420,7 +414,6 @@ class DemoSpider(scrapy.Spider):
 <pre><code class="python">from scrapy.pipelines.images import ImagesPipeline
 import scrapy
 
-
 class HaosuPipeline(ImagesPipeline):
 
     def get_media_requests(self, item, info):
@@ -429,8 +422,77 @@ class HaosuPipeline(ImagesPipeline):
 <pre><code>ITEM_PIPELINES = {
     &#39;haosu.pipelines.HaosuPipeline&#39;: 5,
 }
-IMAGES_STORE = &#39;image&#39;</code></pre><h2 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h2><pre><code class="shell">$ scrapy crawl demo</code></pre>
-<h2 id="Scrapy-体系结构"><a href="#Scrapy-体系结构" class="headerlink" title="Scrapy 体系结构"></a>Scrapy 体系结构</h2><ul>
+IMAGES_STORE = &#39;image&#39;</code></pre><h2 id="数据导出"><a href="#数据导出" class="headerlink" title="数据导出"></a>数据导出</h2><h3 id="内置工具"><a href="#内置工具" class="headerlink" title="内置工具"></a>内置工具</h3><pre><code class="shell">$ scrapy crawl spider -o data.json
+$ scrapy crawl spider -o data.csv
+$ scrapy crawl spider -o data.xml
+$ scrapy crawl spider -s FEED_URI=&#39;/home/user/folder/mydata.csv&#39; -s FEED_FORMAT=csv</code></pre>
+<h3 id="pipeline"><a href="#pipeline" class="headerlink" title="pipeline"></a>pipeline</h3><pre><code class="python">from scrapy.exporters import CsvItemExporter
+class CsvPipeline (object):
+
+    def __init__ (self):
+        self.file = open (&#39;databases.csv&#39;, &#39;wb&#39;)
+        self.exporter = CsvItemExporter(self.file)
+        self.exporter.start_exporting()
+
+    def close_spider (self, spider):
+        self.exporter.finish_exporting()
+        self.file.close()
+
+    def process_item (self, item, spider):
+        print(&quot;%s&quot; % item.__class__)
+        self.exporter.export_item(item)
+        return item</code></pre>
+<p>在 <code>settings.py</code> 中启动 <code>pipeline</code></p>
+<pre><code>ITEM_PIPELINES = {
+    &#39;satellites.pipelines.SatellitesPipeline&#39;: 300,
+    &#39;satellites.pipelines.CsvPipeline&#39;: 500,
+}</code></pre><h2 id="classmethod-使用"><a href="#classmethod-使用" class="headerlink" title="classmethod 使用"></a>classmethod 使用</h2><p>使用 <code>classmethod</code> 创建不同的数据库</p>
+<pre><code class="python">def __init__(self, mysql_dbname):
+    # create db
+    sql = &quot;CREATE DATABASE if not exists &quot; + mysql_dbname
+    self.cursor = self.connect.cursor()
+    self.cursor.execute(sql)
+
+@classmethod
+def from_crawler(cls, crawler):
+    settings = crawler.settings
+    mysql_dbname = settings.get(&#39;MYSQL_DBNAME&#39;)
+    print(&quot;%s&quot; % mysql_dbname)
+    return cls(mysql_dbname)</code></pre>
+<h2 id="pymysql-数据存储"><a href="#pymysql-数据存储" class="headerlink" title="pymysql 数据存储"></a>pymysql 数据存储</h2><ul>
+<li><a href="https://pymysql.readthedocs.io/en/latest/user/index.html" target="_blank" rel="noopener">User Guide</a></li>
+<li><a href="https://pymysql.readthedocs.io/en/latest/modules/index.html" target="_blank" rel="noopener">API Reference</a></li>
+<li><a href="https://juejin.im/post/5c7e524af265da2d914db18f" target="_blank" rel="noopener">SQL 语法速成手册</a></li>
+<li><a href="https://www.liaoxuefeng.com/wiki/1177760294764384" target="_blank" rel="noopener">SQL教程</a></li>
+</ul>
+<pre><code class="python">import pymysql
+
+self.connect = pymysql.connect(
+    host=settings.MYSQL_HOST,
+    user=settings.MYSQL_USER,
+    passwd=settings.MYSQL_PASSWD,
+    charset=&#39;utf8&#39;,
+    use_unicode=True)
+sql = &quot;CREATE DATABASE if not exists &quot; + mysql_dbname
+self.cursor = self.connect.cursor()
+self.cursor.execute(sql)
+self.cursor.execute(&quot;USE %s;&quot; % mysql_dbname)
+
+# create satellite table
+sql = &quot;&quot;&quot;CREATE TABLE if not exists satellites(
+    id bigint(20) NOT NULL AUTO_INCREMENT,
+    position varchar(20),
+    area varchar(30),
+    band varchar(10),
+    name varchar(100),
+    time varchar(20),
+    PRIMARY KEY (id)
+    ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;&quot;&quot;&quot;
+self.cursor.execute(sql)</code></pre>
+<h2 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h2><pre><code class="shell">$ scrapy crawl demo</code></pre>
+<h2 id="Problems"><a href="#Problems" class="headerlink" title="Problems"></a>Problems</h2><h3 id="网页返回乱码"><a href="#网页返回乱码" class="headerlink" title="网页返回乱码"></a>网页返回乱码</h3><p><code>DEFAULT_REQUEST_HEADERS</code> 设置 <code>Accept-Encoding</code> 为 <code>gzip,deflate</code> 导致网页返回乱码</p>
+<p>这个配置表示接受压缩后的数据，需要自己解压缩</p>
+<h3 id="robots-txt"><a href="#robots-txt" class="headerlink" title="robots.txt"></a>robots.txt</h3><pre><code>ROBOTSTXT_OBEY = False</code></pre><h2 id="Scrapy-体系结构"><a href="#Scrapy-体系结构" class="headerlink" title="Scrapy 体系结构"></a>Scrapy 体系结构</h2><ul>
 <li><a href="https://docs.scrapy.org/en/latest/topics/architecture.html" target="_blank" rel="noopener">Architecture overview</a></li>
 </ul>
 <h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
@@ -504,7 +566,7 @@ IMAGES_STORE = &#39;image&#39;</code></pre><h2 id="启动"><a href="#启动" cla
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#准备工作"><span class="nav-number">1.</span> <span class="nav-text">准备工作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#调试"><span class="nav-number">2.</span> <span class="nav-text">调试</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#新建项目"><span class="nav-number">3.</span> <span class="nav-text">新建项目</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#配置"><span class="nav-number">4.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#爬虫实现"><span class="nav-number">5.</span> <span class="nav-text">爬虫实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#数据定义"><span class="nav-number">6.</span> <span class="nav-text">数据定义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#图片下载"><span class="nav-number">7.</span> <span class="nav-text">图片下载</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#启动"><span class="nav-number">8.</span> <span class="nav-text">启动</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Scrapy-体系结构"><span class="nav-number">9.</span> <span class="nav-text">Scrapy 体系结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">10.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#准备工作"><span class="nav-number">1.</span> <span class="nav-text">准备工作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#调试"><span class="nav-number">2.</span> <span class="nav-text">调试</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#新建项目"><span class="nav-number">3.</span> <span class="nav-text">新建项目</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#配置"><span class="nav-number">4.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#爬虫实现"><span class="nav-number">5.</span> <span class="nav-text">爬虫实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#数据定义"><span class="nav-number">6.</span> <span class="nav-text">数据定义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#图片下载"><span class="nav-number">7.</span> <span class="nav-text">图片下载</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#数据导出"><span class="nav-number">8.</span> <span class="nav-text">数据导出</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#内置工具"><span class="nav-number">8.1.</span> <span class="nav-text">内置工具</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#pipeline"><span class="nav-number">8.2.</span> <span class="nav-text">pipeline</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#classmethod-使用"><span class="nav-number">9.</span> <span class="nav-text">classmethod 使用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pymysql-数据存储"><span class="nav-number">10.</span> <span class="nav-text">pymysql 数据存储</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#启动"><span class="nav-number">11.</span> <span class="nav-text">启动</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Problems"><span class="nav-number">12.</span> <span class="nav-text">Problems</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#网页返回乱码"><span class="nav-number">12.1.</span> <span class="nav-text">网页返回乱码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#robots-txt"><span class="nav-number">12.2.</span> <span class="nav-text">robots.txt</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Scrapy-体系结构"><span class="nav-number">13.</span> <span class="nav-text">Scrapy 体系结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">14.</span> <span class="nav-text">Ref</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -593,7 +655,7 @@ IMAGES_STORE = &#39;image&#39;</code></pre><h2 id="启动"><a href="#启动" cla
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:12</span>
+    <span title="Reading time total">18:14</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
   </div>
