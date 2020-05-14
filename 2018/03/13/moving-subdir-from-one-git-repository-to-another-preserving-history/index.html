@@ -51,15 +51,15 @@
   };
 </script>
 
-  <meta name="description" content="使用 git 将一个仓库中的子目录移动到另一个仓库中，同时保留所有的上传历史记录">
+  <meta name="description" content="使用 git 将一个仓库中的子目录移动到另一个仓库中，同时保留所有的上传历史记录  git filter-branch git subtree split 只能独立一个目录">
 <meta property="og:type" content="article">
 <meta property="og:title" content="将一个仓库中的子目录保留记录移动到另外一个仓库">
 <meta property="og:url" content="http://yoursite.com/2018/03/13/moving-subdir-from-one-git-repository-to-another-preserving-history/index.html">
 <meta property="og:site_name" content="IT日记">
-<meta property="og:description" content="使用 git 将一个仓库中的子目录移动到另一个仓库中，同时保留所有的上传历史记录">
+<meta property="og:description" content="使用 git 将一个仓库中的子目录移动到另一个仓库中，同时保留所有的上传历史记录  git filter-branch git subtree split 只能独立一个目录">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2018-03-13T08:38:22.000Z">
-<meta property="article:modified_time" content="2020-05-13T02:55:30.242Z">
+<meta property="article:modified_time" content="2020-05-14T07:29:34.303Z">
 <meta property="article:author" content="Breeze.Temple">
 <meta property="article:tag" content="git">
 <meta property="article:tag" content="linux">
@@ -251,7 +251,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-13 10:55:30" itemprop="dateModified" datetime="2020-05-13T10:55:30+08:00">2020-05-13</time>
+                <time title="Modified: 2020-05-14 15:29:34" itemprop="dateModified" datetime="2020-05-14T15:29:34+08:00">2020-05-14</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -284,14 +284,14 @@
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>2.3k</span>
+              <span>5.1k</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="fa fa-clock-o"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
+              <span>5 mins.</span>
             </span>
 
         </div>
@@ -304,83 +304,204 @@
 
       
         <p>使用 <code>git</code> 将一个仓库中的子目录移动到另一个仓库中，同时保留所有的上传历史记录</p>
+<ul>
+<li><code>git filter-branch</code></li>
+<li><code>git subtree split</code> 只能独立一个目录</li>
+</ul>
 <a id="more"></a>
 
-<p>Before:</p>
-<pre><code>repositoryA/
-.........../directoryToKeep
-.........../otherDirectory
-.........../someFile.ext
-
-repositoryB/
-.........../someStuff</code></pre><p>After:</p>
-<pre><code>repositoryA/
-.........../otherDirectory
-.........../someFile.ext
-
-repositoryB/
-.........../someStuff
-.........../directoryToKeep</code></pre><h2 id="delete-commits"><a href="#delete-commits" class="headerlink" title="delete commits"></a>delete commits</h2><p>回滚仓库</p>
-<pre><code>git reset --hard &lt;sha1-commit-id&gt;
-git push origin HEAD --force</code></pre><p>使用 <code>patch</code></p>
-<pre><code>$ git apply --check my_pcc_branch.patch
+<h2 id="回滚仓库"><a href="#回滚仓库" class="headerlink" title="回滚仓库"></a>回滚仓库</h2><pre><code>git reset --hard &lt;sha1-commit-id&gt;
+git push origin HEAD --force</code></pre><h2 id="使用-patch"><a href="#使用-patch" class="headerlink" title="使用 patch"></a>使用 patch</h2><pre><code>$ git apply --check my_pcc_branch.patch
 warning: src/main/java/.../AbstractedPanel.java has type 100644, expected 100755
 error: patch failed: src/main/java/.../AbstractedPanel.java:13
-error: src/main/java/.../AbstractedPanel.java: patch does not apply</code></pre><pre><code>git am --ignore-space-change --ignore-whitespace *.patch</code></pre><h2 id="Prepare-the-source-repository"><a href="#Prepare-the-source-repository" class="headerlink" title="Prepare the source repository"></a>Prepare the source repository</h2><pre><code>$ tree package/devfe
-├── demod               //we need this dir
-├── Makefile
-└── S04frontend</code></pre><pre><code>git clone &lt;git repository A url&gt; -b dev
-cd &lt;git repository A directory&gt;
-git remote rm origin
-git filter-branch --force --index-filter &#39;git rm --cached --ignore-unmatch package/devfe/Makefile&#39; --prune-empty --tag-name-filter cat -- --all
-git filter-branch --subdirectory-filter package/devfe/ -- --all //Notice: devfe NOT devfe/demod
-git add .
-git commit --amend
-git log . // check</code></pre><h2 id="Merge-into-target-repository"><a href="#Merge-into-target-repository" class="headerlink" title="Merge into target repository"></a>Merge into target repository</h2><p><strong>example 1</strong></p>
-<pre><code>git clone &lt;git repository B url&gt;
-cd &lt;git repository B directory&gt;
-git remote add repo-A-branch &lt;git repository A directory&gt;
-git pull repo-A-branch master --allow-unrelated-histories
-git remote rm repo-A-branch</code></pre><p><strong>example 2</strong></p>
-<pre><code># based on the following:
-# http://saintgimp.org/2013/01/22/merging-two-git-repositories-into-one-repository-without-losing-file-history/
-# http://blog.caplin.com/2013/09/18/merging-two-git-repositories/
+error: src/main/java/.../AbstractedPanel.java: patch does not apply</code></pre><pre><code>git am --ignore-space-change --ignore-whitespace *.patch</code></pre><h2 id="目录结构"><a href="#目录结构" class="headerlink" title="目录结构"></a>目录结构</h2><p>使用 <a href="https://github.com/jingweno/ccat" target="_blank" rel="noopener">ccat</a> 为例</p>
+<pre><code>$ tree -L 2 -d
+.
+├── bin
+├── completion
+│   └── zsh
+└── vendor
+    ├── github.com
+    └── golang.org
+$ git branch -a
+* master
+  remotes/origin/HEAD -&gt; origin/master
+  remotes/origin/bump_isatty
+  remotes/origin/bump_syntaxhighlight
+  remotes/origin/master</code></pre><p><a href="https://github.com/breezetemple/split-test.git" target="_blank" rel="noopener">New repository</a></p>
+<h2 id="拆分一个子目录为独立仓库"><a href="#拆分一个子目录为独立仓库" class="headerlink" title="拆分一个子目录为独立仓库"></a>拆分一个子目录为独立仓库</h2><p>将 <code>vendor</code> 拆分为独立仓库，<strong>保留历史记录及 Branch [master, bump_syntaxhighlight]</strong></p>
+<h3 id="git-subtree"><a href="#git-subtree" class="headerlink" title="git subtree"></a>git subtree</h3><ol>
+<li><strong>Clone原有仓库到本地</strong><pre><code class="shell"> git clone https://github.com/jingweno/ccat</code></pre>
+</li>
+<li><strong>拆分指定分支 master 下项目</strong><pre><code> $ git subtree split -P vendor -b master_tmp
+ $ git co master_tmp
+ $ tree -L 1 -d
+ .
+ ├── github.com
+ └── golang.org
+ $ git log . # 检查 history</code></pre></li>
+<li><strong>创建 New Repo</strong><pre><code> $ mkdir new-repo; cd new-repo
+ $ git init # 本地repo
+ $ git pull ../ccat master_tmp # ccat目录 master_tmp分支</code></pre></li>
+<li><strong>清理 .git object</strong><pre><code> $ git reset --hard
+ $ git for-each-ref --format=&quot;%(refname)&quot; refs/original/ | xargs -n 1 git update-ref -d # 删除由git-filter-branch备份的原始参考
+ $ git reflog expire --expire=now --all # 使用所有reflogs
+ $ git gc --aggressive --prune=now # 垃圾收集所有未被引用的对象</code></pre></li>
+<li><strong>关联远程仓库并上传</strong><pre><code> $ git remote add origin https://github.com/breezetemple/split-test.git
+ $ git push -u origin master</code></pre></li>
+<li><strong>Check</strong><pre><code> $ git clone https://github.com/breezetemple/split-test.git
+ $ git branch -a
+ $ git log .</code></pre></li>
+</ol>
+<p><strong>保留多个分支</strong></p>
+<pre><code>$ git subtree split -P vendor -b master_tmp
+$ git co origin/bump_syntaxhighlight -b bump_syntaxhighlight
+$ git subtree split -P vendor -b bump_syntaxhighlight_tmp
+$ git branch
+  bump_syntaxhighlight
+* bump_syntaxhighlight_tmp
+  master
+  master_tmp
 
-git clone repo_main
-git clone repo_sub
-cd repo_main
+$ mkdir new-repo; cd new-repo
+$ git init # 本地repo
+$ git pull ../ccat master_tmp # ccat目录 master_tmp分支
+$ git reset --hard
+$ git for-each-ref --format=&quot;%(refname)&quot; refs/original/ | xargs -n 1 git update-ref -d
+$ git reflog expire --expire=now --all
+$ git gc --aggressive --prune=now
+$ git remote add origin https://github.com/breezetemple/split-test.git
+$ git push -u origin master
 
-git remote add repo_sub ../repo_sub
-git fetch repo_sub
+$ rm new-repo -rf; mkdir new-repo; cd new-repo
+$ git init # 本地repo
+$ git co -b bump_syntaxhighlight
+$ git pull ../subtree bump_syntaxhighlight_tmp
+$ git reset --hard
+$ git for-each-ref --format=&quot;%(refname)&quot; refs/original/ | xargs -n 1 git update-ref -d
+$ git reflog expire --expire=now --all
+$ git gc --aggressive --prune=now
+$ git remote add origin https://github.com/breezetemple/split-test.git
+$ git push -u origin bump_syntaxhighlight</code></pre><h3 id="git-filter-branch"><a href="#git-filter-branch" class="headerlink" title="git filter-branch"></a>git filter-branch</h3><ol>
+<li><p><strong>Clone原有仓库到本地</strong></p>
+<pre><code class="shell"> git clone https://github.com/jingweno/ccat filter-branch</code></pre>
+</li>
+<li><p><strong>在本地创建需要保留的分支</strong><br>保留 master 和 bump_syntaxhighlight</p>
+<pre><code class="shell"> $ git co origin/bump_syntaxhighlight -b bump_syntaxhighlight
+ $ git branch
+ * bump_syntaxhighlight
+ master</code></pre>
+</li>
+<li><p><strong>取消远程库的关联</strong></p>
+<pre><code> $ git remote rm origin</code></pre></li>
+<li><p><strong>删除所有tag</strong></p>
+<pre><code> $ git tag -l
+ v0.0.1
+ v0.0.2
+ v0.0.3
+ v0.1.0
+ v1.0.0
+ v1.1.0
+ $ git tag -l | xargs git tag -d # 需要删除所有的tag，否则会出错</code></pre></li>
+<li><p><strong>保留需要的目录和历史</strong></p>
+<pre><code> # 保留多个子文件夹
+ $ git filter-branch -f --prune-empty --index-filter &#39;git rm --cached -r -q -- . ; git reset -q $GIT_COMMIT -- vendor&#39; -- --all # 只保留 vendor
+ $ git filter-branch -f --prune-empty --index-filter &#39;git rm --cached -r -q -- . ; git reset -q $GIT_COMMIT -- vendor completion&#39; -- --all # 保留 vendor completion
+ $ git branch -a
+ bump_syntaxhighlight
+ * master
+ $ tree -L 2 -d
+ .
+ └── vendor
+     ├── github.com
+     └── golang.org
+ $ git log .
 
-git checkout -b repo_sub repo_sub/master
-mkdir dir_repo_sub
-
-# &#39;*&#39; will cause git mv to fail because it cannot move dir_repo_sub into itself
-git mv &lt;list all files&gt;
-git commit -m&quot;Moves all repo_sub files into a single directory for merging back into repo_main&quot;
-
-git checkout master
-git merge repo_sub
-
-# commit and push, and you&#39;re finished</code></pre><pre><code>git clone &lt;git respository B directory&gt;</code></pre><p>After:</p>
-<pre><code>repositoryA/
-.........../demod
-.........../.git
-
-repositoryB/
-.........../someStuff
-.........../.git</code></pre><pre><code>cd B
-git remote add demod ../repositoryA
-git fetch demod
-git checkout -b demod demod/dev
-git checkout dev
-git merge demod --allow-unrelated-histories
-git commit --amend //commit log
-git push / repo upload .</code></pre><h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="http://gbayer.com/development/moving-files-from-one-git-repository-to-another-preserving-history/" target="_blank" rel="noopener">1</a></li>
+ # 保留一个子文件夹，并且成为 root
+ $ git filter-branch --prune-empty --subdirectory-filter vendor
+ $ tree -L 1 -d
+ .
+ ├── bin
+ ├── completion
+ └── vendor</code></pre></li>
+<li><p><strong>清理仓库</strong></p>
+<pre><code> $ git reset --hard
+ $ git for-each-ref --format=&quot;%(refname)&quot; refs/original/ | xargs -n 1 git update-ref -d
+ $ git reflog expire --expire=now --all
+ $ git gc --aggressive --prune=now</code></pre></li>
+<li><p><strong>关联远程仓库并上传</strong></p>
+<pre><code> $ git remote add origin https://github.com/breezetemple/split-test.git
+ $ git push -u origin master
+ $ git push -u origin bump_syntaxhighlight</code></pre></li>
+</ol>
+<p>保留了层级结构，为 <code>vendor/*</code></p>
+<ul>
+<li><code>-- --all</code> 表明 <code>--all</code> 为 filter-branch options<blockquote>
+<p>Note the – that separates filter-branch options from revision options, and the –all to rewrite all branches and tags.</p>
+</blockquote>
+</li>
+<li><code>--all</code> all branches and tags.</li>
+<li><code>--subdirectory-filter &lt;directory&gt;</code><blockquote>
+<p>Only look at the history which touches the given subdirectory. The result will contain that directory (and only that) as its project root.</p>
+</blockquote>
+</li>
+</ul>
+<h2 id="git-stitch-repo"><a href="#git-stitch-repo" class="headerlink" title="git-stitch-repo"></a>git-stitch-repo</h2><p><a href="https://stackoverflow.com/questions/2982055/detach-many-subdirectories-into-a-new-separate-git-repository" target="_blank" rel="noopener">Detach many subdirectories into a new, separate Git repository</a></p>
+<h2 id="git-filter-repo"><a href="#git-filter-repo" class="headerlink" title="git-filter-repo"></a>git-filter-repo</h2><p><a href="https://github.com/newren/git-filter-repo/" target="_blank" rel="noopener">git-filter-repo</a></p>
+<h2 id="拆分子目录并上传到一个已存在仓库"><a href="#拆分子目录并上传到一个已存在仓库" class="headerlink" title="拆分子目录并上传到一个已存在仓库"></a>拆分子目录并上传到一个已存在仓库</h2><ul>
+<li>src: <a href="https://github.com/jingweno/ccat" target="_blank" rel="noopener">ccat</a><pre><code>$ tree -L 2 -d
+.
+├── bin
+├── completion
+│   └── zsh
+└── vendor
+  ├── github.com
+  └── golang.org</code></pre></li>
+<li>dst: <a href="https://github.com/breezetemple/split-test.git" target="_blank" rel="noopener">test</a><pre><code>$ tree -L 1
+.
+├── src
+└── test</code></pre></li>
+</ul>
+<p>目标：将 <code>ccat/vendor</code> 移动到 <code>split-test</code></p>
+<h3 id="git-filter-branch-1"><a href="#git-filter-branch-1" class="headerlink" title="git filter-branch"></a>git filter-branch</h3><ol>
+<li><strong>源文件处理</strong><pre><code>$ git remote rm origin # current branch: master
+$ git tag -l | xargs git tag -d
+$ git filter-branch --prune-empty --subdirectory-filter ./vendor -- --all
+$ tree -L 1
+.
+├── github.com
+├── golang.org
+└── vendor.json
+$ git filter-branch -f --prune-empty --index-filter &#39;git rm --cached -r -q -- . ; git reset -q $GIT_COMMIT -- vendor&#39; -- --all
+$ tree -L 2 -d
+.
+└── vendor
+ ├── github.com
+ └── golang.org</code></pre></li>
+<li><strong>清理仓库</strong><pre><code>$ git reset --hard
+$ git for-each-ref --format=&quot;%(refname)&quot; refs/original/ | xargs -n 1 git update-ref -d
+$ git reflog expire --expire=now --all
+$ git gc --aggressive --prune=now</code></pre></li>
+<li><strong>目标仓库操作</strong><pre><code>$ git clone https://github.com/breezetemple/split-test.git
+$ cd split-test # current branch: master
+# 添加本地源
+$ git remote add master ../filter-branch # master: ccat branch
+# 更新代码
+$ git fetch master
+# 建立跟踪分支 vendor -&gt; master/master
+# git remote add repo-A-branch &lt;git repository A directory&gt;
+$ git co -b vendor master/master
+$ git co master
+# 合并
+$ git merge vendor --allow-unrelated-histories
+$ git push</code></pre></li>
+</ol>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://stackoverflow.com/questions/359424/detach-move-subdirectory-into-separate-git-repository" target="_blank" rel="noopener">Detach (move) subdirectory into separate Git repository</a></li>
 <li><a href="https://gist.github.com/smdabdoub/17065c348289158277b5" target="_blank" rel="noopener">merge_git_repo_as_subdir</a></li>
 <li><a href="https://mattsch.com/2015/06/19/move-directory-from-one-repository-to-another-preserving-history/" target="_blank" rel="noopener">Move directory from one repository to another, preserving history</a></li>
+<li><a href="https://cloud.tencent.com/developer/section/1138641" target="_blank" rel="noopener">git filter-branch</a></li>
+<li><a href="https://rtyley.github.io/bfg-repo-cleaner/" target="_blank" rel="noopener">an alternative to git-filter-branch – BFG Repo-Cleaner</a></li>
 </ol>
 
     </div>
@@ -449,7 +570,7 @@ git push / repo upload .</code></pre><h2 id="Ref"><a href="#Ref" class="headerli
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#delete-commits"><span class="nav-number">1.</span> <span class="nav-text">delete commits</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Prepare-the-source-repository"><span class="nav-number">2.</span> <span class="nav-text">Prepare the source repository</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Merge-into-target-repository"><span class="nav-number">3.</span> <span class="nav-text">Merge into target repository</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">4.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#回滚仓库"><span class="nav-number">1.</span> <span class="nav-text">回滚仓库</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用-patch"><span class="nav-number">2.</span> <span class="nav-text">使用 patch</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#目录结构"><span class="nav-number">3.</span> <span class="nav-text">目录结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#拆分一个子目录为独立仓库"><span class="nav-number">4.</span> <span class="nav-text">拆分一个子目录为独立仓库</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#git-subtree"><span class="nav-number">4.1.</span> <span class="nav-text">git subtree</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#git-filter-branch"><span class="nav-number">4.2.</span> <span class="nav-text">git filter-branch</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#git-stitch-repo"><span class="nav-number">5.</span> <span class="nav-text">git-stitch-repo</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#git-filter-repo"><span class="nav-number">6.</span> <span class="nav-text">git-filter-repo</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#拆分子目录并上传到一个已存在仓库"><span class="nav-number">7.</span> <span class="nav-text">拆分子目录并上传到一个已存在仓库</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#git-filter-branch-1"><span class="nav-number">7.1.</span> <span class="nav-text">git filter-branch</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">8.</span> <span class="nav-text">Ref</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -538,7 +659,7 @@ git push / repo upload .</code></pre><h2 id="Ref"><a href="#Ref" class="headerli
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:14</span>
+    <span title="Reading time total">18:16</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
   </div>
