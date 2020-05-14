@@ -216,131 +216,6 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/05/How-to-use-libtool-to-create-a-static-library/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2018/03/05/How-to-use-libtool-to-create-a-static-library/" class="post-title-link" itemprop="url">使用 libtool 编译静态库</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2018-03-05 15:24:54" itemprop="dateCreated datePublished" datetime="2018-03-05T15:24:54+08:00">2018-03-05</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-14 15:29:34" itemprop="dateModified" datetime="2020-05-14T15:29:34+08:00">2020-05-14</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/" itemprop="url" rel="index">
-                    <span itemprop="name">Tools</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/Make/" itemprop="url" rel="index">
-                    <span itemprop="name">Make</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>1.2k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="libtool"><a href="#libtool" class="headerlink" title="libtool"></a>libtool</h2><pre><code>iperf3_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-    $(LIBTOOLFLAGS) --mode=link $(CCLD) $(iperf3_CFLAGS) $(CFLAGS) \
-    $(iperf3_LDFLAGS) $(LDFLAGS) -o $@</code></pre><pre><code>LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-    $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
-    $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
-    $(AM_CFLAGS) $(CFLAGS)</code></pre><p>模式为 <code>libtool --tag=CC xxx --mode=xx $(CC)</code>，在 <code>$(CC)</code> 后添加 Flag</p>
-<pre><code>iperf3_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-    $(LIBTOOLFLAGS) --mode=link $(CCLD) -all-static $(iperf3_CFLAGS) $(CFLAGS) \
-    $(iperf3_LDFLAGS) $(LDFLAGS) -o $@</code></pre><pre><code>LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-    $(LIBTOOLFLAGS) --mode=compile $(CC) -static $(DEFS) \
-    $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
-    $(AM_CFLAGS) $(CFLAGS)</code></pre><h2 id="example"><a href="#example" class="headerlink" title="example"></a>example</h2><pre><code>libtool looks at the parameters of gcc, so you should have something like below
-
-$ cat Makefile
-all: libone libtwo
-        rm *.o
-        @libtool --mode=link gcc -all-static -o libcombo.a libone.a libtwo.a
-
-libone: one.c
-        @libtool --mode=compile gcc -c one.c -o one.lo
-        @libtool --mode=link gcc -static -o libone.a one.lo
-
-libtwo: two.c
-        @libtool --mode=compile gcc -c two.c -o two.lo
-        @libtool --mode=link gcc -static -o libtwo.a two.lo</code></pre><h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="https://stackoverflow.com/questions/24954747/how-to-use-libtool-to-create-a-static-library-from-a-bunch-of-static-libraries" target="_blank" rel="noopener">How to use libtool to create a static library from a bunch of static libraries</a></li>
-<li><a href="https://www.gnu.org/software/libtool/manual/html_node/Linking-libraries.html" target="_blank" rel="noopener">3.2 Linking libraries</a></li>
-<li><a href="https://www.gnu.org/software/libtool/manual/html_node/Link-mode.html" target="_blank" rel="noopener">4.2 Link mode</a></li>
-<li><a href="https://lists.gnu.org/archive/html/libtool/2004-11/msg00017.html" target="_blank" rel="noopener">Building all static</a></li>
-</ol>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/02/28/autoconf-and-automake/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -372,7 +247,7 @@ libtwo: two.c
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-14 15:29:34" itemprop="dateModified" datetime="2020-05-14T15:29:34+08:00">2020-05-14</time>
+                <time title="Modified: 2020-05-14 15:30:09" itemprop="dateModified" datetime="2020-05-14T15:30:09+08:00">2020-05-14</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -482,7 +357,7 @@ libtwo: two.c
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-14 15:29:34" itemprop="dateModified" datetime="2020-05-14T15:29:34+08:00">2020-05-14</time>
+                <time title="Modified: 2020-05-14 15:30:09" itemprop="dateModified" datetime="2020-05-14T15:30:09+08:00">2020-05-14</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -579,7 +454,7 @@ libtwo: two.c
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-14 15:29:34" itemprop="dateModified" datetime="2020-05-14T15:29:34+08:00">2020-05-14</time>
+                <time title="Modified: 2020-05-14 15:30:09" itemprop="dateModified" datetime="2020-05-14T15:30:09+08:00">2020-05-14</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -676,7 +551,7 @@ libtwo: two.c
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-14 15:29:34" itemprop="dateModified" datetime="2020-05-14T15:29:34+08:00">2020-05-14</time>
+                <time title="Modified: 2020-05-14 15:30:09" itemprop="dateModified" datetime="2020-05-14T15:30:09+08:00">2020-05-14</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -773,7 +648,7 @@ libtwo: two.c
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-14 15:29:34" itemprop="dateModified" datetime="2020-05-14T15:29:34+08:00">2020-05-14</time>
+                <time title="Modified: 2020-05-14 15:30:09" itemprop="dateModified" datetime="2020-05-14T15:30:09+08:00">2020-05-14</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -871,7 +746,7 @@ libtwo: two.c
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-14 15:29:34" itemprop="dateModified" datetime="2020-05-14T15:29:34+08:00">2020-05-14</time>
+                <time title="Modified: 2020-05-14 15:30:09" itemprop="dateModified" datetime="2020-05-14T15:30:09+08:00">2020-05-14</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -968,7 +843,7 @@ libtwo: two.c
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-14 15:29:34" itemprop="dateModified" datetime="2020-05-14T15:29:34+08:00">2020-05-14</time>
+                <time title="Modified: 2020-05-14 15:30:09" itemprop="dateModified" datetime="2020-05-14T15:30:09+08:00">2020-05-14</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1065,7 +940,7 @@ libtwo: two.c
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-14 15:29:34" itemprop="dateModified" datetime="2020-05-14T15:29:34+08:00">2020-05-14</time>
+                <time title="Modified: 2020-05-14 15:30:09" itemprop="dateModified" datetime="2020-05-14T15:30:09+08:00">2020-05-14</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1177,7 +1052,7 @@ SYNOPSIS
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-14 15:29:34" itemprop="dateModified" datetime="2020-05-14T15:29:34+08:00">2020-05-14</time>
+                <time title="Modified: 2020-05-14 15:30:09" itemprop="dateModified" datetime="2020-05-14T15:30:09+08:00">2020-05-14</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1292,7 +1167,7 @@ enum
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-14 15:29:34" itemprop="dateModified" datetime="2020-05-14T15:29:34+08:00">2020-05-14</time>
+                <time title="Modified: 2020-05-14 15:30:09" itemprop="dateModified" datetime="2020-05-14T15:30:09+08:00">2020-05-14</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1390,7 +1265,7 @@ sudo apt-get install  manpages-zh</code></pre><p>###</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-14 15:29:34" itemprop="dateModified" datetime="2020-05-14T15:29:34+08:00">2020-05-14</time>
+                <time title="Modified: 2020-05-14 15:30:09" itemprop="dateModified" datetime="2020-05-14T15:30:09+08:00">2020-05-14</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1487,7 +1362,7 @@ sudo apt-get install  manpages-zh</code></pre><p>###</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-14 15:29:34" itemprop="dateModified" datetime="2020-05-14T15:29:34+08:00">2020-05-14</time>
+                <time title="Modified: 2020-05-14 15:30:09" itemprop="dateModified" datetime="2020-05-14T15:30:09+08:00">2020-05-14</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1594,7 +1469,7 @@ sudo apt-get install  manpages-zh</code></pre><p>###</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-14 15:29:34" itemprop="dateModified" datetime="2020-05-14T15:29:34+08:00">2020-05-14</time>
+                <time title="Modified: 2020-05-14 15:30:09" itemprop="dateModified" datetime="2020-05-14T15:30:09+08:00">2020-05-14</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1691,7 +1566,7 @@ sudo apt-get install  manpages-zh</code></pre><p>###</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-14 15:29:34" itemprop="dateModified" datetime="2020-05-14T15:29:34+08:00">2020-05-14</time>
+                <time title="Modified: 2020-05-14 15:30:09" itemprop="dateModified" datetime="2020-05-14T15:30:09+08:00">2020-05-14</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1734,6 +1609,103 @@ sudo apt-get install  manpages-zh</code></pre><p>###</p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2018/01/16/movian-backend/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/01/16/movian-metadata/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2018/01/16/movian-metadata/" class="post-title-link" itemprop="url">movian-metadata</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-01-16 10:19:20" itemprop="dateCreated datePublished" datetime="2018-01-16T10:19:20+08:00">2018-01-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-14 15:30:09" itemprop="dateModified" datetime="2020-05-14T15:30:09+08:00">2020-05-14</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Movian/" itemprop="url" rel="index">
+                    <span itemprop="name">Movian</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>1.5k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p><a href="https://movian.tv/projects/movian/wiki/JSAPI_page" target="_blank" rel="noopener">API</a></p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2018/01/16/movian-metadata/#more" rel="contents">
                 Read more &raquo;
               </a>
             </div>
@@ -1803,7 +1775,7 @@ sudo apt-get install  manpages-zh</code></pre><p>###</p>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">447</span>
+          <span class="site-state-item-count">446</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -1876,7 +1848,7 @@ sudo apt-get install  manpages-zh</code></pre><p>###</p>
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:16</span>
+    <span title="Reading time total">18:14</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
   </div>
