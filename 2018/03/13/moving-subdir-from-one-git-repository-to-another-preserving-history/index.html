@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
 <meta name="theme-color" content="#222">
-<meta name="generator" content="Hexo 4.2.0">
+<meta name="generator" content="Hexo 4.2.1">
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
@@ -53,13 +53,13 @@
 
   <meta name="description" content="使用 git 将一个仓库中的子目录移动到另一个仓库中，同时保留所有的上传历史记录  git filter-branch git subtree split 只能独立一个目录">
 <meta property="og:type" content="article">
-<meta property="og:title" content="将一个仓库中的子目录保留记录移动到另外一个仓库">
+<meta property="og:title" content="Git 拆分子仓库">
 <meta property="og:url" content="http://yoursite.com/2018/03/13/moving-subdir-from-one-git-repository-to-another-preserving-history/index.html">
 <meta property="og:site_name" content="IT日记">
 <meta property="og:description" content="使用 git 将一个仓库中的子目录移动到另一个仓库中，同时保留所有的上传历史记录  git filter-branch git subtree split 只能独立一个目录">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2018-03-13T08:38:22.000Z">
-<meta property="article:modified_time" content="2020-05-14T07:30:09.334Z">
+<meta property="article:modified_time" content="2020-05-15T05:21:30.960Z">
 <meta property="article:author" content="Breeze.Temple">
 <meta property="article:tag" content="git">
 <meta property="article:tag" content="linux">
@@ -80,7 +80,7 @@
   };
 </script>
 
-  <title>将一个仓库中的子目录保留记录移动到另外一个仓库 | IT日记</title>
+  <title>Git 拆分子仓库 | IT日记</title>
   
 
 
@@ -234,7 +234,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          将一个仓库中的子目录保留记录移动到另外一个仓库
+          Git 拆分子仓库
         </h1>
 
         <div class="post-meta">
@@ -251,7 +251,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-14 15:30:09" itemprop="dateModified" datetime="2020-05-14T15:30:09+08:00">2020-05-14</time>
+                <time title="Modified: 2020-05-15 13:21:30" itemprop="dateModified" datetime="2020-05-15T13:21:30+08:00">2020-05-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -284,14 +284,14 @@
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>5.1k</span>
+              <span>6.9k</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="fa fa-clock-o"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>5 mins.</span>
+              <span>6 mins.</span>
             </span>
 
         </div>
@@ -496,12 +496,83 @@ $ git co master
 $ git merge vendor --allow-unrelated-histories
 $ git push</code></pre></li>
 </ol>
+<h2 id="拆分子仓库并且更改目录层次"><a href="#拆分子仓库并且更改目录层次" class="headerlink" title="拆分子仓库并且更改目录层次"></a>拆分子仓库并且更改目录层次</h2><h3 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h3><pre><code>.
+├── bin
+├── completion
+│   └── zsh
+└── vendor
+    ├── github.com
+    └── golang.org</code></pre><p>拆分为</p>
+<pre><code>.
+├── zsh
+├── github.com
+└── golang.org</code></pre><h3 id="git-read-tree-脚本"><a href="#git-read-tree-脚本" class="headerlink" title="git read-tree 脚本"></a>git read-tree 脚本</h3><p><code>git subtree</code> 只能操作单个文件，当需要操作多个文件切需要更改目录层次时，需要使用更加强大的工具 <code>git filter-branch</code></p>
+<ul>
+<li><code>--index-filter</code></li>
+<li><code>--tree-filter</code></li>
+</ul>
+<p>编写处理脚本如下：</p>
+<pre><code class="shell">git read-tree --empty
+
+git show ${GIT_COMMIT}:vendor/github.com &gt;/dev/null 2&gt;&amp;1
+if [ $? -eq 0 ]; then
+    git read-tree --prefix=github.com/ ${GIT_COMMIT}:vendor/github.com
+fi
+
+git show ${GIT_COMMIT}:vendor/golang.org &gt;/dev/null 2&gt;&amp;1
+if [ $? -eq 0 ]; then
+    git read-tree --prefix=golang.org/ ${GIT_COMMIT}:vendor/golang.org
+fi
+
+git show ${GIT_COMMIT}:completion/zsh &gt;/dev/null 2&gt;&amp;1
+if [ $? -eq 0 ]; then
+    git read-tree --prefix=zsh/ ${GIT_COMMIT}:completion/zsh
+fi</code></pre>
+<p><strong>脚本说明：</strong></p>
+<ul>
+<li><code>git read-tree &lt;commit-id&gt;</code><br>可读取指定提交到当前 index</li>
+<li><code>git read-tree --empty</code><br>清除当前的 index</li>
+<li><code>${GIT_COMMIT}</code></li>
+<li><code>git show ${GIT_COMMIT}:vendor/github.com</code><br>判断当前提交中是否包含文件/文件夹</li>
+<li><code>git read-tree --prefix=zsh/ &lt;commit-id&gt;:completion/zsh</code><br>将指定提交的指定文件读入当前 index, 并且文件路径添加前缀</li>
+</ul>
+<h3 id="git-filter-branch-2"><a href="#git-filter-branch-2" class="headerlink" title="git filter-branch"></a>git filter-branch</h3><ol>
+<li><strong>Clone原有仓库到本地</strong><pre><code class="shell"> git clone https://github.com/jingweno/ccat</code></pre>
+</li>
+<li><strong>在本地创建需要保留的分支</strong><br>保留 master 和 bump_syntaxhighlight<pre><code class="shell"> $ git co origin/bump_syntaxhighlight -b bump_syntaxhighlight
+ $ git branch
+ * bump_syntaxhighlight
+ master</code></pre>
+</li>
+<li><strong>取消远程库的关联</strong><pre><code> $ git remote rm origin</code></pre></li>
+<li><strong>删除所有tag</strong><pre><code> $ git tag -l | xargs git tag -d # 需要删除所有的tag，否则会出错</code></pre></li>
+<li><strong>保留需要的目录和历史</strong><pre><code> # 按照脚本保留多个子文件夹并调整层级
+ $ git filter-branch -f --index-filter PATH/TO/index-filter.sh -- --all # 绝对路径
+ $ git branch -a
+ bump_syntaxhighlight
+ * master
+ $ tree -L 2 -d
+ .
+ ├── github.com
+ ├── golang.org
+ └── zsh
+ $ git log .</code></pre></li>
+<li><strong>清理仓库</strong><pre><code> $ git reset --hard
+ $ git for-each-ref --format=&quot;%(refname)&quot; refs/original/ | xargs -n 1 git update-ref -d
+ $ git reflog expire --expire=now --all
+ $ git gc --aggressive --prune=now</code></pre></li>
+<li><strong>关联远程仓库并上传</strong><pre><code> $ git remote add origin https://github.com/breezetemple/split-test.git
+ $ git push -u origin master
+ $ git push -u origin bump_syntaxhighlight</code></pre></li>
+</ol>
 <h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
 <li><a href="https://stackoverflow.com/questions/359424/detach-move-subdirectory-into-separate-git-repository" target="_blank" rel="noopener">Detach (move) subdirectory into separate Git repository</a></li>
 <li><a href="https://gist.github.com/smdabdoub/17065c348289158277b5" target="_blank" rel="noopener">merge_git_repo_as_subdir</a></li>
 <li><a href="https://mattsch.com/2015/06/19/move-directory-from-one-repository-to-another-preserving-history/" target="_blank" rel="noopener">Move directory from one repository to another, preserving history</a></li>
 <li><a href="https://cloud.tencent.com/developer/section/1138641" target="_blank" rel="noopener">git filter-branch</a></li>
 <li><a href="https://rtyley.github.io/bfg-repo-cleaner/" target="_blank" rel="noopener">an alternative to git-filter-branch – BFG Repo-Cleaner</a></li>
+<li><a href="https://stackoverflow.com/questions/18564678/preserve-no-ff-merge-commits-with-git-filter-branch-subdirectory-filter" target="_blank" rel="noopener">Preserve –no-ff merge commits with git filter-branch –subdirectory-filter</a></li>
+<li><a href="https://tswblog.com/article/git/git-split-project/" target="_blank" rel="noopener">git拆分工程</a></li>
 </ol>
 
     </div>
@@ -570,7 +641,7 @@ $ git push</code></pre></li>
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#回滚仓库"><span class="nav-number">1.</span> <span class="nav-text">回滚仓库</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用-patch"><span class="nav-number">2.</span> <span class="nav-text">使用 patch</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#目录结构"><span class="nav-number">3.</span> <span class="nav-text">目录结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#拆分一个子目录为独立仓库"><span class="nav-number">4.</span> <span class="nav-text">拆分一个子目录为独立仓库</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#git-subtree"><span class="nav-number">4.1.</span> <span class="nav-text">git subtree</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#git-filter-branch"><span class="nav-number">4.2.</span> <span class="nav-text">git filter-branch</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#git-stitch-repo"><span class="nav-number">5.</span> <span class="nav-text">git-stitch-repo</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#git-filter-repo"><span class="nav-number">6.</span> <span class="nav-text">git-filter-repo</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#拆分子目录并上传到一个已存在仓库"><span class="nav-number">7.</span> <span class="nav-text">拆分子目录并上传到一个已存在仓库</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#git-filter-branch-1"><span class="nav-number">7.1.</span> <span class="nav-text">git filter-branch</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">8.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#回滚仓库"><span class="nav-number">1.</span> <span class="nav-text">回滚仓库</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用-patch"><span class="nav-number">2.</span> <span class="nav-text">使用 patch</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#目录结构"><span class="nav-number">3.</span> <span class="nav-text">目录结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#拆分一个子目录为独立仓库"><span class="nav-number">4.</span> <span class="nav-text">拆分一个子目录为独立仓库</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#git-subtree"><span class="nav-number">4.1.</span> <span class="nav-text">git subtree</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#git-filter-branch"><span class="nav-number">4.2.</span> <span class="nav-text">git filter-branch</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#git-stitch-repo"><span class="nav-number">5.</span> <span class="nav-text">git-stitch-repo</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#git-filter-repo"><span class="nav-number">6.</span> <span class="nav-text">git-filter-repo</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#拆分子目录并上传到一个已存在仓库"><span class="nav-number">7.</span> <span class="nav-text">拆分子目录并上传到一个已存在仓库</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#git-filter-branch-1"><span class="nav-number">7.1.</span> <span class="nav-text">git filter-branch</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#拆分子仓库并且更改目录层次"><span class="nav-number">8.</span> <span class="nav-text">拆分子仓库并且更改目录层次</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#目标"><span class="nav-number">8.1.</span> <span class="nav-text">目标</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#git-read-tree-脚本"><span class="nav-number">8.2.</span> <span class="nav-text">git read-tree 脚本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#git-filter-branch-2"><span class="nav-number">8.3.</span> <span class="nav-text">git filter-branch</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">9.</span> <span class="nav-text">Ref</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -659,9 +730,9 @@ $ git push</code></pre></li>
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:14</span>
+    <span title="Reading time total">18:16</span>
 </div>
-  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.0
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
   </div>
   <span class="post-meta-divider">|</span>
   <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
