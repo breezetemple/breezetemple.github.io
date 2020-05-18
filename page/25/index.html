@@ -216,6 +216,216 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/25/programmer-float/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2016/04/25/programmer-float/" class="post-title-link" itemprop="url">浮点数你应该知道的基础知识</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-04-26 00:00:00" itemprop="dateCreated datePublished" datetime="2016-04-26T00:00:00+08:00">2016-04-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-18 19:37:25" itemprop="dateModified" datetime="2020-05-18T19:37:25+08:00">2020-05-18</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index">
+                    <span itemprop="name">C</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>4.5k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+
+<p>作者：卢钧轶(cenalulu) 本文原文地址：<a href="http://cenalulu.github.io/linux/about-denormalized-float-number/" target="_blank" rel="noopener">http://cenalulu.github.io/linux/about-denormalized-float-number/</a></p>
+<p>本文从一个有趣而又令人意外的实验展开，介绍一些关于浮点数你应该知道的基础知识</p>
+<h2 id="一个有趣的实验"><a href="#一个有趣的实验" class="headerlink" title="一个有趣的实验"></a>一个有趣的实验</h2><p>本文从一个有趣而诡异的实验开始。最早这个例子博主是从 Stackoverflow上的一个问题中看到的。<br>为了提高可读性，博主这里做了改写，简化成了以下两段代码：</p>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;string&gt;
+using namespace std;
+
+int main() {
+    const float x=1.1;
+    const float z=1.123;
+    float y=x;
+    for(int j=0;j&lt;90000000;j++)
+    {
+        y*=x;
+        y/=z;
+        y+=0.1f;
+        y-=0.1f;
+    }
+    return 0;
+}
+
+
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+using namespace std;
+
+int main() {
+    const float x=1.1;
+    const float z=1.123;
+    float y=x;
+    for(int j=0;j&lt;90000000;j++)
+    {
+        y*=x;
+        y/=z;
+        y+=0;
+        y-=0;
+    }
+    return 0;
+}</code></pre><p>上面两段代码的唯一差别就是第一段代码中y+=0.1f，而第二段代码中是y+=0。<br>由于y会先加后减同样一个数值，照理说这两段代码的作用和效率应该是完全一样的,当然也是没有任何逻辑意义的。<br>假设现在我告诉你：其中一段代码的效率要比另一段慢7倍。想必读者会认为一定是y+=0.1f的那段慢，毕竟它和y+=0相比看上去要多一些运算。<br><strong>但是，实验结果，却出乎意料， y+=0的那段代码比y+=0.1f足足慢了7倍。</strong><br>世界观被颠覆了有木有？博主是在自己的Macbook Pro上进行的测试，有兴趣的读者也可以在自己的笔记本上试试。<br>（只要是支持SSE2指令集的CPU都会有相似的结果）。</p>
+<pre><code>shell&gt; g++ code1.c -o test1
+shell&gt; g++ code2.c -o test2
+shell&gt; time ./test1
+
+real    0m1.490s
+user    0m1.483s
+sys     0m0.003s
+
+shell&gt; time ./test2
+
+real    0m9.895s
+user    0m9.871s
+sys     0m0.009s</code></pre><p>当然 原文中的投票最高的回答解释的非常好，但博主第一次看的时候是一头雾水，因为大部分基础知识已经还给大学老师了。<br>所以，本着知其然还要知其所以然的态度，博主做了一个详尽的分析和思路整理过程。也希望读者能够从0开始解释这个诡异现象的原因。</p>
+<h2 id="复习浮点数的二进制转换"><a href="#复习浮点数的二进制转换" class="headerlink" title="复习浮点数的二进制转换"></a>复习浮点数的二进制转换</h2><p>现在让我们复习大学计算机基础课程。<br>如果你熟练掌握了浮点数向二进制表达式转换的方法，那么你可以跳过这节。<br>我们先来看下浮点数二进制表达的三个组成部分。</p>
+<p><img src="/images/float/float.png" alt="mmap" title="wizard"></p>
+<p>三个主要成分是：</p>
+<ul>
+<li>Sign（1bit）：表示浮点数是正数还是负数。0表示正数，1表示负数</li>
+<li>Exponent（8bits）：指数部分。类似于科学技术法中的M*10^N中的N，只不过这里是以2为底数而不是10。<br>需要注意的是，这部分中是以2^7-1即127，也即01111111代表2^0，转换时需要根据127作偏移调整。</li>
+<li>Mantissa（23bits）：基数部分。浮点数具体数值的实际表示。</li>
+</ul>
+<p>下面我们来看个实际例子来解释下转换过程。 </p>
+<ul>
+<li>Step 1 改写整数部分 以数值<code>5.2</code>为例。先不考虑指数部分，我们先单纯的将十进制数改写成二进制。 整数部分很简单，<code>5.</code>即<code>101.</code>。</li>
+<li>Step 2 改写小数部分 小数部分我们相当于拆成是<code>2^-1</code>一直到<code>2^-N</code>的和。<br>例如： <code>0.2 = 0.125+0.0625+0.007825+0.00390625</code>即<code>2^-3+2^-4+2^-7+2^-8....</code>，也即<code>.00110011001100110011</code></li>
+<li>Step 3 规格化 现在我们已经有了这么一串二进制<code>101.00110011001100110011</code>。<br>然后我们要将它规格化，也叫<strong>Normalize</strong>。其实原理很简单就是保证小数点前只有一个bit。<br>于是我们就得到了以下表示：<code>1.0100110011001100110011 * 2^2</code>。<br>到此为止我们已经把改写工作完成，接下来就是要把bit填充到三个组成部分中去了。</li>
+<li>Step 4 填充 指数部分（Exponent）：之前说过需要以127作为偏移量调整。<br>因此2的2次方，指数部分偏移成2+127即129，表示成<code>10000001</code>填入。<br>整数部分（Mantissa）：除了简单的填入外，需要特别解释的地方是<code>1.010011</code>中的整数部分1在填充时被舍去了。<br>因为规格化后的数值整部部分总是为1。<br>那大家可能有疑问了，省略整数部分后岂不是<code>1.010011</code>和<code>0.010011</code>就混淆了么？<br>其实并不会，如果你仔细看下后者：会发现他并不是一个规格化的二进制，可以改写成<code>1.0011 * 2^-2</code>。<br>所以省略小数点前的一个bit不会造成任何两个浮点数的混淆。 具体填充后的结果见下图</li>
+</ul>
+<p><img src="/images/float/float2.png" alt="mmap" title="build"></p>
+<p>练习：如果想考验自己是否充分理解这节内容的话，可以随便写一个浮点数尝试转换。通过 浮点二进制转换工具可以验证答案。</p>
+<h2 id="什么是Denormalized-Number"><a href="#什么是Denormalized-Number" class="headerlink" title="什么是Denormalized Number"></a>什么是Denormalized Number</h2><p>了解完浮点数的表达以后，不难看出浮点数的精度和指数范围有很大关系。<br>最低不能低过<code>2^-7-1</code>最高不能高过<code>2^8-1</code>（其中剔除了指数部分全0和全1的特殊情况）。<br>如果超出表达范围那么不得不舍弃末尾的那些小数，我们成为overflow和underflow。<br>甚至有时舍弃都无法表示，例如当我们要表示一个：<code>1.00001111*2^-7</code>这样的超小数值的时候就无法用规格化数值表示，<br>如果不想点其他办法的话，CPU内部就只能把它当做0来处理。<br>那么，这样做有什么问题呢？最显然易见的一种副作用就是：当多次做低精度浮点数舍弃的后，就会出现除数为0的exception，导致异常。<br>当然精度失准严重起来也可以要人命，以下这个事件摘自wikipedia</p>
+<pre><code>On 25 February 1991, a loss of significance in a MIM-104 Patriot missile battery prevented 
+it intercepting an incoming Scud missile in Dhahran, Saudi Arabia, 
+contributing to the death of 28 soldiers from the U.S. 
+Army’s 14th Quartermaster Detachment.[25] See also: Failure at Dhahran</code></pre><p>于是乎就出现了<strong>Denormalized Number（后称非规格化浮点）</strong>。<br>他和规格浮点的区别在于，<strong>规格浮点约定小数点前一位默认是1。而非规格浮点约定小数点前一位可以为0</strong>，<br>这样小数精度就相当于多了最多<code>2^22</code>范围。</p>
+<p>但是，精度的提升是有代价的。由于CPU硬件只支持，或者默认对一个32bit的二进制使用规格化解码。<br>因此需要支持32bit非规格数值的转码和计算的话，需要额外的编码标识，也就是需要额外的硬件或者软件层面的支持。<br>以下是wiki上的两端摘抄，说明了非规格化计算的效率非常低。<br>一般来说，由软件对非规格化浮点数进行处理将带来极大的性能损失，而由硬件处理的情况会稍好一些，<br>但在多数现代处理器上这样的操作仍是缓慢的。<strong>极端情况下，规格化浮点数操作可能比硬件支持的非规格化浮点数操作快100倍。</strong></p>
+<pre><code>For example when using NVIDIA’s CUDA platform, on gaming cards, 
+calculations with double precision take 3 to 24 times longer to complete than calculations using single precision.</code></pre><p>如果要解释为什么有如此大的性能损耗，那就要需要涉及电路设计了，超出了博主的知识范围。<br>当然万能的wiki也是有答案的，有兴趣的读者可以自行查阅。</p>
+<h2 id="回到实验"><a href="#回到实验" class="headerlink" title="回到实验"></a>回到实验</h2><p>总上面的分析中我们得出了以下结论：</p>
+<ul>
+<li>浮点数表示范围有限，精度受限于指数和底数部分的长度，超过精度的小数部分将会被舍弃（underflow）</li>
+<li>为了表示更高精度的浮点数，出现了非规格化浮点数，但是他的计算成本非常高。</li>
+<li>于是我们就可以发现通过几十上百次的循环后，y中存放的数值无限接近于零。<br>CPU将他表示为精度更高的非规格化浮点。<br>而当<code>y+0.1f</code>时为了保留跟重要的底数部分，之后无限接近0（也即y之前存的数值）被舍弃，当<code>y-0.1f</code>后，y又退化为了规格化浮点数。<br>并且之后的每次<code>y*x</code>和<code>y/z</code>时，CPU都执行的是规划化浮点运算。<br>而当<code>y+0</code>，由于加上0值后的y仍然可以被表示为非规格化浮点，因此整个循环的四次运算中CPU都会使用非规格浮点计算，效率就大大降低了。</li>
+</ul>
+<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><p>当然，也有在程序内部也是有办法控制非规范化浮点的使用的。<br>在相关程序的上下文中加上<code>fesetenv(FE_DFL_DISABLE_SSE_DENORMS_ENV)</code>;<br>就可以迫使CPU放弃使用非规范化浮点计算，提高性能。<br>我们用这种办法修改上面实验中的代码后，<code>y+=0</code>的效率就和<code>y+=0.1f</code>就一样了。<br>甚至还比y+=0.1f更快了些，世界观又端正了不是么:) 修改后的代码如下</p>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;fenv.h&gt;
+using namespace std;
+
+int main() {
+    fesetenv(FE_DFL_DISABLE_SSE_DENORMS_ENV);
+    const float x=1.1;
+    const float z=1.123;
+    float y=x;
+    for(int j=0;j&lt;90000000;j++)
+    {
+        y*=x;
+        y/=z;
+        y+=0;
+        y-=0;
+    }
+    return 0;
+}</code></pre><p>Reference</p>
+<p>什么是非规格化浮点数<br><a href="http://stackoverflow.com/questions/9314534/why-does-changing-0-1f-to-0-slow-down-performance-by-10x" target="_blank" rel="noopener">Why does changing 0.1f to 0 slow down performance by 10x? IEEE floating point Floating point Denormal number</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/25/programmer-vim-cheatsheat/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +457,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-18 11:00:12" itemprop="dateModified" datetime="2020-05-18T11:00:12+08:00">2020-05-18</time>
+                <time title="Modified: 2020-05-18 19:37:25" itemprop="dateModified" datetime="2020-05-18T19:37:25+08:00">2020-05-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -384,7 +594,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-18 11:00:12" itemprop="dateModified" datetime="2020-05-18T11:00:12+08:00">2020-05-18</time>
+                <time title="Modified: 2020-05-18 19:37:25" itemprop="dateModified" datetime="2020-05-18T19:37:25+08:00">2020-05-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -530,7 +740,7 @@ for(int i = 200; i &lt; N; i++)
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-18 11:00:12" itemprop="dateModified" datetime="2020-05-18T11:00:12+08:00">2020-05-18</time>
+                <time title="Modified: 2020-05-18 19:37:25" itemprop="dateModified" datetime="2020-05-18T19:37:25+08:00">2020-05-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -720,7 +930,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-18 11:00:12" itemprop="dateModified" datetime="2020-05-18T11:00:12+08:00">2020-05-18</time>
+                <time title="Modified: 2020-05-18 19:37:25" itemprop="dateModified" datetime="2020-05-18T19:37:25+08:00">2020-05-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -838,7 +1048,7 @@ git merge</code></pre><p>在实际使用中，git fetch更安全一些<br>因为
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-18 11:00:12" itemprop="dateModified" datetime="2020-05-18T11:00:12+08:00">2020-05-18</time>
+                <time title="Modified: 2020-05-18 19:37:25" itemprop="dateModified" datetime="2020-05-18T19:37:25+08:00">2020-05-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -951,7 +1161,7 @@ git merge</code></pre><p>在实际使用中，git fetch更安全一些<br>因为
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-18 11:00:12" itemprop="dateModified" datetime="2020-05-18T11:00:12+08:00">2020-05-18</time>
+                <time title="Modified: 2020-05-18 19:37:25" itemprop="dateModified" datetime="2020-05-18T19:37:25+08:00">2020-05-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1106,7 +1316,7 @@ commit1: add test1.c</code></pre><p><strong>运行git st， 没有任何变化�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-18 11:00:12" itemprop="dateModified" datetime="2020-05-18T11:00:12+08:00">2020-05-18</time>
+                <time title="Modified: 2020-05-18 19:37:25" itemprop="dateModified" datetime="2020-05-18T19:37:25+08:00">2020-05-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1209,7 +1419,7 @@ commit1: add test1.c</code></pre><p><strong>运行git st， 没有任何变化�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-18 11:00:12" itemprop="dateModified" datetime="2020-05-18T11:00:12+08:00">2020-05-18</time>
+                <time title="Modified: 2020-05-18 19:37:25" itemprop="dateModified" datetime="2020-05-18T19:37:25+08:00">2020-05-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1354,7 +1564,7 @@ done</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-18 11:00:12" itemprop="dateModified" datetime="2020-05-18T11:00:12+08:00">2020-05-18</time>
+                <time title="Modified: 2020-05-18 19:37:25" itemprop="dateModified" datetime="2020-05-18T19:37:25+08:00">2020-05-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1504,7 +1714,7 @@ install : *.a
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-18 11:00:12" itemprop="dateModified" datetime="2020-05-18T11:00:12+08:00">2020-05-18</time>
+                <time title="Modified: 2020-05-18 19:37:25" itemprop="dateModified" datetime="2020-05-18T19:37:25+08:00">2020-05-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1691,7 +1901,7 @@ $ git config --global push.default simple</code></pre><p>还有一种情况，�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-18 11:00:12" itemprop="dateModified" datetime="2020-05-18T11:00:12+08:00">2020-05-18</time>
+                <time title="Modified: 2020-05-18 19:37:25" itemprop="dateModified" datetime="2020-05-18T19:37:25+08:00">2020-05-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2017,7 +2227,7 @@ $ git archive</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-18 11:00:12" itemprop="dateModified" datetime="2020-05-18T11:00:12+08:00">2020-05-18</time>
+                <time title="Modified: 2020-05-18 19:37:25" itemprop="dateModified" datetime="2020-05-18T19:37:25+08:00">2020-05-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2205,7 +2415,7 @@ $ git rebase -i --autosquash </code></pre><p>这个用法请参考<a href="http:
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-18 11:00:12" itemprop="dateModified" datetime="2020-05-18T11:00:12+08:00">2020-05-18</time>
+                <time title="Modified: 2020-05-18 19:37:25" itemprop="dateModified" datetime="2020-05-18T19:37:25+08:00">2020-05-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2398,7 +2608,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-18 11:00:12" itemprop="dateModified" datetime="2020-05-18T11:00:12+08:00">2020-05-18</time>
+                <time title="Modified: 2020-05-18 19:37:25" itemprop="dateModified" datetime="2020-05-18T19:37:25+08:00">2020-05-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2654,334 +2864,6 @@ U printk
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/12/02/linux-device_drivers/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/12/02/linux-device_drivers/" class="post-title-link" itemprop="url">Linux设备驱动程序基础</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-12-03 00:00:00" itemprop="dateCreated datePublished" datetime="2015-12-03T00:00:00+08:00">2015-12-03</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-18 11:00:12" itemprop="dateModified" datetime="2020-05-18T11:00:12+08:00">2020-05-18</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>8.6k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>8 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<h2 id="Linux设备驱动程序示例"><a href="#Linux设备驱动程序示例" class="headerlink" title="Linux设备驱动程序示例"></a>Linux设备驱动程序示例</h2><p>源代码：</p>
-<pre><code>#include &lt;linux/kernel.h&gt;
-#include &lt;linux/module.h&gt;
-#include &lt;linux/proc_fs.h&gt;
-#include &lt;linux/init.h&gt;
-#include &lt;linux/vmalloc.h&gt;
-
-static int num = 1;                                                                                                                 
-static char *mode = &quot;show&quot;;
-
-static int __init hello_module_init(void)
-{
-    printk(&quot;Hello,world\n&quot;);
-}
-
-static void __exit hello_module_exit(void)
-{
-    printk(&quot;Good Bye\n&quot;);
-}
-
-module_init(hello_module_init);
-module_exit(hello_module_exit);
-module_param(mode, charp, S_IRUGO);
-module_param(num, int, S_IRUGO);
-
-MODULE_DESCRIPTION(&quot;driver for the Hello World.&quot;);
-MODULE_AUTHOR(&quot;Hello&quot;);
-MODULE_LICENSE(&quot;GPL&quot;);</code></pre><p>Makefile：</p>
-<pre><code>obj-m += hello.o    #设置模块名
-hello-objs := bsp_hello.o hello_mod_linux.o
-
-all:
-    $(MAKE) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KERNEL_PATH) SUBDIRS=`pwd`
-
-clean:
-    rm -rf *.ko *.o *.mod.c .tmp_versions Module.symvers modules.order .tmp_versions
-    find ../ -name &quot;*.cmd&quot; -delete
-
-install:
-    cp $(HELLO_TARGET) $(OUTDIR) -f</code></pre><p><strong>Tips:obj-m += (module name).o</strong></p>
-<h2 id="相关宏定义"><a href="#相关宏定义" class="headerlink" title="相关宏定义"></a>相关宏定义</h2><p>Linux设备驱动编译时，如果<strong>MODULE</strong>未定义，表明设备驱动是<strong>build-in</strong>模式。<br>相应的<strong>module_init/module_exit</strong>宏定义展开不同。</p>
-<p>linux对只需要初始化运行一次的函数都加上<strong>init属性，<br>__init 宏告诉编译器如果这个模块被编译到内核则把这个函数放到（.init.text）段，<br>module_exit的参数卸载时同</strong>init类似，如果驱动被编译进内核，<br>则<strong>exit宏会忽略清理函数，因为编译进内核的模块不需要做清理工作，<br>**显然</strong>init和__exit对动态加载的模块是无效的，只支持完全编译进内核**。</p>
-<p>在kernel初始化后期，释放所有这些函数代码所占的内存空间。<br>连接器把带__init属性的函数放在同一个section里，在用完以后，把整个section释放掉。<br>当函数初始化完成后这个区域可以被清除掉以节约系统内存。<br>Kenrel启动时看到的消息“Freeing unused kernel memory: xxxk freed”同它有关。</p>
-<p>start_kernel-&gt;rest_init-&gt;kernel_init-&gt;init_post-&gt;free_initmem()来释放初始化代码和数据。</p>
-<h3 id="特殊宏定义"><a href="#特殊宏定义" class="headerlink" title="特殊宏定义"></a>特殊宏定义</h3><ul>
-<li>MODULE_LICENSE(license)           代码使用的许可证</li>
-<li>MODULE_AUTHOR(author)             描述模块作者</li>
-<li>MODULE_DESCRIPTION(description)   说明模块用途的简短描述</li>
-<li>MODULE_VERSION(version_string)    代码修订号</li>
-<li>MODULE_DEVICE_TABLE(table_info)   告诉用户空间模块所支持的设备</li>
-<li>MODULE_ALIAS(alternate_name)      模块的别名</li>
-</ul>
-<h3 id="加载函数宏定义module-init"><a href="#加载函数宏定义module-init" class="headerlink" title="加载函数宏定义module_init()"></a>加载函数宏定义<strong>module_init()</strong></h3><p>module_init定义如下：</p>
-<pre><code>include/linux/init.h
-#ifndef MODULE
-/**
- * module_init() - driver initialization entry point
- * @x: function to be run at kernel boot time or module insertion
- * 
- * module_init() will either be called during do_initcalls() (if
- * builtin) or at module insertion time (if a module).  There can only
- * be one per module.
- */
-#define module_init(x)  __initcall(x);
-#else /* MODULE */
-/* Each module must use one module_init(). */
-#define module_init(initfn)                     \
-    static inline initcall_t __inittest(void)   \
-    { return initfn;  }                         \                                                                                           
-    int init_module(void) __attribute__((alias(#initfn)));
-#endif</code></pre><h4 id="build-in分支"><a href="#build-in分支" class="headerlink" title="build-in分支"></a><strong>build-in分支</strong></h4><pre><code>#define __initcall(fn) device_initcall(fn)
-#define device_initcall(fn)     __define_initcall(&quot;6&quot;,fn,6)
-#define __define_initcall(level,fn,id) \                                                                                            
-    static initcall_t __initcall_##fn##id __used \
-    __attribute__((__section__(&quot;.initcall&quot; level &quot;.init&quot;))) = fn</code></pre><p>因此使用module_init修饰的hello_module_init最终展开为：</p>
-<pre><code>static initcall_t  __initcall_hello_module_init6 __used __attribute__((__section__(&quot;.initcall6.init&quot;))) = hello_module_init;</code></pre><p>就是声明一类型为<strong>initcall_t（typedef int (*initcall_t)(void)）</strong>函数指针类型的变量<br><strong>__initcall_hello_module_init6</strong>并将<strong>hello_module_init</strong>赋值与它。</p>
-<p>其中<strong><strong>attribute</strong>((<strong>section</strong>(“.initcall6.init”)))</strong>表明变量<strong>__initcall_hello_module_init6</strong>放入section .initcall6.init中。</p>
-<p>在文件<strong>vmlinux.lds</strong>中有以下定义：</p>
-<pre><code>.initcall.init : AT(ADDR(.initcall.init) - 0) {                                                                                    
- __initcall_start = .;
- *(.initcallearly.init) __early_initcall_end = .; *(.initcall0.init) *(.initcall0s.init) *(.initcall1.init) 
-                                                *(.initcall1s.init) *(.initcall2.init) *(.initcall2s.init) 
-                                                *(.initcall3.init) *(.initcall3s.init) *(.initcall4.init) 
-                                                *(.initcall4s.init) *(.initcall5.init) *(.initcall5s.init)
-                                                *(.initcallrootfs.init) *(.initcall6.init) *(.initcall6s.init) 
-                                                *(.initcall7.init) *(.initcall7s.init)
- __initcall_end = .;
-}</code></pre><p><strong>启动顺序</strong></p>
-<pre><code>init/main.c
-start_kernel()-&gt;rest_init()-&gt;kernel_init()-&gt;do_basic_setup()-&gt;do_initcalls()
-
-static void __init do_initcalls(void)
-{ 
-    initcall_t *call;
-
-    for (call = __early_initcall_end; call &lt; __initcall_end; call++)
-        do_one_initcall(*call);                                                                                                     
-
-    /* Make sure there is no pending stuff from the initcall sequence */
-    flush_scheduled_work();
-} </code></pre><p>do_initcalls()将按顺序从由<strong>early_initcall_end开始，<br>到</strong>initcall_end结束的section中<strong>以函数指针的形式取出这些编译到内核的驱动模块中初始化函数起始地址</strong>，<br>来依次完成相应的初始化。</p>
-<p>内核初始化函数do_basic_setup(): do_initcalls() 将从.initcall.init 中，<br>也就是这几个section中依次取出所有的函数指针，并调用这些函数指针所指向的函数，来完成内核的一些相关的初始化。</p>
-<p><strong>内核的加载的时候，会搜索”.initcall”中的所有条目，并按优先级加载它们，普通驱动程序的优先级是6。<br>其它模块优先级列出如下：值越小，越先加载。</strong></p>
-<h4 id="Module分支"><a href="#Module分支" class="headerlink" title="Module分支"></a><strong>Module分支</strong></h4><pre><code>/* Each module must use one module_init(). */
-#define module_init(initfn)                     \
-    static inline initcall_t __inittest(void)   \
-    { return initfn;  }                         \                                                                                           
-    int init_module(void) __attribute__((alias(#initfn)));
-
-typedef int (*initcall_t)(void)</code></pre><p>其中</p>
-<pre><code>typedef int (*initcall_t)(void)
-#define module_init(initfn)                     \
-    static inline initcall_t __inittest(void)   \
-    { return initfn;  }                         \                                                                                           </code></pre><p>用于对传入的initfn进行类型检测，类型必须为 int (*initcall_t)(void) 的函数指针，然后通过alias将initfn变名为init_module：</p>
-<pre><code>/* type newname __attribute__((alias(&quot;oldname&quot;))); */
-int init_module(void) __attribute__((alias(#initfn)));</code></pre><p>当调用insmod和rmmod时，只与init_module和cleanup_module有关，insmod和rmmod中调用这两个函数。</p>
-<pre><code>busybox/modutils/insmod.c:insmod_main()
-rc = bb_init_module(filename, parse_cmdline_module_options(argv, /*quote_spaces:*/ 0));
-.
-busybox/modutils/modutils.c:bb_init_module()
-init_module(image, image_size, options);
-.
-# define init_module(mod, len, opts) syscall(__NR_init_module, mod, len, opts)</code></pre><p>insmod最终会调用到 syscall <strong>__NR_init_module</strong>。</p>
-<p>在Kernel中，各个arch下的文件unistd.h有如下定义：</p>
-<pre><code>#define __NR_init_module        128
-#define __NR_delete_module      129
-#define __NR_get_kernel_syms    130
-#define __NR_quotactl           131
-#define __NR_getpgid            132</code></pre><p>然后，文件entry.S下有定义：</p>
-<pre><code>.data
-ALIGN
-sys_call_table:
-    .
-    .
-    .long sys_mprotect      /* 125 */
-    .long sys_sigprocmask
-    .long sys_ni_syscall    /* old &quot;create_module&quot; */
-    .long sys_init_module
-    .long sys_delete_module
-    .long sys_ni_syscall    /* 130 - old &quot;get_kernel_syms&quot; */
-    .long sys_quotactl
-    .
-    .</code></pre><p><strong>当insmod调用到系统调用号128时，sys_call_table中取出128地址的函数指针进行执行，及sys_init_module。</strong></p>
-<p>现在来看系统调用<strong>sys_init_module</strong>：</p>
-<pre><code>kernel/module.c
-SYSCALL_DEFINE3(init_module, void __user *, umod, unsigned long, len, const char __user *, uargs)
-.
-#define SYSCALL_DEFINE3(name, ...) SYSCALL_DEFINEx(3, _##name, __VA_ARGS__)
-#define SYSCALL_DEFINEx(x, name, ...)                   \                                                                           
-    asmlinkage long sys##name(__SC_DECL##x(__VA_ARGS__))</code></pre><p>宏定义<strong>__SC_DECL##x</strong>作用是将参数之间的‘，’去掉，定义如下：</p>
-<pre><code>#define __SC_DECL1(t1, a1)  t1 a1
-#define __SC_DECL2(t2, a2, ...) t2 a2, __SC_DECL1(__VA_ARGS__)
-#define __SC_DECL3(t3, a3, ...) t3 a3, __SC_DECL2(__VA_ARGS__)                                                                      
-#define __SC_DECL4(t4, a4, ...) t4 a4, __SC_DECL3(__VA_ARGS__)
-#define __SC_DECL5(t5, a5, ...) t5 a5, __SC_DECL4(__VA_ARGS__)
-#define __SC_DECL6(t6, a6, ...) t6 a6, __SC_DECL5(__VA_ARGS__)</code></pre><p>宏定义中的‘##’为<strong>（token-pasting）符号连接操作符</strong>，全部展开之后为：</p>
-<pre><code>asmlinkage long sys_init_module(void __user * umod, unsigned long len, const char __user * uargs)</code></pre><p>在文件<strong>include/linux/syscalls.h</strong>中可以看到所有的展开的系统调用，例如：</p>
-<pre><code>asmlinkage long sys_init_module(void __user *umod, unsigned long len,                                                               
-                const char __user *uargs);
-asmlinkage long sys_delete_module(const char __user *name_user,
-                unsigned int flags);
-
-asmlinkage long sys_rt_sigprocmask(int how, sigset_t __user *set,
-                sigset_t __user *oset, size_t sigsetsize);
-asmlinkage long sys_rt_sigpending(sigset_t __user *set, size_t sigsetsize);
-asmlinkage long sys_rt_sigtimedwait(const sigset_t __user *uthese,
-                siginfo_t __user *uinfo,
-                const struct timespec __user *uts,
-                size_t sigsetsize);</code></pre><p>在系统调用<strong>sys_init_module</strong>中：</p>
-<pre><code>.
-mod = load_module(umod, len, uargs);  //主要过程都在这儿
-.
-.
-/* Start the module */
-if (mod-&gt;init != NULL)
-    ret = do_one_initcall(mod-&gt;init);</code></pre><p>load_module做了绝大部分的工作，将驱动拷贝到内核，重定位等等，do_one_initcall调用module注册的init函数。</p>
-<h3 id="卸载函数宏定义module-exit"><a href="#卸载函数宏定义module-exit" class="headerlink" title="卸载函数宏定义module_exit()"></a>卸载函数宏定义<strong>module_exit()</strong></h3><pre><code>#ifndef MODULE
-/**
- * module_exit() - driver exit entry point
- * @x: function to be run when driver is removed
- * 
- * module_exit() will wrap the driver clean-up code
- * with cleanup_module() when used with rmmod when
- * the driver is a module.  If the driver is statically
- * compiled into the kernel, module_exit() has no effect.
- * There can only be one per module.
- */
-#define module_exit(x)  __exitcall(x);
-#else /* MODULE */
-/* This is only required if you want to be unloadable. */
-#define module_exit(exitfn)                 \
-    static inline exitcall_t __exittest(void)       \
-    { return exitfn;  }                  \
-    void cleanup_module(void) __attribute__((alias(#exitfn)));
-#endif</code></pre><h4 id="build-in"><a href="#build-in" class="headerlink" title="build-in"></a>build-in</h4><p>无效，没有意义</p>
-<h4 id="module"><a href="#module" class="headerlink" title="module"></a>module</h4><p>busybox:</p>
-<pre><code># define delete_module(mod, flags) syscall(__NR_delete_module, mod, flags)</code></pre><p>kernel:</p>
-<pre><code>.long sys_delete_module
-#define __NR_delete_module      129
-
-SYSCALL_DEFINE2(delete_module, const char __user *, name_user, unsigned int, flags)
-{
-    .
-    if (mod-&gt;exit != NULL)
-        mod-&gt;exit();
-    .
-}
-
-asmlinkage long sys_delete_module(const char __user *name_user, unsigned int flags);</code></pre><h3 id="模块传参宏定义module-param"><a href="#模块传参宏定义module-param" class="headerlink" title="模块传参宏定义module_param()"></a>模块传参宏定义<strong>module_param()</strong></h3><pre><code>include/linux/moduleparam.h
-#define module_param(name, type, perm)              \                                                                               
-    module_param_named(name, name, type, perm)</code></pre><p>用于向模块传递参数，其允许驱动程序声明参数，并且用户在系统启动或模块装载时为参数指定相应值，<br>在驱动程序里，参数的用法如同全局变量。</p>
-<ul>
-<li>name既是用户看到的参数名，又是模块内接受参数的变量;</li>
-<li>type表示参数的数据类型，是下列之一：byte, short, ushort, int, uint, long, ulong, charp, bool, invbool;</li>
-<li>perm指定了在sysfs中相应文件的访问权限。<br>访问权限与linux文件爱你访问权限相同的方式管理，如0644，或使用stat.h中的宏如S_IRUGO表示。0表示完全关闭在sysfs中相对应的项。</li>
-</ul>
-<p>这些宏不会声明变量，因此在使用宏之前，必须声明变量，典型地用法如下：</p>
-<pre><code>static unsigned int int_var = 0;
-module_param(int_var, uint, S_IRUGO);</code></pre><h2 id="Tips"><a href="#Tips" class="headerlink" title="Tips"></a>Tips</h2><ul>
-<li>mod-&gt;exit()怎么调用到 <strong>alias 为 cleanup_module</strong>的函数</li>
-<li>mod-&gt;init()怎么调用到 <strong>alias 为 init_module</strong>的函数</li>
-</ul>
-<p>接下来分析module具体组成</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -3032,7 +2914,7 @@ module_param(int_var, uint, S_IRUGO);</code></pre><h2 id="Tips"><a href="#Tips" 
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">446</span>
+          <span class="site-state-item-count">447</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
