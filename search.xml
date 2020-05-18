@@ -3419,111 +3419,6 @@ eax 0xbffff6a4 -1073744220</code></pre><p>　<br>1.<a href="http://blog.csdn.net
       </tags>
   </entry>
   <entry>
-    <title>Git 使用规范流程[转载]</title>
-    <url>/2016/02/23/how-to-use-git/</url>
-    <content><![CDATA[<ul>
-<li>toc<br>{:toc}</li>
-</ul>
-<p>作者： 阮一峰<br>日期： 2015年8月 5日<br><a href="http://www.ruanyifeng.com/blog/2015/08/git-use-process.html" target="_blank" rel="noopener">原文</a></p>
-<p>团队开发中，遵循一个合理、清晰的Git使用流程，是非常重要的。<br>否则，每个人都提交一堆杂乱无章的commit，项目很快就会变得难以协调和维护。<br>下面是<a href="https://github.com/thoughtbot/guides/tree/master/protocol/git" target="_blank" rel="noopener">ThoughtBot</a> 的Git使用规范流程。<br>我从中学到了很多，推荐你也这样使用Git。</p>
-<p><img src="/images/git/git_process.png" alt="Git Process" title="git process"></p>
-<h2 id="第一步：新建分支"><a href="#第一步：新建分支" class="headerlink" title="第一步：新建分支"></a>第一步：新建分支</h2><p>首先，每次开发新功能，都应该新建一个单独的分支（这方面可以参考<a href="http://www.ruanyifeng.com/blog/2012/07/git.html" target="_blank" rel="noopener">《Git分支管理策略》</a>）。</p>
-<pre><code># 获取主干最新代码
-$ git checkout master
-$ git pull
-
-# 新建一个开发分支myfeature
-$ git checkout -b myfeature</code></pre><h2 id="第二步：提交分支commit"><a href="#第二步：提交分支commit" class="headerlink" title="第二步：提交分支commit"></a>第二步：提交分支commit</h2><p>分支修改后，就可以提交commit了。</p>
-<pre><code>$ git add --all
-$ git status
-$ git commit --verbose</code></pre><p>git add 命令的all参数，表示保存所有变化（包括新建、修改和删除）。<br>从Git 2.0开始，all是 git add 的默认参数，所以也可以用 git add . 代替。<br>git status 命令，用来查看发生变动的文件。<br>git commit 命令的verbose参数，会列出 diff 的结果。</p>
-<h2 id="第三步：撰写提交信息"><a href="#第三步：撰写提交信息" class="headerlink" title="第三步：撰写提交信息"></a>第三步：撰写提交信息</h2><p>提交commit时，必须给出完整扼要的提交信息，下面是一个范本。</p>
-<pre><code>Present-tense summary under 50 characters
-
-* More information about commit (under 72 characters).
-* More information about commit (under 72 characters).
-
-http://project.management-system.com/ticket/123</code></pre><p>第一行是不超过50个字的提要，然后空一行，罗列出改动原因、主要变动、以及需要注意的问题。<br>最后，提供对应的网址（比如Bug ticket）。</p>
-<h2 id="第四步：与主干同步"><a href="#第四步：与主干同步" class="headerlink" title="第四步：与主干同步"></a>第四步：与主干同步</h2><p>分支的开发过程中，要经常与主干保持同步。</p>
-<pre><code>$ git fetch origin
-$ git rebase origin/master</code></pre><h2 id="第五步：合并commit"><a href="#第五步：合并commit" class="headerlink" title="第五步：合并commit"></a>第五步：合并commit</h2><p>分支开发完成后，很可能有一堆commit，但是合并到主干的时候，往往希望只有一个（或最多两三个）commit，这样不仅清晰，也容易管理。<br>那么，怎样才能将多个commit合并呢？这就要用到 git rebase 命令。</p>
-<pre><code>$ git rebase -i origin/master</code></pre><p>git rebase命令的i参数表示互动（interactive），这时git会打开一个互动界面，进行下一步操作。<br>下面采用<a href="https://robots.thoughtbot.com/git-interactive-rebase-squash-amend-rewriting-history" target="_blank" rel="noopener">Tute Costa</a> 的例子，来解释怎么合并commit。</p>
-<pre><code>pick 07c5abd Introduce OpenPGP and teach basic usage
-pick de9b1eb Fix PostChecker::Post#urls
-pick 3e7ee36 Hey kids, stop all the highlighting
-pick fa20af3 git interactive rebase, squash, amend
-
-# Rebase 8db7e8b..fa20af3 onto 8db7e8b
-#
-# Commands:
-#  p, pick = use commit
-#  r, reword = use commit, but edit the commit message
-#  e, edit = use commit, but stop for amending
-#  s, squash = use commit, but meld into previous commit
-#  f, fixup = like &quot;squash&quot;, but discard this commit&#39;s log message
-#  x, exec = run command (the rest of the line) using shell
-#
-# These lines can be re-ordered; they are executed from top to bottom.
-#
-# If you remove a line here THAT COMMIT WILL BE LOST.
-#
-# However, if you remove everything, the rebase will be aborted.
-#
-# Note that empty commits are commented out</code></pre><p>上面的互动界面，先列出当前分支最新的4个commit（越下面越新）。<br>每个commit前面有一个操作命令，默认是pick，表示该行commit被选中，要进行rebase操作。<br>4个commit的下面是一大堆注释，列出可以使用的命令。</p>
-<ul>
-<li>pick：正常选中</li>
-<li>reword：选中，并且修改提交信息；</li>
-<li>edit：选中，rebase时会暂停，允许你修改这个commit（参考这里）</li>
-<li>squash：选中，会将当前commit与上一个commit合并</li>
-<li>fixup：与squash相同，但不会保存当前commit的提交信息</li>
-<li>exec：执行其他shell命令</li>
-</ul>
-<p>上面这6个命令当中，squash和fixup可以用来合并commit。先把需要合并的commit前面的动词，改成squash（或者s）。</p>
-<pre><code>pick 07c5abd Introduce OpenPGP and teach basic usage
-s de9b1eb Fix PostChecker::Post#urls
-s 3e7ee36 Hey kids, stop all the highlighting
-pick fa20af3 git interactive rebase, squash, amend</code></pre><p>这样一改，执行后，当前分支只会剩下两个commit。第二行和第三行的commit，都会合并到第一行的commit。<br>提交信息会同时包含，这三个commit的提交信息。</p>
-<pre><code># This is a combination of 3 commits.
-# The first commit&#39;s message is:
-Introduce OpenPGP and teach basic usage
-
-# This is the 2nd commit message:
-Fix PostChecker::Post#urls
-
-# This is the 3rd commit message:
-Hey kids, stop all the highlighting</code></pre><p>如果将第三行的squash命令改成fixup命令。</p>
-<pre><code>pick 07c5abd Introduce OpenPGP and teach basic usage
-s de9b1eb Fix PostChecker::Post#urls
-f 3e7ee36 Hey kids, stop all the highlighting
-pick fa20af3 git interactive rebase, squash, amend</code></pre><p>运行结果相同，还是会生成两个commit，第二行和第三行的commit，都合并到第一行的commit。<br>但是，新的提交信息里面，第三行commit的提交信息，会被注释掉。</p>
-<pre><code># This is a combination of 3 commits.
-# The first commit&#39;s message is:
-Introduce OpenPGP and teach basic usage
-
-# This is the 2nd commit message:
-Fix PostChecker::Post#urls
-
-# This is the 3rd commit message:
-# Hey kids, stop all the highlighting</code></pre><p>Pony Foo提出另外一种合并commit的简便方法，就是先撤销过去5个commit，然后再建一个新的。</p>
-<pre><code>$ git reset HEAD~5
-$ git add .
-$ git commit -am &quot;Here&#39;s the bug fix that closes #28&quot;
-$ git push --force</code></pre><p>squash和fixup命令，还可以当作命令行参数使用，自动合并commit。</p>
-<pre><code>$ git commit --fixup  
-$ git rebase -i --autosquash </code></pre><p>这个用法请参考<a href="http://fle.github.io/git-tip-keep-your-branch-clean-with-fixup-and-autosquash.html" target="_blank" rel="noopener">这篇文章</a>，这里就不解释了。</p>
-<h2 id="第六步：推送到远程仓库"><a href="#第六步：推送到远程仓库" class="headerlink" title="第六步：推送到远程仓库"></a>第六步：推送到远程仓库</h2><p>合并commit后，就可以推送当前分支到远程仓库了。</p>
-<pre><code>$ git push --force origin myfeature</code></pre><p>git push命令要加上force参数，因为rebase以后，分支历史改变了，跟远程分支不一定兼容，有可能要强行推送（<a href="http://willi.am/blog/2014/08/12/the-dark-side-of-the-force-push/" target="_blank" rel="noopener">参见这里</a>）。</p>
-<h2 id="第七步：发出Pull-Request"><a href="#第七步：发出Pull-Request" class="headerlink" title="第七步：发出Pull Request"></a>第七步：发出Pull Request</h2><p>提交到远程仓库以后，就可以发出 Pull Request 到master分支，然后请求别人进行代码review，确认可以合并到master。</p>
-]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Git</category>
-      </categories>
-      <tags>
-        <tag>git</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>常用 Git 命令清单[转载]</title>
     <url>/2016/02/23/git-cheat-sheet/</url>
     <content><![CDATA[<script type="text/javascript">
@@ -3758,6 +3653,111 @@ $ git reset --keep [commit]
 # 后者的所有变化都将被前者抵消，并且应用到当前分支
 $ git revert [commit]</code></pre><h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><pre><code># 生成一个可供发布的压缩包
 $ git archive</code></pre>]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Git</category>
+      </categories>
+      <tags>
+        <tag>git</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Git 使用规范流程[转载]</title>
+    <url>/2016/02/23/how-to-use-git/</url>
+    <content><![CDATA[<ul>
+<li>toc<br>{:toc}</li>
+</ul>
+<p>作者： 阮一峰<br>日期： 2015年8月 5日<br><a href="http://www.ruanyifeng.com/blog/2015/08/git-use-process.html" target="_blank" rel="noopener">原文</a></p>
+<p>团队开发中，遵循一个合理、清晰的Git使用流程，是非常重要的。<br>否则，每个人都提交一堆杂乱无章的commit，项目很快就会变得难以协调和维护。<br>下面是<a href="https://github.com/thoughtbot/guides/tree/master/protocol/git" target="_blank" rel="noopener">ThoughtBot</a> 的Git使用规范流程。<br>我从中学到了很多，推荐你也这样使用Git。</p>
+<p><img src="/images/git/git_process.png" alt="Git Process" title="git process"></p>
+<h2 id="第一步：新建分支"><a href="#第一步：新建分支" class="headerlink" title="第一步：新建分支"></a>第一步：新建分支</h2><p>首先，每次开发新功能，都应该新建一个单独的分支（这方面可以参考<a href="http://www.ruanyifeng.com/blog/2012/07/git.html" target="_blank" rel="noopener">《Git分支管理策略》</a>）。</p>
+<pre><code># 获取主干最新代码
+$ git checkout master
+$ git pull
+
+# 新建一个开发分支myfeature
+$ git checkout -b myfeature</code></pre><h2 id="第二步：提交分支commit"><a href="#第二步：提交分支commit" class="headerlink" title="第二步：提交分支commit"></a>第二步：提交分支commit</h2><p>分支修改后，就可以提交commit了。</p>
+<pre><code>$ git add --all
+$ git status
+$ git commit --verbose</code></pre><p>git add 命令的all参数，表示保存所有变化（包括新建、修改和删除）。<br>从Git 2.0开始，all是 git add 的默认参数，所以也可以用 git add . 代替。<br>git status 命令，用来查看发生变动的文件。<br>git commit 命令的verbose参数，会列出 diff 的结果。</p>
+<h2 id="第三步：撰写提交信息"><a href="#第三步：撰写提交信息" class="headerlink" title="第三步：撰写提交信息"></a>第三步：撰写提交信息</h2><p>提交commit时，必须给出完整扼要的提交信息，下面是一个范本。</p>
+<pre><code>Present-tense summary under 50 characters
+
+* More information about commit (under 72 characters).
+* More information about commit (under 72 characters).
+
+http://project.management-system.com/ticket/123</code></pre><p>第一行是不超过50个字的提要，然后空一行，罗列出改动原因、主要变动、以及需要注意的问题。<br>最后，提供对应的网址（比如Bug ticket）。</p>
+<h2 id="第四步：与主干同步"><a href="#第四步：与主干同步" class="headerlink" title="第四步：与主干同步"></a>第四步：与主干同步</h2><p>分支的开发过程中，要经常与主干保持同步。</p>
+<pre><code>$ git fetch origin
+$ git rebase origin/master</code></pre><h2 id="第五步：合并commit"><a href="#第五步：合并commit" class="headerlink" title="第五步：合并commit"></a>第五步：合并commit</h2><p>分支开发完成后，很可能有一堆commit，但是合并到主干的时候，往往希望只有一个（或最多两三个）commit，这样不仅清晰，也容易管理。<br>那么，怎样才能将多个commit合并呢？这就要用到 git rebase 命令。</p>
+<pre><code>$ git rebase -i origin/master</code></pre><p>git rebase命令的i参数表示互动（interactive），这时git会打开一个互动界面，进行下一步操作。<br>下面采用<a href="https://robots.thoughtbot.com/git-interactive-rebase-squash-amend-rewriting-history" target="_blank" rel="noopener">Tute Costa</a> 的例子，来解释怎么合并commit。</p>
+<pre><code>pick 07c5abd Introduce OpenPGP and teach basic usage
+pick de9b1eb Fix PostChecker::Post#urls
+pick 3e7ee36 Hey kids, stop all the highlighting
+pick fa20af3 git interactive rebase, squash, amend
+
+# Rebase 8db7e8b..fa20af3 onto 8db7e8b
+#
+# Commands:
+#  p, pick = use commit
+#  r, reword = use commit, but edit the commit message
+#  e, edit = use commit, but stop for amending
+#  s, squash = use commit, but meld into previous commit
+#  f, fixup = like &quot;squash&quot;, but discard this commit&#39;s log message
+#  x, exec = run command (the rest of the line) using shell
+#
+# These lines can be re-ordered; they are executed from top to bottom.
+#
+# If you remove a line here THAT COMMIT WILL BE LOST.
+#
+# However, if you remove everything, the rebase will be aborted.
+#
+# Note that empty commits are commented out</code></pre><p>上面的互动界面，先列出当前分支最新的4个commit（越下面越新）。<br>每个commit前面有一个操作命令，默认是pick，表示该行commit被选中，要进行rebase操作。<br>4个commit的下面是一大堆注释，列出可以使用的命令。</p>
+<ul>
+<li>pick：正常选中</li>
+<li>reword：选中，并且修改提交信息；</li>
+<li>edit：选中，rebase时会暂停，允许你修改这个commit（参考这里）</li>
+<li>squash：选中，会将当前commit与上一个commit合并</li>
+<li>fixup：与squash相同，但不会保存当前commit的提交信息</li>
+<li>exec：执行其他shell命令</li>
+</ul>
+<p>上面这6个命令当中，squash和fixup可以用来合并commit。先把需要合并的commit前面的动词，改成squash（或者s）。</p>
+<pre><code>pick 07c5abd Introduce OpenPGP and teach basic usage
+s de9b1eb Fix PostChecker::Post#urls
+s 3e7ee36 Hey kids, stop all the highlighting
+pick fa20af3 git interactive rebase, squash, amend</code></pre><p>这样一改，执行后，当前分支只会剩下两个commit。第二行和第三行的commit，都会合并到第一行的commit。<br>提交信息会同时包含，这三个commit的提交信息。</p>
+<pre><code># This is a combination of 3 commits.
+# The first commit&#39;s message is:
+Introduce OpenPGP and teach basic usage
+
+# This is the 2nd commit message:
+Fix PostChecker::Post#urls
+
+# This is the 3rd commit message:
+Hey kids, stop all the highlighting</code></pre><p>如果将第三行的squash命令改成fixup命令。</p>
+<pre><code>pick 07c5abd Introduce OpenPGP and teach basic usage
+s de9b1eb Fix PostChecker::Post#urls
+f 3e7ee36 Hey kids, stop all the highlighting
+pick fa20af3 git interactive rebase, squash, amend</code></pre><p>运行结果相同，还是会生成两个commit，第二行和第三行的commit，都合并到第一行的commit。<br>但是，新的提交信息里面，第三行commit的提交信息，会被注释掉。</p>
+<pre><code># This is a combination of 3 commits.
+# The first commit&#39;s message is:
+Introduce OpenPGP and teach basic usage
+
+# This is the 2nd commit message:
+Fix PostChecker::Post#urls
+
+# This is the 3rd commit message:
+# Hey kids, stop all the highlighting</code></pre><p>Pony Foo提出另外一种合并commit的简便方法，就是先撤销过去5个commit，然后再建一个新的。</p>
+<pre><code>$ git reset HEAD~5
+$ git add .
+$ git commit -am &quot;Here&#39;s the bug fix that closes #28&quot;
+$ git push --force</code></pre><p>squash和fixup命令，还可以当作命令行参数使用，自动合并commit。</p>
+<pre><code>$ git commit --fixup  
+$ git rebase -i --autosquash </code></pre><p>这个用法请参考<a href="http://fle.github.io/git-tip-keep-your-branch-clean-with-fixup-and-autosquash.html" target="_blank" rel="noopener">这篇文章</a>，这里就不解释了。</p>
+<h2 id="第六步：推送到远程仓库"><a href="#第六步：推送到远程仓库" class="headerlink" title="第六步：推送到远程仓库"></a>第六步：推送到远程仓库</h2><p>合并commit后，就可以推送当前分支到远程仓库了。</p>
+<pre><code>$ git push --force origin myfeature</code></pre><p>git push命令要加上force参数，因为rebase以后，分支历史改变了，跟远程分支不一定兼容，有可能要强行推送（<a href="http://willi.am/blog/2014/08/12/the-dark-side-of-the-force-push/" target="_blank" rel="noopener">参见这里</a>）。</p>
+<h2 id="第七步：发出Pull-Request"><a href="#第七步：发出Pull-Request" class="headerlink" title="第七步：发出Pull Request"></a>第七步：发出Pull Request</h2><p>提交到远程仓库以后，就可以发出 Pull Request 到master分支，然后请求别人进行代码review，确认可以合并到master。</p>
+]]></content>
       <categories>
         <category>Tools</category>
         <category>Git</category>
@@ -5033,6 +5033,67 @@ imap &lt;C-K&gt; &lt;c-o&gt;:pyf &lt;path-to-this-file&gt;/clang-format.py&lt;cr
       </tags>
   </entry>
   <entry>
+    <title>vim文本对象</title>
+    <url>/2016/07/14/vim-text-object/</url>
+    <content><![CDATA[<h2 id="文本对象"><a href="#文本对象" class="headerlink" title="文本对象"></a>文本对象</h2><p><img src="/images/vim/vim-grammar.png" alt="vim-grammar"></p>
+<ul>
+<li>aw：一个词</li>
+<li>as：一句。</li>
+<li>ap：一段。</li>
+<li>ab：一块（包含在圆括号中的）。</li>
+</ul>
+<p>y, d, c, v都可以跟文本对象。</p>
+<a id="more"></a>
+
+<h2 id="操作符"><a href="#操作符" class="headerlink" title="操作符"></a>操作符</h2><p>所谓文本对象，简单来说就是以一定标准分隔符来标识一段文本，比如一个单词，一句话，一段话。</p>
+<p>使用文本对象后你会发现你在vim中的移动和操作速度提升了不是一点半点。</p>
+<p>在vim中编辑命令的结构如下：</p>
+<pre><code class="bash">&lt;number&gt;&lt;command&gt;&lt;text object or motion&gt;</code></pre>
+<p>可以看到文本对象和motion的操作是完全一致的，第一个是数字，比如3w，就向前移动三个单词。</p>
+<p>文本对象大致有以下几种：</p>
+<pre><code class="bash">w  s  p &#39;&#39; &quot;&quot;  &lt;&gt;  []  ()  {} &lt;tag&gt;</code></pre>
+<p>其中w表示word，s表示句子，p表示段落，其他的就是包围符号，标签用t表示。</p>
+<p>文本对象的<strong>操作范围</strong>有两种：</p>
+<ul>
+<li>一种用i表示,是inner的意思，即不包括单词边上的空格符，亦或是&lt;包围符号本身。</li>
+<li>一种用a表示，是arround的意思，和i相反，使用a就包括了空格符或者包围符号本身。</li>
+</ul>
+<p>文本对象的编辑命令就是vim中的几个常用编辑命令，分别是</p>
+<pre><code class="bash">`y：复制`，`d：删除`,`c：替换`，`v：选中`</code></pre>
+<p>来几个例子相信大家就立刻理解了。（例子中*都是光标所在位置）</p>
+<h3 id="例一"><a href="#例一" class="headerlink" title="例一"></a>例一</h3><p>比如：</p>
+<pre><code class="bash">&lt;*h2&gt;Sample Title&lt;/h2&gt;</code></pre>
+<p>按下cit,文本变为：</p>
+<pre><code class="bash">&lt;h2&gt;*&lt;/h2&gt;</code></pre>
+<h3 id="例二"><a href="#例二" class="headerlink" title="例二"></a>例二</h3><p>再比如：</p>
+<pre><code class="bash">console.log(“stay hungry,” + “stay *foolish”)</code></pre>
+<p>按下da”，文本变为：</p>
+<pre><code class="bash">console.log(&quot;stay hungry,&quot; +*)</code></pre>
+<p>再按下di)，文本变为：</p>
+<pre><code class="bash">console.log()</code></pre>
+<p>比如</p>
+<pre><code class="bash">Hello Worl*d</code></pre>
+<h3 id="例三"><a href="#例三" class="headerlink" title="例三"></a>例三</h3><p>按下diw,文本变为：</p>
+<pre><code class="bash">Hello</code></pre>
+<h2 id="插件"><a href="#插件" class="headerlink" title="插件"></a>插件</h2><ul>
+<li>argtextobj</li>
+<li>vim-surround</li>
+</ul>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://blog.carbonfive.com/2011/10/17/vim-text-objects-the-definitive-guide/" target="_blank" rel="noopener">Vim Text Objects: The Definitive Guide</a></li>
+<li><a href="http://vimcdoc.sourceforge.net/doc/index.html#objects" target="_blank" rel="noopener">文本对象</a></li>
+<li><a href="http://foocoder.com/2014/04/18/mei-ri-vimcha-jian-kuai-su-xuan-ze-wen-ben-dui-xiang-wildfile-dot-vim/" target="_blank" rel="noopener">快速选择文本对象wildfile.vim</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Editor</category>
+      </categories>
+      <tags>
+        <tag>vim</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>git通过lantern代理访问github</title>
     <url>/2016/07/18/git-with-lantern/</url>
     <content><![CDATA[<p>最近github可以使用ssh方式，https存在问题</p>
@@ -5100,67 +5161,6 @@ http://127.0.0.1:16823/proxy_on.pac</code></pre>
         <tag>git</tag>
         <tag>lantern</tag>
         <tag>proxy</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>vim文本对象</title>
-    <url>/2016/07/14/vim-text-object/</url>
-    <content><![CDATA[<h2 id="文本对象"><a href="#文本对象" class="headerlink" title="文本对象"></a>文本对象</h2><p><img src="/images/vim/vim-grammar.png" alt="vim-grammar"></p>
-<ul>
-<li>aw：一个词</li>
-<li>as：一句。</li>
-<li>ap：一段。</li>
-<li>ab：一块（包含在圆括号中的）。</li>
-</ul>
-<p>y, d, c, v都可以跟文本对象。</p>
-<a id="more"></a>
-
-<h2 id="操作符"><a href="#操作符" class="headerlink" title="操作符"></a>操作符</h2><p>所谓文本对象，简单来说就是以一定标准分隔符来标识一段文本，比如一个单词，一句话，一段话。</p>
-<p>使用文本对象后你会发现你在vim中的移动和操作速度提升了不是一点半点。</p>
-<p>在vim中编辑命令的结构如下：</p>
-<pre><code class="bash">&lt;number&gt;&lt;command&gt;&lt;text object or motion&gt;</code></pre>
-<p>可以看到文本对象和motion的操作是完全一致的，第一个是数字，比如3w，就向前移动三个单词。</p>
-<p>文本对象大致有以下几种：</p>
-<pre><code class="bash">w  s  p &#39;&#39; &quot;&quot;  &lt;&gt;  []  ()  {} &lt;tag&gt;</code></pre>
-<p>其中w表示word，s表示句子，p表示段落，其他的就是包围符号，标签用t表示。</p>
-<p>文本对象的<strong>操作范围</strong>有两种：</p>
-<ul>
-<li>一种用i表示,是inner的意思，即不包括单词边上的空格符，亦或是&lt;包围符号本身。</li>
-<li>一种用a表示，是arround的意思，和i相反，使用a就包括了空格符或者包围符号本身。</li>
-</ul>
-<p>文本对象的编辑命令就是vim中的几个常用编辑命令，分别是</p>
-<pre><code class="bash">`y：复制`，`d：删除`,`c：替换`，`v：选中`</code></pre>
-<p>来几个例子相信大家就立刻理解了。（例子中*都是光标所在位置）</p>
-<h3 id="例一"><a href="#例一" class="headerlink" title="例一"></a>例一</h3><p>比如：</p>
-<pre><code class="bash">&lt;*h2&gt;Sample Title&lt;/h2&gt;</code></pre>
-<p>按下cit,文本变为：</p>
-<pre><code class="bash">&lt;h2&gt;*&lt;/h2&gt;</code></pre>
-<h3 id="例二"><a href="#例二" class="headerlink" title="例二"></a>例二</h3><p>再比如：</p>
-<pre><code class="bash">console.log(“stay hungry,” + “stay *foolish”)</code></pre>
-<p>按下da”，文本变为：</p>
-<pre><code class="bash">console.log(&quot;stay hungry,&quot; +*)</code></pre>
-<p>再按下di)，文本变为：</p>
-<pre><code class="bash">console.log()</code></pre>
-<p>比如</p>
-<pre><code class="bash">Hello Worl*d</code></pre>
-<h3 id="例三"><a href="#例三" class="headerlink" title="例三"></a>例三</h3><p>按下diw,文本变为：</p>
-<pre><code class="bash">Hello</code></pre>
-<h2 id="插件"><a href="#插件" class="headerlink" title="插件"></a>插件</h2><ul>
-<li>argtextobj</li>
-<li>vim-surround</li>
-</ul>
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="http://blog.carbonfive.com/2011/10/17/vim-text-objects-the-definitive-guide/" target="_blank" rel="noopener">Vim Text Objects: The Definitive Guide</a></li>
-<li><a href="http://vimcdoc.sourceforge.net/doc/index.html#objects" target="_blank" rel="noopener">文本对象</a></li>
-<li><a href="http://foocoder.com/2014/04/18/mei-ri-vimcha-jian-kuai-su-xuan-ze-wen-ben-dui-xiang-wildfile-dot-vim/" target="_blank" rel="noopener">快速选择文本对象wildfile.vim</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Editor</category>
-      </categories>
-      <tags>
-        <tag>vim</tag>
       </tags>
   </entry>
   <entry>
@@ -8561,6 +8561,23 @@ nonvoluntary_ctxt_switches:     13</code></pre>
       </tags>
   </entry>
   <entry>
+    <title>git-principle</title>
+    <url>/2017/06/28/git-principle/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://coding.net/help/doc/practice/git-principle.html#conflicts" target="_blank" rel="noopener">使用原理视角看 Git</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Git</category>
+      </categories>
+      <tags>
+        <tag>git</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>gcc-optimization</title>
     <url>/2017/07/03/gcc-optimization/</url>
     <content><![CDATA[<p><code>GCC</code> 优化级别 <code>-O</code> <code>-O1</code> <code>-O2</code> <code>-Os</code> <code>-03</code></p>
@@ -8698,23 +8715,6 @@ git format-patch -M branch1/branch2</code></pre><p>repo B</p>
 <pre><code>Prepend &lt;root&gt; to all filenames.
 If a &quot;-p&quot; argument was also passed, it is applied before prepending the new root.
 For example, a patch that talks about updating a/git-gui.sh to b/git-gui.sh can be applied to the file in the working tree modules/git-gui/git-gui.sh by running git apply --directory=modules/git-gui.</code></pre>]]></content>
-  </entry>
-  <entry>
-    <title>git-principle</title>
-    <url>/2017/06/28/git-principle/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="https://coding.net/help/doc/practice/git-principle.html#conflicts" target="_blank" rel="noopener">使用原理视角看 Git</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Git</category>
-      </categories>
-      <tags>
-        <tag>git</tag>
-      </tags>
   </entry>
   <entry>
     <title>sqlite</title>
@@ -12535,6 +12535,204 @@ $ sudo lsusb -d xxxx:xxxx -v</code></pre>
       </tags>
   </entry>
   <entry>
+    <title>vim-highlight-syntax</title>
+    <url>/2017/12/19/vim-highlight-syntax/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
+<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
+<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
+<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
+<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
+<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
+<pre><code>:syntax
+--- 语法项目 ---
+cLabel         xxx default case
+cStructure     xxx union struct typedef enum
+cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
+                   _Thread_local auto
+cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
+cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
+cStatement     xxx return goto asm continue break
+                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
+<p><code>:help group-name</code></p>
+<pre><code>:help group-name
+
+(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
+
+        *Comment        any comment
+
+        *Constant       any constant
+         String         a string constant: &quot;this is a string&quot;
+         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
+         Number         a number constant: 234, 0xff
+         Boolean        a boolean constant: TRUE, false
+         Float          a floating point constant: 2.3e10
+
+        *Identifier     any variable name
+         Function       function name (also: methods for classes)
+        *Statement      any statement
+         Conditional    if, then, else, endif, switch, etc.
+         Repeat         for, do, while, etc.
+         Label          case, default, etc.
+         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
+         Keyword        any other keyword
+         Exception      try, catch, throw
+
+        *PreProc        generic Preprocessor
+         Include        preprocessor #include
+         Define         preprocessor #define
+         Macro          same as Define
+         PreCondit      preprocessor #if, #else, #endif, etc.
+
+        *Type           int, long, char, etc.
+         StorageClass   static, register, volatile, etc.
+         Structure      struct, union, enum, etc.
+         Typedef        A typedef
+
+        *Special        any special symbol
+         SpecialChar    special character in a constant
+         Tag            you can use CTRL-] on this
+         Delimiter      character that needs attention
+         SpecialComment special things inside a comment
+         Debug          debugging statements
+
+        *Underlined     text that stands out, HTML links
+
+        *Ignore         left blank, hidden  hl-Ignore
+
+        *Error          any erroneous construct
+        *Todo           anything that needs extra attention; mostly the
+                        keywords TODO FIXME and XXX</code></pre>]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Editor</category>
+      </categories>
+      <tags>
+        <tag>vim</tag>
+        <tag>highlight</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>proc-pid-intro</title>
+    <url>/2017/12/14/proc-pid-intro/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
+<li><a href="https://github.com/NanXiao/gnu-linux-proc-pid-intro" target="_blank" rel="noopener">GNU/Linux下的/proc/[pid]目录下的文件分析</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>proc</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Movian Plugin Development</title>
+    <url>/2018/01/10/movian-plugin-development/</url>
+    <content><![CDATA[<p>Movian Development</p>
+<a id="more"></a>
+
+<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
+<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
+<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
+<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
+<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
+<pre><code class="json">{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;apiversion&quot;: 1,
+  &quot;id&quot;: &quot;headweb&quot;,
+  &quot;file&quot;: &quot;headweb.js&quot;,
+  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
+  &quot;version&quot;: &quot;1.5.3&quot;,
+  &quot;author&quot;: &quot;Andreas Öman&quot;,
+  &quot;title&quot;: &quot;Headweb&quot;,
+  &quot;icon&quot;: &quot;headweb_square.png&quot;,
+  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
+  &quot;category&quot;: &quot;video&quot;,
+  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
+  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
+}</code></pre>
+<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
+<ul>
+<li>ecmascript - loads the plugin using Duktape.</li>
+<li>views - used for user interface (screen keyboard plugin)</li>
+</ul>
+<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
+<ul>
+<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
+<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
+</ul>
+<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
+<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
+<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
+<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
+<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
+<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
+<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
+<ul>
+<li>“tv” - online TV</li>
+<li>“video” - streaming video</li>
+<li>“music” - streaming music</li>
+<li>“glwview” - UI extentions</li>
+<li>“subtitles” - subtitles</li>
+<li>“glwosk” - on screen keyboard</li>
+</ul>
+<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
+<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
+<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
+<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
+<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
+<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
+<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
+<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
+<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
+<pre><code>{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;file&quot;: &quot;testplugin.js&quot;,
+  &quot;id&quot;: &quot;testplugin&quot;
+}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
+<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
+  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
+})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
+<pre><code>(function(plugin) {
+  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
+    showtime.print(&quot;I was called&quot;);
+  })
+})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
+<p><code>somafa</code> 中的 <code>start URI</code></p>
+<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
+...
+}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
+<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
+<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
+<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
+<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
+<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
+<ul>
+<li>Direct URL</li>
+<li>Via a video page</li>
+</ul>
+<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
+<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
+<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
+<p>To use it first do:</p>
+<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
+      <categories>
+        <category>Movian</category>
+      </categories>
+      <tags>
+        <tag>movian</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>使用 flock 保证 shell 单例执行</title>
     <url>/2018/07/19/shell-flock/</url>
     <content><![CDATA[<p>使用 <code>flock</code> 给 <code>shell 脚本</code> 上锁，保证对某些关键数据或设备的访问。</p>
@@ -14310,204 +14508,6 @@ class Weekday(Enum):
       <tags>
         <tag>python</tag>
         <tag>module</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>proc-pid-intro</title>
-    <url>/2017/12/14/proc-pid-intro/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
-<li><a href="https://github.com/NanXiao/gnu-linux-proc-pid-intro" target="_blank" rel="noopener">GNU/Linux下的/proc/[pid]目录下的文件分析</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>proc</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>vim-highlight-syntax</title>
-    <url>/2017/12/19/vim-highlight-syntax/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
-<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
-<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
-<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
-<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
-<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
-<pre><code>:syntax
---- 语法项目 ---
-cLabel         xxx default case
-cStructure     xxx union struct typedef enum
-cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
-                   _Thread_local auto
-cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
-cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
-cStatement     xxx return goto asm continue break
-                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
-<p><code>:help group-name</code></p>
-<pre><code>:help group-name
-
-(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
-
-        *Comment        any comment
-
-        *Constant       any constant
-         String         a string constant: &quot;this is a string&quot;
-         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
-         Number         a number constant: 234, 0xff
-         Boolean        a boolean constant: TRUE, false
-         Float          a floating point constant: 2.3e10
-
-        *Identifier     any variable name
-         Function       function name (also: methods for classes)
-        *Statement      any statement
-         Conditional    if, then, else, endif, switch, etc.
-         Repeat         for, do, while, etc.
-         Label          case, default, etc.
-         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
-         Keyword        any other keyword
-         Exception      try, catch, throw
-
-        *PreProc        generic Preprocessor
-         Include        preprocessor #include
-         Define         preprocessor #define
-         Macro          same as Define
-         PreCondit      preprocessor #if, #else, #endif, etc.
-
-        *Type           int, long, char, etc.
-         StorageClass   static, register, volatile, etc.
-         Structure      struct, union, enum, etc.
-         Typedef        A typedef
-
-        *Special        any special symbol
-         SpecialChar    special character in a constant
-         Tag            you can use CTRL-] on this
-         Delimiter      character that needs attention
-         SpecialComment special things inside a comment
-         Debug          debugging statements
-
-        *Underlined     text that stands out, HTML links
-
-        *Ignore         left blank, hidden  hl-Ignore
-
-        *Error          any erroneous construct
-        *Todo           anything that needs extra attention; mostly the
-                        keywords TODO FIXME and XXX</code></pre>]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Editor</category>
-      </categories>
-      <tags>
-        <tag>vim</tag>
-        <tag>highlight</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Movian Plugin Development</title>
-    <url>/2018/01/10/movian-plugin-development/</url>
-    <content><![CDATA[<p>Movian Development</p>
-<a id="more"></a>
-
-<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
-<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
-<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
-<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
-<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
-<pre><code class="json">{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;apiversion&quot;: 1,
-  &quot;id&quot;: &quot;headweb&quot;,
-  &quot;file&quot;: &quot;headweb.js&quot;,
-  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
-  &quot;version&quot;: &quot;1.5.3&quot;,
-  &quot;author&quot;: &quot;Andreas Öman&quot;,
-  &quot;title&quot;: &quot;Headweb&quot;,
-  &quot;icon&quot;: &quot;headweb_square.png&quot;,
-  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
-  &quot;category&quot;: &quot;video&quot;,
-  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
-  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
-}</code></pre>
-<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
-<ul>
-<li>ecmascript - loads the plugin using Duktape.</li>
-<li>views - used for user interface (screen keyboard plugin)</li>
-</ul>
-<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
-<ul>
-<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
-<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
-</ul>
-<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
-<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
-<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
-<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
-<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
-<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
-<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
-<ul>
-<li>“tv” - online TV</li>
-<li>“video” - streaming video</li>
-<li>“music” - streaming music</li>
-<li>“glwview” - UI extentions</li>
-<li>“subtitles” - subtitles</li>
-<li>“glwosk” - on screen keyboard</li>
-</ul>
-<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
-<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
-<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
-<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
-<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
-<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
-<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
-<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
-<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
-<pre><code>{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;file&quot;: &quot;testplugin.js&quot;,
-  &quot;id&quot;: &quot;testplugin&quot;
-}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
-<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
-  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
-})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
-<pre><code>(function(plugin) {
-  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
-    showtime.print(&quot;I was called&quot;);
-  })
-})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
-<p><code>somafa</code> 中的 <code>start URI</code></p>
-<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
-...
-}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
-<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
-<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
-<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
-<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
-<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
-<ul>
-<li>Direct URL</li>
-<li>Via a video page</li>
-</ul>
-<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
-<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
-<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
-<p>To use it first do:</p>
-<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
-      <categories>
-        <category>Movian</category>
-      </categories>
-      <tags>
-        <tag>movian</tag>
       </tags>
   </entry>
   <entry>
@@ -19778,12 +19778,67 @@ nvram commit</code></pre><h3 id="K2P-B2-Merlin-刷回官改"><a href="#K2P-B2-Me
 <p>使用 <a href="https://github.com/shd101wyy/markdown-preview-enhanced" target="_blank" rel="noopener">Markdown Preview Enhanced</a> 搭建 markdown 环境</p>
 <a id="more"></a>
 
-<h2 id="mermaid"><a href="#mermaid" class="headerlink" title="mermaid"></a>mermaid</h2><p><a href="http://knsv.github.io/mermaid/#/" target="_blank" rel="noopener">mermaid</a></p>
-<p><code>nodejs</code>安装<code>sudo npm install -g mermaid</code></p>
-<blockquote>
-<p>TODO</p>
-</blockquote>
-<h2 id="sequence"><a href="#sequence" class="headerlink" title="sequence"></a>sequence</h2><p>安装 <code>npm install --save hexo-filter-sequence</code>，在根目录 <code>_config.yml</code> 添加配置</p>
+<h2 id="Mermaid"><a href="#Mermaid" class="headerlink" title="Mermaid"></a>Mermaid</h2><p><a href="http://knsv.github.io/mermaid/#/" target="_blank" rel="noopener">mermaid</a><br><a href="https://hexo-theme-next.netlify.app/docs/tag-plugins/" target="_blank" rel="noopener">Tag Plugins</a></p>
+<p>使用</p>
+<pre><code>{% mermaid type %}
+{% endmermaid %}</code></pre><ul>
+<li>Flow - <code>graph TD</code></li>
+<li>Sequence - <code>sequenceDiagram</code></li>
+<li>Gantt - <code>gantt</code></li>
+<li>Class - <code>classDiagram</code></li>
+<li>State - <code>stateDiagram</code></li>
+<li>Pie - <code>pie</code></li>
+<li>Git - <code>gitGraph</code></li>
+<li>User Journey - <code>journey</code></li>
+</ul>
+<pre class="mermaid" style="text-align: center;">
+            gantt
+            dateFormat  YYYY-MM-DD
+axisFormat  %d/%m
+title Adding GANTT diagram to mermaid
+
+section A section
+Completed task            :done,    des1, 2014-01-06,2014-01-08
+Active task               :active,  des2, 2014-01-09, 3d
+Future task               :         des3, after des2, 5d
+Future task2               :         des4, after des3, 5d
+
+section Critical tasks
+Completed task in the critical line :crit, done, 2014-01-06,24h
+Implement parser and jison          :crit, done, after des1, 2d
+Create tests for parser             :crit, active, 3d
+Future task in critical line        :crit, 5d
+Create tests for renderer           :2d
+Add to mermaid                      :1d
+
+section Documentation
+Describe gantt syntax               :active, a1, after des1, 3d
+Add gantt diagram to demo page      :after a1  , 20h
+Add another diagram to demo page    :doc1, after a1  , 48h
+
+section Last section
+Describe gantt syntax               :after doc1, 3d
+Add gantt diagram to demo page      : 20h
+Add another diagram to demo page    : 48h
+          </pre>
+
+<pre class="mermaid" style="text-align: center;">
+            sequenceDiagram
+            participant Alice
+participant Bob
+Alice->>John: Hello John, how are you?
+loop Healthcheck
+    John->>John: Fight against hypochondria
+end
+Note right of John: Rational thoughts <br/>prevail!
+John-->>Alice: Great!
+John->>Bob: How about you?
+Bob-->>John: Jolly good!
+          </pre>
+
+<h2 id="sequence"><a href="#sequence" class="headerlink" title="sequence"></a>sequence</h2><p><a href="https://airpoet.github.io/2018/06/10/Tools/Hexo/%E5%85%B3%E4%BA%8Ehexo%E7%9A%84%E6%97%B6%E5%BA%8F%E5%9B%BE%E6%8F%92%E4%BB%B6-hexo-filter-sequence-%E7%9A%84%E5%B7%A8%E5%9D%91/" target="_blank" rel="noopener">关于hexo的时序图插件 hexo-filter-sequence 的巨坑</a></p>
+<p>导致必须加载 <code>flowchart</code> 才能正常显示</p>
+<p>安装 <code>npm install --save hexo-filter-sequence</code>，在根目录 <code>_config.yml</code> 添加配置</p>
 <pre><code class="yml">sequence:
   # webfont:     # optional, the source url of webfontloader.js
   # snap:        # optional, the source url of snap.svg.js
@@ -19843,7 +19898,7 @@ ArrayList : size()
 @enduml
 ` ` `</code></pre>
 <p>效果：</p>
-<img src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBjb250ZW50U2NyaXB0VHlwZT0iYXBwbGljYXRpb24vZWNtYXNjcmlwdCIgY29udGVudFN0eWxlVHlwZT0idGV4dC9jc3MiIGhlaWdodD0iMjEzcHgiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiIHN0eWxlPSJ3aWR0aDoxNTRweDtoZWlnaHQ6MjEzcHg7IiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAxNTQgMjEzIiB3aWR0aD0iMTU0cHgiIHpvb21BbmRQYW49Im1hZ25pZnkiPjxkZWZzPjxmaWx0ZXIgaGVpZ2h0PSIzMDAlIiBpZD0iZnh2MG5kZzc3YWtyZyIgd2lkdGg9IjMwMCUiIHg9Ii0xIiB5PSItMSI+PGZlR2F1c3NpYW5CbHVyIHJlc3VsdD0iYmx1ck91dCIgc3RkRGV2aWF0aW9uPSIyLjAiLz48ZmVDb2xvck1hdHJpeCBpbj0iYmx1ck91dCIgcmVzdWx0PSJibHVyT3V0MiIgdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIC40IDAiLz48ZmVPZmZzZXQgZHg9IjQuMCIgZHk9IjQuMCIgaW49ImJsdXJPdXQyIiByZXN1bHQ9ImJsdXJPdXQzIi8+PGZlQmxlbmQgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iYmx1ck91dDMiIG1vZGU9Im5vcm1hbCIvPjwvZmlsdGVyPjwvZGVmcz48Zz48IS0tTUQ1PVthYTdmNTg2NTMyZTE4NzE5ZTZjZWZhNzBmYzY1MDU4M10KY2xhc3MgT2JqZWN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjYwLjgwNDciIGlkPSJPYmplY3QiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS41OyIgd2lkdGg9IjcyIiB4PSIzOC41IiB5PSI4Ii8+PGVsbGlwc2UgY3g9IjUzLjUiIGN5PSIyNCIgZmlsbD0iI0FERDFCMiIgcng9IjExIiByeT0iMTEiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS4wOyIvPjxwYXRoIGQ9Ik01NS44NDM4LDE5LjY3MTkgQzU0LjkwNjMsMTkuMjM0NCA1NC4zMTI1LDE5LjA5MzggNTMuNDM3NSwxOS4wOTM4IEM1MC44MTI1LDE5LjA5MzggNDguODEyNSwyMS4xNzE5IDQ4LjgxMjUsMjMuODkwNiBMNDguODEyNSwyNS4wMTU2IEM0OC44MTI1LDI3LjU5MzggNTAuOTIxOSwyOS40ODQ0IDUzLjgxMjUsMjkuNDg0NCBDNTUuMDMxMywyOS40ODQ0IDU2LjE4NzUsMjkuMTg3NSA1Ni45Mzc1LDI4LjY0MDYgQzU3LjUxNTYsMjguMjM0NCA1Ny44NDM4LDI3Ljc4MTMgNTcuODQzOCwyNy4zOTA2IEM1Ny44NDM4LDI2LjkzNzUgNTcuNDUzMSwyNi41NDY5IDU2Ljk4NDQsMjYuNTQ2OSBDNTYuNzY1NiwyNi41NDY5IDU2LjU2MjUsMjYuNjI1IDU2LjM3NSwyNi44MTI1IEM1NS45MjE5LDI3LjI5NjkgNTUuOTIxOSwyNy4yOTY5IDU1LjczNDQsMjcuMzkwNiBDNTUuMzEyNSwyNy42NTYzIDU0LjYyNSwyNy43ODEzIDUzLjg1OTQsMjcuNzgxMyBDNTEuODEyNSwyNy43ODEzIDUwLjUxNTYsMjYuNjg3NSA1MC41MTU2LDI0Ljk4NDQgTDUwLjUxNTYsMjMuODkwNiBDNTAuNTE1NiwyMi4xMDk0IDUxLjc2NTYsMjAuNzk2OSA1My41LDIwLjc5NjkgQzU0LjA3ODEsMjAuNzk2OSA1NC42ODc1LDIwLjk1MzEgNTUuMTU2MywyMS4yMDMxIEM1NS42NDA2LDIxLjQ4NDQgNTUuODEyNSwyMS43MDMxIDU1LjkwNjMsMjIuMTA5NCBDNTUuOTY4OCwyMi41MTU2IDU2LDIyLjY0MDYgNTYuMTQwNiwyMi43NjU2IEM1Ni4yODEzLDIyLjkwNjMgNTYuNTE1NiwyMy4wMTU2IDU2LjczNDQsMjMuMDE1NiBDNTcsMjMuMDE1NiA1Ny4yNjU2LDIyLjg3NSA1Ny40Mzc1LDIyLjY1NjMgQzU3LjU0NjksMjIuNSA1Ny41NzgxLDIyLjMxMjUgNTcuNTc4MSwyMS44OTA2IEw1Ny41NzgxLDIwLjQ2ODggQzU3LjU3ODEsMjAuMDMxMyA1Ny41NjI1LDE5LjkwNjMgNTcuNDY4OCwxOS43NSBDNTcuMzEyNSwxOS40ODQ0IDU3LjAzMTMsMTkuMzQzOCA1Ni43MzQ0LDE5LjM0MzggQzU2LjQzNzUsMTkuMzQzOCA1Ni4yMzQ0LDE5LjQzNzUgNTYuMDE1NiwxOS43NSBMNTUuODQzOCwxOS42NzE5IFogIi8+PHRleHQgZmlsbD0iIzAwMDAwMCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGxlbmd0aEFkanVzdD0ic3BhY2luZ0FuZEdseXBocyIgdGV4dExlbmd0aD0iNDAiIHg9IjY3LjUiIHk9IjI4LjE1NDMiPk9iamVjdDwvdGV4dD48bGluZSBzdHlsZT0ic3Ryb2tlOiAjQTgwMDM2OyBzdHJva2Utd2lkdGg6IDEuNTsiIHgxPSIzOS41IiB4Mj0iMTA5LjUiIHkxPSI0MCIgeTI9IjQwIi8+PGxpbmUgc3R5bGU9InN0cm9rZTogI0E4MDAzNjsgc3Ryb2tlLXdpZHRoOiAxLjU7IiB4MT0iMzkuNSIgeDI9IjEwOS41IiB5MT0iNDgiIHkyPSI0OCIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiIHRleHRMZW5ndGg9IjQ2IiB4PSI0NC41IiB5PSI2Mi4yMTA0Ij5lcXVhbHMoKTwvdGV4dD48IS0tTUQ1PVthYjg4NzFlZDYzN2Y0MDcwN2I4NjZiYTY1OTc3MzRiY10KY2xhc3MgQXJyYXlMaXN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjczLjYwOTQiIGlkPSJBcnJheUxpc3QiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS41OyIgd2lkdGg9IjEzNyIgeD0iNiIgeT0iMTI5Ii8+PGVsbGlwc2UgY3g9IjQ0Ljg1IiBjeT0iMTQ1IiBmaWxsPSIjQUREMUIyIiByeD0iMTEiIHJ5PSIxMSIgc3R5bGU9InN0cm9rZTogI0E4MDAzNjsgc3Ryb2tlLXdpZHRoOiAxLjA7Ii8+PHBhdGggZD0iTTQ3LjE5MzgsMTQwLjY3MTkgQzQ2LjI1NjMsMTQwLjIzNDQgNDUuNjYyNSwxNDAuMDkzOCA0NC43ODc1LDE0MC4wOTM4IEM0Mi4xNjI1LDE0MC4wOTM4IDQwLjE2MjUsMTQyLjE3MTkgNDAuMTYyNSwxNDQuODkwNiBMNDAuMTYyNSwxNDYuMDE1NiBDNDAuMTYyNSwxNDguNTkzOCA0Mi4yNzE5LDE1MC40ODQ0IDQ1LjE2MjUsMTUwLjQ4NDQgQzQ2LjM4MTMsMTUwLjQ4NDQgNDcuNTM3NSwxNTAuMTg3NSA0OC4yODc1LDE0OS42NDA2IEM0OC44NjU2LDE0OS4yMzQ0IDQ5LjE5MzgsMTQ4Ljc4MTMgNDkuMTkzOCwxNDguMzkwNiBDNDkuMTkzOCwxNDcuOTM3NSA0OC44MDMxLDE0Ny41NDY5IDQ4LjMzNDQsMTQ3LjU0NjkgQzQ4LjExNTYsMTQ3LjU0NjkgNDcuOTEyNSwxNDcuNjI1IDQ3LjcyNSwxNDcuODEyNSBDNDcuMjcxOSwxNDguMjk2OSA0Ny4yNzE5LDE0OC4yOTY5IDQ3LjA4NDQsMTQ4LjM5MDYgQzQ2LjY2MjUsMTQ4LjY1NjMgNDUuOTc1LDE0OC43ODEzIDQ1LjIwOTQsMTQ4Ljc4MTMgQzQzLjE2MjUsMTQ4Ljc4MTMgNDEuODY1NiwxNDcuNjg3NSA0MS44NjU2LDE0NS45ODQ0IEw0MS44NjU2LDE0NC44OTA2IEM0MS44NjU2LDE0My4xMDk0IDQzLjExNTYsMTQxLjc5NjkgNDQuODUsMTQxLjc5NjkgQzQ1LjQyODEsMTQxLjc5NjkgNDYuMDM3NSwxNDEuOTUzMSA0Ni41MDYzLDE0Mi4yMDMxIEM0Ni45OTA2LDE0Mi40ODQ0IDQ3LjE2MjUsMTQyLjcwMzEgNDcuMjU2MywxNDMuMTA5NCBDNDcuMzE4OCwxNDMuNTE1NiA0Ny4zNSwxNDMuNjQwNiA0Ny40OTA2LDE0My43NjU2IEM0Ny42MzEzLDE0My45MDYzIDQ3Ljg2NTYsMTQ0LjAxNTYgNDguMDg0NCwxNDQuMDE1NiBDNDguMzUsMTQ0LjAxNTYgNDguNjE1NiwxNDMuODc1IDQ4Ljc4NzUsMTQzLjY1NjMgQzQ4Ljg5NjksMTQzLjUgNDguOTI4MSwxNDMuMzEyNSA0OC45MjgxLDE0Mi44OTA2IEw0OC45MjgxLDE0MS40Njg4IEM0OC45MjgxLDE0MS4wMzEzIDQ4LjkxMjUsMTQwLjkwNjMgNDguODE4OCwxNDAuNzUgQzQ4LjY2MjUsMTQwLjQ4NDQgNDguMzgxMywxNDAuMzQzOCA0OC4wODQ0LDE0MC4zNDM4IEM0Ny43ODc1LDE0MC4zNDM4IDQ3LjU4NDQsMTQwLjQzNzUgNDcuMzY1NiwxNDAuNzUgTDQ3LjE5MzgsMTQwLjY3MTkgWiAiLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIiB0ZXh0TGVuZ3RoPSI1MiIgeD0iNjQuMTUiIHk9IjE0OS4xNTQzIj5BcnJheUxpc3Q8L3RleHQ+PGxpbmUgc3R5bGU9InN0cm9rZTogI0E4MDAzNjsgc3Ryb2tlLXdpZHRoOiAxLjU7IiB4MT0iNyIgeDI9IjE0MiIgeTE9IjE2MSIgeTI9IjE2MSIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiIHRleHRMZW5ndGg9IjEyNSIgeD0iMTIiIHk9IjE3NS4yMTA0Ij5PYmplY3RbXSBlbGVtZW50RGF0YTwvdGV4dD48bGluZSBzdHlsZT0ic3Ryb2tlOiAjQTgwMDM2OyBzdHJva2Utd2lkdGg6IDEuNTsiIHgxPSI3IiB4Mj0iMTQyIiB5MT0iMTgxLjgwNDciIHkyPSIxODEuODA0NyIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiIHRleHRMZW5ndGg9IjMyIiB4PSIxMiIgeT0iMTk2LjAxNTEiPnNpemUoKTwvdGV4dD48IS0tTUQ1PVs3OGVkM2Q1NGM2YWQ5NmZiNjQzNGE0ZTQ1YWE0YjVmMF0KcmV2ZXJzZSBsaW5rIE9iamVjdCB0byBBcnJheUxpc3QtLT48cGF0aCBkPSJNNzQuNSw4OS41MDUgQzc0LjUsMTAyLjYyMSA3NC41LDExNi41MTI4IDc0LjUsMTI4Ljc1NTUgIiBmaWxsPSJub25lIiBpZD0iT2JqZWN0Jmx0Oy1BcnJheUxpc3QiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS4wOyIvPjxwb2x5Z29uIGZpbGw9Im5vbmUiIHBvaW50cz0iNjcuNTAwMSw4OS4yNDIsNzQuNSw2OS4yNDIsODEuNTAwMSw4OS4yNDIsNjcuNTAwMSw4OS4yNDIiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS4wOyIvPjwhLS1NRDU9W2Y5MDZiZjQwMDRlZTkzNWY1MjcxZjY2ZTIzYzA0MWJhXQpAc3RhcnR1bWwNCk9iamVjdCA8fC0gLSBBcnJheUxpc3QNCk9iamVjdCA6IGVxdWFscygpDQpBcnJheUxpc3QgOiBPYmplY3RbXSBlbGVtZW50RGF0YQ0KQXJyYXlMaXN0IDogc2l6ZSgpDQpAZW5kdW1sDQoKUGxhbnRVTUwgdmVyc2lvbiAxLjIwMjAuMDkoU3VuIE1heSAxMCAxMDo1MTowNiBVVEMgMjAyMCkKKEdQTCBzb3VyY2UgZGlzdHJpYnV0aW9uKQpKYXZhIFJ1bnRpbWU6IEphdmEoVE0pIFNFIFJ1bnRpbWUgRW52aXJvbm1lbnQKSlZNOiBKYXZhIEhvdFNwb3QoVE0pIDY0LUJpdCBTZXJ2ZXIgVk0KSmF2YSBWZXJzaW9uOiAxNC4wLjErNwpPcGVyYXRpbmcgU3lzdGVtOiBMaW51eApEZWZhdWx0IEVuY29kaW5nOiBVVEYtOApMYW5ndWFnZTogZW4KQ291bnRyeTogVVMKLS0+PC9nPjwvc3ZnPg=='>
+<img src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBjb250ZW50U2NyaXB0VHlwZT0iYXBwbGljYXRpb24vZWNtYXNjcmlwdCIgY29udGVudFN0eWxlVHlwZT0idGV4dC9jc3MiIGhlaWdodD0iMjEzcHgiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiIHN0eWxlPSJ3aWR0aDoxNTRweDtoZWlnaHQ6MjEzcHg7IiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAxNTQgMjEzIiB3aWR0aD0iMTU0cHgiIHpvb21BbmRQYW49Im1hZ25pZnkiPjxkZWZzPjxmaWx0ZXIgaGVpZ2h0PSIzMDAlIiBpZD0iZnh2MG5kZzc3YWtyZyIgd2lkdGg9IjMwMCUiIHg9Ii0xIiB5PSItMSI+PGZlR2F1c3NpYW5CbHVyIHJlc3VsdD0iYmx1ck91dCIgc3RkRGV2aWF0aW9uPSIyLjAiLz48ZmVDb2xvck1hdHJpeCBpbj0iYmx1ck91dCIgcmVzdWx0PSJibHVyT3V0MiIgdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIC40IDAiLz48ZmVPZmZzZXQgZHg9IjQuMCIgZHk9IjQuMCIgaW49ImJsdXJPdXQyIiByZXN1bHQ9ImJsdXJPdXQzIi8+PGZlQmxlbmQgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iYmx1ck91dDMiIG1vZGU9Im5vcm1hbCIvPjwvZmlsdGVyPjwvZGVmcz48Zz48IS0tTUQ1PVthYTdmNTg2NTMyZTE4NzE5ZTZjZWZhNzBmYzY1MDU4M10KY2xhc3MgT2JqZWN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjYwLjgwNDciIGlkPSJPYmplY3QiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS41OyIgd2lkdGg9IjcyIiB4PSIzOC41IiB5PSI4Ii8+PGVsbGlwc2UgY3g9IjUzLjUiIGN5PSIyNCIgZmlsbD0iI0FERDFCMiIgcng9IjExIiByeT0iMTEiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS4wOyIvPjxwYXRoIGQ9Ik01NS44NDM4LDE5LjY3MTkgQzU0LjkwNjMsMTkuMjM0NCA1NC4zMTI1LDE5LjA5MzggNTMuNDM3NSwxOS4wOTM4IEM1MC44MTI1LDE5LjA5MzggNDguODEyNSwyMS4xNzE5IDQ4LjgxMjUsMjMuODkwNiBMNDguODEyNSwyNS4wMTU2IEM0OC44MTI1LDI3LjU5MzggNTAuOTIxOSwyOS40ODQ0IDUzLjgxMjUsMjkuNDg0NCBDNTUuMDMxMywyOS40ODQ0IDU2LjE4NzUsMjkuMTg3NSA1Ni45Mzc1LDI4LjY0MDYgQzU3LjUxNTYsMjguMjM0NCA1Ny44NDM4LDI3Ljc4MTMgNTcuODQzOCwyNy4zOTA2IEM1Ny44NDM4LDI2LjkzNzUgNTcuNDUzMSwyNi41NDY5IDU2Ljk4NDQsMjYuNTQ2OSBDNTYuNzY1NiwyNi41NDY5IDU2LjU2MjUsMjYuNjI1IDU2LjM3NSwyNi44MTI1IEM1NS45MjE5LDI3LjI5NjkgNTUuOTIxOSwyNy4yOTY5IDU1LjczNDQsMjcuMzkwNiBDNTUuMzEyNSwyNy42NTYzIDU0LjYyNSwyNy43ODEzIDUzLjg1OTQsMjcuNzgxMyBDNTEuODEyNSwyNy43ODEzIDUwLjUxNTYsMjYuNjg3NSA1MC41MTU2LDI0Ljk4NDQgTDUwLjUxNTYsMjMuODkwNiBDNTAuNTE1NiwyMi4xMDk0IDUxLjc2NTYsMjAuNzk2OSA1My41LDIwLjc5NjkgQzU0LjA3ODEsMjAuNzk2OSA1NC42ODc1LDIwLjk1MzEgNTUuMTU2MywyMS4yMDMxIEM1NS42NDA2LDIxLjQ4NDQgNTUuODEyNSwyMS43MDMxIDU1LjkwNjMsMjIuMTA5NCBDNTUuOTY4OCwyMi41MTU2IDU2LDIyLjY0MDYgNTYuMTQwNiwyMi43NjU2IEM1Ni4yODEzLDIyLjkwNjMgNTYuNTE1NiwyMy4wMTU2IDU2LjczNDQsMjMuMDE1NiBDNTcsMjMuMDE1NiA1Ny4yNjU2LDIyLjg3NSA1Ny40Mzc1LDIyLjY1NjMgQzU3LjU0NjksMjIuNSA1Ny41NzgxLDIyLjMxMjUgNTcuNTc4MSwyMS44OTA2IEw1Ny41NzgxLDIwLjQ2ODggQzU3LjU3ODEsMjAuMDMxMyA1Ny41NjI1LDE5LjkwNjMgNTcuNDY4OCwxOS43NSBDNTcuMzEyNSwxOS40ODQ0IDU3LjAzMTMsMTkuMzQzOCA1Ni43MzQ0LDE5LjM0MzggQzU2LjQzNzUsMTkuMzQzOCA1Ni4yMzQ0LDE5LjQzNzUgNTYuMDE1NiwxOS43NSBMNTUuODQzOCwxOS42NzE5IFogIi8+PHRleHQgZmlsbD0iIzAwMDAwMCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGxlbmd0aEFkanVzdD0ic3BhY2luZ0FuZEdseXBocyIgdGV4dExlbmd0aD0iNDAiIHg9IjY3LjUiIHk9IjI4LjE1NDMiPk9iamVjdDwvdGV4dD48bGluZSBzdHlsZT0ic3Ryb2tlOiAjQTgwMDM2OyBzdHJva2Utd2lkdGg6IDEuNTsiIHgxPSIzOS41IiB4Mj0iMTA5LjUiIHkxPSI0MCIgeTI9IjQwIi8+PGxpbmUgc3R5bGU9InN0cm9rZTogI0E4MDAzNjsgc3Ryb2tlLXdpZHRoOiAxLjU7IiB4MT0iMzkuNSIgeDI9IjEwOS41IiB5MT0iNDgiIHkyPSI0OCIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiIHRleHRMZW5ndGg9IjQ2IiB4PSI0NC41IiB5PSI2Mi4yMTA0Ij5lcXVhbHMoKTwvdGV4dD48IS0tTUQ1PVthYjg4NzFlZDYzN2Y0MDcwN2I4NjZiYTY1OTc3MzRiY10KY2xhc3MgQXJyYXlMaXN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjczLjYwOTQiIGlkPSJBcnJheUxpc3QiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS41OyIgd2lkdGg9IjEzNyIgeD0iNiIgeT0iMTI5Ii8+PGVsbGlwc2UgY3g9IjQ0Ljg1IiBjeT0iMTQ1IiBmaWxsPSIjQUREMUIyIiByeD0iMTEiIHJ5PSIxMSIgc3R5bGU9InN0cm9rZTogI0E4MDAzNjsgc3Ryb2tlLXdpZHRoOiAxLjA7Ii8+PHBhdGggZD0iTTQ3LjE5MzgsMTQwLjY3MTkgQzQ2LjI1NjMsMTQwLjIzNDQgNDUuNjYyNSwxNDAuMDkzOCA0NC43ODc1LDE0MC4wOTM4IEM0Mi4xNjI1LDE0MC4wOTM4IDQwLjE2MjUsMTQyLjE3MTkgNDAuMTYyNSwxNDQuODkwNiBMNDAuMTYyNSwxNDYuMDE1NiBDNDAuMTYyNSwxNDguNTkzOCA0Mi4yNzE5LDE1MC40ODQ0IDQ1LjE2MjUsMTUwLjQ4NDQgQzQ2LjM4MTMsMTUwLjQ4NDQgNDcuNTM3NSwxNTAuMTg3NSA0OC4yODc1LDE0OS42NDA2IEM0OC44NjU2LDE0OS4yMzQ0IDQ5LjE5MzgsMTQ4Ljc4MTMgNDkuMTkzOCwxNDguMzkwNiBDNDkuMTkzOCwxNDcuOTM3NSA0OC44MDMxLDE0Ny41NDY5IDQ4LjMzNDQsMTQ3LjU0NjkgQzQ4LjExNTYsMTQ3LjU0NjkgNDcuOTEyNSwxNDcuNjI1IDQ3LjcyNSwxNDcuODEyNSBDNDcuMjcxOSwxNDguMjk2OSA0Ny4yNzE5LDE0OC4yOTY5IDQ3LjA4NDQsMTQ4LjM5MDYgQzQ2LjY2MjUsMTQ4LjY1NjMgNDUuOTc1LDE0OC43ODEzIDQ1LjIwOTQsMTQ4Ljc4MTMgQzQzLjE2MjUsMTQ4Ljc4MTMgNDEuODY1NiwxNDcuNjg3NSA0MS44NjU2LDE0NS45ODQ0IEw0MS44NjU2LDE0NC44OTA2IEM0MS44NjU2LDE0My4xMDk0IDQzLjExNTYsMTQxLjc5NjkgNDQuODUsMTQxLjc5NjkgQzQ1LjQyODEsMTQxLjc5NjkgNDYuMDM3NSwxNDEuOTUzMSA0Ni41MDYzLDE0Mi4yMDMxIEM0Ni45OTA2LDE0Mi40ODQ0IDQ3LjE2MjUsMTQyLjcwMzEgNDcuMjU2MywxNDMuMTA5NCBDNDcuMzE4OCwxNDMuNTE1NiA0Ny4zNSwxNDMuNjQwNiA0Ny40OTA2LDE0My43NjU2IEM0Ny42MzEzLDE0My45MDYzIDQ3Ljg2NTYsMTQ0LjAxNTYgNDguMDg0NCwxNDQuMDE1NiBDNDguMzUsMTQ0LjAxNTYgNDguNjE1NiwxNDMuODc1IDQ4Ljc4NzUsMTQzLjY1NjMgQzQ4Ljg5NjksMTQzLjUgNDguOTI4MSwxNDMuMzEyNSA0OC45MjgxLDE0Mi44OTA2IEw0OC45MjgxLDE0MS40Njg4IEM0OC45MjgxLDE0MS4wMzEzIDQ4LjkxMjUsMTQwLjkwNjMgNDguODE4OCwxNDAuNzUgQzQ4LjY2MjUsMTQwLjQ4NDQgNDguMzgxMywxNDAuMzQzOCA0OC4wODQ0LDE0MC4zNDM4IEM0Ny43ODc1LDE0MC4zNDM4IDQ3LjU4NDQsMTQwLjQzNzUgNDcuMzY1NiwxNDAuNzUgTDQ3LjE5MzgsMTQwLjY3MTkgWiAiLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIiB0ZXh0TGVuZ3RoPSI1MiIgeD0iNjQuMTUiIHk9IjE0OS4xNTQzIj5BcnJheUxpc3Q8L3RleHQ+PGxpbmUgc3R5bGU9InN0cm9rZTogI0E4MDAzNjsgc3Ryb2tlLXdpZHRoOiAxLjU7IiB4MT0iNyIgeDI9IjE0MiIgeTE9IjE2MSIgeTI9IjE2MSIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiIHRleHRMZW5ndGg9IjEyNSIgeD0iMTIiIHk9IjE3NS4yMTA0Ij5PYmplY3RbXSBlbGVtZW50RGF0YTwvdGV4dD48bGluZSBzdHlsZT0ic3Ryb2tlOiAjQTgwMDM2OyBzdHJva2Utd2lkdGg6IDEuNTsiIHgxPSI3IiB4Mj0iMTQyIiB5MT0iMTgxLjgwNDciIHkyPSIxODEuODA0NyIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiIHRleHRMZW5ndGg9IjMyIiB4PSIxMiIgeT0iMTk2LjAxNTEiPnNpemUoKTwvdGV4dD48IS0tTUQ1PVs3OGVkM2Q1NGM2YWQ5NmZiNjQzNGE0ZTQ1YWE0YjVmMF0KcmV2ZXJzZSBsaW5rIE9iamVjdCB0byBBcnJheUxpc3QtLT48cGF0aCBkPSJNNzQuNSw4OS41MDUgQzc0LjUsMTAyLjYyMSA3NC41LDExNi41MTI4IDc0LjUsMTI4Ljc1NTUgIiBmaWxsPSJub25lIiBpZD0iT2JqZWN0Jmx0Oy1BcnJheUxpc3QiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS4wOyIvPjxwb2x5Z29uIGZpbGw9Im5vbmUiIHBvaW50cz0iNjcuNTAwMSw4OS4yNDIsNzQuNSw2OS4yNDIsODEuNTAwMSw4OS4yNDIsNjcuNTAwMSw4OS4yNDIiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS4wOyIvPjwhLS1NRDU9WzdmYTE3NmVhMzAyN2FiZDc2MTRlNTVjMjdjYWI3YWEzXQpAc3RhcnR1bWwNCk9iamVjdCA8fC0gLSBBcnJheUxpc3QNCk9iamVjdCA6IGVxdWFscygpDQpBcnJheUxpc3QgOiBPYmplY3RbXSBlbGVtZW50RGF0YQ0KQXJyYXlMaXN0IDogc2l6ZSgpDQpAZW5kdW1sDQoKUGxhbnRVTUwgdmVyc2lvbiAxLjIwMjAuMTAoU3VuIE1heSAxNyAwOTozNTo1NyBVVEMgMjAyMCkKKEdQTCBzb3VyY2UgZGlzdHJpYnV0aW9uKQpKYXZhIFJ1bnRpbWU6IEphdmEoVE0pIFNFIFJ1bnRpbWUgRW52aXJvbm1lbnQKSlZNOiBKYXZhIEhvdFNwb3QoVE0pIDY0LUJpdCBTZXJ2ZXIgVk0KSmF2YSBWZXJzaW9uOiAxNC4wLjErNwpPcGVyYXRpbmcgU3lzdGVtOiBMaW51eApEZWZhdWx0IEVuY29kaW5nOiBVVEYtOApMYW5ndWFnZTogZW4KQ291bnRyeTogVVMKLS0+PC9nPjwvc3ZnPg=='>
 
 <h2 id="Markdown-Preview-Enhanced"><a href="#Markdown-Preview-Enhanced" class="headerlink" title="Markdown Preview Enhanced"></a><strong>Markdown Preview Enhanced</strong></h2><p><strong>Markdown Preview Enhanced</strong> 是一款为 <a href="https://atom.io/packages/markdown-preview-enhanced" target="_blank" rel="noopener"><strong>Atom</strong></a> 以及 <a href="https://marketplace.visualstudio.com/items?itemName=shd101wyy.markdown-preview-enhanced" target="_blank" rel="noopener"><strong>Visual Studio Code</strong></a> 编辑器编写的<strong>超级强大的</strong> Markdown 插件。 这款插件意在让你拥有飘逸的 Markdown 写作体验。</p>
 <p><strong>Markdown Preview Enhanced</strong> 内部支持 <code>flow charts</code>, <code>sequence diagrams</code>, <code>mermaid</code>, <code>PlantUML</code>, <code>WaveDrom</code>, <code>GraphViz</code>，<code>Vega &amp; Vega-lite</code>，<code>Ditaa</code> 图像渲染。 你也可以通过使用 <a href="https://shd101wyy.github.io/markdown-preview-enhanced/#/zh-cn/code-chunk" target="_blank" rel="noopener">Code Chunk</a> 来渲染 <code>TikZ</code>, <code>Python Matplotlib</code>, <code>Plotly</code> 等图像。</p>
@@ -23512,6 +23567,79 @@ To ssh://192.168.110.254:29418/misc
       </tags>
   </entry>
   <entry>
+    <title>GDB打印二维数组</title>
+    <url>/2020/05/07/print-2d-array-in-gdb/</url>
+    <content><![CDATA[<ul>
+<li>打印数组 <code>p *matrix@length</code></li>
+<li>打印二维数组 <code>p *matrix@cols@rows</code></li>
+<li>打印二维数组 <code>printMatrix matrix cols rows</code><pre><code>define printMatrix
+  set $arr = $arg0
+  set $rows = $arg1
+  set $cols = $arg2
+  set $i = 0
+  printf &quot;\n&quot;
+  while $i &lt; $rows
+      set $j = 0
+      while $j &lt; $cols
+          printf &quot;%02d, &quot;,$arr[$i][$j]
+          set $j = $j + 1
+      end
+      printf &quot;\n&quot;
+      set $i = $i + 1
+  end
+end</code></pre></li>
+</ul>
+<a id="more"></a>
+
+<h2 id="source-code"><a href="#source-code" class="headerlink" title="source code"></a>source code</h2><pre><code class="c">#include &lt;stdio.h&gt;
+
+int matrix[10][10];
+
+void print(int matrix[10][10])
+{
+    int i, j;
+    for (i = 0; i &lt; 10; ++i)
+    {
+        for (j = 0; j &lt; 10; ++j)
+            printf(&quot;%d &quot;, matrix[i][j]);
+        printf(&quot;\n&quot;);
+    }
+}
+
+int main()
+{
+    int i, j;
+    for (i = 0; i &lt; 10; ++i)
+        for (j = 0; j &lt; 10; ++j)
+            matrix[i][j] = i*10 + j;
+    return 0;
+}</code></pre>
+<h2 id="Example"><a href="#Example" class="headerlink" title="Example"></a>Example</h2><pre><code>(gdb) p *matrix[1]@10
+$6 = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19}
+(gdb) p *matrix[1]@5@2
+$7 = {{10, 11, 12, 13, 14}, {15, 16, 17, 18, 19}}
+(gdb) source a.gdb
+(gdb) printMatrix matrix 10 10
+
+00, 01, 02, 03, 04, 05, 06, 07, 08, 09,
+10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
+60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
+70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
+80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
+90, 91, 92, 93, 94, 95, 96, 97, 98, 99,</code></pre>]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>GDB</category>
+      </categories>
+      <tags>
+        <tag>gdb</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>基于 coc.nvim python 补全</title>
     <url>/2020/05/08/coc-python-completion/</url>
     <content><![CDATA[<p>使用 <code>coc.nvim</code> 配置 python 补全</p>
@@ -23627,79 +23755,6 @@ To ssh://192.168.110.254:29418/misc
         <tag>shell</tag>
         <tag>git</tag>
         <tag>alias</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>GDB打印二维数组</title>
-    <url>/2020/05/07/print-2d-array-in-gdb/</url>
-    <content><![CDATA[<ul>
-<li>打印数组 <code>p *matrix@length</code></li>
-<li>打印二维数组 <code>p *matrix@cols@rows</code></li>
-<li>打印二维数组 <code>printMatrix matrix cols rows</code><pre><code>define printMatrix
-  set $arr = $arg0
-  set $rows = $arg1
-  set $cols = $arg2
-  set $i = 0
-  printf &quot;\n&quot;
-  while $i &lt; $rows
-      set $j = 0
-      while $j &lt; $cols
-          printf &quot;%02d, &quot;,$arr[$i][$j]
-          set $j = $j + 1
-      end
-      printf &quot;\n&quot;
-      set $i = $i + 1
-  end
-end</code></pre></li>
-</ul>
-<a id="more"></a>
-
-<h2 id="source-code"><a href="#source-code" class="headerlink" title="source code"></a>source code</h2><pre><code class="c">#include &lt;stdio.h&gt;
-
-int matrix[10][10];
-
-void print(int matrix[10][10])
-{
-    int i, j;
-    for (i = 0; i &lt; 10; ++i)
-    {
-        for (j = 0; j &lt; 10; ++j)
-            printf(&quot;%d &quot;, matrix[i][j]);
-        printf(&quot;\n&quot;);
-    }
-}
-
-int main()
-{
-    int i, j;
-    for (i = 0; i &lt; 10; ++i)
-        for (j = 0; j &lt; 10; ++j)
-            matrix[i][j] = i*10 + j;
-    return 0;
-}</code></pre>
-<h2 id="Example"><a href="#Example" class="headerlink" title="Example"></a>Example</h2><pre><code>(gdb) p *matrix[1]@10
-$6 = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19}
-(gdb) p *matrix[1]@5@2
-$7 = {{10, 11, 12, 13, 14}, {15, 16, 17, 18, 19}}
-(gdb) source a.gdb
-(gdb) printMatrix matrix 10 10
-
-00, 01, 02, 03, 04, 05, 06, 07, 08, 09,
-10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
-40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
-50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
-60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
-70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
-80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
-90, 91, 92, 93, 94, 95, 96, 97, 98, 99,</code></pre>]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>GDB</category>
-      </categories>
-      <tags>
-        <tag>gdb</tag>
       </tags>
   </entry>
   <entry>
