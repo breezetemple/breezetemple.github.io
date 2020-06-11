@@ -216,6 +216,151 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/29/git-rebase/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2016/04/29/git-rebase/" class="post-title-link" itemprop="url">git中的撤销操作</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-04-30 00:00:00" itemprop="dateCreated datePublished" datetime="2016-04-30T00:00:00+08:00">2016-04-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-06-11 10:44:52" itemprop="dateModified" datetime="2020-06-11T10:44:52+08:00">2020-06-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Git/" itemprop="url" rel="index">
+                    <span itemprop="name">Git</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="git-rebase"><a href="#git-rebase" class="headerlink" title="git rebase"></a><strong>git rebase</strong></h2><p><strong>git rebase是对commit history的改写</strong>。<br>当你要改写的commit history还没有被提交到远程repo的时候，<br>也就是说，<strong>还没有与他人共享之前，commit history是你私人所有的，那么想怎么改写都可以</strong>。</p>
+<p>而<strong>一旦被提交到远程后，这时如果再改写history，那么势必和他人的history长的就不一样了</strong>。<br>git push的时候，git会比较commit history，如果不一致，<br>commit动作会被拒绝，唯一的办法就是带上-f参数，<br>强制要求commit，这时git会以committer的history覆写远程repo，<br>从而完成代码的提交。虽然代码提交上去了，<br>但是<strong>这样可能会造成别人工作成果的丢失，所以使用-f参数要慎重</strong>。</p>
+<h2 id="注意点"><a href="#注意点" class="headerlink" title="注意点"></a><strong>注意点</strong></h2><ol>
+<li>除非只有自己一个人用，不然用 push –force 的都该去死</li>
+<li>慎用 push -f！</li>
+<li>每个人提交前，都应该把自己的修改rebase到服务器的最新代码之上，遵守这个规则就不会有任何问题。<br>如果你需要force push，说明你做反了，把服务器代码rebase到你本地分支之上才会需要force push，这是错误的用法。</li>
+<li>一旦分支中的提交对象发布到公共仓库，就千万不要对该分支进行衍合操作</li>
+<li>如果 rebase 完后，需要使用 push -f 的话，一定代表该 rebase 操作是不合适。除非你是有意在修改提交历史</li>
+<li>除非某个分支只有你自己搞，你怎么rebase都是没有问题的，但是如果你在master或者develop这种分支上来rebase，<br>估计团队里每个人都想拍死你</li>
+<li>当你在某个分支进行团队合作的时候， 常用rebase真的是不合理。而且容易出问题。慎用 push –force</li>
+<li>git rebase 一般自己一个人开发时使用，用来保持提交记录的整洁。一旦上传到github后，不应该使用git rebase</li>
+<li><strong>一旦分支中的提交对象发布到公共仓库，就千万不要对该分支进行衍合操作。<br>如果你遵循这条金科玉律，就不会出差错。否则，人民群众会仇恨你，你的朋友和家人也会嘲笑你，唾弃你</strong></li>
+<li>不需要push -f啊，如果分支落后就用pull –rebase</li>
+</ol>
+<h2 id="例子"><a href="#例子" class="headerlink" title="例子"></a><strong>例子</strong></h2><p>假设楼主的team中有两个developer：tom和jerry，他们共同使用一个远程repo，<br>并各自clone到自己的机器上，为了简化描述，这里假设只有一个branch：master。</p>
+<p>这时tom机器的repo有两个branch: <strong>master, origin/master</strong></p>
+<p>而jerry的机器上也是有两个branch: <strong>master, origin/master</strong></p>
+<p>均如下图所示</p>
+<p><img src="http://segmentfault.com/img/bVb0wO" alt="1"></p>
+<p>tom和jerry分别各自开发自己的新feature，<br>不断有新的commit提交到他们各自私有的commit history中，<br>所以他们的master指针不断的向前推移，分别指向不同的commit。<br><strong>而又由于他们都没有git fetch和git push，所以他们的origin/master都维持不变</strong>。</p>
+<p>jerry的repo如下</p>
+<p><img src="http://segmentfault.com/img/bVb0wQ" alt="2"></p>
+<p>tom的repo如下，注意T1和上图的J1，分别是两个不同的commit</p>
+<p><img src="http://segmentfault.com/img/bVb0wR" alt="3"></p>
+<p>这时Tom首先把他的commit提交的远程repo中，那么他本机origin/master指针则会前进，和master指针保持一致，如下</p>
+<p><img src="http://segmentfault.com/img/bVb0wT" alt="4"></p>
+<p>远程repo如下</p>
+<p><img src="http://segmentfault.com/img/bVb0wS" alt="5"></p>
+<p>现在jerry也想把他的commit提交到远程repo上去，<br><strong>运行git push，毫无意外的失败了，所以他git fetch了一下，把远程repo，也就是之前tom提交的T1给拉到了他本机repo中</strong>，如下</p>
+<p><img src="http://segmentfault.com/img/bVb0wU" alt="6"></p>
+<p>commit history出现了分叉，要想把tom之前提交的内容包含到自己的工作中来，<br>有一个方法就是<strong>git merge，它会自动生成一个commit，既包含tom的提交，也包含jerry的提交</strong>，<br>这样就把两个分叉的commit重新又合并在一起。但是<strong>这个自动生成的commit会有两个parent</strong>，<br>review代码的时候必须要比较两次，很不方便。</p>
+<p>jerry<strong>为了保证commit history的线性</strong>，决定采用另外一种方法，就是<strong>git rebase</strong>。<br>jerry的<strong>提交J1这时还没有被提交到远程repo上去，也就是他完全私有的一个commit，<br>所以使用git rebase改写J1的history完全没有问题</strong>，改写之后，如下</p>
+<p><img src="http://segmentfault.com/img/bVb0wV" alt="7"></p>
+<p>注意J1被改写到T1后面了，变成了J1`</p>
+<p>git push后，本机repo</p>
+<p><img src="http://segmentfault.com/img/bVb0wW" alt="8"></p>
+<p>而远程repo</p>
+<p><img src="http://segmentfault.com/img/bVb0wX" alt="9"></p>
+<p>异常的轻松，一条直线，没有-f</p>
+<p>所以，<strong>在不用-f的前提下，想维持树的整洁，方法就是：在git push之前，先git fetch，再git rebase</strong>。</p>
+<pre><code>git fetch origin master
+git rebase origin/master
+git push</code></pre><ol>
+<li><a href="http://www.oschina.net/translate/10-tips-git-next-level" target="_blank" rel="noopener">10 个迅速提升你 Git 水平的提示</a></li>
+<li><a href="https://segmentfault.com/q/1010000000430041" target="_blank" rel="noopener">团队开发里频繁使用 git rebase 来保持树的整洁好吗?</a></li>
+<li><a href="http://nvie.com/posts/a-successful-git-branching-model/" target="_blank" rel="noopener">a-successful-git-branching-model</a></li>
+<li><a href="https://git-scm.com/book/zh/v1/Git-%E5%88%86%E6%94%AF-%E5%88%86%E6%94%AF%E7%9A%84%E8%A1%8D%E5%90%88" target="_blank" rel="noopener">Git-分支-分支的衍合</a></li>
+<li><a href="http://codecampo.com/topics/379?comment_id=1354#comment-1354" target="_blank" rel="noopener">构造干净的 Git 历史线索</a></li>
+<li><a href="http://guides.github.com/overviews/flow/" target="_blank" rel="noopener">Github workflow</a></li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/27/programmer-sorting-algorithms/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +392,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-06-10 10:01:38" itemprop="dateModified" datetime="2020-06-10T10:01:38+08:00">2020-06-10</time>
+                <time title="Modified: 2020-06-11 10:44:52" itemprop="dateModified" datetime="2020-06-11T10:44:52+08:00">2020-06-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -424,7 +569,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-06-10 10:01:38" itemprop="dateModified" datetime="2020-06-10T10:01:38+08:00">2020-06-10</time>
+                <time title="Modified: 2020-06-11 10:44:52" itemprop="dateModified" datetime="2020-06-11T10:44:52+08:00">2020-06-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -634,7 +779,7 @@ int main() {
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-06-10 10:01:38" itemprop="dateModified" datetime="2020-06-10T10:01:38+08:00">2020-06-10</time>
+                <time title="Modified: 2020-06-11 10:44:52" itemprop="dateModified" datetime="2020-06-11T10:44:52+08:00">2020-06-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -740,6 +885,152 @@ $(document).ready(function(){
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/24/programmer-optimize/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2016/04/24/programmer-optimize/" class="post-title-link" itemprop="url">程序优化</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-04-25 00:00:00" itemprop="dateCreated datePublished" datetime="2016-04-25T00:00:00+08:00">2016-04-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-06-11 10:44:52" itemprop="dateModified" datetime="2020-06-11T10:44:52+08:00">2020-06-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Prof/" itemprop="url" rel="index">
+                    <span itemprop="name">Prof</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>1.5k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+
+<p>程序优化是指程序效率的优化。一般来说，程序优化主要是以下三个步骤：</p>
+<ol>
+<li>算法优化</li>
+<li>代码优化</li>
+<li>指令优化</li>
+</ol>
+<h2 id="算法优化"><a href="#算法优化" class="headerlink" title="算法优化"></a><strong>算法优化</strong></h2><p>算法上的优化是必须首要考虑的，也是最重要的一步。<br>一般我们需要分析算法的时间复杂度，即处理时间与输入数据规模的一个量级关系，<br>一个优秀的算法可以将算法复杂度降低若干量级，<br>那么同样的实现，其平均耗时一般会比其他复杂度高的算法少（这里不代表任意输入都更快）。</p>
+<p>比如说排序算法，快速排序的时间复杂度为O(nlogn)，<br>而插入排序的时间复杂度为O(n*n)，那么在统计意义下，快速排序会比插入排序快，<br>而且随着输入序列长度n的增加，两者耗时相差会越来越大。<br>但是，假如输入数据本身就已经是升序(或降序)，那么实际运行下来，快速排序会更慢。</p>
+<h2 id="代码优化"><a href="#代码优化" class="headerlink" title="代码优化"></a><strong>代码优化</strong></h2><p>代码优化一般需要与算法优化同步进行，代码优化主要是涉及到具体的编码技巧。<br>同样的算法与功能，不同的写法也可能让程序效率差异巨大。<br>一般而言，代码优化主要是针对循环结构进行分析处理。</p>
+<h3 id="避免循环内部的乘-除-法以及冗余计算"><a href="#避免循环内部的乘-除-法以及冗余计算" class="headerlink" title="避免循环内部的乘(除)法以及冗余计算"></a><strong>避免循环内部的乘(除)法以及冗余计算</strong></h3><p>能把运算放在循环外的尽量提出去放在外部，循环内部不必要的乘除法可使用加法来替代等。</p>
+<h3 id="避免循环内部有过多依赖和跳转，使cpu能流水起来"><a href="#避免循环内部有过多依赖和跳转，使cpu能流水起来" class="headerlink" title="避免循环内部有过多依赖和跳转，使cpu能流水起来"></a><strong>避免循环内部有过多依赖和跳转，使cpu能流水起来</strong></h3><p>关于CPU流水线技术可google/baidu，循环结构内部计算或逻辑过于复杂，将导致cpu不能流水，<br>那这个循环就相当于拆成了n段重复代码的效率。</p>
+<pre><code>for(int i = 0; i &lt; N; i++)
+{
+    if(i &lt; 100) a[i] += 5;
+    else if(i &lt; 200) a[i] += 10;
+    else a[i] += 20;
+}</code></pre><p>优化为：</p>
+<pre><code>for(int i = 0; i &lt; 100; i++)
+{
+    a[i] += 5;
+}
+for(int i = 100; i &lt; 200; i++)
+{
+    a[i] += 10;
+}
+for(int i = 200; i &lt; N; i++)
+{
+    a[i] += 20;
+}</code></pre><h3 id="定点化"><a href="#定点化" class="headerlink" title="定点化"></a><strong>定点化</strong></h3><p>定点化的思想是将浮点运算转换为整型运算，<br>定点化的做法是将数据乘上一个很大的数后，将所有运算转换为整数计算。<br>例如某个乘法我只关心小数点后3位，那把数据都乘上10000后，进行整型运算的结果也就满足所需的精度了。</p>
+<h3 id="以空间换时间"><a href="#以空间换时间" class="headerlink" title="以空间换时间"></a><strong>以空间换时间</strong></h3><p>空间换时间最经典的就是查表法了，某些计算相当耗时，但其自变量的值域是比较有限的，<br>这样的情况可以预先计算好每个自变量对应的函数值，存在一个表格中，每次根据自变量的值去索引对应的函数值即可。</p>
+<h3 id="预分配内存"><a href="#预分配内存" class="headerlink" title="预分配内存"></a><strong>预分配内存</strong></h3><p>预分配内存主要是针对需要循环处理数据的情况的。<br>比如视频处理，每帧图像的处理都需要一定的缓存，如果每帧申请释放，则势必会降低算法效率</p>
+<h2 id="指令优化"><a href="#指令优化" class="headerlink" title="指令优化"></a><strong>指令优化</strong></h2><p>略。</p>
+<h2 id="如何定位程序热点"><a href="#如何定位程序热点" class="headerlink" title="如何定位程序热点"></a><strong>如何定位程序热点</strong></h2><p>程序热点是指程序中最耗时的部分，一般程序优化工作都是优先去优化热点部分，那么如何来定位程序热点呢？</p>
+<p>一般而言，主要有2种方法，一种是通过观察与分析，通过分析算法，自然能知道程序热点；<br>另一方面，观察代码结构，一般具有最大循环的地方就是热点，这也是前面那些优化手段都针对循环结构的原因。<br>另一种方法就是利用工具来找程序热点。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/24/programmer-stack-and-heap/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -771,7 +1062,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-06-10 10:01:38" itemprop="dateModified" datetime="2020-06-10T10:01:38+08:00">2020-06-10</time>
+                <time title="Modified: 2020-06-11 10:44:52" itemprop="dateModified" datetime="2020-06-11T10:44:52+08:00">2020-06-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -930,265 +1221,6 @@ $(document).ready(function(){
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/24/programmer-optimize/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2016/04/24/programmer-optimize/" class="post-title-link" itemprop="url">程序优化</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2016-04-25 00:00:00" itemprop="dateCreated datePublished" datetime="2016-04-25T00:00:00+08:00">2016-04-25</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-06-10 10:01:38" itemprop="dateModified" datetime="2020-06-10T10:01:38+08:00">2020-06-10</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/" itemprop="url" rel="index">
-                    <span itemprop="name">Tools</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/Prof/" itemprop="url" rel="index">
-                    <span itemprop="name">Prof</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>1.5k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-
-<p>程序优化是指程序效率的优化。一般来说，程序优化主要是以下三个步骤：</p>
-<ol>
-<li>算法优化</li>
-<li>代码优化</li>
-<li>指令优化</li>
-</ol>
-<h2 id="算法优化"><a href="#算法优化" class="headerlink" title="算法优化"></a><strong>算法优化</strong></h2><p>算法上的优化是必须首要考虑的，也是最重要的一步。<br>一般我们需要分析算法的时间复杂度，即处理时间与输入数据规模的一个量级关系，<br>一个优秀的算法可以将算法复杂度降低若干量级，<br>那么同样的实现，其平均耗时一般会比其他复杂度高的算法少（这里不代表任意输入都更快）。</p>
-<p>比如说排序算法，快速排序的时间复杂度为O(nlogn)，<br>而插入排序的时间复杂度为O(n*n)，那么在统计意义下，快速排序会比插入排序快，<br>而且随着输入序列长度n的增加，两者耗时相差会越来越大。<br>但是，假如输入数据本身就已经是升序(或降序)，那么实际运行下来，快速排序会更慢。</p>
-<h2 id="代码优化"><a href="#代码优化" class="headerlink" title="代码优化"></a><strong>代码优化</strong></h2><p>代码优化一般需要与算法优化同步进行，代码优化主要是涉及到具体的编码技巧。<br>同样的算法与功能，不同的写法也可能让程序效率差异巨大。<br>一般而言，代码优化主要是针对循环结构进行分析处理。</p>
-<h3 id="避免循环内部的乘-除-法以及冗余计算"><a href="#避免循环内部的乘-除-法以及冗余计算" class="headerlink" title="避免循环内部的乘(除)法以及冗余计算"></a><strong>避免循环内部的乘(除)法以及冗余计算</strong></h3><p>能把运算放在循环外的尽量提出去放在外部，循环内部不必要的乘除法可使用加法来替代等。</p>
-<h3 id="避免循环内部有过多依赖和跳转，使cpu能流水起来"><a href="#避免循环内部有过多依赖和跳转，使cpu能流水起来" class="headerlink" title="避免循环内部有过多依赖和跳转，使cpu能流水起来"></a><strong>避免循环内部有过多依赖和跳转，使cpu能流水起来</strong></h3><p>关于CPU流水线技术可google/baidu，循环结构内部计算或逻辑过于复杂，将导致cpu不能流水，<br>那这个循环就相当于拆成了n段重复代码的效率。</p>
-<pre><code>for(int i = 0; i &lt; N; i++)
-{
-    if(i &lt; 100) a[i] += 5;
-    else if(i &lt; 200) a[i] += 10;
-    else a[i] += 20;
-}</code></pre><p>优化为：</p>
-<pre><code>for(int i = 0; i &lt; 100; i++)
-{
-    a[i] += 5;
-}
-for(int i = 100; i &lt; 200; i++)
-{
-    a[i] += 10;
-}
-for(int i = 200; i &lt; N; i++)
-{
-    a[i] += 20;
-}</code></pre><h3 id="定点化"><a href="#定点化" class="headerlink" title="定点化"></a><strong>定点化</strong></h3><p>定点化的思想是将浮点运算转换为整型运算，<br>定点化的做法是将数据乘上一个很大的数后，将所有运算转换为整数计算。<br>例如某个乘法我只关心小数点后3位，那把数据都乘上10000后，进行整型运算的结果也就满足所需的精度了。</p>
-<h3 id="以空间换时间"><a href="#以空间换时间" class="headerlink" title="以空间换时间"></a><strong>以空间换时间</strong></h3><p>空间换时间最经典的就是查表法了，某些计算相当耗时，但其自变量的值域是比较有限的，<br>这样的情况可以预先计算好每个自变量对应的函数值，存在一个表格中，每次根据自变量的值去索引对应的函数值即可。</p>
-<h3 id="预分配内存"><a href="#预分配内存" class="headerlink" title="预分配内存"></a><strong>预分配内存</strong></h3><p>预分配内存主要是针对需要循环处理数据的情况的。<br>比如视频处理，每帧图像的处理都需要一定的缓存，如果每帧申请释放，则势必会降低算法效率</p>
-<h2 id="指令优化"><a href="#指令优化" class="headerlink" title="指令优化"></a><strong>指令优化</strong></h2><p>略。</p>
-<h2 id="如何定位程序热点"><a href="#如何定位程序热点" class="headerlink" title="如何定位程序热点"></a><strong>如何定位程序热点</strong></h2><p>程序热点是指程序中最耗时的部分，一般程序优化工作都是优先去优化热点部分，那么如何来定位程序热点呢？</p>
-<p>一般而言，主要有2种方法，一种是通过观察与分析，通过分析算法，自然能知道程序热点；<br>另一方面，观察代码结构，一般具有最大循环的地方就是热点，这也是前面那些优化手段都针对循环结构的原因。<br>另一种方法就是利用工具来找程序热点。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/20/git-lists/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2016/04/20/git-lists/" class="post-title-link" itemprop="url">Git详解系列</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2016-04-21 00:00:00" itemprop="dateCreated datePublished" datetime="2016-04-21T00:00:00+08:00">2016-04-21</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-06-10 10:01:38" itemprop="dateModified" datetime="2020-06-10T10:01:38+08:00">2020-06-10</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/" itemprop="url" rel="index">
-                    <span itemprop="name">Tools</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/Git/" itemprop="url" rel="index">
-                    <span itemprop="name">Git</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>176</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id=""><a href="#" class="headerlink" title=""></a></h2><ol start="0">
-<li><a href="https://github.com/GitbookIO/git/blob/master/zh/SUMMARY.md" target="_blank" rel="noopener">Scott Chacon’s book: Pro Git</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328069609436.html" target="_blank" rel="noopener">Git详解之一 Git起步</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328069733264.html" target="_blank" rel="noopener">Git详解之二 Git基础</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328069889514.html" target="_blank" rel="noopener">Git详解之三 Git分支</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328069988843.html" target="_blank" rel="noopener">Git详解之四 服务器上的Git</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328070090108.html" target="_blank" rel="noopener">Git详解之五 分布式Git</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328070367499.html" target="_blank" rel="noopener">Git详解之六 Git工具</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328070404827.html" target="_blank" rel="noopener">Git详解之七 自定义Git</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328070454218.html" target="_blank" rel="noopener">Git详解之八 Git与其他系统</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1328070620202.html" target="_blank" rel="noopener">Git详解之九 Git内部原理</a></li>
-</ol>
-<p>##</p>
-<ol>
-<li><a href="http://www.open-open.com/lib/view/open1427092544277.html" target="_blank" rel="noopener">Git 基本原理与常用命令</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1449149989405.html" target="_blank" rel="noopener">高质量的Git中文教程</a></li>
-<li><a href="http://www.open-open.com/lib/view/open1402748724087.html" target="_blank" rel="noopener">Git远程操作详解</a></li>
-</ol>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/20/git-pull-and-fetch/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1220,7 +1252,7 @@ for(int i = 200; i &lt; N; i++)
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-06-10 10:01:38" itemprop="dateModified" datetime="2020-06-10T10:01:38+08:00">2020-06-10</time>
+                <time title="Modified: 2020-06-11 10:44:52" itemprop="dateModified" datetime="2020-06-11T10:44:52+08:00">2020-06-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1307,7 +1339,7 @@ git merge</code></pre><p>在实际使用中，git fetch更安全一些<br>因为
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/18/markdown-to-html/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/20/git-lists/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -1321,7 +1353,7 @@ git merge</code></pre><p>在实际使用中，git fetch更安全一些<br>因为
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/2016/04/18/markdown-to-html/" class="post-title-link" itemprop="url">Pandoc 实现 markdown 多格式自由转换</a>
+            <a href="/2016/04/20/git-lists/" class="post-title-link" itemprop="url">Git详解系列</a>
         </h1>
 
         <div class="post-meta">
@@ -1331,14 +1363,14 @@ git merge</code></pre><p>在实际使用中，git fetch更安全一些<br>因为
               </span>
               <span class="post-meta-item-text">Posted on</span>
 
-              <time title="Created: 2016-04-19 00:00:00" itemprop="dateCreated datePublished" datetime="2016-04-19T00:00:00+08:00">2016-04-19</time>
+              <time title="Created: 2016-04-21 00:00:00" itemprop="dateCreated datePublished" datetime="2016-04-21T00:00:00+08:00">2016-04-21</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-06-10 10:01:38" itemprop="dateModified" datetime="2020-06-10T10:01:38+08:00">2020-06-10</time>
+                <time title="Modified: 2020-06-11 10:44:52" itemprop="dateModified" datetime="2020-06-11T10:44:52+08:00">2020-06-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1352,8 +1384,8 @@ git merge</code></pre><p>在实际使用中，git fetch更安全一些<br>因为
                 </span>
                   , 
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/Markdown/" itemprop="url" rel="index">
-                    <span itemprop="name">Markdown</span>
+                  <a href="/categories/Tools/Git/" itemprop="url" rel="index">
+                    <span itemprop="name">Git</span>
                   </a>
                 </span>
             </span>
@@ -1364,7 +1396,7 @@ git merge</code></pre><p>在实际使用中，git fetch更安全一些<br>因为
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>1.4k</span>
+              <span>176</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
@@ -1383,15 +1415,25 @@ git merge</code></pre><p>在实际使用中，git fetch更安全一些<br>因为
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>Pandoc 是由 John MacFarlane 开发的标记语言转换工具，可实现不同标记语言间的格式转换</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2016/04/18/markdown-to-html/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
+          <h2 id=""><a href="#" class="headerlink" title=""></a></h2><ol start="0">
+<li><a href="https://github.com/GitbookIO/git/blob/master/zh/SUMMARY.md" target="_blank" rel="noopener">Scott Chacon’s book: Pro Git</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328069609436.html" target="_blank" rel="noopener">Git详解之一 Git起步</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328069733264.html" target="_blank" rel="noopener">Git详解之二 Git基础</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328069889514.html" target="_blank" rel="noopener">Git详解之三 Git分支</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328069988843.html" target="_blank" rel="noopener">Git详解之四 服务器上的Git</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328070090108.html" target="_blank" rel="noopener">Git详解之五 分布式Git</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328070367499.html" target="_blank" rel="noopener">Git详解之六 Git工具</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328070404827.html" target="_blank" rel="noopener">Git详解之七 自定义Git</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328070454218.html" target="_blank" rel="noopener">Git详解之八 Git与其他系统</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1328070620202.html" target="_blank" rel="noopener">Git详解之九 Git内部原理</a></li>
+</ol>
+<p>##</p>
+<ol>
+<li><a href="http://www.open-open.com/lib/view/open1427092544277.html" target="_blank" rel="noopener">Git 基本原理与常用命令</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1449149989405.html" target="_blank" rel="noopener">高质量的Git中文教程</a></li>
+<li><a href="http://www.open-open.com/lib/view/open1402748724087.html" target="_blank" rel="noopener">Git远程操作详解</a></li>
+</ol>
+
       
     </div>
 
@@ -1441,7 +1483,7 @@ git merge</code></pre><p>在实际使用中，git fetch更安全一些<br>因为
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-06-10 10:01:38" itemprop="dateModified" datetime="2020-06-10T10:01:38+08:00">2020-06-10</time>
+                <time title="Modified: 2020-06-11 10:44:52" itemprop="dateModified" datetime="2020-06-11T10:44:52+08:00">2020-06-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1565,6 +1607,109 @@ commit1: add test1.c</code></pre><p><strong>运行git st， 没有任何变化�
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/18/markdown-to-html/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2016/04/18/markdown-to-html/" class="post-title-link" itemprop="url">Pandoc 实现 markdown 多格式自由转换</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-04-19 00:00:00" itemprop="dateCreated datePublished" datetime="2016-04-19T00:00:00+08:00">2016-04-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-06-11 10:44:52" itemprop="dateModified" datetime="2020-06-11T10:44:52+08:00">2020-06-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Markdown/" itemprop="url" rel="index">
+                    <span itemprop="name">Markdown</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>1.4k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>Pandoc 是由 John MacFarlane 开发的标记语言转换工具，可实现不同标记语言间的格式转换</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2016/04/18/markdown-to-html/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/05/minicom/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1596,7 +1741,7 @@ commit1: add test1.c</code></pre><p><strong>运行git st， 没有任何变化�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-06-10 10:01:38" itemprop="dateModified" datetime="2020-06-10T10:01:38+08:00">2020-06-10</time>
+                <time title="Modified: 2020-06-11 10:44:52" itemprop="dateModified" datetime="2020-06-11T10:44:52+08:00">2020-06-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1741,7 +1886,7 @@ done</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-06-10 10:01:38" itemprop="dateModified" datetime="2020-06-10T10:01:38+08:00">2020-06-10</time>
+                <time title="Modified: 2020-06-11 10:44:52" itemprop="dateModified" datetime="2020-06-11T10:44:52+08:00">2020-06-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1860,6 +2005,193 @@ install : *.a
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/02/23/git-remote/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2016/02/23/git-remote/" class="post-title-link" itemprop="url">Git 远程操作详解[转载]</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-02-24 00:00:00" itemprop="dateCreated datePublished" datetime="2016-02-24T00:00:00+08:00">2016-02-24</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-06-11 10:44:52" itemprop="dateModified" datetime="2020-06-11T10:44:52+08:00">2020-06-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Git/" itemprop="url" rel="index">
+                    <span itemprop="name">Git</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>4.9k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<p>作者： 阮一峰<br>日期： 2014年6月12日<br><a href="http://www.ruanyifeng.com/blog/2014/06/git_remote.html" target="_blank" rel="noopener">原文</a></p>
+<p>Git是目前最流行的版本管理系统，学会Git几乎成了开发者的必备技能。<br>Git有很多优势，其中之一就是远程操作非常简便。本文详细介绍5个Git命令，它们的概念和用法，理解了这些内容，你就会完全掌握Git远程操作。</p>
+<ul>
+<li><strong>git clone</strong></li>
+<li><strong>git remote</strong></li>
+<li><strong>git fetch</strong></li>
+<li><strong>git pull</strong></li>
+<li><strong>git push</strong></li>
+</ul>
+<p>本文针对初级用户，从最简单的讲起，但是需要读者对Git的基本用法有所了解。<br>同时，本文覆盖了上面5个命令的几乎所有的常用用法，所以对于熟练用户也有参考价值。</p>
+<p><img src="/images/git/git_remote.jpg" alt="Git Remote" title="git remote"></p>
+<h2 id="git-clone"><a href="#git-clone" class="headerlink" title="git clone"></a><strong>git clone</strong></h2><p>远程操作的第一步，通常是从远程主机克隆一个版本库，这时就要用到git clone命令。</p>
+<pre><code>$ git clone &lt;版本库的网址&gt;</code></pre><p>比如，克隆jQuery的版本库。</p>
+<pre><code>$ git clone https://github.com/jquery/jquery.git</code></pre><p>该命令会在本地主机生成一个目录，与远程主机的版本库同名。如果要指定不同的目录名，可以将目录名作为git clone命令的第二个参数。</p>
+<pre><code>$ git clone &lt;版本库的网址&gt; &lt;本地目录名&gt;</code></pre><p>git clone支持多种协议，除了HTTP(s)以外，还支持SSH、Git、本地文件协议等，下面是一些例子。</p>
+<pre><code>$ git clone http[s]://example.com/path/to/repo.git/
+$ git clone ssh://example.com/path/to/repo.git/
+$ git clone git://example.com/path/to/repo.git/
+$ git clone /opt/git/project.git 
+$ git clone file:///opt/git/project.git
+$ git clone ftp[s]://example.com/path/to/repo.git/
+$ git clone rsync://example.com/path/to/repo.git/</code></pre><p>SSH协议还有另一种写法。</p>
+<pre><code>$ git clone [user@]example.com:path/to/repo.git/</code></pre><p>通常来说，Git协议下载速度最快，SSH协议用于需要用户认证的场合。各种协议优劣的详细讨论请参考官方文档。</p>
+<h2 id="git-remote"><a href="#git-remote" class="headerlink" title="git remote"></a><strong>git remote</strong></h2><p>为了便于管理，Git要求每个远程主机都必须指定一个主机名。git remote命令就用于管理主机名。<br>不带选项的时候，git remote命令列出所有远程主机。</p>
+<pre><code>$ git remote
+origin</code></pre><p>使用-v选项，可以参看远程主机的网址。</p>
+<pre><code>$ git remote -v
+origin  git@github.com:jquery/jquery.git (fetch)
+origin  git@github.com:jquery/jquery.git (push)</code></pre><p>上面命令表示，当前只有一台远程主机，叫做origin，以及它的网址。<br>克隆版本库的时候，所使用的远程主机自动被Git命名为origin。如果想用其他的主机名，需要用git clone命令的-o选项指定。</p>
+<pre><code>$ git clone -o jQuery https://github.com/jquery/jquery.git
+$ git remote
+jQuery</code></pre><p>上面命令表示，克隆的时候，指定远程主机叫做jQuery。</p>
+<p>git remote show命令加上主机名，可以查看该主机的详细信息。</p>
+<pre><code>$ git remote show &lt;主机名&gt;</code></pre><p>git remote add命令用于添加远程主机。</p>
+<pre><code>$ git remote add &lt;主机名&gt; &lt;网址&gt;</code></pre><p>git remote rm命令用于删除远程主机。</p>
+<pre><code>$ git remote rm &lt;主机名&gt;</code></pre><p>git remote rename命令用于远程主机的改名。</p>
+<pre><code>$ git remote rename &lt;原主机名&gt; &lt;新主机名&gt;</code></pre><h2 id="git-fetch"><a href="#git-fetch" class="headerlink" title="git fetch"></a><strong>git fetch</strong></h2><p>一旦远程主机的版本库有了更新（Git术语叫做commit），需要将这些更新取回本地，这时就要用到git fetch命令。</p>
+<pre><code>$ git fetch &lt;远程主机名&gt;</code></pre><p>上面命令将某个远程主机的更新，全部取回本地。<br>git fetch命令通常用来查看其他人的进程，因为它取回的代码对你本地的开发代码没有影响。<br>默认情况下，git fetch取回所有分支（branch）的更新。如果只想取回特定分支的更新，可以指定分支名。</p>
+<pre><code>$ git fetch &lt;远程主机名&gt; &lt;分支名&gt;</code></pre><p>比如，取回origin主机的master分支。</p>
+<pre><code>$ git fetch origin master</code></pre><p>所取回的更新，在本地主机上要用”远程主机名/分支名”的形式读取。比如origin主机的master，就要用origin/master读取。<br>git branch命令的-r选项，可以用来查看远程分支，-a选项查看所有分支。</p>
+<pre><code>$ git branch -r
+origin/master
+
+$ git branch -a
+* master
+  remotes/origin/master</code></pre><p>上面命令表示，本地主机的当前分支是master，远程分支是origin/master。<br>取回远程主机的更新以后，可以在它的基础上，使用git checkout命令创建一个新的分支。</p>
+<pre><code>$ git checkout -b newBrach origin/master</code></pre><p>上面命令表示，在origin/master的基础上，创建一个新分支。<br>此外，也可以使用git merge命令或者git rebase命令，在本地分支上合并远程分支。</p>
+<pre><code>$ git merge origin/master
+$ git rebase origin/master</code></pre><p>上面命令表示在当前分支上，合并origin/master。</p>
+<h2 id="git-pull"><a href="#git-pull" class="headerlink" title="git pull"></a><strong>git pull</strong></h2><p>git pull命令的作用是，取回远程主机某个分支的更新，再与本地的指定分支合并。它的完整格式稍稍有点复杂。</p>
+<pre><code>$ git pull &lt;远程主机名&gt; &lt;远程分支名&gt;:&lt;本地分支名&gt;</code></pre><p>比如，取回origin主机的next分支，与本地的master分支合并，需要写成下面这样。</p>
+<pre><code>$ git pull origin next:master</code></pre><p>如果远程分支是与当前分支合并，则冒号后面的部分可以省略。</p>
+<pre><code>$ git pull origin next</code></pre><p>上面命令表示，取回origin/next分支，再与当前分支合并。实质上，这等同于先做git fetch，再做git merge。</p>
+<pre><code>$ git fetch origin
+$ git merge origin/next</code></pre><p>在某些场合，Git会自动在本地分支与远程分支之间，建立一种追踪关系（tracking）。<br>比如，在git clone的时候，所有本地分支默认与远程主机的同名分支，建立追踪关系，<br>也就是说，本地的master分支自动”追踪”origin/master分支。<br>Git也允许手动建立追踪关系。</p>
+<pre><code>git branch --set-upstream master origin/next</code></pre><p>上面命令指定master分支追踪origin/next分支。<br><strong>如果当前分支与远程分支存在追踪关系，git pull就可以省略远程分支名。</strong></p>
+<pre><code>$ git pull origin</code></pre><p>上面命令表示，本地的当前分支自动与对应的origin主机”追踪分支”（remote-tracking branch）进行合并。<br>如果当前分支只有一个追踪分支，连远程主机名都可以省略。</p>
+<pre><code>$ git pull</code></pre><p>上面命令表示，当前分支自动与唯一一个追踪分支进行合并。<br>如果合并需要采用rebase模式，可以使用–rebase选项。</p>
+<pre><code>$ git pull --rebase &lt;远程主机名&gt; &lt;远程分支名&gt;:&lt;本地分支名&gt;</code></pre><p>如果远程主机删除了某个分支，默认情况下，git pull 不会在拉取远程分支的时候，删除对应的本地分支。<br>这是为了防止，由于其他人操作了远程主机，导致git pull不知不觉删除了本地分支。<br>但是，你可以改变这个行为，加上参数 -p 就会在本地删除远程已经删除的分支。</p>
+<pre><code>$ git pull -p
+# 等同于下面的命令
+$ git fetch --prune origin 
+$ git fetch -p</code></pre><h2 id="git-push"><a href="#git-push" class="headerlink" title="git push"></a><strong>git push</strong></h2><p>git push命令用于将本地分支的更新，推送到远程主机。它的格式与git pull命令相仿。</p>
+<pre><code>$ git push &lt;远程主机名&gt; &lt;本地分支名&gt;:&lt;远程分支名&gt;</code></pre><p>注意，分支推送顺序的写法是&lt;来源地&gt;:&lt;目的地&gt;，所以git pull是&lt;远程分支&gt;:&lt;本地分支&gt;，而git push是&lt;本地分支&gt;:&lt;远程分支&gt;。<br>如果省略远程分支名，则表示将本地分支推送与之存在”追踪关系”的远程分支（通常两者同名），如果该远程分支不存在，则会被新建。</p>
+<pre><code>$ git push origin master</code></pre><p>上面命令表示，将本地的master分支推送到origin主机的master分支。如果后者不存在，则会被新建。<br>如果省略本地分支名，则表示删除指定的远程分支，因为这等同于推送一个空的本地分支到远程分支。</p>
+<pre><code>$ git push origin :master
+# 等同于
+$ git push origin --delete master</code></pre><p>上面命令表示删除origin主机的master分支。<br>如果当前分支与远程分支之间存在追踪关系，则本地分支和远程分支都可以省略。</p>
+<pre><code>$ git push origin</code></pre><p>上面命令表示，将当前分支推送到origin主机的对应分支。<br>如果当前分支只有一个追踪分支，那么主机名都可以省略。</p>
+<pre><code>$ git push</code></pre><p>如果当前分支与多个主机存在追踪关系，则可以使用-u选项指定一个默认主机，这样后面就可以不加任何参数使用git push。</p>
+<pre><code>$ git push -u origin master</code></pre><p>上面命令将本地的master分支推送到origin主机，同时指定origin为默认主机，后面就可以不加任何参数使用git push了。<br>不带任何参数的git push，默认只推送当前分支，这叫做simple方式。<br>此外，还有一种matching方式，会推送所有有对应的远程分支的本地分支。<br>Git 2.0版本之前，默认采用matching方法，现在改为默认采用simple方式。如果要修改这个设置，可以采用git config命令。</p>
+<pre><code>$ git config --global push.default matching
+# 或者
+$ git config --global push.default simple</code></pre><p>还有一种情况，就是不管是否存在对应的远程分支，将本地的所有分支都推送到远程主机，这时需要使用–all选项。</p>
+<pre><code>$ git push --all origin</code></pre><p>上面命令表示，将所有本地分支都推送到origin主机。<br>如果远程主机的版本比本地版本更新，推送时Git会报错，要求先在本地做git pull合并差异，然后再推送到远程主机。<br>这时，如果你一定要推送，可以使用–force选项。</p>
+<pre><code>$ git push --force origin </code></pre><p>上面命令使用–force选项，结果导致远程主机上更新的版本被覆盖。<br>除非你很确定要这样做，否则应该尽量避免使用–force选项。<br>最后，git push不会推送标签（tag），除非使用–tags选项。</p>
+<pre><code>$ git push origin --tags</code></pre>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/02/23/git-cheat-sheet/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1891,7 +2223,7 @@ install : *.a
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-06-10 10:01:38" itemprop="dateModified" datetime="2020-06-10T10:01:38+08:00">2020-06-10</time>
+                <time title="Modified: 2020-06-11 10:44:52" itemprop="dateModified" datetime="2020-06-11T10:44:52+08:00">2020-06-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2217,7 +2549,7 @@ $ git archive</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-06-10 10:01:38" itemprop="dateModified" datetime="2020-06-10T10:01:38+08:00">2020-06-10</time>
+                <time title="Modified: 2020-06-11 10:44:52" itemprop="dateModified" datetime="2020-06-11T10:44:52+08:00">2020-06-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2370,386 +2702,6 @@ $ git rebase -i --autosquash </code></pre><p>这个用法请参考<a href="http:
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/02/23/git-workflow/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2016/02/23/git-workflow/" class="post-title-link" itemprop="url">Git 工作流程[转载]</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2016-02-24 00:00:00" itemprop="dateCreated datePublished" datetime="2016-02-24T00:00:00+08:00">2016-02-24</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-06-10 10:01:38" itemprop="dateModified" datetime="2020-06-10T10:01:38+08:00">2020-06-10</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/" itemprop="url" rel="index">
-                    <span itemprop="name">Tools</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/Git/" itemprop="url" rel="index">
-                    <span itemprop="name">Git</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>3.6k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>3 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<p>作者： 阮一峰<br>日期： 2015年12月24日<br><a href="http://www.ruanyifeng.com/blog/2015/12/git-workflow.html" target="_blank" rel="noopener">原文</a></p>
-<p>Git 作为一个源码管理系统，不可避免涉及到多人协作。<br>协作必须有一个规范的工作流程，让大家有效地合作，使得项目井井有条地发展下去。<br>“工作流程”在英语里，叫做”workflow”或者”flow”，原意是水流，比喻项目像水流那样，顺畅、自然地向前流动，不会发生冲击、对撞、甚至漩涡。</p>
-<p><img src="/images/git/git_workflow.png" alt="Git Workflow" title="git workflow"></p>
-<p>本文介绍三种广泛使用的工作流程：</p>
-<ul>
-<li><strong>Git flow</strong></li>
-<li><strong>Github flow</strong></li>
-<li><strong>Gitlab flow</strong></li>
-</ul>
-<p>如果你对Git还不是很熟悉，可以先阅读下面的文章。</p>
-<ul>
-<li><a href="http://www.ruanyifeng.com/blog/2015/08/git-use-process.html" target="_blank" rel="noopener">《Git 使用规范流程》</a></li>
-<li><a href="http://www.ruanyifeng.com/blog/2015/12/git-cheat-sheet.html" target="_blank" rel="noopener">《常用 Git 命令清单》</a></li>
-<li><a href="http://www.ruanyifeng.com/blog/2014/06/git_remote.html" target="_blank" rel="noopener">《Git 远程操作详解》</a></li>
-</ul>
-<h2 id="功能驱动"><a href="#功能驱动" class="headerlink" title="功能驱动"></a>功能驱动</h2><p>本文的三种工作流程，有一个共同点：都采用<a href="https://en.wikipedia.org/wiki/Feature-driven_development" target="_blank" rel="noopener">“功能驱动式开发”</a>（Feature-driven development，简称FDD）。</p>
-<p>它指的是，需求是开发的起点，先有需求再有功能分支（feature branch）或者补丁分支（hotfix branch）。<br>完成开发后，该分支就合并到主分支，然后被删除。</p>
-<h2 id="Git-flow"><a href="#Git-flow" class="headerlink" title="Git flow"></a>Git flow</h2><p>最早诞生、并得到广泛采用的一种工作流程，就是Git flow 。</p>
-<h3 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h3><p>它最主要的特点有两个。</p>
-<p><img src="/images/git/gitflow.png" alt="gitflow" title="gitflow"></p>
-<p>首先，项目存在两个长期分支。</p>
-<ul>
-<li><strong>主分支master</strong></li>
-<li><strong>开发分支develop</strong></li>
-</ul>
-<p>前者用于存放对外发布的版本，任何时候在这个分支拿到的，都是稳定的分布版；后者用于日常开发，存放最新的开发版。</p>
-<p>其次，项目存在三种短期分支。</p>
-<ul>
-<li><strong>功能分支（feature branch）</strong></li>
-<li><strong>补丁分支（hotfix branch）</strong></li>
-<li><strong>预发分支（release branch）</strong></li>
-</ul>
-<p>一旦完成开发，它们就会被合并进develop或master，然后被删除。<br>Git flow 的详细介绍，请阅读我翻译的中文版<a href="http://www.ruanyifeng.com/blog/2012/07/git.html" target="_blank" rel="noopener">《Git 分支管理策略》</a>。</p>
-<h3 id="评价"><a href="#评价" class="headerlink" title="评价"></a>评价</h3><p>Git flow的优点是清晰可控，缺点是相对复杂，需要同时维护两个长期分支。<br>大多数工具都将master当作默认分支，可是开发是在develop分支进行的，这导致经常要切换分支，非常烦人。<br>更大问题在于，这个模式是基于”版本发布”的，目标是一段时间以后产出一个新版本。<br>但是，很多网站项目是”持续发布”，代码一有变动，就部署一次。<br>这时，master分支和develop分支的差别不大，没必要维护两个长期分支。</p>
-<h2 id="Github-flow"><a href="#Github-flow" class="headerlink" title="Github flow"></a>Github flow</h2><p>Github flow 是Git flow的简化版，专门配合”持续发布”。它是 Github.com 使用的工作流程。</p>
-<h3 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h3><p>它只有一个长期分支，就是master，因此用起来非常简单。<br>官方推荐的<a href="https://guides.github.com/introduction/flow/index.html" target="_blank" rel="noopener">流程</a>如下。</p>
-<p><img src="/images/git/github_flow.png" alt="github flow" title="github flow"></p>
-<ol>
-<li>根据需求，从master拉出新分支，不区分功能分支或补丁分支。</li>
-<li>新分支开发完成后，或者需要讨论的时候，就向master发起一个<a href="https://help.github.com/articles/using-pull-requests/" target="_blank" rel="noopener">pull request</a>（简称PR）。</li>
-<li>Pull Request既是一个通知，让别人注意到你的请求，又是一种对话机制，大家一起评审和讨论你的代码。对话过程中，你还可以不断提交代码。</li>
-<li>你的Pull Request被接受，合并进master，重新部署后，原来你拉出来的那个分支就被删除。（先部署再合并也可。）</li>
-</ol>
-<h3 id="评价-1"><a href="#评价-1" class="headerlink" title="评价"></a>评价</h3><p>Github flow 的最大优点就是简单，对于”持续发布”的产品，可以说是最合适的流程。<br>问题在于它的假设：master分支的更新与产品的发布是一致的。也就是说，master分支的最新代码，默认就是当前的线上代码。<br>可是，有些时候并非如此，代码合并进入master分支，并不代表它就能立刻发布。<br>比如，苹果商店的APP提交审核以后，等一段时间才能上架。<br>这时，如果还有新的代码提交，master分支就会与刚发布的版本不一致。<br>另一个例子是，有些公司有发布窗口，只有指定时间才能发布，这也会导致线上版本落后于master分支。<br>上面这种情况，只有master一个主分支就不够用了。<br>通常，你不得不在master分支以外，另外新建一个production分支跟踪线上版本。</p>
-<h2 id="Gitlab-flow"><a href="#Gitlab-flow" class="headerlink" title="Gitlab flow"></a>Gitlab flow</h2><p>Gitlab flow 是 Git flow 与 Github flow 的综合。<br>它吸取了两者的优点，既有适应不同开发环境的弹性，又有单一主分支的简单和便利。<br>它是 Gitlab.com 推荐的做法。</p>
-<h3 id="上游优先"><a href="#上游优先" class="headerlink" title="上游优先"></a>上游优先</h3><p>Gitlab flow 的最大原则叫做”上游优先”（upsteam first），即只存在一个主分支master，它是所有其他分支的”上游”。<br>只有上游分支采纳的代码变化，才能应用到其他分支。</p>
-<p><a href="https://www.chromium.org/chromium-os/chromiumos-design-docs/upstream-first" target="_blank" rel="noopener">Chromium项目</a>就是一个例子，<br>它明确规定，上游分支依次为：</p>
-<ul>
-<li><strong>Linus Torvalds的分支</strong></li>
-<li><strong>子系统（比如netdev）的分支</strong></li>
-<li><strong>设备厂商（比如三星）的分支</strong></li>
-</ul>
-<h3 id="持续发布"><a href="#持续发布" class="headerlink" title="持续发布"></a>持续发布</h3><p>Gitlab flow 分成两种情况，适应不同的开发流程。</p>
-<p><img src="/images/git/gitlab_flow1.png" alt="gitlab flow" title="gitlab flow"></p>
-<p>对于”持续发布”的项目，它建议在master分支以外，再建立不同的环境分支。<br>比如，”开发环境”的分支是master，”预发环境”的分支是pre-production，”生产环境”的分支是production。</p>
-<p>开发分支是预发分支的”上游”，预发分支又是生产分支的”上游”。<br>代码的变化，必须由”上游”向”下游”发展。<br>比如，生产环境出现了bug，这时就要新建一个功能分支，先把它合并到master，确认没有问题，<br>再cherry-pick到pre-production，这一步也没有问题，才进入production。<br>只有紧急情况，才允许跳过上游，直接合并到下游分支。</p>
-<h3 id="版本发布"><a href="#版本发布" class="headerlink" title="版本发布"></a>版本发布</h3><p><img src="/images/git/gitlab_release.png" alt="gitlab release" title="gitlab release"></p>
-<p>对于”版本发布”的项目，建议的做法是每一个稳定版本，都要从master分支拉出一个分支，比如2-3-stable、2-4-stable等等。<br>以后，只有修补bug，才允许将代码合并到这些分支，并且此时要更新小版本号。</p>
-<h2 id="一些小技巧"><a href="#一些小技巧" class="headerlink" title="一些小技巧"></a>一些小技巧</h2><h3 id="Pull-Request"><a href="#Pull-Request" class="headerlink" title="Pull Request"></a>Pull Request</h3><p><img src="/images/git/merge.png" alt="merge" title="merge"></p>
-<p>功能分支合并进master分支，必须通过Pull Request（Gitlab里面叫做 Merge Request）。</p>
-<p><img src="/images/git/request.png" alt="request" title="request"></p>
-<p>前面说过，Pull Request本质是一种对话机制，你可以在提交的时候，<br>@相关<a href="https://github.com/blog/1004-mention-autocompletion" target="_blank" rel="noopener">人员</a>或<a href="https://github.com/blog/1121-introducing-team-mentions" target="_blank" rel="noopener">团队</a>，引起他们的注意。</p>
-<h3 id="Protected-branch"><a href="#Protected-branch" class="headerlink" title="Protected branch"></a>Protected branch</h3><p>master分支应该受到保护，不是每个人都可以修改这个分支，以及拥有审批 Pull Request 的权力。</p>
-<p><a href="https://help.github.com/articles/about-protected-branches/" target="_blank" rel="noopener">Github</a><br>和 <a href="http://doc.gitlab.com/ce/permissions/permissions.html" target="_blank" rel="noopener">Gitlab</a> 都提供”保护分支”（Protected branch）这个功能。</p>
-<h3 id="Issue"><a href="#Issue" class="headerlink" title="Issue"></a>Issue</h3><p>Issue 用于 Bug追踪和需求管理。建议先新建 Issue，再新建对应的功能分支。功能分支总是为了解决一个或多个 Issue。<br>功能分支的名称，可以与issue的名字保持一致，并且以issue的编号起首，比如”15-require-a-password-to-change-it”。</p>
-<p>开发完成后，在提交说明里面，可以写上”fixes #14”或者”closes #67”。<br>Github规定，只要commit message里面有下面这些<a href="https://help.github.com/articles/closing-issues-via-commit-messages/" target="_blank" rel="noopener">动词</a> + 编号，<br>就会关闭对应的issue。</p>
-<ul>
-<li>close</li>
-<li>closes</li>
-<li>closed</li>
-<li>fix</li>
-<li>fixes</li>
-<li>fixed</li>
-<li>resolve</li>
-<li>resolves</li>
-<li>resolved</li>
-</ul>
-<p>这种方式还可以一次关闭多个issue，或者关闭其他代码库的issue，格式是username/repository#issue_number。<br>Pull Request被接受以后，issue关闭，原始分支就应该删除。如果以后该issue重新打开，新分支可以复用原来的名字。</p>
-<h3 id="Merge节点"><a href="#Merge节点" class="headerlink" title="Merge节点"></a>Merge节点</h3><p>Git有两种合并：一种是”直进式合并”（fast forward），不生成单独的合并节点；<br>另一种是”非直进式合并”（none fast-forword），会生成单独节点。</p>
-<p>前者不利于保持commit信息的清晰，也不利于以后的回滚，建议总是采用后者（即使用–no-ff参数）。<br>只要发生合并，就要有一个单独的合并节点。</p>
-<h3 id="Squash-多个commit"><a href="#Squash-多个commit" class="headerlink" title="Squash 多个commit"></a>Squash 多个commit</h3><p>为了便于他人阅读你的提交，也便于cherry-pick或撤销代码变化，在发起Pull Request之前，应该把多个commit合并成一个。<br>（前提是，该分支只有你一个人开发，且没有跟master合并过。）</p>
-<p>这可以采用rebase命令附带的squash操作，具体方法请参考我写的<a href="http://www.ruanyifeng.com/blog/2015/08/git-use-process.html" target="_blank" rel="noopener">《Git 使用规范流程》</a>。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/02/23/git-remote/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2016/02/23/git-remote/" class="post-title-link" itemprop="url">Git 远程操作详解[转载]</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2016-02-24 00:00:00" itemprop="dateCreated datePublished" datetime="2016-02-24T00:00:00+08:00">2016-02-24</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-06-10 10:01:38" itemprop="dateModified" datetime="2020-06-10T10:01:38+08:00">2020-06-10</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/" itemprop="url" rel="index">
-                    <span itemprop="name">Tools</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/Git/" itemprop="url" rel="index">
-                    <span itemprop="name">Git</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>4.9k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>4 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<p>作者： 阮一峰<br>日期： 2014年6月12日<br><a href="http://www.ruanyifeng.com/blog/2014/06/git_remote.html" target="_blank" rel="noopener">原文</a></p>
-<p>Git是目前最流行的版本管理系统，学会Git几乎成了开发者的必备技能。<br>Git有很多优势，其中之一就是远程操作非常简便。本文详细介绍5个Git命令，它们的概念和用法，理解了这些内容，你就会完全掌握Git远程操作。</p>
-<ul>
-<li><strong>git clone</strong></li>
-<li><strong>git remote</strong></li>
-<li><strong>git fetch</strong></li>
-<li><strong>git pull</strong></li>
-<li><strong>git push</strong></li>
-</ul>
-<p>本文针对初级用户，从最简单的讲起，但是需要读者对Git的基本用法有所了解。<br>同时，本文覆盖了上面5个命令的几乎所有的常用用法，所以对于熟练用户也有参考价值。</p>
-<p><img src="/images/git/git_remote.jpg" alt="Git Remote" title="git remote"></p>
-<h2 id="git-clone"><a href="#git-clone" class="headerlink" title="git clone"></a><strong>git clone</strong></h2><p>远程操作的第一步，通常是从远程主机克隆一个版本库，这时就要用到git clone命令。</p>
-<pre><code>$ git clone &lt;版本库的网址&gt;</code></pre><p>比如，克隆jQuery的版本库。</p>
-<pre><code>$ git clone https://github.com/jquery/jquery.git</code></pre><p>该命令会在本地主机生成一个目录，与远程主机的版本库同名。如果要指定不同的目录名，可以将目录名作为git clone命令的第二个参数。</p>
-<pre><code>$ git clone &lt;版本库的网址&gt; &lt;本地目录名&gt;</code></pre><p>git clone支持多种协议，除了HTTP(s)以外，还支持SSH、Git、本地文件协议等，下面是一些例子。</p>
-<pre><code>$ git clone http[s]://example.com/path/to/repo.git/
-$ git clone ssh://example.com/path/to/repo.git/
-$ git clone git://example.com/path/to/repo.git/
-$ git clone /opt/git/project.git 
-$ git clone file:///opt/git/project.git
-$ git clone ftp[s]://example.com/path/to/repo.git/
-$ git clone rsync://example.com/path/to/repo.git/</code></pre><p>SSH协议还有另一种写法。</p>
-<pre><code>$ git clone [user@]example.com:path/to/repo.git/</code></pre><p>通常来说，Git协议下载速度最快，SSH协议用于需要用户认证的场合。各种协议优劣的详细讨论请参考官方文档。</p>
-<h2 id="git-remote"><a href="#git-remote" class="headerlink" title="git remote"></a><strong>git remote</strong></h2><p>为了便于管理，Git要求每个远程主机都必须指定一个主机名。git remote命令就用于管理主机名。<br>不带选项的时候，git remote命令列出所有远程主机。</p>
-<pre><code>$ git remote
-origin</code></pre><p>使用-v选项，可以参看远程主机的网址。</p>
-<pre><code>$ git remote -v
-origin  git@github.com:jquery/jquery.git (fetch)
-origin  git@github.com:jquery/jquery.git (push)</code></pre><p>上面命令表示，当前只有一台远程主机，叫做origin，以及它的网址。<br>克隆版本库的时候，所使用的远程主机自动被Git命名为origin。如果想用其他的主机名，需要用git clone命令的-o选项指定。</p>
-<pre><code>$ git clone -o jQuery https://github.com/jquery/jquery.git
-$ git remote
-jQuery</code></pre><p>上面命令表示，克隆的时候，指定远程主机叫做jQuery。</p>
-<p>git remote show命令加上主机名，可以查看该主机的详细信息。</p>
-<pre><code>$ git remote show &lt;主机名&gt;</code></pre><p>git remote add命令用于添加远程主机。</p>
-<pre><code>$ git remote add &lt;主机名&gt; &lt;网址&gt;</code></pre><p>git remote rm命令用于删除远程主机。</p>
-<pre><code>$ git remote rm &lt;主机名&gt;</code></pre><p>git remote rename命令用于远程主机的改名。</p>
-<pre><code>$ git remote rename &lt;原主机名&gt; &lt;新主机名&gt;</code></pre><h2 id="git-fetch"><a href="#git-fetch" class="headerlink" title="git fetch"></a><strong>git fetch</strong></h2><p>一旦远程主机的版本库有了更新（Git术语叫做commit），需要将这些更新取回本地，这时就要用到git fetch命令。</p>
-<pre><code>$ git fetch &lt;远程主机名&gt;</code></pre><p>上面命令将某个远程主机的更新，全部取回本地。<br>git fetch命令通常用来查看其他人的进程，因为它取回的代码对你本地的开发代码没有影响。<br>默认情况下，git fetch取回所有分支（branch）的更新。如果只想取回特定分支的更新，可以指定分支名。</p>
-<pre><code>$ git fetch &lt;远程主机名&gt; &lt;分支名&gt;</code></pre><p>比如，取回origin主机的master分支。</p>
-<pre><code>$ git fetch origin master</code></pre><p>所取回的更新，在本地主机上要用”远程主机名/分支名”的形式读取。比如origin主机的master，就要用origin/master读取。<br>git branch命令的-r选项，可以用来查看远程分支，-a选项查看所有分支。</p>
-<pre><code>$ git branch -r
-origin/master
-
-$ git branch -a
-* master
-  remotes/origin/master</code></pre><p>上面命令表示，本地主机的当前分支是master，远程分支是origin/master。<br>取回远程主机的更新以后，可以在它的基础上，使用git checkout命令创建一个新的分支。</p>
-<pre><code>$ git checkout -b newBrach origin/master</code></pre><p>上面命令表示，在origin/master的基础上，创建一个新分支。<br>此外，也可以使用git merge命令或者git rebase命令，在本地分支上合并远程分支。</p>
-<pre><code>$ git merge origin/master
-$ git rebase origin/master</code></pre><p>上面命令表示在当前分支上，合并origin/master。</p>
-<h2 id="git-pull"><a href="#git-pull" class="headerlink" title="git pull"></a><strong>git pull</strong></h2><p>git pull命令的作用是，取回远程主机某个分支的更新，再与本地的指定分支合并。它的完整格式稍稍有点复杂。</p>
-<pre><code>$ git pull &lt;远程主机名&gt; &lt;远程分支名&gt;:&lt;本地分支名&gt;</code></pre><p>比如，取回origin主机的next分支，与本地的master分支合并，需要写成下面这样。</p>
-<pre><code>$ git pull origin next:master</code></pre><p>如果远程分支是与当前分支合并，则冒号后面的部分可以省略。</p>
-<pre><code>$ git pull origin next</code></pre><p>上面命令表示，取回origin/next分支，再与当前分支合并。实质上，这等同于先做git fetch，再做git merge。</p>
-<pre><code>$ git fetch origin
-$ git merge origin/next</code></pre><p>在某些场合，Git会自动在本地分支与远程分支之间，建立一种追踪关系（tracking）。<br>比如，在git clone的时候，所有本地分支默认与远程主机的同名分支，建立追踪关系，<br>也就是说，本地的master分支自动”追踪”origin/master分支。<br>Git也允许手动建立追踪关系。</p>
-<pre><code>git branch --set-upstream master origin/next</code></pre><p>上面命令指定master分支追踪origin/next分支。<br><strong>如果当前分支与远程分支存在追踪关系，git pull就可以省略远程分支名。</strong></p>
-<pre><code>$ git pull origin</code></pre><p>上面命令表示，本地的当前分支自动与对应的origin主机”追踪分支”（remote-tracking branch）进行合并。<br>如果当前分支只有一个追踪分支，连远程主机名都可以省略。</p>
-<pre><code>$ git pull</code></pre><p>上面命令表示，当前分支自动与唯一一个追踪分支进行合并。<br>如果合并需要采用rebase模式，可以使用–rebase选项。</p>
-<pre><code>$ git pull --rebase &lt;远程主机名&gt; &lt;远程分支名&gt;:&lt;本地分支名&gt;</code></pre><p>如果远程主机删除了某个分支，默认情况下，git pull 不会在拉取远程分支的时候，删除对应的本地分支。<br>这是为了防止，由于其他人操作了远程主机，导致git pull不知不觉删除了本地分支。<br>但是，你可以改变这个行为，加上参数 -p 就会在本地删除远程已经删除的分支。</p>
-<pre><code>$ git pull -p
-# 等同于下面的命令
-$ git fetch --prune origin 
-$ git fetch -p</code></pre><h2 id="git-push"><a href="#git-push" class="headerlink" title="git push"></a><strong>git push</strong></h2><p>git push命令用于将本地分支的更新，推送到远程主机。它的格式与git pull命令相仿。</p>
-<pre><code>$ git push &lt;远程主机名&gt; &lt;本地分支名&gt;:&lt;远程分支名&gt;</code></pre><p>注意，分支推送顺序的写法是&lt;来源地&gt;:&lt;目的地&gt;，所以git pull是&lt;远程分支&gt;:&lt;本地分支&gt;，而git push是&lt;本地分支&gt;:&lt;远程分支&gt;。<br>如果省略远程分支名，则表示将本地分支推送与之存在”追踪关系”的远程分支（通常两者同名），如果该远程分支不存在，则会被新建。</p>
-<pre><code>$ git push origin master</code></pre><p>上面命令表示，将本地的master分支推送到origin主机的master分支。如果后者不存在，则会被新建。<br>如果省略本地分支名，则表示删除指定的远程分支，因为这等同于推送一个空的本地分支到远程分支。</p>
-<pre><code>$ git push origin :master
-# 等同于
-$ git push origin --delete master</code></pre><p>上面命令表示删除origin主机的master分支。<br>如果当前分支与远程分支之间存在追踪关系，则本地分支和远程分支都可以省略。</p>
-<pre><code>$ git push origin</code></pre><p>上面命令表示，将当前分支推送到origin主机的对应分支。<br>如果当前分支只有一个追踪分支，那么主机名都可以省略。</p>
-<pre><code>$ git push</code></pre><p>如果当前分支与多个主机存在追踪关系，则可以使用-u选项指定一个默认主机，这样后面就可以不加任何参数使用git push。</p>
-<pre><code>$ git push -u origin master</code></pre><p>上面命令将本地的master分支推送到origin主机，同时指定origin为默认主机，后面就可以不加任何参数使用git push了。<br>不带任何参数的git push，默认只推送当前分支，这叫做simple方式。<br>此外，还有一种matching方式，会推送所有有对应的远程分支的本地分支。<br>Git 2.0版本之前，默认采用matching方法，现在改为默认采用simple方式。如果要修改这个设置，可以采用git config命令。</p>
-<pre><code>$ git config --global push.default matching
-# 或者
-$ git config --global push.default simple</code></pre><p>还有一种情况，就是不管是否存在对应的远程分支，将本地的所有分支都推送到远程主机，这时需要使用–all选项。</p>
-<pre><code>$ git push --all origin</code></pre><p>上面命令表示，将所有本地分支都推送到origin主机。<br>如果远程主机的版本比本地版本更新，推送时Git会报错，要求先在本地做git pull合并差异，然后再推送到远程主机。<br>这时，如果你一定要推送，可以使用–force选项。</p>
-<pre><code>$ git push --force origin </code></pre><p>上面命令使用–force选项，结果导致远程主机上更新的版本被覆盖。<br>除非你很确定要这样做，否则应该尽量避免使用–force选项。<br>最后，git push不会推送标签（tag），除非使用–tags选项。</p>
-<pre><code>$ git push origin --tags</code></pre>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -2800,7 +2752,7 @@ $ git config --global push.default simple</code></pre><p>还有一种情况，�
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">448</span>
+          <span class="site-state-item-count">449</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -2813,7 +2765,7 @@ $ git config --global push.default simple</code></pre><p>还有一种情况，�
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">479</span>
+        <span class="site-state-item-count">481</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -2873,7 +2825,7 @@ $ git config --global push.default simple</code></pre><p>还有一种情况，�
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:19</span>
+    <span title="Reading time total">18:22</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
   </div>
