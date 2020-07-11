@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="eCos 组件注册及初始化">
+<meta property="og:type" content="article">
+<meta property="og:title" content="eCos 组件初始化">
+<meta property="og:url" content="http://yoursite.com/2020/07/11/ecos-component-initialization/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="eCos 组件注册及初始化">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-07-11T02:57:29.000Z">
+<meta property="article:modified_time" content="2020-07-11T10:31:17.542Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="ecos">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2020/07/11/ecos-component-initialization/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>eCos 组件初始化 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/11/ecos-component-initialization/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          eCos 组件初始化
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2020-07-11 10:57:29 / Modified: 18:31:17" itemprop="dateCreated datePublished" datetime="2020-07-11T10:57:29+08:00">2020-07-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/eCos/" itemprop="url" rel="index">
+                    <span itemprop="name">eCos</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.7k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>eCos 组件注册及初始化</p>
+<a id="more"></a>
+
+<h2 id="eCos-组件初始化机制"><a href="#eCos-组件初始化机制" class="headerlink" title="eCos 组件初始化机制"></a>eCos 组件初始化机制</h2><blockquote>
+<p>eCos 组件初始化利用了 C++ 静态对象实例初始化的机制</p>
+</blockquote>
+<p>C++ 对象在初始化时将会调用该对象类的构造函数来初始化对象</p>
+<ul>
+<li>对象在函数内声明，那么函数执行到对象的声明处调用类构造函数来初始化对象</li>
+<li>对象在函数外声明，也就是<strong>将对象声明为全局对象或静态对象</strong>，那么编译器会将该对象的初始化代码地址（函数指针）写到名为 <code>.ctors</code> 节，普通程序在进入 main 函数前由操作系统的运行时库调用存储在 <code>.ctors</code> 中的函数指针列表来初始化全局或静态对象</li>
+</ul>
+<p>eCos HAL将调用 <code>cyg_hal_invoke_constructors</code> 函数，该函数调用存储在 <code>.ctors</code> 节中的初始化代码</p>
+<h2 id="组件初始化"><a href="#组件初始化" class="headerlink" title="组件初始化"></a>组件初始化</h2><p>IO 组件</p>
+<pre><code class="cxx">externC void cyg_io_init(void);
+
+class cyg_io_init_class {
+public:
+    cyg_io_init_class(void) {
+        cyg_io_init();
+    }
+};
+
+// And here&#39;s an instance of the class just to make the code run
+static cyg_io_init_class _cyg_io_init CYGBLD_ATTRIB_INIT_PRI(CYG_INIT_IO);</code></pre>
+<h2 id="初始化顺序"><a href="#初始化顺序" class="headerlink" title="初始化顺序"></a>初始化顺序</h2><blockquote>
+<p>初始化过程需要按照一定的次序进行。次序由 <code>CYGBLD_ATTRIB_INIT_PRI</code> 宏指定，该宏带有一个参数，该参数数值越小，那么越早调用该实例的初始化代码</p>
+</blockquote>
+<p>例如 <code>CYGBLD_ATTRIB_INIT_PRI(CYG_INIT_IO)</code> 展开为 <code>__attribute__((init_priority(49000)))</code></p>
+<h2 id="组件注册"><a href="#组件注册" class="headerlink" title="组件注册"></a>组件注册</h2><p>组件定义</p>
+<pre><code class="cxx">#define MOD_IRR         cyg_irr_init_class        irr0       CYGBLD_ATTRIB_INIT_PRI( 60100 );</code></pre>
+<h2 id="检查初始化代码"><a href="#检查初始化代码" class="headerlink" title="检查初始化代码"></a>检查初始化代码</h2><p>符号前缀 <code>_GLOBAL__sub_I</code> 表示这是静态对象初始化代码，符号中间部分的数字决定初始化次序</p>
+<pre><code class="shell">$ nm src/out.elf | grep &quot;t _GLOBAL&quot;
+90039370 t _GLOBAL__D.11000_cyg_scheduler_sched_lock
+900389a8 t _GLOBAL__D.12000__ZN13Cyg_Interrupt15disable_counterE
+90070830 t _GLOBAL__D.14000__ZN9Cyg_Clock15real_time_clockE
+90038704 t _GLOBAL__D.24100__ZN18Cyg_HardwareThread12thread_entryEP10Cyg_Thread
+904382d8 t _GLOBAL__D.50000_cyg_mtab_extra
+90045898 t _GLOBAL__D.50000_cyg_nstab_init
+90044c60 t _GLOBAL__D.50000_cyg_timeval_to_ticks
+900722b0 t _GLOBAL__D.50000_fdlock
+90071cc0 t _GLOBAL__D.56000_cyg_libc_stdio_stdin
+9003c6b0 t _GLOBAL__D.56000_strtok
+9003ccd8 t _GLOBAL__D.56000__ZN20Cyg_libc_stdio_files5filesE
+9003d1b8 t _GLOBAL__D.56001_cyg_libc_stdio_stdout
+90071ba0 t _GLOBAL__D.56002_cyg_libc_stdio_stderr
+9006b878 t _GLOBAL__D.58000_cyg_timespec_to_ticks
+9006b5f4 t _GLOBAL__D.58000_pthread_mutex
+9006bf64 t _GLOBAL__D.58000_signal_mutex
+90039358 t _GLOBAL__I.11000_cyg_scheduler_sched_lock
+90038738 t _GLOBAL__I.12000__Z26cyg_null_exception_handlerjij
+90038998 t _GLOBAL__I.12000__ZN13Cyg_Interrupt15disable_counterE
+90070818 t _GLOBAL__I.14000__ZN9Cyg_Clock15real_time_clockE
+900386ec t _GLOBAL__I.24100__ZN18Cyg_HardwareThread12thread_entryEP10Cyg_Thread
+9006c110 t _GLOBAL__I.32000__ZN12cyg_i2c_initC2Ev
+90042c38 t _GLOBAL__I.36000__ZN13Cyg_WallClock9wallclockE
+903e18ec t _GLOBAL__I.48000_char_dev_register
+90436564 t _GLOBAL__I.49000_ioinit.cxx
+904382c0 t _GLOBAL__I.50000_cyg_mtab_extra
+90045880 t _GLOBAL__I.50000_cyg_nstab_init
+90044c48 t _GLOBAL__I.50000_cyg_timeval_to_ticks
+90072298 t _GLOBAL__I.50000_fdlock
+90071ca8 t _GLOBAL__I.56000_cyg_libc_stdio_stdin
+9003c698 t _GLOBAL__I.56000_strtok
+9003ccc0 t _GLOBAL__I.56000__ZN20Cyg_libc_stdio_files5filesE
+9003d1a0 t _GLOBAL__I.56001_cyg_libc_stdio_stdout
+90071b88 t _GLOBAL__I.56002_cyg_libc_stdio_stderr
+9006b860 t _GLOBAL__I.58000_cyg_timespec_to_ticks
+9006b5dc t _GLOBAL__I.58000_pthread_mutex
+9006bf4c t _GLOBAL__I.58000_signal_mutex
+903e1100 t _GLOBAL__I.58000_startup.cxx
+904554ac t _GLOBAL_OFFSET_TABLE_</code></pre>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/ecos/" rel="tag"># ecos</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2020/06/10/anonymous-union-and-anonymous-struct/" rel="next" title="匿名联合体和匿名结构体">
+                  <i class="fa fa-chevron-left"></i> 匿名联合体和匿名结构体
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#eCos-组件初始化机制"><span class="nav-number">1.</span> <span class="nav-text">eCos 组件初始化机制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#组件初始化"><span class="nav-number">2.</span> <span class="nav-text">组件初始化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#初始化顺序"><span class="nav-number">3.</span> <span class="nav-text">初始化顺序</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#组件注册"><span class="nav-number">4.</span> <span class="nav-text">组件注册</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#检查初始化代码"><span class="nav-number">5.</span> <span class="nav-text">检查初始化代码</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">450</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">61</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">481</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">18:24</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

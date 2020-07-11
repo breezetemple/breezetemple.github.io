@@ -216,6 +216,156 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/06/Linux-malloc/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/07/06/Linux-malloc/" class="post-title-link" itemprop="url">linux内存分配原理（brk和mmap）（转载）</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-07-07 00:00:00" itemprop="dateCreated datePublished" datetime="2015-07-07T00:00:00+08:00">2015-07-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-07-11 18:31:17" itemprop="dateModified" datetime="2020-07-11T18:31:17+08:00">2020-07-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.1k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h3 id="如何查看进程发生缺页中断的次数？"><a href="#如何查看进程发生缺页中断的次数？" class="headerlink" title="如何查看进程发生缺页中断的次数？"></a><strong>如何查看进程发生缺页中断的次数？</strong></h3><pre><code>ps -o majflt,minflt -C program</code></pre><p>majflt代表major fault，中文名叫大错误，minflt代表minor fault，中文名叫小错误。<br>这两个数值表示一个进程自启动以来所发生的缺页中断的次数。</p>
+<h3 id="发成缺页中断后，执行了那些操作？"><a href="#发成缺页中断后，执行了那些操作？" class="headerlink" title="发成缺页中断后，执行了那些操作？"></a><strong>发成缺页中断后，执行了那些操作？</strong></h3><p>当一个进程发生缺页中断的时候，进程会陷入内核态，执行以下操作： </p>
+<ol>
+<li>检查要访问的虚拟地址是否合法 </li>
+<li>查找/分配一个物理页 </li>
+<li>填充物理页内容（读取磁盘，或者直接置0，或者啥也不干） </li>
+<li>建立映射关系（虚拟地址到物理地址） </li>
+<li>重新执行发生缺页中断的那条指令 </li>
+</ol>
+<p>如果第3步，需要读取磁盘，那么这次缺页中断就是majflt，否则就是minflt。 </p>
+<h3 id="内存分配的原理"><a href="#内存分配的原理" class="headerlink" title="内存分配的原理"></a><strong>内存分配的原理</strong></h3><p>从操作系统角度来看，进程分配内存有两种方式，分别由两个系统调用完成：brk和mmap（不考虑共享内存）。</p>
+<ol>
+<li>brk是将数据段(.data)的最高地址指针_edata往高地址推；</li>
+<li>mmap是在进程的虚拟地址空间中（堆和栈中间，称为文件映射区域的地方）找一块空闲的虚拟内存。</li>
+</ol>
+<p><strong>这两种方式分配的都是虚拟内存，没有分配物理内存。<br>在第一次访问已分配的虚拟地址空间的时候，发生缺页中断，操作系统负责分配物理内存，然后建立虚拟内存和物理内存之间的映射关系。</strong><br>在标准C库中，提供了malloc/free函数分配释放内存，这两个函数底层是由brk，mmap，munmap这些系统调用实现的。</p>
+<h3 id="以例子来说明内存分配的原理"><a href="#以例子来说明内存分配的原理" class="headerlink" title="以例子来说明内存分配的原理"></a><strong>以例子来说明内存分配的原理</strong></h3><h4 id="情况一"><a href="#情况一" class="headerlink" title="情况一"></a><strong>情况一</strong></h4><p>malloc小于128k的内存，使用brk分配内存，<br>将_edata往高地址推(只分配虚拟空间，不对应物理内存(因此没有初始化)，<br>第一次读/写数据时，引起内核缺页中断，内核才分配对应的物理内存，然后虚拟地址空间建立映射关系)，如下图：</p>
+<p><img src="/images/malloc/1.jpg" alt="brk" title="wizard"></p>
+<ul>
+<li><p>进程启动的时候，其（虚拟）内存空间的初始布局如图1所示。<br>其中，mmap内存映射文件是在堆和栈的中间（例如libc-2.2.93.so，其它数据文件等），为了简单起见，省略了内存映射文件。<br>_edata指针（glibc里面定义）指向数据段的最高地址。 </p>
+</li>
+<li><p>进程调用A=malloc(30K)以后，内存空间如图2：<br>malloc函数会调用brk系统调用，将_edata指针往高地址推30K，就完成虚拟内存分配。<br>你可能会问：只要把_edata+30K就完成内存分配了？<br>事实是这样的，_edata+30K只是完成虚拟地址的分配，A这块内存现在还是没有物理页与之对应的，<br>等到进程第一次读写A这块内存的时候，发生缺页中断，这个时候，内核才分配A这块内存对应的物理页。<br>也就是说，如果用malloc分配了A这块内容，然后从来不访问它，那么，A对应的物理页是不会被分配的。 </p>
+</li>
+<li><p>进程调用B=malloc(40K)以后，内存空间如图3。</p>
+</li>
+</ul>
+<h4 id="情况二"><a href="#情况二" class="headerlink" title="情况二"></a><strong>情况二</strong></h4><p>malloc大于128k的内存，使用mmap分配内存，在堆和栈之间找一块空闲内存分配(对应独立内存，而且初始化为0)，如下图：</p>
+<p><img src="/images/malloc/2.jpg" alt="mmap" title="build"></p>
+<ul>
+<li><p>进程调用C=malloc(200K)以后，内存空间如图4：<br>默认情况下，malloc函数分配内存，如果请求内存大于128K（可由M_MMAP_THRESHOLD选项调节），<br>那就不是去推_edata指针了，而是利用mmap系统调用，从堆和栈的中间分配一块虚拟内存。<br>  <strong>这样子做主要是因为:<br>  brk分配的内存需要等到高地址内存释放以后才能释放<br>  （例如，在B释放之前，A是不可能释放的，这就是内存碎片产生的原因，什么时候紧缩看下面），<br>  而mmap分配的内存可以单独释放。</strong><br>  当然，还有其它的好处，也有坏处，再具体下去，有兴趣的同学可以去看glibc里面malloc的代码了。 </p>
+</li>
+<li><p>进程调用D=malloc(100K)以后，内存空间如图5；</p>
+</li>
+<li><p>进程调用free(C)以后，C对应的虚拟内存和物理内存一起释放。</p>
+</li>
+</ul>
+<p><img src="/images/malloc/3.jpg" alt="free" title="dot"></p>
+<ul>
+<li><p>进程调用free(B)以后，如图7所示：<br>B对应的虚拟内存和物理内存都没有释放，因为只有一个_edata指针，如果往回推，那么D这块内存怎么办呢？<br>当然，B这块内存，是可以重用的，如果这个时候再来一个40K的请求，那么malloc很可能就把B这块内存返回回去了。 </p>
+</li>
+<li><p>进程调用free(D)以后，如图8所示：<br>B和D连接起来，变成一块140K的空闲内存。</p>
+</li>
+<li><p>默认情况下：<br>当最高地址空间的空闲内存超过128K（可由M_TRIM_THRESHOLD选项调节）时，执行内存紧缩操作（trim）。<br>在上一个步骤free的时候，发现最高地址空闲内存超过128K，于是内存紧缩，变成图9所示。</p>
+</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/01/grep-special/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +397,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-11 11:18:04" itemprop="dateModified" datetime="2020-07-11T11:18:04+08:00">2020-07-11</time>
+                <time title="Modified: 2020-07-11 18:31:17" itemprop="dateModified" datetime="2020-07-11T18:31:17+08:00">2020-07-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -338,7 +488,7 @@ grep XXYYZZ * -Rn --include=&#39;*.[ch]&#39;</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-11 11:18:04" itemprop="dateModified" datetime="2020-07-11T11:18:04+08:00">2020-07-11</time>
+                <time title="Modified: 2020-07-11 18:31:17" itemprop="dateModified" datetime="2020-07-11T18:31:17+08:00">2020-07-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -454,7 +604,7 @@ doxygen -g</code></pre><h3 id="生成函数调用图"><a href="#生成函数调�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-11 11:18:04" itemprop="dateModified" datetime="2020-07-11T11:18:04+08:00">2020-07-11</time>
+                <time title="Modified: 2020-07-11 18:31:17" itemprop="dateModified" datetime="2020-07-11T18:31:17+08:00">2020-07-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -564,7 +714,7 @@ doxygen -g</code></pre><h3 id="生成函数调用图"><a href="#生成函数调�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-11 11:18:04" itemprop="dateModified" datetime="2020-07-11T11:18:04+08:00">2020-07-11</time>
+                <time title="Modified: 2020-07-11 18:31:17" itemprop="dateModified" datetime="2020-07-11T18:31:17+08:00">2020-07-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -667,7 +817,7 @@ libelf-freebsd-dev - Development files for libelf (FreeBSD version)
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-11 11:18:04" itemprop="dateModified" datetime="2020-07-11T11:18:04+08:00">2020-07-11</time>
+                <time title="Modified: 2020-07-11 18:31:17" itemprop="dateModified" datetime="2020-07-11T18:31:17+08:00">2020-07-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -770,7 +920,7 @@ libelf-freebsd-dev - Development files for libelf (FreeBSD version)
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-11 11:18:04" itemprop="dateModified" datetime="2020-07-11T11:18:04+08:00">2020-07-11</time>
+                <time title="Modified: 2020-07-11 18:31:17" itemprop="dateModified" datetime="2020-07-11T18:31:17+08:00">2020-07-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -953,7 +1103,7 @@ text    data     bss     dec     hex filename
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-11 11:18:04" itemprop="dateModified" datetime="2020-07-11T11:18:04+08:00">2020-07-11</time>
+                <time title="Modified: 2020-07-11 18:31:17" itemprop="dateModified" datetime="2020-07-11T18:31:17+08:00">2020-07-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1088,7 +1238,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-11 11:18:04" itemprop="dateModified" datetime="2020-07-11T11:18:04+08:00">2020-07-11</time>
+                <time title="Modified: 2020-07-11 18:31:17" itemprop="dateModified" datetime="2020-07-11T18:31:17+08:00">2020-07-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1371,7 +1521,7 @@ while(cyg_thread_get_next(&amp;thread, &amp;id))
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-11 11:18:04" itemprop="dateModified" datetime="2020-07-11T11:18:04+08:00">2020-07-11</time>
+                <time title="Modified: 2020-07-11 18:31:17" itemprop="dateModified" datetime="2020-07-11T18:31:17+08:00">2020-07-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1483,7 +1633,7 @@ $ luarocks search **</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-11 11:18:04" itemprop="dateModified" datetime="2020-07-11T11:18:04+08:00">2020-07-11</time>
+                <time title="Modified: 2020-07-11 18:31:17" itemprop="dateModified" datetime="2020-07-11T18:31:17+08:00">2020-07-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1622,7 +1772,7 @@ FIND_PROGRAM</code></pre><p>注意 CMAKE_MODULE_PATH</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-11 11:18:04" itemprop="dateModified" datetime="2020-07-11T11:18:04+08:00">2020-07-11</time>
+                <time title="Modified: 2020-07-11 18:31:17" itemprop="dateModified" datetime="2020-07-11T18:31:17+08:00">2020-07-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1729,7 +1879,7 @@ $ xclip -sel clip &lt; ~/.ssh/id_rsa.pub</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-11 11:18:04" itemprop="dateModified" datetime="2020-07-11T11:18:04+08:00">2020-07-11</time>
+                <time title="Modified: 2020-07-11 18:31:17" itemprop="dateModified" datetime="2020-07-11T18:31:17+08:00">2020-07-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1971,7 +2121,7 @@ INSTALL(FILES demo.hpp http.hpp DESTINATION include)</code></pre><h2 id="Ref"><a
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-11 11:18:04" itemprop="dateModified" datetime="2020-07-11T11:18:04+08:00">2020-07-11</time>
+                <time title="Modified: 2020-07-11 18:31:17" itemprop="dateModified" datetime="2020-07-11T18:31:17+08:00">2020-07-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2190,7 +2340,7 @@ set(var a b c)</code></pre><p>字符串列表可以用 foreach命令叠代（ite
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-11 11:18:04" itemprop="dateModified" datetime="2020-07-11T11:18:04+08:00">2020-07-11</time>
+                <time title="Modified: 2020-07-11 18:31:17" itemprop="dateModified" datetime="2020-07-11T18:31:17+08:00">2020-07-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2260,260 +2410,6 @@ curl_setopt($ch,CURLOPT_CAINFO,dirname(__FILE__).&#39;/cacert.pem&#39;);</code><
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/02/28/Linux-gdb-commands/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/02/28/Linux-gdb-commands/" class="post-title-link" itemprop="url">Linux GDB 调试命令</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-03-01 00:00:00" itemprop="dateCreated datePublished" datetime="2015-03-01T00:00:00+08:00">2015-03-01</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-11 11:18:04" itemprop="dateModified" datetime="2020-07-11T11:18:04+08:00">2020-07-11</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>3.9k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>4 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-
-<h3 id="Set-Break"><a href="#Set-Break" class="headerlink" title="Set Break"></a><strong>Set Break</strong></h3><p>断点命令（break）缩写为<em>b</em>，格式如下：</p>
-<ul>
-<li>break function        : b main </li>
-<li>break line            : b 256</li>
-<li>break file:line       : b app_main.c:256</li>
-<li>break file:function   : b app_main.c:main</li>
-<li>break +offset         : b +3</li>
-<li>break -offset         : b -3</li>
-<li>break *addr           : b *0x0811efd4</li>
-</ul>
-<h3 id="Set-Catch"><a href="#Set-Catch" class="headerlink" title="Set Catch"></a><strong>Set Catch</strong></h3><p>catch point作用是让程序在发生某种事件的时候停止运行。设置events如下：</p>
-<ul>
-<li>catch assert – Catch failed Ada assertions</li>
-<li>catch catch – Catch an exception</li>
-<li>catch exception – Catch Ada exceptions</li>
-<li>catch exec – Catch calls to exec</li>
-<li>catch fork – Catch calls to fork</li>
-<li>catch syscall – Catch system calls by their names and/or numbers</li>
-<li>catch throw – Catch an exception</li>
-<li>catch vfork – Catch calls to vfork</li>
-</ul>
-<h3 id="Show-Backtrace"><a href="#Show-Backtrace" class="headerlink" title="Show Backtrace"></a><strong>Show Backtrace</strong></h3><p>backtrace命令可以断点处执行显示栈帧，简写为<em>bt<em>，别名有</em>where</em> &amp; <em>info stack</em>，格式如下：</p>
-<ul>
-<li>bt        : show all</li>
-<li>bt N      : show start N</li>
-<li>bt -N     : show end N</li>
-<li>bt full   : show all &amp; locals</li>
-</ul>
-<p>查看桢信息：</p>
-<ul>
-<li>frame n: 查看第n桢的信息， frame可以用f缩写</li>
-<li>frame addr: 查看pc地址为addr的桢的相关信息</li>
-<li>up n: 查看当前桢上面第n桢的信息</li>
-<li>down n: 查看当前桢下面第n桢的信息</li>
-</ul>
-<p>查看更加详细的信息：</p>
-<ul>
-<li>info frame</li>
-<li>info frame n</li>
-<li>info frame addr</li>
-</ul>
-<p>示例如下：</p>
-<pre><code>(cskygdb) info frame 1
-Stack frame at 0x32aa9518:
-pc = 0x4ce00 in app_ott_vod_detail_create_exec (ott/app_ott_vod_detail.c:606); saved pc 0x49fee
-called by frame at 0x32aa9538, caller of frame at 0x32aa9500
-source language c.
-Arglist at 0x32aa9500, args: nAlbumNo=0, pName=0xa916d0 &quot;危险关系&quot;, pPic=0x96e628 &quot;/tmp/6C880089F646D38.jpg&quot;, 
-        pVid=0xa916a8 &quot;706afed05f&quot;
-        Locals at 0x32aa9500, Previous frame&#39;s sp is 0x32aa9518
-        Saved registers:
-        r8 at 0x32aa9514, r15 at 0x32aa9510, pc at 0x32aa9510</code></pre><p>上图中显示的信息有：</p>
-<ul>
-<li>当前桢的地址: 0x32aa9518</li>
-<li>当前桢PC: pc = 0x4ce00</li>
-<li>当前桢函数： app_ott_vod_detail_create_exec (ott/app_ott_vod_detail.c:606)</li>
-<li>caller桢的PC: saved pc 0x49fee</li>
-<li>caller桢的地址: called by frame at 0x32aa9538</li>
-<li>callee桢的地址: caller of frame at 0x32aa9500</li>
-<li>源代码所用的程序的语言(c/c++): source language c</li>
-<li>当前桢的参数的地址及值: Arglist at at 0x32aa9500, args: nAlbumNo=0, pName=0xa916d0 “危险关系”, pPic=0x96e628 “/tmp/6C880089F646D38.jpg” …</li>
-<li>当前相中局部变量的地址：Locals at 0x32aa9500, Previous frame’s sp is 0x32aa9518</li>
-<li>. 当前桢中存储的寄存器： Saved registers: r8 at 0x32aa9514, r15 at 0x32aa9510, pc at 0x32aa9510</li>
-</ul>
-<p>info args：查看当前桢中的参数</p>
-<pre><code>(cskygdb) info args
-window_name = 0x5650a8 &quot;wnd_ott_vod_detail&quot;</code></pre><p>info locals：查看当前桢中的局部变量</p>
-<pre><code>(cskygdb) info locals 
-widget = 0x0
-window = 0x0</code></pre><p>info catch：查看当前桢中的异常处理器（exception handlers）</p>
-<pre><code>(cskygdb) info catch 
-print_frame_label_vars disabled.</code></pre><p>示例2：</p>
-<pre><code>(cskygdb) info frame 3
-Stack frame at 0x32aa9550:
-pc = 0x4a40c in app_ott_vod_keypress (ott/app_ott_vod.c:489); saved pc 0x11cd86
-called by frame at 0x32aa9568, caller of frame at 0x32aa9538
-source language c.
-Arglist at 0x32aa9538, args: widgetname=0x6c44d0 &quot;wnd_ott_vod&quot;, usrdata=0x32aa963c
-Locals at 0x32aa9538, Previous frame&#39;s sp is 0x32aa9550
-Saved registers:
-r8 at 0x32aa954c, r15 at 0x32aa9548, pc at 0x32aa9548
-(cskygdb) frame 3
-#3  0x0004a40c in app_ott_vod_keypress (widgetname=0x6c44d0 &quot;wnd_ott_vod&quot;, usrdata=0x32aa963c) at ott/app_ott_vod.c:489
-489             app_ott_page_ok_keypress(find_virtualkey(event-&gt;key.scancode));
-(cskygdb) info args 
-widgetname = 0x6c44d0 &quot;wnd_ott_vod&quot;
-usrdata = 0x32aa963c
-(cskygdb) info locals 
-event = 0x32aa963c
-__FUNCTION__ = &quot;app_ott_vod_keypress&quot;
-(cskygdb) info catch 
-print_frame_label_vars disabled.</code></pre><h3 id="Show-Variable-amp-Registers"><a href="#Show-Variable-amp-Registers" class="headerlink" title="Show Variable &amp; Registers"></a><strong>Show Variable &amp; Registers</strong></h3><p>print命令可以显示变量，简写为<em>p</em>。</p>
-<p>info registers可以显示寄存器，简写为info reg。</p>
-<p>在寄存器名之前添加$，可以显示寄存器内容：</p>
-<pre><code>p &amp;pc</code></pre><p>支持的格式如下：</p>
-<ul>
-<li>x     : 十六进制</li>
-<li>d     : 十进制</li>
-<li>u     : 无符号十进制</li>
-<li>o     : 八进制</li>
-<li>t     : 二进制</li>
-<li>a     : 地址</li>
-<li>c     : ASCII</li>
-<li>f     : 浮点</li>
-<li>s     : 字符串</li>
-</ul>
-<p>用<em>x</em>命令可以显示内存内容，支持以上格式之外还支持：</p>
-<pre><code>i : 显示为汇编语言</code></pre><p>使用<em>x</em>命令格式为 <em>x/NFU ADDR</em>，参数意义如下：</p>
-<ul>
-<li>ADDR  : 希望显示的地址</li>
-<li>N     : 重复次数</li>
-<li>F     : 支持格式(x,d,u,o,t,a,c,f,s,i)</li>
-<li>U     : 单位，下所示<ul>
-<li>b : 字节</li>
-<li>h : 半字（2字节） </li>
-<li>w : 字（4字节，默认值）</li>
-<li>g : 双字（8字节）</li>
-</ul>
-</li>
-</ul>
-<p>反汇编存在命令：<strong>disassemble</strong></p>
-<p><strong>show value</strong>命令显示历史中的最后10个值</p>
-<h3 id="attach到进程"><a href="#attach到进程" class="headerlink" title="attach到进程"></a><strong>attach到进程</strong></h3><h3 id="条件断点"><a href="#条件断点" class="headerlink" title="条件断点"></a><strong>条件断点</strong></h3><p>使用格式如下：</p>
-<pre><code>break 断点 if 条件</code></pre><p>例如：</p>
-<pre><code>b main if mode==1</code></pre><p>使用condition可以给已存在的断点添加或删除触发条件：</p>
-<pre><code>condition Bn
-condition Bn 条件</code></pre><h3 id="反复执行"><a href="#反复执行" class="headerlink" title="反复执行"></a><strong>反复执行</strong></h3><p>在指定的断点、监控点或捕获点忽略指定次数，格式如下：</p>
-<pre><code>ignore Bn N</code></pre><p>类似命令如下：</p>
-<ul>
-<li>continue N</li>
-<li>step N</li>
-<li>stepi N</li>
-<li>next N</li>
-<li>nexti N</li>
-<li>finish</li>
-<li>until</li>
-<li>until ADDR</li>
-</ul>
-<h3 id="断点命令"><a href="#断点命令" class="headerlink" title="断点命令"></a><strong>断点命令</strong></h3><p>指定程序在某个breakpoint处停下来后执行一串命令，格式：</p>
-<pre><code>commands [bnum]
-… command-list …
-end</code></pre><p>指定程序在第bnum个breakpoint处停下来后，执行由command-list指定的命令串，<br>如果没有指定bnum，则对最后一个breakpoint生效，例子：</p>
-<pre><code>break foo if x&gt;0
-commands
-silent
-printf “x is %d\n”,x
-continue
-end</code></pre><p>上面的例子含义：当x&gt;0时，在foo函数处停下来，然后打印出x的值，然后继续运行程序</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -2564,7 +2460,7 @@ end</code></pre><p>上面的例子含义：当x&gt;0时，在foo函数处停下�
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">449</span>
+          <span class="site-state-item-count">450</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -2637,7 +2533,7 @@ end</code></pre><p>上面的例子含义：当x&gt;0时，在foo函数处停下�
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:22</span>
+    <span title="Reading time total">18:24</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
   </div>
