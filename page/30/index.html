@@ -216,6 +216,264 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/12/Linux-system-programming-signals/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/11/12/Linux-system-programming-signals/" class="post-title-link" itemprop="url">Linux系统编程-信号</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-11-13 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-13T00:00:00+08:00">2014-11-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux System Programming</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>6.6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>6 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<h2 id="概念"><a href="#概念" class="headerlink" title="概念"></a><strong>概念</strong></h2><p>信号是一种软件中断，它提供了异步时间的处理机制。<br>信号作为一种进程间通信（IPC）的基本形式，而一个进程可以给另一个进程发送信号。</p>
+<p>信号有非常明显的生命周期。首先，产生信号（信号被发出或生成）。<br>然后内核存储信号，至到可以发送该信号。<br>最后，一旦空闲，内核就会适当地处理信号。<br>根据进程的请求，内核会执行以下三种操作之一：</p>
+<ul>
+<li>忽略信号。SIGKILL和SIGSTOP不能忽略</li>
+<li>捕获并处理信号。暂停该进程正在执行的代码，并跳转到先前注册的函数。返回后跳回捕获信号的地方继续执行</li>
+<li>执行信号的默认操作。</li>
+</ul>
+<p>信号标识符以SIG作为前缀的正整数，在头文件&lt;signal.h&gt;中定义，可以使用以下命令查看系统提供的信号列表：</p>
+<pre><code>$ kill -l</code></pre><h2 id="信号的分类及生命周期"><a href="#信号的分类及生命周期" class="headerlink" title="信号的分类及生命周期"></a><strong>信号的分类及生命周期</strong></h2><ul>
+<li>非可靠信号：早期unix下的不可靠信号主要指的是进程可能对信号做出错误的反应以及信号可能丢失。</li>
+<li>可靠信号： 信号值位于SIGRTMIN和SIGRTMAX之间的信号都是可靠信号，可靠信号克服了信号可能丢失的问题。</li>
+</ul>
+<p>信号的可靠与不可靠只与信号值有关，与信号的发送及安装函数无关。<br>当然也可以称为实时信号或者非实时信号，非实时信号都不支持排队，都是不可靠信号；<br>实时信号都支持排队，都是可靠信号。</p>
+<p>信号的生命周期：<br>从信号发送到信号处理函数的执行完毕。<br>对于一个完整的信号生命周期(从信号发送到相应的处理函数执行完毕)来说，可以分为三个重要的阶段，<br>这三个阶段由四个重要事件来刻画：</p>
+<ul>
+<li>信号产生</li>
+<li>信号在进程中注册完毕</li>
+<li>信号在进程中的注销完毕</li>
+<li>信号处理函数执行完毕。</li>
+</ul>
+<p>相邻两个事件的时间间隔构成信号生命周期的一个阶段。</p>
+<p>当一个实时信号发送给一个进程时，不管该信号是否已经在进程中注册，都会被再注册一次，因此，<br>信号不会丢失，因此，实时信号又叫做”可靠信号”。<br>这意味着同一个实时信号可以在同一个进程的未决信号信息链中占有多个sigqueue结构（进程每收到一个实时信号，都会为它分配一个结构来登记该信号信息，<br>并把该结构添加在未决信号链尾，即所有诞生的实时信号都会在目标进程中注册）；</p>
+<p>当一个非实时信号发送给一个进程时，如果该信号已经在进程中注册，则该信号将被丢弃，造成信号丢失。<br>因此，非实时信号又叫做”不可靠信号”。这意味着同一个非实时信号在进程的未决信号信息链中，<br>至多占有一个sigqueue结构（一个非实时信号产生后，1如果发现相同的信号已经在目标结构中注册，则不再注册，<br>对于进程来说，相当于不知道本次信号发生，信号丢失；2如果进程的未决信号中没有相同信号，则在进程中注册自己）。</p>
+<p>需要注意的要点是：</p>
+<ul>
+<li>信号注册与否，与发送信号的函数（如kill()或sigqueue()等）以及信号安装函数（signal()及sigaction()）无关，<br>只与信号值有关（信号值小于SIGRTMIN的信号最多只注册一次，信号值在SIGRTMIN及SIGRTMAX之间的信号，只要被进程接收到就被注册）。</li>
+<li>在信号被注销到相应的信号处理函数执行完毕这段时间内，如果进程又收到同一信号多次，则对实时信号来说，<br>每一次都会在进程中注册；而对于非实时信号来说，无论收到多少次信号，都会视为只收到一个信号，只在进程中注册一次。</li>
+</ul>
+<h2 id="信号API"><a href="#信号API" class="headerlink" title="信号API"></a><strong>信号API</strong></h2><h3 id="发送信号函数"><a href="#发送信号函数" class="headerlink" title="发送信号函数"></a><strong>发送信号函数</strong></h3><pre><code>#include &lt;sys/types.h&gt;
+#include &lt;signal.h&gt;
+
+int kill(pid_t pid, int signo);</code></pre><p><strong>kill()</strong>系统调用，用于向另外一个进程发送信号。<br>参数pid的值为信号的接收进程：</p>
+<ul>
+<li>pid&gt;0 进程ID为pid的进程 </li>
+<li>pid=0 同一个进程组的进程 </li>
+<li>pid&lt;0 pid!=-1 进程组ID为 -pid的所有进程 </li>
+<li>pid=-1 除发送进程自身外，所有进程ID大于1的进程 </li>
+</ul>
+<p>signo是信号值，当为0时（即空信号），实际不发送任何信号，但照常进行错误检查，因此，可用于检查目标进程是否存在，<br>以及当前进程是否具有向目标发送信号的权限（root权限的进程可以向任何进程发送信号，<br>非root权限的进程只能向属于同一个session或者同一个用户的进程发送信号）。</p>
+<pre><code>#include &lt;signal.h&gt;
+
+int raise(int signo);</code></pre><p><strong>raise()</strong>用于给进程本身发送信号。</p>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;signal.h&gt;
+
+int sigqueue(pid_t pid, int sig, const union sigval val);</code></pre><p><strong>sigqueue()</strong>是比较新的发送信号系统调用，主要是针对实时信号提出的（当然也支持前32种），支持信号带有参数，<br>与函数sigaction()配合使用。<br>sigqueue的第一个参数是指定接收信号的进程ID，第二个参数确定即将发送的信号，第三个参数是一个联合数据结构union sigval，<br>指定了信号传递的参数，即通常所说的4字节值。</p>
+<pre><code>typedef union sigval 
+{
+    int sival_int;
+    void *sival_ptr;
+}sigval_t;</code></pre><p>sigqueue()比kill()传递了更多的附加信息，但sigqueue()只能向一个进程发送信号，而不能发送信号给一个进程组。如果sig为0，<br>将会执行错误检查，但实际上不发送任何信号，0值信号可用于检查pid的有效性以及当前进程是否有权限向目标进程发送信号。<br>在调用sigqueue时，sigval_t指定的信息会拷贝到3参数信号处理函数（3参数信号处理函数指的是信号处理函数由sigaction安装，<br>并设定了sa_sigaction指针，稍后将阐述）的siginfo_t结构中，这样信号处理函数就可以处理这些信息了。由于sigqueue系统调用<br>支持发送带参数信号，所以比kill()系统调用的功能要灵活和强大得多。</p>
+<p>注：sigqueue()发送非实时信号时，第三个参数包含的信息仍然能够传递给信号处理函数；<br>sigqueue()发送非实时信号时，仍然不支持排队，<br>即在信号处理函数执行过程中到来的所有相同信号，都被合并为一个信号。</p>
+<pre><code>#include &lt;unistd.h&gt;
+
+unsigned int alarm(unsigned int seconds);</code></pre><p><strong>alarm()</strong>专门为SIGALRM信号而设，在指定的时间seconds秒后，<br>将向进程本身发送SIGALRM信号，又称为闹钟时间。进程调用alarm后，<br>任何以前的alarm()调用都将无效。如果参数seconds为零，那么进程内将不再包含任何闹钟时间。<br>返回值：如果调用alarm()前，进程中已经设置了闹钟时间，则返回上一个闹钟时间的剩余时间，否则返回0。</p>
+<pre><code>#include &lt;sys/time.h&gt;
+
+int setitimer(int which, const struct itimerval *value, struct itimerval *ovalue));</code></pre><p><strong>setitimer()</strong>比alarm功能强大，支持3种类型的定时器：</p>
+<ul>
+<li>ITIMER_REAL： 设定绝对时间；经过指定的时间后，内核将发送SIGALRM信号给本进程</li>
+<li>ITIMER_VIRTUAL 设定程序执行时间；经过指定的时间后，内核将发送SIGVTALRM信号给本进程</li>
+<li>ITIMER_PROF 设定进程执行以及内核因本进程而消耗的时间和，经过指定的时间后，内核将发送ITIMER_VIRTUAL信号给本进程</li>
+</ul>
+<hr>
+<pre><code>#include &lt;stdlib.h&gt;
+
+void abort(void);</code></pre><p><strong>abort()</strong>向进程发送SIGABORT信号，默认情况下进程会异常退出，当然可定义自己的信号处理函数。<br>即使SIGABORT被进程设置为阻塞信号，调用abort()后，SIGABORT仍然能被进程接收。该函数无返回值。</p>
+<h3 id="信号的捕获与安装"><a href="#信号的捕获与安装" class="headerlink" title="信号的捕获与安装"></a><strong>信号的捕获与安装</strong></h3><p>如果进程要处理某一信号，那么就要在进程中安装该信号。<br>安装信号主要用来确定信号值及进程针对该信号值的动作之间的映射关系，<br>即进程将要处理哪个信号；该信号被传递给进程时，将执行何种操作。<br>linux主要有两个函数实现信号的安装：signal()、sigaction()。<br>其中signal()在可靠信号系统调用的基础上实现, 是库函数。<br>它只有两个参数，不支持信号传递信息，主要是用于前32种非实时信号的安装；<br>而sigaction()是较新的函数（由两个系统调用实现：sys_signal以及sys_rt_sigaction），<br>有三个参数，支持信号传递信息，主要用来与sigqueue()系统调用配合使用，<br>当然，sigaction()同样支持非实时信号的安装。<br>sigaction()优于signal()主要体现在支持信号带有参数。</p>
+<pre><code>#include &lt;signal.h&gt;
+
+typedef void (*sighandler_t)(int)；
+sighandler_t signal(int signum, sighandler_t handler));</code></pre><p>第一个参数指定信号的值，第二个参数指定针对前面信号值的处理：</p>
+<ul>
+<li>SIG_IGN，忽略该信号</li>
+<li>SIG_DFL，系统默认方式处理信号</li>
+<li>也可以自己实现处理方式(参数指定一个函数地址)</li>
+</ul>
+<p>第三种用法如下：</p>
+<pre><code>static void sigint_handler(int signo)
+{
+    printf(&quot;Caught SIGINT!\n&quot;);
+    exit(EXIT_SUCCESS);
+}
+
+int main(void)
+{
+    if(signal(SIGIN, sigint_handler) == SIG_ERR) {
+        fprintf(stderr, &quot;Cannot handle SIGINT!\n&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    for(;;)
+        pause();
+
+    return 0;
+}</code></pre><p>如果signal()调用成功，返回最后一次为安装信号signum而调用signal()时的handler值；失败则返回SIG_ERR。</p>
+<pre><code>#include &lt;signal.h&gt;
+
+int sigaction(int signum,const struct sigaction *act,struct sigaction *oldact));</code></pre><p>sigaction函数用于改变进程接收到特定信号后的行为。<br>该函数的第一个参数为信号的值，<br>可以为除SIGKILL及SIGSTOP外的任何一个特定有效的信号<br>（为这两个信号定义自己的处理函数，将导致信号安装错误）。<br>第二个参数是指向结构sigaction的一个实例的指针，<br>在结构sigaction的实例中，指定了对特定信号的处理，<br>可以为空，进程会以缺省方式对信号处理；<br>第三个参数oldact指向的对象用来保存原来对相应信号的处理，可指定oldact为NULL。<br>如果把第二、第三个参数都设为NULL，那么该函数可用于检查信号的有效性。</p>
+<p>第二个参数最为重要，其中包含了对指定信号的处理、信号所传递的信息、信号处理函数执行过程中应屏蔽掉哪些函数等等。<br>sigaction结构定义如下：</p>
+<pre><code>struct sigaction {
+    void (*sa_handler)(int signo)；
+    void (*sa_sigaction)(int siginfo_t *info，void *act)；
+    sigset_t sa_mask；
+    int sa_flags；
+    void (*sa_restore)(void)；
+}</code></pre><p>sa_handler以及sa_sigaction指定信号关联函数，即用户指定的信号处理函数。<br>除了可以是用户自定义的处理函数外，还可以为SIG_DFL(采用缺省的处理方式)，也可以为SIG_IGN（忽略信号）。<br>sa_handler指定的处理函数只有一个参数，即信号值，所以信号不能传递除信号值之外的任何信息。</p>
+<p>如果sa_flags被设置为SA_SIGINFO，那么将由sa_sigaction，而不是sa_handler来设置信号关联函数。<br>sa_sigaction信号处理函数带有三个参数，是为实时信号而设的（当然同样支持非实时信号），它指定一个3参数信号处理函数。</p>
+<p>第一个参数为信号值，第三个参数没有使用（POSIX没有规范使用该参数的标准），<br>第二个参数是指向siginfo_t结构的指针，结构中包含信号携带的数据值，参数所指向的结构如下：</p>
+<pre><code>siginfo_t {
+    int si_signo; /* 信号值，对所有信号有意义*/
+    int si_errno; /* errno值，对所有信号有意义*/
+    int si_code; /* 信号产生的原因，对所有信号有意义*/
+    union{ /* 联合数据结构，不同成员适应不同信号 */ 
+        //确保分配足够大的存储空间
+        int _pad[SI_PAD_SIZE];
+    //对SIGKILL有意义的结构
+    struct{
+        ...
+    }...
+
+    ... ...
+    ... ... 
+    //对SIGILL, SIGFPE, SIGSEGV, SIGBUS有意义的结构
+    struct{
+        ...
+    }...
+    ... ...
+}</code></pre><p>}</p>
+<p>注：为了更便于阅读，在说明问题时常把该结构表示为如下所表示的形式。</p>
+<pre><code>siginfo_t {
+    int si_signo;       /* 信号值，对所有信号有意义*/
+    int si_errno;       /* errno值，对所有信号有意义*/
+    int si_code;        /* 信号产生的原因，对所有信号有意义*/
+    pid_t si_pid;       /* 发送信号的进程ID,对kill(2),实时信号以及SIGCHLD有意义 */
+    uid_t si_uid;       /* 发送信号进程的真实用户ID，对kill(2),实时信号以及SIGCHLD有意义 */
+    int si_status;      /* 退出状态，对SIGCHLD有意义*/
+    clock_t si_utime;   /* 用户消耗的时间，对SIGCHLD有意义 */
+    clock_t si_stime;   /* 内核消耗的时间，对SIGCHLD有意义 */
+    sigval_t si_value;  /* 信号值，对所有实时有意义，是一个联合数据结构，见函数sigqueue()*/
+    void * si_addr;     /* 触发fault的内存地址，对SIGILL,SIGFPE,SIGSEGV,SIGBUS 信号有意义*/
+    int si_band;        /* 对SIGPOLL信号有意义 */
+    int si_fd;          /* 对SIGPOLL信号有意义 */
+} </code></pre><p>实际上，除了前三个元素外，其他元素组织在一个联合结构中，在联合数据结构中，又根据不同的信号组织成不同的结构。<br>注释中提到的对某种信号有意义指的是，<br>在该信号的处理函数中可以访问这些域来获得与信号相关的有意义的信息，只不过特定信号只对特定信息感兴趣而已。</p>
+<p>调用sigqueue发送信号时，sigqueue的第三个参数就是sigval联合数据结构，<br>当调用sigqueue时，该数据结构中的数据就将拷贝到信号处理函数的第二个参数中。<br>这样，在发送信号同时，就可以让信号传递一些附加信息。信号可以传递信息对程序开发是非常有意义的。<br>信号参数的传递过程：</p>
+<p><img src="http://www.ibm.com/developerworks/cn/linux/l-ipc/part2/2.gif" alt=""></p>
+<p>sa_mask指定在信号处理程序执行过程中，哪些信号应当被阻塞。<br>缺省情况下当前信号本身被阻塞，防止信号的嵌套发送，除非指定SA_NODEFER或者SA_NOMASK标志位。<br>请注意sa_mask指定的信号阻塞的前提条件：是在由sigaction()安装信号的处理函数执行过程中由sa_mask指定的信号才被阻塞。</p>
+<ul>
+<li><a href="http://www.ibm.com/developerworks/cn/linux/l-ipc/part2/index1.html" target="_blank" rel="noopener">Linux环境进程间通信（二）: 信号（上）</a></li>
+<li><a href="http://www.ibm.com/developerworks/cn/linux/l-ipc/part2/index2.html" target="_blank" rel="noopener">Linux环境进程间通信（二）: 信号（下）</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/11/Linux-system-programming-File-and-Directory-Management/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +505,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-20 10:50:17" itemprop="dateModified" datetime="2020-07-20T10:50:17+08:00">2020-07-20</time>
+                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -593,7 +851,7 @@ int main(int argc, char *argv[]){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-20 10:50:17" itemprop="dateModified" datetime="2020-07-20T10:50:17+08:00">2020-07-20</time>
+                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -847,7 +1105,7 @@ thread2: unlock 59   i 6</code></pre><p>线程1先执行，获得mutex锁，打�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-20 10:50:17" itemprop="dateModified" datetime="2020-07-20T10:50:17+08:00">2020-07-20</time>
+                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1196,7 +1454,7 @@ int munlockall(void);</code></pre><h2 id="投机性内存分配策略"><a href="
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-20 10:50:17" itemprop="dateModified" datetime="2020-07-20T10:50:17+08:00">2020-07-20</time>
+                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1395,7 +1653,7 @@ int pthread_cond_timedwait (pthread_cond_t * cptr, pthread_mutex_t *mptr, const 
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-20 10:50:17" itemprop="dateModified" datetime="2020-07-20T10:50:17+08:00">2020-07-20</time>
+                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1661,7 +1919,7 @@ printf(&quot;RLIMIT_CORE limits: soft=%ld hard=%ld\n&quot;, rlim.rlim_cur, rlim.
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-20 10:50:17" itemprop="dateModified" datetime="2020-07-20T10:50:17+08:00">2020-07-20</time>
+                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1936,7 +2194,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-20 10:50:17" itemprop="dateModified" datetime="2020-07-20T10:50:17+08:00">2020-07-20</time>
+                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2033,7 +2291,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-20 10:50:17" itemprop="dateModified" datetime="2020-07-20T10:50:17+08:00">2020-07-20</time>
+                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2130,7 +2388,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-20 10:50:17" itemprop="dateModified" datetime="2020-07-20T10:50:17+08:00">2020-07-20</time>
+                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2227,7 +2485,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-20 10:50:17" itemprop="dateModified" datetime="2020-07-20T10:50:17+08:00">2020-07-20</time>
+                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2324,7 +2582,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-20 10:50:17" itemprop="dateModified" datetime="2020-07-20T10:50:17+08:00">2020-07-20</time>
+                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2421,7 +2679,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-20 10:50:17" itemprop="dateModified" datetime="2020-07-20T10:50:17+08:00">2020-07-20</time>
+                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2641,7 +2899,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-20 10:50:17" itemprop="dateModified" datetime="2020-07-20T10:50:17+08:00">2020-07-20</time>
+                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2745,7 +3003,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-20 10:50:17" itemprop="dateModified" datetime="2020-07-20T10:50:17+08:00">2020-07-20</time>
+                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
               </span>
 
           <br>
@@ -2945,103 +3203,6 @@ _   底线
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/10/04/wifi-introduction/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/10/04/wifi-introduction/" class="post-title-link" itemprop="url">Linux Wi-Fi编程API</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-10-05 00:00:00" itemprop="dateCreated datePublished" datetime="2014-10-05T00:00:00+08:00">2014-10-05</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-20 10:50:17" itemprop="dateModified" datetime="2020-07-20T10:50:17+08:00">2020-07-20</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>16k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>14 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <<深入理解Android：Wi-Fi、NFC和GPS卷>>读书笔记
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2014/10/04/wifi-introduction/">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -3092,7 +3253,7 @@ _   底线
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">451</span>
+          <span class="site-state-item-count">452</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -3105,7 +3266,7 @@ _   底线
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">481</span>
+        <span class="site-state-item-count">482</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
