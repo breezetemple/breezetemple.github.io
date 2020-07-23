@@ -216,6 +216,156 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/03/16/makefile-automake-libs/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2016/03/16/makefile-automake-libs/" class="post-title-link" itemprop="url">makefile根据文件目录来生成库</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-03-17 00:00:00" itemprop="dateCreated datePublished" datetime="2016-03-17T00:00:00+08:00">2016-03-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-07-23 11:12:23" itemprop="dateModified" datetime="2020-07-23T11:12:23+08:00">2020-07-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index">
+                    <span itemprop="name">C</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>1.8k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h2 id="需求"><a href="#需求" class="headerlink" title="需求"></a>需求</h2><p><strong>根据src下目录名称来生成对应的库，不需要修改makefile，只需要添加文件夹从而生成新的库。</strong></p>
+<p>相关知识点：<a href="http://breezetemple.github.io/2015/10/makefile-and-shell/" target="_blank" rel="noopener">Makefile中嵌入一段shell脚本及函数列表</a></p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><pre><code>SRC = $(shell find . -iname &quot;*.c&quot;)
+DIRS = $(shell ls -I include ./src)
+
+.PHONY : clean install
+
+all : objects libs
+
+objects:$(SRC)
+    @echo &quot;making objects dir&quot;
+    @mkdir -p $(objects_dir)
+    @echo &quot;Generating new objects file...&quot;;
+    @for f in $(SRC); do \
+        OBJ=$(objects_dir)/`basename $$f|sed -e &#39;s/\.c/\.o/&#39;`; \
+        echo &quot;compiling \033[032m[$(CC)]\033[0m&quot;: $$f; \
+        $(CC) $(CFLAGS) -c $$f -o $$OBJ; \
+    done
+
+libs:
+    @echo &quot;\nmaking libs ...&quot;
+    @for subdir in $(DIRS); do \
+        target=$(addprefix lib, $(addsuffix .a, $$subdir)); \
+        objs=`ls ./src/$$subdir|sed -e &#39;s/\.c/\.o/&#39;|sed -e &#39;s#^#./$(objects_dir)/#&#39;`; \
+        $(AR) -rcs $$target $$objs; \
+        echo &quot;In subdir\033[32m&quot; [$$subdir] &quot;\033[0mGenerating new lib\033[31m&quot;: $$target&quot;\033[0m&quot;; \
+    done
+
+clean :
+    @echo [Clean all]
+    @rm -rf $(objects_dir)
+    @rm -rf $(install_dir)
+    @find -name &quot;*.o&quot; | xargs rm -rf
+    @rm -rf *.a
+
+install : *.a
+    @echo &quot;making install dir&quot;
+    @mkdir -p $(install_dir)
+    @mv *.a $(install_dir)
+    @cp include/*.h $(install_dir)
+    @cp porting/*.h $(install_dir)</code></pre><h2 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h2><h3 id="addprefix"><a href="#addprefix" class="headerlink" title="addprefix"></a><strong>addprefix</strong></h3><pre><code>target=$(addprefix lib, $(addsuffix .a, $$subdir))</code></pre><p>addprefix在shell脚本片段中，处理的文本为多个时会失败，具体原因未知…</p>
+<h3 id="shell变量与makefile变量"><a href="#shell变量与makefile变量" class="headerlink" title="shell变量与makefile变量"></a><strong>shell变量与makefile变量</strong></h3><p>$(objects_dir)为shell变量，$$target为makefile变量</p>
+<h3 id="shell与-反引号"><a href="#shell与-反引号" class="headerlink" title="shell与``[反引号]"></a><strong>shell与``[反引号]</strong></h3><p>在for循环中，使用类似：</p>
+<pre><code>objs=$(shell ls ./src/$$subdir|sed -e &#39;s/\.c/\.o/&#39;|sed -e &#39;s#^#./$(objects_dir)/#&#39;); \ </code></pre><p>执行不成功：</p>
+<pre><code>/bin/sh: 3: ./output/objects/cmm: not found</code></pre><p>修改为：</p>
+<pre><code>objs=`ls ./src/$$subdir|sed -e &#39;s/\.c/\.o/&#39;|sed -e &#39;s#^#./$(objects_dir)/#&#39;`; \</code></pre>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/02/23/git-remote/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +397,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
+                <time title="Modified: 2020-07-23 11:12:23" itemprop="dateModified" datetime="2020-07-23T11:12:23+08:00">2020-07-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -434,7 +584,7 @@ $ git config --global push.default simple</code></pre><p>还有一种情况，�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
+                <time title="Modified: 2020-07-23 11:12:23" itemprop="dateModified" datetime="2020-07-23T11:12:23+08:00">2020-07-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -760,7 +910,7 @@ $ git archive</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
+                <time title="Modified: 2020-07-23 11:12:23" itemprop="dateModified" datetime="2020-07-23T11:12:23+08:00">2020-07-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -948,7 +1098,7 @@ $ git rebase -i --autosquash </code></pre><p>这个用法请参考<a href="http:
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
+                <time title="Modified: 2020-07-23 11:12:23" itemprop="dateModified" datetime="2020-07-23T11:12:23+08:00">2020-07-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1141,7 +1291,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
+                <time title="Modified: 2020-07-23 11:12:23" itemprop="dateModified" datetime="2020-07-23T11:12:23+08:00">2020-07-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1432,7 +1582,7 @@ U printk
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
+                <time title="Modified: 2020-07-23 11:12:23" itemprop="dateModified" datetime="2020-07-23T11:12:23+08:00">2020-07-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1760,7 +1910,7 @@ module_param(int_var, uint, S_IRUGO);</code></pre><h2 id="Tips"><a href="#Tips" 
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
+                <time title="Modified: 2020-07-23 11:12:23" itemprop="dateModified" datetime="2020-07-23T11:12:23+08:00">2020-07-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1954,7 +2104,7 @@ eax 0xbffff6a4 -1073744220</code></pre><p>　<br>1.<a href="http://blog.csdn.net
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
+                <time title="Modified: 2020-07-23 11:12:23" itemprop="dateModified" datetime="2020-07-23T11:12:23+08:00">2020-07-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2214,7 +2364,7 @@ o{2,} 与“Bob”中的“o”不匹配，但与“foooood”中的所有“o�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
+                <time title="Modified: 2020-07-23 11:12:23" itemprop="dateModified" datetime="2020-07-23T11:12:23+08:00">2020-07-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2314,7 +2464,7 @@ o{2,} 与“Bob”中的“o”不匹配，但与“foooood”中的所有“o�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
+                <time title="Modified: 2020-07-23 11:12:23" itemprop="dateModified" datetime="2020-07-23T11:12:23+08:00">2020-07-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2452,7 +2602,7 @@ dump tekhex value filename expression
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
+                <time title="Modified: 2020-07-23 11:12:23" itemprop="dateModified" datetime="2020-07-23T11:12:23+08:00">2020-07-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2643,7 +2793,7 @@ nmap &lt;leader&gt;&lt;leader&gt;q :call CodeFormat()&lt;CR&gt;</code></pre><p>�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
+                <time title="Modified: 2020-07-23 11:12:23" itemprop="dateModified" datetime="2020-07-23T11:12:23+08:00">2020-07-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2899,7 +3049,7 @@ net.core.wmem_max = 16777216</code></pre><p>一般来说，<strong>理论上的R
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
+                <time title="Modified: 2020-07-23 11:12:23" itemprop="dateModified" datetime="2020-07-23T11:12:23+08:00">2020-07-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -3275,7 +3425,7 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb, int clone_it,
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
+                <time title="Modified: 2020-07-23 11:12:23" itemprop="dateModified" datetime="2020-07-23T11:12:23+08:00">2020-07-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -3386,108 +3536,6 @@ PRI  </code></pre><p>解析如下：</p>
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/31/python-Tkinter/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/10/31/python-Tkinter/" class="post-title-link" itemprop="url">python Tkinter编程</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-11-01 00:00:00" itemprop="dateCreated datePublished" datetime="2015-11-01T00:00:00+08:00">2015-11-01</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-07-22 16:50:04" itemprop="dateModified" datetime="2020-07-22T16:50:04+08:00">2020-07-22</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Python/" itemprop="url" rel="index">
-                    <span itemprop="name">Python</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>2.1k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>python提供了多个图形开发界面的库，几个常用Python GUI库如下：</p>
-<ul>
-<li>Tkinter： Tkinter模块(“Tk 接口”)是Python的标准Tk GUI工具包的接口.<br>Tk和Tkinter可以在大多数的Unix平台下使用,同样可以应用在Windows和Macintosh系统里.<br>Tk8.0的后续版本可以实现本地窗口风格,并良好地运行在绝大多数平台中。</li>
-<li>wxPython：wxPython 是一款开源软件，是 Python 语言的一套优秀的 GUI 图形库，<br>允许 Python 程序员很方便的创建完整的、功能键全的 GUI 用户界面。</li>
-<li>Jython：Jython程序可以和Java无缝集成。除了一些标准模块，Jython使用Java的模块。<br>Jython几乎拥有标准的Python中不依赖于C语言的全部模块。<br>比如，Jython的用户界面将使用Swing，AWT或者SWT。Jython可以被动态或静态地编译成Java字节码。</li>
-</ul>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2015/10/31/python-Tkinter/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -3538,7 +3586,7 @@ PRI  </code></pre><p>解析如下：</p>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">452</span>
+          <span class="site-state-item-count">453</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -3551,7 +3599,7 @@ PRI  </code></pre><p>解析如下：</p>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">482</span>
+        <span class="site-state-item-count">487</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -3611,7 +3659,7 @@ PRI  </code></pre><p>解析如下：</p>
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:25</span>
+    <span title="Reading time total">18:26</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
   </div>

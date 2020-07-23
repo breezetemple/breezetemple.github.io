@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="嵌入式系统调试的两种方式：  Software Debugger gdbserver redboot   Hardware Debugger jtag swd jlink">
+<meta property="og:type" content="article">
+<meta property="og:title" content="如何调试嵌入式系统">
+<meta property="og:url" content="http://yoursite.com/2020/07/23/how-to-debug-an-embedded-system/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="嵌入式系统调试的两种方式：  Software Debugger gdbserver redboot   Hardware Debugger jtag swd jlink">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/gnu/1595471565914.png">
+<meta property="og:image" content="http://yoursite.com/images/gnu/1595471933130.png">
+<meta property="og:image" content="http://yoursite.com/images/gnu/1595471003633.png">
+<meta property="og:image" content="http://yoursite.com/images/gnu/1595472703759.png">
+<meta property="og:image" content="http://yoursite.com/images/gnu/1595473016901.png">
+<meta property="article:published_time" content="2020-07-23T01:50:47.000Z">
+<meta property="article:modified_time" content="2020-07-23T03:12:23.075Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="gdb">
+<meta property="article:tag" content="jtag">
+<meta property="article:tag" content="gdbserver">
+<meta property="article:tag" content="jlink">
+<meta property="article:tag" content="swd">
+<meta property="article:tag" content="openocd">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/gnu/1595471565914.png">
+
+<link rel="canonical" href="http://yoursite.com/2020/07/23/how-to-debug-an-embedded-system/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>如何调试嵌入式系统 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/23/how-to-debug-an-embedded-system/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          如何调试嵌入式系统
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2020-07-23 09:50:47 / Modified: 11:12:23" itemprop="dateCreated datePublished" datetime="2020-07-23T09:50:47+08:00">2020-07-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/GDB/" itemprop="url" rel="index">
+                    <span itemprop="name">GDB</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>754</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>嵌入式系统调试的两种方式：</p>
+<ul>
+<li>Software Debugger<ul>
+<li>gdbserver</li>
+<li>redboot</li>
+</ul>
+</li>
+<li>Hardware Debugger<ul>
+<li>jtag</li>
+<li>swd</li>
+<li>jlink</li>
+</ul>
+</li>
+</ul>
+<a id="more"></a>
+
+<h2 id="Software-Debugger"><a href="#Software-Debugger" class="headerlink" title="Software Debugger"></a>Software Debugger</h2><p><img src="/images/gnu/1595471565914.png" alt="gdbserver典型应用场景"></p>
+<ul>
+<li><code>gdb</code> 运行于宿主机</li>
+<li><code>gdbserver</code> 运行于目标机，核心依赖于 <code>ptrace</code>，是轻量级的GDB调试器，担任着调试代理的角色</li>
+<li>使用网口/串口连接通信</li>
+</ul>
+<p><img src="/images/gnu/1595471933130.png" alt="本地调试与远程调试"></p>
+<h3 id="gdbserver"><a href="#gdbserver" class="headerlink" title="gdbserver"></a>gdbserver</h3><h3 id="redboot"><a href="#redboot" class="headerlink" title="redboot"></a>redboot</h3><p>eCos redboot 包含有 <code>GDB stub</code>，可当作 <code>GDB Server</code> 用</p>
+<h2 id="Hardware-Debugger"><a href="#Hardware-Debugger" class="headerlink" title="Hardware Debugger"></a>Hardware Debugger</h2><p><img src="/images/gnu/1595471003633.png" alt="jtag典型应用场景"></p>
+<ul>
+<li><code>gdb</code> 运行于宿主机</li>
+<li>需要硬件仿真器</li>
+<li>需要芯片支持</li>
+</ul>
+<h2 id="OpenOCD"><a href="#OpenOCD" class="headerlink" title="OpenOCD"></a>OpenOCD</h2><p>OpenOCD（Open On-Chip Debugger）开源片上调试器，<strong>是一款开源软件</strong>。旨在提供针对嵌入式设备的调试、系统编程和边界扫描功能。是在仿真器的辅助下完成的，仿真器是能够提供调试目标的电信号的小型硬件单元。<strong>仿真器是必须的</strong>，因为宿主机通常不具备这种电信号的直接解析功能。</p>
+<p><img src="/images/gnu/1595472703759.png" alt="1595472703759"></p>
+<p><img src="/images/gnu/1595473016901.png" alt="1595473016901"></p>
+<p>分为三部分，详见<a href="https://www.slideshare.net/linaroorg/hkg18403-introducing-openocd-status-of-openocd-on-aarch64" target="_blank" rel="noopener">Introducing OpenOCD: Status of OpenOCD on AArch64</a>：</p>
+<ul>
+<li>Development Hardware</li>
+<li>Debug Adapter</li>
+<li>Host Computer</li>
+</ul>
+<h2 id="Examples"><a href="#Examples" class="headerlink" title="Examples"></a>Examples</h2><ol>
+<li>Linux<ul>
+<li>使用 JTAG 仿真器调试 Linux 内核</li>
+<li>使用 gdbserver 调试 Linux 应用</li>
+<li>同时使用</li>
+<li><a href="https://blog.csdn.net/yifeng_1118/article/details/66480266" target="_blank" rel="noopener">JTAG调试内核和gdbserver冲突问题</a></li>
+</ul>
+</li>
+<li>eCos<ul>
+<li>使用 JTAG 仿真器调试，带有硬件断点/watch</li>
+<li>使用 RedBoot 调试</li>
+</ul>
+</li>
+<li>OpenOCD<ul>
+<li>JTAG ?</li>
+<li>SWD ?</li>
+<li>gdbserver ?</li>
+</ul>
+</li>
+</ol>
+<h2 id="Refs"><a href="#Refs" class="headerlink" title="Refs"></a>Refs</h2><ol>
+<li><a href="https://www.cnblogs.com/ccxikka/p/10519518.html" target="_blank" rel="noopener">gdb调试原理及qemu中的gdbserver</a></li>
+<li><a href="https://stackoverflow.com/questions/13496389/gdb-remote-protocol-how-to-analyse-packets" target="_blank" rel="noopener">GDB remote protocol: how to analyse packets?</a></li>
+<li><a href="https://doc.ecoscentric.com/cdt-guide/ch-debug.html" target="_blank" rel="noopener">Debugging eCos applications</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Gdbserver" target="_blank" rel="noopener">gdbserver</a></li>
+<li><a href="https://blog.csdn.net/LEON1741/article/details/72846434" target="_blank" rel="noopener">浅论各种调试接口的区别</a></li>
+<li><a href="https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32/api-guides/jtag-debugging/index.html#" target="_blank" rel="noopener">OpenOCD JTAG 调试</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/gdb/" rel="tag"># gdb</a>
+              <a href="/tags/jtag/" rel="tag"># jtag</a>
+              <a href="/tags/gdbserver/" rel="tag"># gdbserver</a>
+              <a href="/tags/jlink/" rel="tag"># jlink</a>
+              <a href="/tags/swd/" rel="tag"># swd</a>
+              <a href="/tags/openocd/" rel="tag"># openocd</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2020/07/20/how-to-copy-string-correctly/" rel="next" title="如何正确拷贝字符串">
+                  <i class="fa fa-chevron-left"></i> 如何正确拷贝字符串
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Software-Debugger"><span class="nav-number">1.</span> <span class="nav-text">Software Debugger</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#gdbserver"><span class="nav-number">1.1.</span> <span class="nav-text">gdbserver</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#redboot"><span class="nav-number">1.2.</span> <span class="nav-text">redboot</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Hardware-Debugger"><span class="nav-number">2.</span> <span class="nav-text">Hardware Debugger</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#OpenOCD"><span class="nav-number">3.</span> <span class="nav-text">OpenOCD</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Examples"><span class="nav-number">4.</span> <span class="nav-text">Examples</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Refs"><span class="nav-number">5.</span> <span class="nav-text">Refs</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">453</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">61</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">487</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">18:26</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>
