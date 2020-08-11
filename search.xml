@@ -7537,7 +7537,7 @@ WriteOnePNGImage + 13648 in section .text</code></pre>
 </ul>
 <a id="more"></a>
 
-<p>在编译器标志中增加一个参数 <code>-fsanitize=address</code>，增加 <code>-ggdb</code> 输出信息更丰富</p>
+<h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><p>在编译器标志中增加一个参数 <code>-fsanitize=address</code>，增加 <code>-ggdb</code> 输出信息更丰富</p>
 <pre><code class="c">int main()
 {
     int a[2] = {1, 0};
@@ -7593,14 +7593,24 @@ Shadow byte legend (one shadow byte represents 8 application bytes):
   Left alloca redzone:     ca
   Right alloca redzone:    cb
 ==18256==ABORTING</code></pre>
+<h2 id="GCC"><a href="#GCC" class="headerlink" title="GCC"></a>GCC</h2><pre><code class="shell">$ man gcc
+    -fsanitize=address
+    -fsanitize=kernel-address
+    -fsanitize=thread
+    -fsanitize=leak
+    -fsanitize=undefined</code></pre>
 <h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
 <li><a href="https://github.com/google/sanitizers/wiki/AddressSanitizer" target="_blank" rel="noopener">AddressSanitizer</a></li>
 <li><a href="https://github.com/google/sanitizers/wiki/AddressSanitizerFlags" target="_blank" rel="noopener">AddressSanitizerFlags</a></li>
 <li><a href="https://github.com/google/sanitizers/wiki/AddressSanitizerCallStack" target="_blank" rel="noopener">AddressSanitizerCallStack</a></li>
+<li><a href="https://www.bynav.com/cn/resource/bywork/healthy-work/70.html" target="_blank" rel="noopener">AddressSanitizer使用介绍</a></li>
+<li><a href="https://www.jianshu.com/p/3a2df9b7c353" target="_blank" rel="noopener">Address Sanitizer 用法</a></li>
 </ol>
 ]]></content>
       <categories>
         <category>C</category>
+        <category>Tools</category>
+        <category>Prof</category>
         <category>Memory</category>
       </categories>
       <tags>
@@ -7655,22 +7665,55 @@ Shadow byte legend (one shadow byte represents 8 application bytes):
 </ol>
 ]]></content>
       <categories>
+        <category>Linux</category>
         <category>C</category>
+        <category>Memory</category>
         <category>GCC</category>
+        <category>Debug</category>
       </categories>
       <tags>
         <tag>gcc</tag>
       </tags>
   </entry>
   <entry>
-    <title>嵌入式Linux内存使用与性能优化</title>
+    <title>嵌入式Linux内存使用</title>
     <url>/2017/03/17/linux-memory-optimization/</url>
-    <content><![CDATA[<a id="more"></a>
+    <content><![CDATA[<p>嵌入式Linux内存使用</p>
+<a id="more"></a>
 
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="http://ticktick.blog.51cto.com/823160/817545" target="_blank" rel="noopener">读书笔记：嵌入式Linux内存使用与性能优化</a></li>
+<h2 id="free"><a href="#free" class="headerlink" title="free"></a>free</h2><p><code>free</code> 用于查看系统当前可用内存</p>
+<pre><code class="shell">$ free -w
+              total        used        free      shared     buffers       cache   available
+Mem:        7849348     4354992      480804     1418400      741732     2271820     1785104
+Swap:      25033724      603124    24430600</code></pre>
+<ul>
+<li><code>buffers</code> 用来给Linux系统中块设备做缓冲区<blockquote>
+<p>A buffer is something that has yet to be “written” to disk.</p>
+</blockquote>
+</li>
+<li><code>cache</code> 用来缓冲打开的文件<blockquote>
+<p>A cache is something that has been “read” from the disk and stored for later use.</p>
+</blockquote>
+</li>
+<li>一般情况理解下认为系统的真正剩余内存为 <code>free + buffers + cached</code></li>
+<li>但是 <code>cached</code> 不是一定可以释放出来，例如文件未关闭</li>
+</ul>
+<h2 id="meminfo"><a href="#meminfo" class="headerlink" title="meminfo"></a>meminfo</h2><p>更加详细的信息<code>/proc/meminfo</code></p>
+<h2 id="虚拟内存与物理内存"><a href="#虚拟内存与物理内存" class="headerlink" title="虚拟内存与物理内存"></a>虚拟内存与物理内存</h2><p>操作系统为程序员屏蔽了物理内存的使用，在32位操作系统中，每个进程面对的都是4GB的内存空间，称为虚拟内存。操作系统采用了延迟分配物理内存的策略，针对进程的内存分配请求，它只是在内核中分配了一段虚拟地址，只有当确实使用这块内存时，系统才会为其分配物理地址。</p>
+<h2 id="malloc-free"><a href="#malloc-free" class="headerlink" title="malloc/free"></a>malloc/free</h2><p>程序调用 <code>malloc</code> 函数申请内存时，并不是直接向操作系统申请，而是先由 glibc 的内存管器模块接收请求，它再通过系统调用向内核申请一块内存并将地址 <code>p</code> 返回给用户，同时，在 <code>p-4</code> 这个地址记录下 <code>malloc</code> 空间的大小，glibc 在 <code>free</code> 这块内存的时候，通过 <code>p-4</code> 即可知道需要释放的内存大小是多少。</p>
+<h2 id="Refs"><a href="#Refs" class="headerlink" title="Refs"></a>Refs</h2><ol>
+<li><a href="https://www.shuzhiduo.com/A/KE5Q7peMzL/" target="_blank" rel="noopener">Linux free字段解析</a></li>
+<li><a href="https://blog.csdn.net/lqglqglqg/article/details/82313966" target="_blank" rel="noopener">Linux内存Cache和Buffer理解</a></li>
 </ol>
 ]]></content>
+      <categories>
+        <category>Linux</category>
+        <category>MM</category>
+        <category>Debug</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+      </tags>
   </entry>
   <entry>
     <title>mprotect</title>
@@ -7691,8 +7734,10 @@ Shadow byte legend (one shadow byte represents 8 application bytes):
 <a id="more"></a>
 ]]></content>
       <categories>
+        <category>Linux</category>
         <category>C</category>
         <category>Memory</category>
+        <category>Debug</category>
       </categories>
       <tags>
         <tag>gcc</tag>
@@ -8414,7 +8459,7 @@ nonvoluntary_ctxt_switches:     13</code></pre>
 ]]></content>
   </entry>
   <entry>
-    <title>linux-nfsroot-server-not-responding</title>
+    <title>嵌入式 Linux NFS 挂载失败</title>
     <url>/2017/05/24/linux-nfsroot-server-not-responding/</url>
     <content><![CDATA[<pre><code>CMDLINE_VALUE = &quot;mem=64M console=ttyS0,115200 init=/init root=/dev/nfs rw nfsroot=192.168.111.238:/opt/nfs,v3,proto=tcp,nolock,rsize=4096,wsize=4096,intr ip=192.168.111.239:::255.255.254.0&quot;</code></pre><a id="more"></a>
 
@@ -8455,11 +8500,42 @@ nonvoluntary_ctxt_switches:     13</code></pre>
     {Opt_acl, &quot;acl&quot;},                                                         
     {Opt_noacl, &quot;noacl&quot;},                                                     
     {Opt_err, NULL}                                                           
-};                            </code></pre><h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+};                            </code></pre><h2 id="服务依赖"><a href="#服务依赖" class="headerlink" title="服务依赖"></a>服务依赖</h2><p>错误如下：</p>
+<pre><code>user:~ # sudo mount -t nfs -o rw 10.9.87.65:/filedir /filedir
+mount.nfs: rpc.statd is not running but is required for remote locking.
+mount.nfs: Either use &#39;-o nolock&#39; to keep locks local, or start statd.
+mount.nfs: Operation not permitted</code></pre><p>nfs mount 默认选项包括文件锁，依赖于 portmap 提供的动态端口分配功能或者是没有启动 rpcbind 服务</p>
+<ol>
+<li><code>mount -o nolock</code><pre><code># sudo mount -t nfs -o rw,nolock 10.9.87.65:/filedir /filedir</code></pre></li>
+<li>启动 server<pre><code>$ sudo service nfslock restart
+$ sudo service rpcbind restart
+$ sudo service nfs restart</code></pre></li>
+</ol>
+<h2 id="查看状态"><a href="#查看状态" class="headerlink" title="查看状态"></a>查看状态</h2><p>查看支持版本</p>
+<pre><code class="shell">$ sudo cat /proc/fs/nfsd/versions
+-2 +3 +4 +4.1 +4.2</code></pre>
+<p>修改 <code>/etc/default/nfs-kernel-server</code>，在文件末尾加入一句：<code>RPCNFSDOPTS=&quot;--nfs-version 2,3,4 --debug --syslog&quot;</code> 以支持 v2</p>
+<p>查看 nfs 状态</p>
+<pre><code class="shell">$ nfsstat -s
+$ nfsstat -c</code></pre>
+<p>挂载测试</p>
+<pre><code class="shell">$ mount -t nfs -o vers=4 192.168.1.10:/mnt/data /data
+$ mount -t nfs -o vers=3 192.168.1.10:/mnt/data /data</code></pre>
+<p>查看 mount 状态</p>
+<pre><code class="shell">$ showmount -e 192.168.110.55
+$ mount</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
 <li><a href="http://blog.csdn.net/wang328452854/article/details/51304217" target="_blank" rel="noopener">2440-NFS挂载网络共享目录</a></li>
 <li><a href="http://bbs.21ic.com/icview-624427-1-1.html" target="_blank" rel="noopener">nfs:server 172.168.1.22 not responding,still trying问题解决方法</a></li>
+<li><a href="https://computingforgeeks.com/configure-nfsv3-and-nfsv4-on-centos-7/" target="_blank" rel="noopener">Install and configure NFSv3 and NFSv4 on CentOS 7</a></li>
 </ol>
 ]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>nfs</tag>
+      </tags>
   </entry>
   <entry>
     <title>git-flow</title>
@@ -10044,7 +10120,7 @@ to manually remove this file before starting wpa_supplicant again.</code></pre><
       </tags>
   </entry>
   <entry>
-    <title>git-repo-gerrit</title>
+    <title>Gerrit、Repo搭建及使用</title>
     <url>/2017/12/01/git-repo-gerrit/</url>
     <content><![CDATA[<a id="more"></a>
 
@@ -10101,7 +10177,10 @@ pushd ~/Code/btoa/
 git init
 git pull ~/Code/node-browser-compat btoa-only</code></pre>]]></content>
       <categories>
-        <category>Linux</category>
+        <category>Tools</category>
+        <category>Git</category>
+        <category>Repo</category>
+        <category>Gerrit</category>
       </categories>
       <tags>
         <tag>git</tag>
@@ -12430,204 +12509,6 @@ int pthread_attr_setstacksize(pthread_attr_t *attr, size_t stacksize);</code></p
       </tags>
   </entry>
   <entry>
-    <title>Movian Plugin Development</title>
-    <url>/2018/01/10/movian-plugin-development/</url>
-    <content><![CDATA[<p>Movian Development</p>
-<a id="more"></a>
-
-<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
-<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
-<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
-<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
-<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
-<pre><code class="json">{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;apiversion&quot;: 1,
-  &quot;id&quot;: &quot;headweb&quot;,
-  &quot;file&quot;: &quot;headweb.js&quot;,
-  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
-  &quot;version&quot;: &quot;1.5.3&quot;,
-  &quot;author&quot;: &quot;Andreas Öman&quot;,
-  &quot;title&quot;: &quot;Headweb&quot;,
-  &quot;icon&quot;: &quot;headweb_square.png&quot;,
-  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
-  &quot;category&quot;: &quot;video&quot;,
-  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
-  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
-}</code></pre>
-<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
-<ul>
-<li>ecmascript - loads the plugin using Duktape.</li>
-<li>views - used for user interface (screen keyboard plugin)</li>
-</ul>
-<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
-<ul>
-<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
-<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
-</ul>
-<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
-<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
-<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
-<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
-<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
-<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
-<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
-<ul>
-<li>“tv” - online TV</li>
-<li>“video” - streaming video</li>
-<li>“music” - streaming music</li>
-<li>“glwview” - UI extentions</li>
-<li>“subtitles” - subtitles</li>
-<li>“glwosk” - on screen keyboard</li>
-</ul>
-<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
-<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
-<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
-<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
-<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
-<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
-<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
-<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
-<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
-<pre><code>{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;file&quot;: &quot;testplugin.js&quot;,
-  &quot;id&quot;: &quot;testplugin&quot;
-}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
-<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
-  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
-})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
-<pre><code>(function(plugin) {
-  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
-    showtime.print(&quot;I was called&quot;);
-  })
-})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
-<p><code>somafa</code> 中的 <code>start URI</code></p>
-<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
-...
-}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
-<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
-<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
-<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
-<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
-<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
-<ul>
-<li>Direct URL</li>
-<li>Via a video page</li>
-</ul>
-<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
-<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
-<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
-<p>To use it first do:</p>
-<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
-      <categories>
-        <category>Movian</category>
-      </categories>
-      <tags>
-        <tag>movian</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>vim-highlight-syntax</title>
-    <url>/2017/12/19/vim-highlight-syntax/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
-<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
-<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
-<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
-<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
-<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
-<pre><code>:syntax
---- 语法项目 ---
-cLabel         xxx default case
-cStructure     xxx union struct typedef enum
-cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
-                   _Thread_local auto
-cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
-cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
-cStatement     xxx return goto asm continue break
-                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
-<p><code>:help group-name</code></p>
-<pre><code>:help group-name
-
-(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
-
-        *Comment        any comment
-
-        *Constant       any constant
-         String         a string constant: &quot;this is a string&quot;
-         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
-         Number         a number constant: 234, 0xff
-         Boolean        a boolean constant: TRUE, false
-         Float          a floating point constant: 2.3e10
-
-        *Identifier     any variable name
-         Function       function name (also: methods for classes)
-        *Statement      any statement
-         Conditional    if, then, else, endif, switch, etc.
-         Repeat         for, do, while, etc.
-         Label          case, default, etc.
-         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
-         Keyword        any other keyword
-         Exception      try, catch, throw
-
-        *PreProc        generic Preprocessor
-         Include        preprocessor #include
-         Define         preprocessor #define
-         Macro          same as Define
-         PreCondit      preprocessor #if, #else, #endif, etc.
-
-        *Type           int, long, char, etc.
-         StorageClass   static, register, volatile, etc.
-         Structure      struct, union, enum, etc.
-         Typedef        A typedef
-
-        *Special        any special symbol
-         SpecialChar    special character in a constant
-         Tag            you can use CTRL-] on this
-         Delimiter      character that needs attention
-         SpecialComment special things inside a comment
-         Debug          debugging statements
-
-        *Underlined     text that stands out, HTML links
-
-        *Ignore         left blank, hidden  hl-Ignore
-
-        *Error          any erroneous construct
-        *Todo           anything that needs extra attention; mostly the
-                        keywords TODO FIXME and XXX</code></pre>]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Editor</category>
-      </categories>
-      <tags>
-        <tag>vim</tag>
-        <tag>highlight</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>proc-pid-intro</title>
-    <url>/2017/12/14/proc-pid-intro/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
-<li><a href="https://github.com/NanXiao/gnu-linux-proc-pid-intro" target="_blank" rel="noopener">GNU/Linux下的/proc/[pid]目录下的文件分析</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>proc</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>how-to-get-usb-device-info</title>
     <url>/2018/07/05/how-to-get-usb-device-info/</url>
     <content><![CDATA[<p><code>lsusb</code></p>
@@ -13646,7 +13527,8 @@ curl -u guowei:38e2427ac39d5a5f810c83c6fd39ee80 -H &quot;$CRUMB&quot; -X POST &q
 </ol>
 ]]></content>
       <categories>
-        <category>Linux</category>
+        <category>Tools</category>
+        <category>CI</category>
       </categories>
       <tags>
         <tag>linux</tag>
@@ -15131,6 +15013,36 @@ Transmission Control Protocol, Src Port: 35720, Dst Port: 443, Seq: 1, Ack: 5402
       </tags>
   </entry>
   <entry>
+    <title>Linux 内核编译</title>
+    <url>/2018/11/06/Linux-Kernel-Compile/</url>
+    <content><![CDATA[<p><code>Linux Kernel</code> 编译常用命令</p>
+<a id="more"></a>
+
+<p>Linux Kernel Version: 4.9.22</p>
+<ol>
+<li><code>make mrproper</code> 主要清除环境变量及配置文件</li>
+<li><code>O=/path/to/output/</code> 来指定输出文件的位置，默认放在源码位置</li>
+<li><code>make -C Kernel ARCH=$ARCH CROSS_COMPILE=$COMPILER</code></li>
+<li><code>make distclean</code> Remove editor backup files, patch leftover files and the like</li>
+<li><code>make prepare</code> <code>make scripts</code> This will prepare some files necessary to build a kernel module</li>
+<li><code>make $J -C $TARGET_DIR ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- zImage vmlinux dtbs</code></li>
+<li><code>make zImage</code> build the kernel image</li>
+<li><code>make vmLinux</code> build the kernel image</li>
+<li><code>make uImage</code> build the kernel image</li>
+<li><code>make -j4 uImage dtbs modules</code> Compile the dtb from Linux kernel source code</li>
+<li><code>make $J LOADADDR=0x00008000 uImage</code> LOADADDR specifies the address where the kernel image will be located by U-Boot and is stored in the U-Boot header by the mkimage utility.</li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>make</tag>
+        <tag>kbuild</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>shell 与子进程</title>
     <url>/2018/11/05/shell-and-subshell/</url>
     <content><![CDATA[<p><code>shell</code> 与子进程 <code>subshell</code></p>
@@ -15170,36 +15082,6 @@ Transmission Control Protocol, Src Port: 35720, Dst Port: 443, Seq: 1, Ack: 5402
         <tag>shell</tag>
         <tag>linux</tag>
         <tag>subshell</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Linux 内核编译</title>
-    <url>/2018/11/06/Linux-Kernel-Compile/</url>
-    <content><![CDATA[<p><code>Linux Kernel</code> 编译常用命令</p>
-<a id="more"></a>
-
-<p>Linux Kernel Version: 4.9.22</p>
-<ol>
-<li><code>make mrproper</code> 主要清除环境变量及配置文件</li>
-<li><code>O=/path/to/output/</code> 来指定输出文件的位置，默认放在源码位置</li>
-<li><code>make -C Kernel ARCH=$ARCH CROSS_COMPILE=$COMPILER</code></li>
-<li><code>make distclean</code> Remove editor backup files, patch leftover files and the like</li>
-<li><code>make prepare</code> <code>make scripts</code> This will prepare some files necessary to build a kernel module</li>
-<li><code>make $J -C $TARGET_DIR ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- zImage vmlinux dtbs</code></li>
-<li><code>make zImage</code> build the kernel image</li>
-<li><code>make vmLinux</code> build the kernel image</li>
-<li><code>make uImage</code> build the kernel image</li>
-<li><code>make -j4 uImage dtbs modules</code> Compile the dtb from Linux kernel source code</li>
-<li><code>make $J LOADADDR=0x00008000 uImage</code> LOADADDR specifies the address where the kernel image will be located by U-Boot and is stored in the U-Boot header by the mkimage utility.</li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>make</tag>
-        <tag>kbuild</tag>
       </tags>
   </entry>
   <entry>
@@ -17490,6 +17372,204 @@ hd[a-z]*    0:6 660</code></pre>
         <tag>linux</tag>
         <tag>mknod</tag>
         <tag>insmod</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Movian Plugin Development</title>
+    <url>/2018/01/10/movian-plugin-development/</url>
+    <content><![CDATA[<p>Movian Development</p>
+<a id="more"></a>
+
+<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
+<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
+<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
+<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
+<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
+<pre><code class="json">{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;apiversion&quot;: 1,
+  &quot;id&quot;: &quot;headweb&quot;,
+  &quot;file&quot;: &quot;headweb.js&quot;,
+  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
+  &quot;version&quot;: &quot;1.5.3&quot;,
+  &quot;author&quot;: &quot;Andreas Öman&quot;,
+  &quot;title&quot;: &quot;Headweb&quot;,
+  &quot;icon&quot;: &quot;headweb_square.png&quot;,
+  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
+  &quot;category&quot;: &quot;video&quot;,
+  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
+  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
+}</code></pre>
+<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
+<ul>
+<li>ecmascript - loads the plugin using Duktape.</li>
+<li>views - used for user interface (screen keyboard plugin)</li>
+</ul>
+<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
+<ul>
+<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
+<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
+</ul>
+<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
+<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
+<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
+<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
+<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
+<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
+<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
+<ul>
+<li>“tv” - online TV</li>
+<li>“video” - streaming video</li>
+<li>“music” - streaming music</li>
+<li>“glwview” - UI extentions</li>
+<li>“subtitles” - subtitles</li>
+<li>“glwosk” - on screen keyboard</li>
+</ul>
+<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
+<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
+<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
+<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
+<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
+<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
+<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
+<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
+<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
+<pre><code>{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;file&quot;: &quot;testplugin.js&quot;,
+  &quot;id&quot;: &quot;testplugin&quot;
+}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
+<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
+  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
+})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
+<pre><code>(function(plugin) {
+  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
+    showtime.print(&quot;I was called&quot;);
+  })
+})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
+<p><code>somafa</code> 中的 <code>start URI</code></p>
+<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
+...
+}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
+<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
+<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
+<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
+<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
+<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
+<ul>
+<li>Direct URL</li>
+<li>Via a video page</li>
+</ul>
+<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
+<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
+<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
+<p>To use it first do:</p>
+<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
+      <categories>
+        <category>Movian</category>
+      </categories>
+      <tags>
+        <tag>movian</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>vim-highlight-syntax</title>
+    <url>/2017/12/19/vim-highlight-syntax/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
+<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
+<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
+<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
+<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
+<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
+<pre><code>:syntax
+--- 语法项目 ---
+cLabel         xxx default case
+cStructure     xxx union struct typedef enum
+cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
+                   _Thread_local auto
+cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
+cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
+cStatement     xxx return goto asm continue break
+                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
+<p><code>:help group-name</code></p>
+<pre><code>:help group-name
+
+(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
+
+        *Comment        any comment
+
+        *Constant       any constant
+         String         a string constant: &quot;this is a string&quot;
+         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
+         Number         a number constant: 234, 0xff
+         Boolean        a boolean constant: TRUE, false
+         Float          a floating point constant: 2.3e10
+
+        *Identifier     any variable name
+         Function       function name (also: methods for classes)
+        *Statement      any statement
+         Conditional    if, then, else, endif, switch, etc.
+         Repeat         for, do, while, etc.
+         Label          case, default, etc.
+         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
+         Keyword        any other keyword
+         Exception      try, catch, throw
+
+        *PreProc        generic Preprocessor
+         Include        preprocessor #include
+         Define         preprocessor #define
+         Macro          same as Define
+         PreCondit      preprocessor #if, #else, #endif, etc.
+
+        *Type           int, long, char, etc.
+         StorageClass   static, register, volatile, etc.
+         Structure      struct, union, enum, etc.
+         Typedef        A typedef
+
+        *Special        any special symbol
+         SpecialChar    special character in a constant
+         Tag            you can use CTRL-] on this
+         Delimiter      character that needs attention
+         SpecialComment special things inside a comment
+         Debug          debugging statements
+
+        *Underlined     text that stands out, HTML links
+
+        *Ignore         left blank, hidden  hl-Ignore
+
+        *Error          any erroneous construct
+        *Todo           anything that needs extra attention; mostly the
+                        keywords TODO FIXME and XXX</code></pre>]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Editor</category>
+      </categories>
+      <tags>
+        <tag>vim</tag>
+        <tag>highlight</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>proc-pid-intro</title>
+    <url>/2017/12/14/proc-pid-intro/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
+<li><a href="https://github.com/NanXiao/gnu-linux-proc-pid-intro" target="_blank" rel="noopener">GNU/Linux下的/proc/[pid]目录下的文件分析</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>proc</tag>
       </tags>
   </entry>
   <entry>
@@ -34435,6 +34515,260 @@ rtsp://192.168.128.5/?src=1&amp;fe=1&amp;freq=12720&amp;pol=v&amp;msys=dvbs2&amp
       </tags>
   </entry>
   <entry>
+    <title>SSL 编程</title>
+    <url>/2019/04/09/ssl-programming/</url>
+    <content><![CDATA[<p><code>openssl</code>编程框架及相关示例代码</p>
+<a id="more"></a>
+
+<h2 id="openssl"><a href="#openssl" class="headerlink" title="openssl"></a>openssl</h2><p>OpenSSL 是一个开放源代码的 SSL 协议的产品实现，它采用 C 语言作为开发语言，具备了跨系统的性能。调用 OpenSSL 的函数就可以实现一个 SSL 加密的安全数据传输通道，从而保护客户端和服务器之间数据的安全。</p>
+<h2 id="头文件"><a href="#头文件" class="headerlink" title="头文件"></a>头文件</h2><pre><code class="c">#include &lt;openssl/ssl.h&gt;
+#include &lt;openssl/err.h&gt;</code></pre>
+<h2 id="常用函数"><a href="#常用函数" class="headerlink" title="常用函数"></a>常用函数</h2><h3 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h3><p>在使用 OpenSSL 之前，必须进行相应的协议初始化工作，这可以通过下面的函数实现：</p>
+<pre><code class="c">int SSL_library_int(void);</code></pre>
+<h3 id="选择会话协议"><a href="#选择会话协议" class="headerlink" title="选择会话协议"></a>选择会话协议</h3><p>在利用 OpenSSL 开始 SSL 会话之前，需要为客户端和服务器制定本次会话采用的协议，目前能够使用的协议包括<code>TLSv1.0</code>、<code>SSLv2</code>、<code>SSLv3</code>、<code>SSLv2/v3</code>。<br>需要注意的是，客户端和服务器必须使用相互兼容的协议，否则 SSL 会话将无法正常进行。</p>
+<h3 id="创建会话环境"><a href="#创建会话环境" class="headerlink" title="创建会话环境"></a>创建会话环境</h3><p>在 OpenSSL 中创建的 SSL 会话环境称为 CTX，使用不同的协议会话，其环境也不一样的。</p>
+<p>申请 SSL 会话环境的 OpenSSL 函数是：</p>
+<pre><code class="c">SSL_CTX *SSL_CTX_new(SSL_METHOD * method);</code></pre>
+<p>当 SSL 会话环境申请成功后，还要根据实际的需要设置 CTX 的属性，通常的设置是指定 SSL 握手阶段证书的验证方式和加载自己的证书。</p>
+<p>指定证书验证方式的函数是：</p>
+<pre><code class="c">int SSL_CTX_set_verify(SSL_CTX *ctx,int mode,int(*verify_callback),int(X509_STORE_CTX *));</code></pre>
+<ul>
+<li>SSL_VERIFY_NONE 表示不验证</li>
+<li>SSL_VERIFY_PEER 用于客户端时要求服务器必须提供证书，用于服务器时服务器会发出证书请求消息要求客户端提供证书，但是客户端也可以不提供</li>
+<li>SSL_VERIGY_FAIL_IF_NO_PEER_CERT<strong>只适用于服务器且必须提供证书。他必须与 SSL_VERIFY_PEER 一起使用</strong></li>
+</ul>
+<p>为 SSL 会话环境加载 CA 证书的函数是：</p>
+<pre><code class="c">SSL_CTX_load_verify_location(SSL_CTX *ctx,const char *Cafile,const char *Capath);</code></pre>
+<p>从指定文件中加载 CA 证书</p>
+<pre><code class="c">STACK_OF(X509_NAME) *SSL_load_client_CA_file(const char *file);</code></pre>
+<p>发送 CAs 到客户端，客户端必须提供一个有 CAs 签名的 CA 用于服务端验证客户端</p>
+<pre><code class="c"> void SSL_CTX_set_client_CA_list(SSL_CTX *ctx, STACK_OF(X509_NAME) *list);
+ void SSL_set_client_CA_list(SSL *s, STACK_OF(X509_NAME) *list);
+ int SSL_CTX_add_client_CA(SSL_CTX *ctx, X509 *cacert);
+ int SSL_add_client_CA(SSL *ssl, X509 *cacert);</code></pre>
+<blockquote>
+<p>The SSL_CTX_set_client_CA_list function is only needed by server applications that verify the identity of remote client applications when SSL sessions are started.</p>
+<p><code>SSL_CTX_set_client_CA_list(ctx, SSL_load_client_CA_file())</code>用于双向认证时，服务端验证客户端</p>
+</blockquote>
+<p>为 SSL 会话加载用户证书的函数是：</p>
+<pre><code class="c">SSL_CTX_use_certificate_file(SSL_CTX *ctx, const char *file,int type);</code></pre>
+<p>为 SSL 会话加载用户私钥的函数是：</p>
+<pre><code class="c">SSL_CTX_use_PrivateKey_file(SSL_CTX *ctx,const char* file,int type);</code></pre>
+<p>在将证书和私钥加载到 SSL 会话环境之后，就可以调用下面的函数来验证私钥和证书是否相符：</p>
+<pre><code class="c">int SSL_CTX_check_private_key(SSL_CTX *ctx);</code></pre>
+<h3 id="建立-SSL-套接字"><a href="#建立-SSL-套接字" class="headerlink" title="建立 SSL 套接字"></a>建立 SSL 套接字</h3><p>SSL 套接字是建立在普通的 TCP 套接字基础之上，在建立 SSL 套接字时可以使用下面的一些函数：</p>
+<pre><code class="c">// 申请一个 SSL 套接字
+SSL *SSl_new(SSL_CTX *ctx);
+// 绑定读写套接字
+int SSL_set_fd(SSL *ssl,int fd);
+// 绑定只读套接字
+int SSL_set_rfd(SSL *ssl,int fd);
+// 绑定只写套接字
+int SSL_set_wfd(SSL *ssl,int fd);</code></pre>
+<h3 id="完成-SSL-握手"><a href="#完成-SSL-握手" class="headerlink" title="完成 SSL 握手"></a>完成 SSL 握手</h3><p>在成功创建 SSL 套接字后，客户端应使用函数<code>SSL_connect</code>替代传统的函数<code>connect</code>来完成握手过程：</p>
+<pre><code class="c">int SSL_connect(SSL *ssl);</code></pre>
+<p>而对服务器来讲，则应使用函数<code>SSL_ accept</code>替代传统的函数<code>accept</code>来完成握手过程：</p>
+<pre><code class="c">int SSL_accept(SSL *ssl);</code></pre>
+<p>握手过程完成之后，通常需要询问通信双方的证书信息，以便进行相应的验证，这可以借助于下面的函数来实现：</p>
+<pre><code class="c">X509 *SSL_get_peer_certificate(SSL *ssl);</code></pre>
+<p>该函数可以从 SSL 套接字中提取对方的证书信息，这些信息已经被 SSL 验证过了。</p>
+<pre><code class="c">X509_NAME *X509_get_subject_name(X509 *a);</code></pre>
+<p>该函数得到证书所用者的名字。</p>
+<h3 id="进行数据传输"><a href="#进行数据传输" class="headerlink" title="进行数据传输"></a>进行数据传输</h3><p>当 SSL 握手完成之后，就可以进行安全的数据传输了，在数据传输阶段，需要使用<code>SSL_read</code>和<code>SSL_write</code>来替代传统的<code>read</code>和<code>write</code>函数，来完成对套接字的读写操作：</p>
+<pre><code class="c">int SSL_read(SSL *ssl,void *buf,int num);
+int SSL_write(SSL *ssl,const void *buf,int num);</code></pre>
+<h3 id="结束-SSL-通信"><a href="#结束-SSL-通信" class="headerlink" title="结束 SSL 通信"></a>结束 SSL 通信</h3><p>当客户端和服务器之间的数据通信完成之后，调用下面的函数来释放已经申请的 SSL 资源：</p>
+<pre><code class="c">// 关闭 SSL 套接字
+int SSL_shutdown(SSL *ssl);
+// 释放 SSL 套接字
+void SSl_free(SSL *ssl);
+// 释放 SSL 会话环境
+void SSL_CTX_free(SSL_CTX *ctx);</code></pre>
+<h2 id="编程框架"><a href="#编程框架" class="headerlink" title="编程框架"></a>编程框架</h2><h3 id="server"><a href="#server" class="headerlink" title="server"></a>server</h3><pre><code class="c">meth = SSLv23_client_method();
+ctx = SSL_CTX_new (meth);
+ssl = SSL_new(ctx);
+fd = socket();
+connect();
+SSL_set_fd(ssl,fd);
+SSL_connect(ssl);
+SSL_write(ssl,&quot;Hello world&quot;,strlen(&quot;Hello World!&quot;));</code></pre>
+<h3 id="client"><a href="#client" class="headerlink" title="client"></a>client</h3><pre><code class="c">meth = SSLv23_server_method();
+ctx = SSL_CTX_new (meth);
+ssl = SSL_new(ctx);
+fd = socket();
+bind();
+listen();
+accept();
+SSL_set_fd(ssl,fd);
+SSL_connect(ssl);
+SSL_read (ssl, buf, sizeof(buf));</code></pre>
+<h2 id="Example"><a href="#Example" class="headerlink" title="Example"></a>Example</h2><p><code>SSL</code>有两种模式，单向和双向</p>
+<ol>
+<li>1-way “Standard” SSL Authentication</li>
+<li>2-way “Mutual” SSL Authentication</li>
+</ol>
+<p>参考代码</p>
+<ul>
+<li><a href="https://github.com/zapstar/two-way-ssl-c" target="_blank" rel="noopener">Two-way SSL authentication example in C</a></li>
+<li><a href="http://fm4dd.com/openssl/sslconnect.htm" target="_blank" rel="noopener">Example Code Listing</a></li>
+</ul>
+<p>server</p>
+<pre><code class="c">/* Initialize OpenSSL */
+SSL_load_error_strings();
+OpenSSL_add_ssl_algorithms();
+
+/* Get a default context */
+if (!(ctx = SSL_CTX_new(SSLv23_server_method()))) {
+    fprintf(stderr, &quot;SSL_CTX_new failed\n&quot;);
+    return NULL;
+}
+
+/* Set the CA file location for the server */
+if (SSL_CTX_load_verify_locations(ctx, ca_pem, NULL) != 1) {
+    fprintf(stderr, &quot;Could not set the CA file location\n&quot;);
+    goto fail;
+}
+
+/* Load the client&#39;s CA file location as well */
+SSL_CTX_set_client_CA_list(ctx, SSL_load_client_CA_file(ca_pem));
+
+/* Set the server&#39;s certificate signed by the CA */
+if (SSL_CTX_use_certificate_file(ctx, cert_pem, SSL_FILETYPE_PEM) != 1) {
+    fprintf(stderr, &quot;Could not set the server&#39;s certificate\n&quot;);
+    goto fail;
+}
+
+/* Set the server&#39;s key for the above certificate */
+if (SSL_CTX_use_PrivateKey_file(ctx, key_pem, SSL_FILETYPE_PEM) != 1) {
+    fprintf(stderr, &quot;Could not set the server&#39;s key\n&quot;);
+    goto fail;
+}
+
+/* We&#39;ve loaded both certificate and the key, check if they match */
+if (SSL_CTX_check_private_key(ctx) != 1) {
+    fprintf(stderr, &quot;Server&#39;s certificate and the key don&#39;t match\n&quot;);
+    goto fail;
+}
+
+/* We won&#39;t handle incomplete read/writes due to renegotiation */
+SSL_CTX_set_mode(ctx, SSL_MODE_AUTO_RETRY);
+
+/* Specify that we need to verify the client as well */
+SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+
+/* We accept only certificates signed only by the CA himself */
+SSL_CTX_set_verify_depth(ctx, 1);</code></pre>
+<p>client</p>
+<pre><code class="c">/* ---------------------------------------------------------- *
+ * These function calls initialize openssl for correct work.  *
+ * ---------------------------------------------------------- */
+OpenSSL_add_all_algorithms();
+ERR_load_BIO_strings();
+ERR_load_crypto_strings();
+SSL_load_error_strings();
+
+/* ---------------------------------------------------------- *
+ * Create the Input/Output BIO&#39;s.                             *
+ * ---------------------------------------------------------- */
+certbio = BIO_new(BIO_s_file());
+outbio  = BIO_new_fp(stdout, BIO_NOCLOSE);
+
+/* ---------------------------------------------------------- *
+ * initialize SSL library and register algorithms             *
+ * ---------------------------------------------------------- */
+if(SSL_library_init() &lt; 0)
+  BIO_printf(outbio, &quot;Could not initialize the OpenSSL library !\n&quot;);
+
+/* ---------------------------------------------------------- *
+ * Set SSLv2 client hello, also announce SSLv3 and TLSv1      *
+ * ---------------------------------------------------------- */
+method = SSLv23_client_method();
+
+/* ---------------------------------------------------------- *
+ * Try to create a new SSL context                            *
+ * ---------------------------------------------------------- */
+if ( (ctx = SSL_CTX_new(method)) == NULL)
+  BIO_printf(outbio, &quot;Unable to create a new SSL context structure.\n&quot;);
+
+/* ---------------------------------------------------------- *
+ * Disabling SSLv2 will leave v3 and TSLv1 for negotiation    *
+ * ---------------------------------------------------------- */
+SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2);
+
+/* ---------------------------------------------------------- *
+ * Create new SSL connection state object                     *
+ * ---------------------------------------------------------- */
+ssl = SSL_new(ctx);
+
+/* ---------------------------------------------------------- *
+ * Make the underlying TCP socket connection                  *
+ * ---------------------------------------------------------- */
+server = create_socket(dest_url, outbio);
+if(server != 0)
+  BIO_printf(outbio, &quot;Successfully made the TCP connection to: %s.\n&quot;, dest_url);
+
+/* ---------------------------------------------------------- *
+ * Attach the SSL session to the socket descriptor            *
+ * ---------------------------------------------------------- */
+SSL_set_fd(ssl, server);
+
+/* ---------------------------------------------------------- *
+ * Try to SSL-connect here, returns 1 for success             *
+ * ---------------------------------------------------------- */
+if ( SSL_connect(ssl) != 1 )
+  BIO_printf(outbio, &quot;Error: Could not build a SSL session to: %s.\n&quot;, dest_url);
+else
+  BIO_printf(outbio, &quot;Successfully enabled SSL/TLS session to: %s.\n&quot;, dest_url);
+
+/* ---------------------------------------------------------- *
+ * Get the remote certificate into the X509 structure         *
+ * ---------------------------------------------------------- */
+cert = SSL_get_peer_certificate(ssl);
+if (cert == NULL)
+  BIO_printf(outbio, &quot;Error: Could not get a certificate from: %s.\n&quot;, dest_url);
+else
+  BIO_printf(outbio, &quot;Retrieved the server&#39;s certificate from: %s.\n&quot;, dest_url);
+
+/* ---------------------------------------------------------- *
+ * extract various certificate information                    *
+ * -----------------------------------------------------------*/
+certname = X509_NAME_new();
+certname = X509_get_subject_name(cert);
+
+/* ---------------------------------------------------------- *
+ * display the cert subject here                              *
+ * -----------------------------------------------------------*/
+BIO_printf(outbio, &quot;Displaying the certificate subject data:\n&quot;);
+X509_NAME_print_ex(outbio, certname, 0, 0);
+BIO_printf(outbio, &quot;\n&quot;);
+
+/* ---------------------------------------------------------- *
+ * Free the structures we don&#39;t need anymore                  *
+ * -----------------------------------------------------------*/
+SSL_free(ssl);
+close(server);
+X509_free(cert);
+SSL_CTX_free(ctx);
+BIO_printf(outbio, &quot;Finished SSL/TLS connection with server: %s.\n&quot;, dest_url);</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://www.openssl.org/docs/man1.0.2/man3/SSL_CTX_set_client_CA_list.html" target="_blank" rel="noopener">SSL_CTX_set_client_CA_list</a></li>
+<li><a href="https://www.ibm.com/support/knowledgecenter/SSB23S_1.1.0.15/gtps7/s5sple1.html?view=kc" target="_blank" rel="noopener">Server application with SSL code</a></li>
+<li><a href="https://www.ibm.com/support/knowledgecenter/en/SSB23S_1.1.0.15/gtpc2/cpp_ssl_ctx_set_client_ca_list.html#cpp_ssl_ctx_set_client_ca_list" target="_blank" rel="noopener">SSL_CTX_set_client_CA_list</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Network</category>
+        <category>SSL</category>
+      </categories>
+      <tags>
+        <tag>socket</tag>
+        <tag>https</tag>
+        <tag>ssl</tag>
+        <tag>ca</tag>
+        <tag>openssl</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>SSL 单向与双向认证</title>
     <url>/2019/04/11/one-way-vs-two-way-ssl-authentication/</url>
     <content><![CDATA[<p>关于<code>SSL</code>认证的两种方式：单向和双向</p>
@@ -35166,260 +35500,6 @@ Idx Name          Size      VMA               LMA               File off  Algn
         <tag>shared</tag>
         <tag>-fpic</tag>
         <tag>-fPIC</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>SSL 编程</title>
-    <url>/2019/04/09/ssl-programming/</url>
-    <content><![CDATA[<p><code>openssl</code>编程框架及相关示例代码</p>
-<a id="more"></a>
-
-<h2 id="openssl"><a href="#openssl" class="headerlink" title="openssl"></a>openssl</h2><p>OpenSSL 是一个开放源代码的 SSL 协议的产品实现，它采用 C 语言作为开发语言，具备了跨系统的性能。调用 OpenSSL 的函数就可以实现一个 SSL 加密的安全数据传输通道，从而保护客户端和服务器之间数据的安全。</p>
-<h2 id="头文件"><a href="#头文件" class="headerlink" title="头文件"></a>头文件</h2><pre><code class="c">#include &lt;openssl/ssl.h&gt;
-#include &lt;openssl/err.h&gt;</code></pre>
-<h2 id="常用函数"><a href="#常用函数" class="headerlink" title="常用函数"></a>常用函数</h2><h3 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h3><p>在使用 OpenSSL 之前，必须进行相应的协议初始化工作，这可以通过下面的函数实现：</p>
-<pre><code class="c">int SSL_library_int(void);</code></pre>
-<h3 id="选择会话协议"><a href="#选择会话协议" class="headerlink" title="选择会话协议"></a>选择会话协议</h3><p>在利用 OpenSSL 开始 SSL 会话之前，需要为客户端和服务器制定本次会话采用的协议，目前能够使用的协议包括<code>TLSv1.0</code>、<code>SSLv2</code>、<code>SSLv3</code>、<code>SSLv2/v3</code>。<br>需要注意的是，客户端和服务器必须使用相互兼容的协议，否则 SSL 会话将无法正常进行。</p>
-<h3 id="创建会话环境"><a href="#创建会话环境" class="headerlink" title="创建会话环境"></a>创建会话环境</h3><p>在 OpenSSL 中创建的 SSL 会话环境称为 CTX，使用不同的协议会话，其环境也不一样的。</p>
-<p>申请 SSL 会话环境的 OpenSSL 函数是：</p>
-<pre><code class="c">SSL_CTX *SSL_CTX_new(SSL_METHOD * method);</code></pre>
-<p>当 SSL 会话环境申请成功后，还要根据实际的需要设置 CTX 的属性，通常的设置是指定 SSL 握手阶段证书的验证方式和加载自己的证书。</p>
-<p>指定证书验证方式的函数是：</p>
-<pre><code class="c">int SSL_CTX_set_verify(SSL_CTX *ctx,int mode,int(*verify_callback),int(X509_STORE_CTX *));</code></pre>
-<ul>
-<li>SSL_VERIFY_NONE 表示不验证</li>
-<li>SSL_VERIFY_PEER 用于客户端时要求服务器必须提供证书，用于服务器时服务器会发出证书请求消息要求客户端提供证书，但是客户端也可以不提供</li>
-<li>SSL_VERIGY_FAIL_IF_NO_PEER_CERT<strong>只适用于服务器且必须提供证书。他必须与 SSL_VERIFY_PEER 一起使用</strong></li>
-</ul>
-<p>为 SSL 会话环境加载 CA 证书的函数是：</p>
-<pre><code class="c">SSL_CTX_load_verify_location(SSL_CTX *ctx,const char *Cafile,const char *Capath);</code></pre>
-<p>从指定文件中加载 CA 证书</p>
-<pre><code class="c">STACK_OF(X509_NAME) *SSL_load_client_CA_file(const char *file);</code></pre>
-<p>发送 CAs 到客户端，客户端必须提供一个有 CAs 签名的 CA 用于服务端验证客户端</p>
-<pre><code class="c"> void SSL_CTX_set_client_CA_list(SSL_CTX *ctx, STACK_OF(X509_NAME) *list);
- void SSL_set_client_CA_list(SSL *s, STACK_OF(X509_NAME) *list);
- int SSL_CTX_add_client_CA(SSL_CTX *ctx, X509 *cacert);
- int SSL_add_client_CA(SSL *ssl, X509 *cacert);</code></pre>
-<blockquote>
-<p>The SSL_CTX_set_client_CA_list function is only needed by server applications that verify the identity of remote client applications when SSL sessions are started.</p>
-<p><code>SSL_CTX_set_client_CA_list(ctx, SSL_load_client_CA_file())</code>用于双向认证时，服务端验证客户端</p>
-</blockquote>
-<p>为 SSL 会话加载用户证书的函数是：</p>
-<pre><code class="c">SSL_CTX_use_certificate_file(SSL_CTX *ctx, const char *file,int type);</code></pre>
-<p>为 SSL 会话加载用户私钥的函数是：</p>
-<pre><code class="c">SSL_CTX_use_PrivateKey_file(SSL_CTX *ctx,const char* file,int type);</code></pre>
-<p>在将证书和私钥加载到 SSL 会话环境之后，就可以调用下面的函数来验证私钥和证书是否相符：</p>
-<pre><code class="c">int SSL_CTX_check_private_key(SSL_CTX *ctx);</code></pre>
-<h3 id="建立-SSL-套接字"><a href="#建立-SSL-套接字" class="headerlink" title="建立 SSL 套接字"></a>建立 SSL 套接字</h3><p>SSL 套接字是建立在普通的 TCP 套接字基础之上，在建立 SSL 套接字时可以使用下面的一些函数：</p>
-<pre><code class="c">// 申请一个 SSL 套接字
-SSL *SSl_new(SSL_CTX *ctx);
-// 绑定读写套接字
-int SSL_set_fd(SSL *ssl,int fd);
-// 绑定只读套接字
-int SSL_set_rfd(SSL *ssl,int fd);
-// 绑定只写套接字
-int SSL_set_wfd(SSL *ssl,int fd);</code></pre>
-<h3 id="完成-SSL-握手"><a href="#完成-SSL-握手" class="headerlink" title="完成 SSL 握手"></a>完成 SSL 握手</h3><p>在成功创建 SSL 套接字后，客户端应使用函数<code>SSL_connect</code>替代传统的函数<code>connect</code>来完成握手过程：</p>
-<pre><code class="c">int SSL_connect(SSL *ssl);</code></pre>
-<p>而对服务器来讲，则应使用函数<code>SSL_ accept</code>替代传统的函数<code>accept</code>来完成握手过程：</p>
-<pre><code class="c">int SSL_accept(SSL *ssl);</code></pre>
-<p>握手过程完成之后，通常需要询问通信双方的证书信息，以便进行相应的验证，这可以借助于下面的函数来实现：</p>
-<pre><code class="c">X509 *SSL_get_peer_certificate(SSL *ssl);</code></pre>
-<p>该函数可以从 SSL 套接字中提取对方的证书信息，这些信息已经被 SSL 验证过了。</p>
-<pre><code class="c">X509_NAME *X509_get_subject_name(X509 *a);</code></pre>
-<p>该函数得到证书所用者的名字。</p>
-<h3 id="进行数据传输"><a href="#进行数据传输" class="headerlink" title="进行数据传输"></a>进行数据传输</h3><p>当 SSL 握手完成之后，就可以进行安全的数据传输了，在数据传输阶段，需要使用<code>SSL_read</code>和<code>SSL_write</code>来替代传统的<code>read</code>和<code>write</code>函数，来完成对套接字的读写操作：</p>
-<pre><code class="c">int SSL_read(SSL *ssl,void *buf,int num);
-int SSL_write(SSL *ssl,const void *buf,int num);</code></pre>
-<h3 id="结束-SSL-通信"><a href="#结束-SSL-通信" class="headerlink" title="结束 SSL 通信"></a>结束 SSL 通信</h3><p>当客户端和服务器之间的数据通信完成之后，调用下面的函数来释放已经申请的 SSL 资源：</p>
-<pre><code class="c">// 关闭 SSL 套接字
-int SSL_shutdown(SSL *ssl);
-// 释放 SSL 套接字
-void SSl_free(SSL *ssl);
-// 释放 SSL 会话环境
-void SSL_CTX_free(SSL_CTX *ctx);</code></pre>
-<h2 id="编程框架"><a href="#编程框架" class="headerlink" title="编程框架"></a>编程框架</h2><h3 id="server"><a href="#server" class="headerlink" title="server"></a>server</h3><pre><code class="c">meth = SSLv23_client_method();
-ctx = SSL_CTX_new (meth);
-ssl = SSL_new(ctx);
-fd = socket();
-connect();
-SSL_set_fd(ssl,fd);
-SSL_connect(ssl);
-SSL_write(ssl,&quot;Hello world&quot;,strlen(&quot;Hello World!&quot;));</code></pre>
-<h3 id="client"><a href="#client" class="headerlink" title="client"></a>client</h3><pre><code class="c">meth = SSLv23_server_method();
-ctx = SSL_CTX_new (meth);
-ssl = SSL_new(ctx);
-fd = socket();
-bind();
-listen();
-accept();
-SSL_set_fd(ssl,fd);
-SSL_connect(ssl);
-SSL_read (ssl, buf, sizeof(buf));</code></pre>
-<h2 id="Example"><a href="#Example" class="headerlink" title="Example"></a>Example</h2><p><code>SSL</code>有两种模式，单向和双向</p>
-<ol>
-<li>1-way “Standard” SSL Authentication</li>
-<li>2-way “Mutual” SSL Authentication</li>
-</ol>
-<p>参考代码</p>
-<ul>
-<li><a href="https://github.com/zapstar/two-way-ssl-c" target="_blank" rel="noopener">Two-way SSL authentication example in C</a></li>
-<li><a href="http://fm4dd.com/openssl/sslconnect.htm" target="_blank" rel="noopener">Example Code Listing</a></li>
-</ul>
-<p>server</p>
-<pre><code class="c">/* Initialize OpenSSL */
-SSL_load_error_strings();
-OpenSSL_add_ssl_algorithms();
-
-/* Get a default context */
-if (!(ctx = SSL_CTX_new(SSLv23_server_method()))) {
-    fprintf(stderr, &quot;SSL_CTX_new failed\n&quot;);
-    return NULL;
-}
-
-/* Set the CA file location for the server */
-if (SSL_CTX_load_verify_locations(ctx, ca_pem, NULL) != 1) {
-    fprintf(stderr, &quot;Could not set the CA file location\n&quot;);
-    goto fail;
-}
-
-/* Load the client&#39;s CA file location as well */
-SSL_CTX_set_client_CA_list(ctx, SSL_load_client_CA_file(ca_pem));
-
-/* Set the server&#39;s certificate signed by the CA */
-if (SSL_CTX_use_certificate_file(ctx, cert_pem, SSL_FILETYPE_PEM) != 1) {
-    fprintf(stderr, &quot;Could not set the server&#39;s certificate\n&quot;);
-    goto fail;
-}
-
-/* Set the server&#39;s key for the above certificate */
-if (SSL_CTX_use_PrivateKey_file(ctx, key_pem, SSL_FILETYPE_PEM) != 1) {
-    fprintf(stderr, &quot;Could not set the server&#39;s key\n&quot;);
-    goto fail;
-}
-
-/* We&#39;ve loaded both certificate and the key, check if they match */
-if (SSL_CTX_check_private_key(ctx) != 1) {
-    fprintf(stderr, &quot;Server&#39;s certificate and the key don&#39;t match\n&quot;);
-    goto fail;
-}
-
-/* We won&#39;t handle incomplete read/writes due to renegotiation */
-SSL_CTX_set_mode(ctx, SSL_MODE_AUTO_RETRY);
-
-/* Specify that we need to verify the client as well */
-SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
-
-/* We accept only certificates signed only by the CA himself */
-SSL_CTX_set_verify_depth(ctx, 1);</code></pre>
-<p>client</p>
-<pre><code class="c">/* ---------------------------------------------------------- *
- * These function calls initialize openssl for correct work.  *
- * ---------------------------------------------------------- */
-OpenSSL_add_all_algorithms();
-ERR_load_BIO_strings();
-ERR_load_crypto_strings();
-SSL_load_error_strings();
-
-/* ---------------------------------------------------------- *
- * Create the Input/Output BIO&#39;s.                             *
- * ---------------------------------------------------------- */
-certbio = BIO_new(BIO_s_file());
-outbio  = BIO_new_fp(stdout, BIO_NOCLOSE);
-
-/* ---------------------------------------------------------- *
- * initialize SSL library and register algorithms             *
- * ---------------------------------------------------------- */
-if(SSL_library_init() &lt; 0)
-  BIO_printf(outbio, &quot;Could not initialize the OpenSSL library !\n&quot;);
-
-/* ---------------------------------------------------------- *
- * Set SSLv2 client hello, also announce SSLv3 and TLSv1      *
- * ---------------------------------------------------------- */
-method = SSLv23_client_method();
-
-/* ---------------------------------------------------------- *
- * Try to create a new SSL context                            *
- * ---------------------------------------------------------- */
-if ( (ctx = SSL_CTX_new(method)) == NULL)
-  BIO_printf(outbio, &quot;Unable to create a new SSL context structure.\n&quot;);
-
-/* ---------------------------------------------------------- *
- * Disabling SSLv2 will leave v3 and TSLv1 for negotiation    *
- * ---------------------------------------------------------- */
-SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2);
-
-/* ---------------------------------------------------------- *
- * Create new SSL connection state object                     *
- * ---------------------------------------------------------- */
-ssl = SSL_new(ctx);
-
-/* ---------------------------------------------------------- *
- * Make the underlying TCP socket connection                  *
- * ---------------------------------------------------------- */
-server = create_socket(dest_url, outbio);
-if(server != 0)
-  BIO_printf(outbio, &quot;Successfully made the TCP connection to: %s.\n&quot;, dest_url);
-
-/* ---------------------------------------------------------- *
- * Attach the SSL session to the socket descriptor            *
- * ---------------------------------------------------------- */
-SSL_set_fd(ssl, server);
-
-/* ---------------------------------------------------------- *
- * Try to SSL-connect here, returns 1 for success             *
- * ---------------------------------------------------------- */
-if ( SSL_connect(ssl) != 1 )
-  BIO_printf(outbio, &quot;Error: Could not build a SSL session to: %s.\n&quot;, dest_url);
-else
-  BIO_printf(outbio, &quot;Successfully enabled SSL/TLS session to: %s.\n&quot;, dest_url);
-
-/* ---------------------------------------------------------- *
- * Get the remote certificate into the X509 structure         *
- * ---------------------------------------------------------- */
-cert = SSL_get_peer_certificate(ssl);
-if (cert == NULL)
-  BIO_printf(outbio, &quot;Error: Could not get a certificate from: %s.\n&quot;, dest_url);
-else
-  BIO_printf(outbio, &quot;Retrieved the server&#39;s certificate from: %s.\n&quot;, dest_url);
-
-/* ---------------------------------------------------------- *
- * extract various certificate information                    *
- * -----------------------------------------------------------*/
-certname = X509_NAME_new();
-certname = X509_get_subject_name(cert);
-
-/* ---------------------------------------------------------- *
- * display the cert subject here                              *
- * -----------------------------------------------------------*/
-BIO_printf(outbio, &quot;Displaying the certificate subject data:\n&quot;);
-X509_NAME_print_ex(outbio, certname, 0, 0);
-BIO_printf(outbio, &quot;\n&quot;);
-
-/* ---------------------------------------------------------- *
- * Free the structures we don&#39;t need anymore                  *
- * -----------------------------------------------------------*/
-SSL_free(ssl);
-close(server);
-X509_free(cert);
-SSL_CTX_free(ctx);
-BIO_printf(outbio, &quot;Finished SSL/TLS connection with server: %s.\n&quot;, dest_url);</code></pre>
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="https://www.openssl.org/docs/man1.0.2/man3/SSL_CTX_set_client_CA_list.html" target="_blank" rel="noopener">SSL_CTX_set_client_CA_list</a></li>
-<li><a href="https://www.ibm.com/support/knowledgecenter/SSB23S_1.1.0.15/gtps7/s5sple1.html?view=kc" target="_blank" rel="noopener">Server application with SSL code</a></li>
-<li><a href="https://www.ibm.com/support/knowledgecenter/en/SSB23S_1.1.0.15/gtpc2/cpp_ssl_ctx_set_client_ca_list.html#cpp_ssl_ctx_set_client_ca_list" target="_blank" rel="noopener">SSL_CTX_set_client_CA_list</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Network</category>
-        <category>SSL</category>
-      </categories>
-      <tags>
-        <tag>socket</tag>
-        <tag>https</tag>
-        <tag>ssl</tag>
-        <tag>ca</tag>
-        <tag>openssl</tag>
       </tags>
   </entry>
   <entry>
