@@ -216,6 +216,194 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/09/09/lyngsat-crawler/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2016/09/09/lyngsat-crawler/" class="post-title-link" itemprop="url">lyngsat crawler</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-09-10 00:00:00" itemprop="dateCreated datePublished" datetime="2016-09-10T00:00:00+08:00">2016-09-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Python/" itemprop="url" rel="index">
+                    <span itemprop="name">Python</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.7k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>主要用到 <code>requests</code> 和 <code>bs4</code> 这两个包</p>
+<pre><code class="python">
+import requests
+import bs4
+
+proxy = {&quot;http&quot;:&quot;http://127.0.0.1:8787&quot;,&quot;https&quot;:&quot;https://127.0.0.1:8787&quot;}
+
+url = &#39;http://www.lyngsat.com/asia.html&#39;
+
+#results = [[data.get_text() for data in row.find_all(&#39;td&#39;)] for row in allRows]
+
+def get_info_from_table(table):
+    rowspan_count = 0
+    current_tr = 0
+    trs = table.find_all(&#39;tr&#39;)
+
+    for i in range(0, len(trs))[2:-1]:
+        #print i
+        if rowspan_count != 0:
+            td = trs[i].find_all(&#39;td&#39;)
+            if i == current_tr + 1:
+                print &quot;\t&quot; + td[1].getText()
+            else:
+                print &quot;\t&quot; + td[0].getText()
+            rowspan_count = rowspan_count - 1
+            continue
+
+        for td in trs[i].find_all(&#39;td&#39;):
+            if td.has_attr(&quot;rowspan&quot;):
+                rowspan_count = int(td[&quot;rowspan&quot;]) - 1
+                current_tr = i
+                #print &quot;rowspan_count : %d&quot; % (rowspan_count)
+
+        td = trs[i].find_all(&#39;td&#39;)
+        #print td[1].b.getText() + &quot; &quot; + td[6].getText()
+        sym = td[6].getText().split(&quot;-&quot;)[0]
+        print &quot;\n&quot; + td[1].b.getText().strip(&#39; &#39;) + &quot; &quot; + sym
+        print &quot;\t&quot; + td[3].getText()
+
+def get_one_satellite(url):
+    print &quot;Start get data from %s&quot; % (url)
+    response = requests.get(url, proxies = proxy, verify=False)
+    soup = bs4.BeautifulSoup(response.content, &quot;lxml&quot;)
+    #print soup.prettify()
+
+    for table in soup.find_all(&#39;table&#39;, width=720, cellspacing=0, cellpadding=0):
+        for tr in table.find_all(&#39;tr&#39;)[0:len(table.find_all(&#39;tr&#39;))-1]:
+            for td in tr.find_all(&#39;td&#39;,colspan=10, align=&quot;center&quot;):
+                print td.string
+                get_info_from_table(table)
+                print 
+
+    #tables[6].find_all(&#39;tr&#39;)[2].find_all(&#39;td&#39;)[1]
+
+
+def get_urls():
+    response = requests.get(url, proxies = proxy, verify=False)
+    soup = bs4.BeautifulSoup(response.content, &quot;lxml&quot;)
+    #print soup.prettify()
+
+    #links = [a.attrs.get(&#39;href&#39;) for a in soup.select(&#39;tr a[href]&#39;)]
+    #for link in soup.find_all(&#39;a&#39;):
+    #    print(link.get(&#39;href&#39;))
+
+    #tables = soup.find_all(&#39;table&#39;, align=&quot;center&quot;, width=720)
+    #for link in tables[0].find_all(&#39;a&#39;):
+    #    print link.string
+    #    print(link.get(&#39;href&#39;))
+
+    #tables = soup.find_all(&#39;table&#39;, align=&quot;center&quot;, width=720)
+    #tds = tables[0].find_all(&#39;td&#39;, width=70)
+    #for i in range(0, len(tds)):
+    #    link = tds[i].find_all(&#39;a&#39;)
+    #    print(link[0].get(&#39;href&#39;))
+
+    #tables = soup.find_all(&#39;table&#39;, align=&quot;center&quot;, width=720)
+    #tds = tables[0].find_all(&#39;td&#39;, width=70)
+    #for td in tds:
+    #    for link in td.find_all(&#39;a&#39;):
+    #        print link.get(&#39;href&#39;)
+
+    for table in soup.find_all(&#39;table&#39;, align=&quot;center&quot;, width=720):
+        for td in table.find_all(&#39;td&#39;, width=70):
+            for link in td.find_all(&#39;a&#39;):
+                get_one_satellite(link.get(&#39;href&#39;))
+
+
+def main():
+    get_urls()
+
+if __name__ == &quot;__main__&quot;:
+    main()</code></pre>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2016/09/09/lyngsat-crawler/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/09/08/tumblr-crawler/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +435,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-11 11:39:19" itemprop="dateModified" datetime="2020-08-11T11:39:19+08:00">2020-08-11</time>
+                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -350,7 +538,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-11 11:39:19" itemprop="dateModified" datetime="2020-08-11T11:39:19+08:00">2020-08-11</time>
+                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -469,7 +657,7 @@ $ &gt; man git log</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-11 11:39:19" itemprop="dateModified" datetime="2020-08-11T11:39:19+08:00">2020-08-11</time>
+                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -575,7 +763,7 @@ $ &gt; man git log</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-11 11:39:19" itemprop="dateModified" datetime="2020-08-11T11:39:19+08:00">2020-08-11</time>
+                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -683,7 +871,7 @@ $ &gt; man git log</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-11 11:39:19" itemprop="dateModified" datetime="2020-08-11T11:39:19+08:00">2020-08-11</time>
+                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -848,7 +1036,7 @@ Examples, when the file name is &quot;src/version.c.gz&quot;: &gt;
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-11 11:39:19" itemprop="dateModified" datetime="2020-08-11T11:39:19+08:00">2020-08-11</time>
+                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1129,7 +1317,7 @@ def FlagsForFile( filename ):
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-11 11:39:19" itemprop="dateModified" datetime="2020-08-11T11:39:19+08:00">2020-08-11</time>
+                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1279,7 +1467,7 @@ http://127.0.0.1:16823/proxy_on.pac</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-11 11:39:19" itemprop="dateModified" datetime="2020-08-11T11:39:19+08:00">2020-08-11</time>
+                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1389,7 +1577,7 @@ http://127.0.0.1:16823/proxy_on.pac</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-11 11:39:19" itemprop="dateModified" datetime="2020-08-11T11:39:19+08:00">2020-08-11</time>
+                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1539,7 +1727,7 @@ http://127.0.0.1:16823/proxy_on.pac</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-11 11:39:19" itemprop="dateModified" datetime="2020-08-11T11:39:19+08:00">2020-08-11</time>
+                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2171,7 +2359,7 @@ http://127.0.0.1:16823/proxy_on.pac</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-11 11:39:19" itemprop="dateModified" datetime="2020-08-11T11:39:19+08:00">2020-08-11</time>
+                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2266,7 +2454,7 @@ http://127.0.0.1:16823/proxy_on.pac</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-11 11:39:19" itemprop="dateModified" datetime="2020-08-11T11:39:19+08:00">2020-08-11</time>
+                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2363,7 +2551,7 @@ http://127.0.0.1:16823/proxy_on.pac</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-11 11:39:19" itemprop="dateModified" datetime="2020-08-11T11:39:19+08:00">2020-08-11</time>
+                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2719,7 +2907,7 @@ traceroute to www.baidu.com (115.239.210.27), 30 hops max, 60 byte packets
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-11 11:39:19" itemprop="dateModified" datetime="2020-08-11T11:39:19+08:00">2020-08-11</time>
+                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2811,163 +2999,6 @@ imap &lt;C-K&gt; &lt;c-o&gt;:pyf &lt;path-to-this-file&gt;/clang-format.py&lt;cr
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/06/21/c-c++-tools/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2016/06/21/c-c++-tools/" class="post-title-link" itemprop="url">C/C++推荐工具</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2016-06-22 00:00:00" itemprop="dateCreated datePublished" datetime="2016-06-22T00:00:00+08:00">2016-06-22</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-11 11:39:19" itemprop="dateModified" datetime="2020-08-11T11:39:19+08:00">2020-08-11</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/C/" itemprop="url" rel="index">
-                    <span itemprop="name">C</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>1.4k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="编辑器"><a href="#编辑器" class="headerlink" title="编辑器"></a>编辑器</h2><ul>
-<li>vim</li>
-<li>emacs</li>
-<li>kate（KDE下一个功能强大的编辑器）</li>
-<li>Sublime text 3</li>
-</ul>
-<h2 id="集成开发环境"><a href="#集成开发环境" class="headerlink" title="集成开发环境"></a>集成开发环境</h2><ul>
-<li>AppCode ：构建与JetBrains’ IntelliJ IDEA 平台上的用于Objective-C，C,C++，Java和Java开发的集成开发环境</li>
-<li>CLion：来自JetBrains的跨平台的C/C++的集成开发环境</li>
-<li>Code::Blocks ：免费C，C++和Fortran的集成开发环境</li>
-<li>CodeLite ：另一个跨平台的免费的C/C++集成开发环境</li>
-<li>Dev-C++：可移植的C/C++/C++11集成开发环境</li>
-<li>Eclipse CDT：基于Eclipse平台的功能齐全的C和C++集成开发环境</li>
-<li>Geany ：轻量级的快速，跨平台的集成开发环境。</li>
-<li>IBM VisualAge ：来自IBM的家庭计算机集成开发环境。</li>
-<li>Irony-mode：由libclang驱动的用于Emacs的C/C++微模式</li>
-<li>KDevelop：免费开源集成开发环境</li>
-<li>Microsoft Visual Studio ：来自微软的集成开发环境</li>
-<li>NetBeans ：主要用于Java开发的的集成开发环境，也支持其他语言，尤其是PHP，C/C++和HTML5。</li>
-<li>Qt Creator：跨平台的C++，Javascript和QML集成开发环境，也是Qt SDK的一部分。</li>
-<li>rtags：C/C++的客户端服务器索引，用于 跟基于clang的emacs的集成</li>
-<li>Xcode ：由苹果公司开发</li>
-<li>YouCompleteMe：一个用于Vim的根据你敲的代码快速模糊搜索并进行代码补全的引擎。</li>
-</ul>
-<h2 id="构建"><a href="#构建" class="headerlink" title="构建"></a>构建</h2><ul>
-<li>make</li>
-<li>CMake ：跨平台的免费开源软件用于管理软件使用独立编译的方法进行构建的过程。</li>
-<li>Bear ：用于为clang工具生成编译数据库的工具</li>
-<li>Biicode：基于文件的简单依赖管理器。</li>
-<li>CPM：基于CMake和Git的C++包管理器</li>
-<li>FASTBuild：高性能，开源的构建系统，支持高度可扩展性的编译，缓冲和网络分布。</li>
-<li>Ninja ：专注于速度的小型构建系统</li>
-<li>Scons ：使用Python scipt 配置的软件构建工具</li>
-<li>tundra ：高性能的代码构建系统，甚至对于非常大型的软件项目，也能提供最好的增量构建次数。</li>
-<li>tup：基于文件的构建系统，用于后台监控变化的文件。</li>
-</ul>
-<h2 id="代码分析"><a href="#代码分析" class="headerlink" title="代码分析"></a>代码分析</h2><ul>
-<li>Cppcheck ：静态C/C++代码分析工具</li>
-<li>include-what-you-use ：使用clang进行代码分析的工具，可以#include在C和C++文件中。</li>
-<li>OCLint ：用于C，C++和Objective-C的静态源代码分析工具，用于提高质量，减少瑕疵。</li>
-<li>Clang Static Analyzer：查找C，C++和Objective-C程序bug的源代码分析工具</li>
-<li>Purify</li>
-<li>Valgrind工具集(包括剖析工具Callgrind和线程分析工具Helgrind等)</li>
-<li>KCachegrind</li>
-<li>gprof开源剖析工具，通常作为gcc编译器的一部分</li>
-<li>gprof2dot</li>
-<li>Luke StackWalker ，查找程序性能瓶颈的工具</li>
-<li>gperftools</li>
-</ul>
-<h2 id="代码工具"><a href="#代码工具" class="headerlink" title="代码工具"></a>代码工具</h2><ul>
-<li>nm 列出来自对象文件的符号</li>
-<li>objdump 显示对象文件信息</li>
-<li>strings 列出二进制文件中可输出的字符串</li>
-<li>strip 删除来自对象文件的符号</li>
-<li>m4 宏处理程序</li>
-<li>indent 代码格式化工具</li>
-</ul>
-<h2 id="检测工具"><a href="#检测工具" class="headerlink" title="检测工具"></a>检测工具</h2><ul>
-<li>time 计时工具</li>
-<li>ps 显示运行进程的当前状态</li>
-<li>top 给出系统的详细信息</li>
-<li>strace 记录对操作系统的所有访问，例如内存分配、文件I/O、系统调用和子进程的启动</li>
-</ul>
-<hr>
-<!--
-1. [C/C++ 编程有哪些值得推荐的工具](https://www.zhihu.com/question/23357089)
--->
-
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -3018,7 +3049,7 @@ imap &lt;C-K&gt; &lt;c-o&gt;:pyf &lt;path-to-this-file&gt;/clang-format.py&lt;cr
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">454</span>
+          <span class="site-state-item-count">455</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -3031,7 +3062,7 @@ imap &lt;C-K&gt; &lt;c-o&gt;:pyf &lt;path-to-this-file&gt;/clang-format.py&lt;cr
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">488</span>
+        <span class="site-state-item-count">489</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
