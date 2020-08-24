@@ -247,7 +247,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
+                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -322,6 +322,141 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/18/ycbcr2rgb/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/11/18/ycbcr2rgb/" class="post-title-link" itemprop="url">6442-YCbCr转换为565-RGB</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-11-19 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-19T00:00:00+08:00">2014-11-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>1.2k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>如下代码实现YCbCr(6:4:4:2)到RGB(5:6:6)的转换：</p>
+<pre><code>for(i = 0 ; i &lt; 0x10000; i++)
+{   
+    count++;
+
+    //得到y，cb，cr颜色分量
+    y = (i&amp;0xFC00)&gt;&gt;10;
+    u = (i&amp;0x03C0)&gt;&gt;6;
+    v = (i&amp;0x003C)&gt;&gt;2;
+
+    //每个分量为8bits
+    Y = (double) (y&lt;&lt;2);
+    Cb = (double) (u&lt;&lt;4);
+    Cr = (double) (v&lt;&lt;4);
+
+    //计算r，g，b颜色分量，每个分量为8bits
+    r = (int) (Y + 1.40200 * (Cr - 0x80));
+    g = (int) (Y - 0.34414 * (Cb - 0x80) - 0.71414 * (Cr - 0x80));
+    b = (int) (Y + 1.77200 * (Cb - 0x80));
+
+    r = max(0, min(255, r));
+    g = max(0, min(255, g));
+    b = max(0, min(255, b));
+
+    //r = (unsigned char)(1.164383*(y- 16) + 0 + 1.596027*(v - 128)); 
+    //g = (unsigned char)(1.164383*(y- 16) - 0.391762*(u - 128) - 0.812969*(v - 128)); 
+    //b = (unsigned char)(1.164383*(y- 16) + 2.017230*(u - 128) + 0 );
+
+    //printf(&quot;\033[32m y : [0x%04x] %x u : %x v : %x \t RGB:[0x%02x%02x%02x] \n\033[0m&quot;, i, y, u ,v ,r, g, b);
+    //printf(&quot;%x %x %x\n&quot;, (((unsigned int) r)&amp;0x00F8)&lt;&lt;8, (((unsigned int) g)&amp;0x00FC)&lt;&lt;3, (((unsigned int) b)&amp;0x00F8)&gt;&gt;3);
+
+    //计算5:6:5 RGB
+    rgb = ((((unsigned int) r)&amp;0x00F8)&lt;&lt;8) + ((((unsigned int) g)&amp;0x00FC)&lt;&lt;3) + ((((unsigned int) b)&amp;0x00F8)&gt;&gt;3);
+
+    //printf(&quot;565RGB : %x&quot;, rgb);
+
+    printf(&quot;0x%04x, &quot;, rgb);
+    if(count%8 == 0)
+        printf(&quot;\n&quot;);
+}</code></pre><ol>
+<li><a href="http://en.wikipedia.org/wiki/YUV" target="_blank" rel="noopener">Yuv-Wiki</a></li>
+<li><a href="http://www.cnitblog.com/Hali/archive/2010/01/11/63663.html" target="_blank" rel="noopener">RGB与YCbCr颜色空间的转换</a></li>
+<li><a href="http://blog.csdn.net/alfredtofu/article/details/6303305" target="_blank" rel="noopener">RGB与YCbCr颜色空间的转换</a></li>
+<li><a href="http://www.equasys.de/colorconversion.html" target="_blank" rel="noopener">Color Conversion</a></li>
+<li><a href="http://stackoverflow.com/questions/4041840/function-to-convert-ycbcr-to-rgb" target="_blank" rel="noopener">Function to convert YCbCr to RGB?</a></li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/18/Linux-echo-colors/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -353,7 +488,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
+                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -468,7 +603,7 @@ echo</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
+                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -698,7 +833,7 @@ int timer_delete(timer_t timerid);</code></pre><p>*<a href="http://blog.csdn.net
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
+                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -956,7 +1091,7 @@ int sigaction(int signum,const struct sigaction *act,struct sigaction *oldact));
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
+                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1302,7 +1437,7 @@ int main(int argc, char *argv[]){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
+                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1556,7 +1691,7 @@ thread2: unlock 59   i 6</code></pre><p>线程1先执行，获得mutex锁，打�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
+                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1905,7 +2040,7 @@ int munlockall(void);</code></pre><h2 id="投机性内存分配策略"><a href="
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
+                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2104,7 +2239,7 @@ int pthread_cond_timedwait (pthread_cond_t * cptr, pthread_mutex_t *mptr, const 
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
+                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2370,7 +2505,7 @@ printf(&quot;RLIMIT_CORE limits: soft=%ld hard=%ld\n&quot;, rlim.rlim_cur, rlim.
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
+                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2645,7 +2780,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
+                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2742,7 +2877,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
+                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2839,7 +2974,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
+                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2936,7 +3071,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
+                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2979,103 +3114,6 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2014/10/20/Linux-system-programming-02/">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/10/20/Linux-system-programming/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/10/20/Linux-system-programming/" class="post-title-link" itemprop="url">Linux系统编程-基本概念</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-10-21 00:00:00" itemprop="dateCreated datePublished" datetime="2014-10-21T00:00:00+08:00">2014-10-21</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-12 17:41:55" itemprop="dateModified" datetime="2020-08-12T17:41:55+08:00">2020-08-12</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux System Programming</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>2.3k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          Linux系统编程读书笔记1
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2014/10/20/Linux-system-programming/">
                 Read more &raquo;
               </a>
             </div>
@@ -3145,7 +3183,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">455</span>
+          <span class="site-state-item-count">456</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -3158,7 +3196,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">489</span>
+        <span class="site-state-item-count">494</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -3218,7 +3256,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:28</span>
+    <span title="Reading time total">18:29</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
   </div>
