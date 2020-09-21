@@ -216,7 +216,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/18/rgb/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/23/Linux-system-Advanced-File-IO/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -230,7 +230,7 @@
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/2014/11/18/rgb/" class="post-title-link" itemprop="url">RGB 颜色空间显示</a>
+            <a href="/2014/11/23/Linux-system-Advanced-File-IO/" class="post-title-link" itemprop="url">Linux系统编程-高级文件I/O</a>
         </h1>
 
         <div class="post-meta">
@@ -240,14 +240,14 @@
               </span>
               <span class="post-meta-item-text">Posted on</span>
 
-              <time title="Created: 2014-11-19 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-19T00:00:00+08:00">2014-11-19</time>
+              <time title="Created: 2014-11-24 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-24T00:00:00+08:00">2014-11-24</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
+                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -255,8 +255,8 @@
               </span>
               <span class="post-meta-item-text">In</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
+                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux System Programming</span>
                   </a>
                 </span>
             </span>
@@ -267,14 +267,14 @@
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>316</span>
+              <span>8.9k</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="fa fa-clock-o"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
+              <span>8 mins.</span>
             </span>
 
         </div>
@@ -286,23 +286,361 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>代码如下，实现RGB颜色空间的显示：</p>
-<pre><code>for(r = 0 ; r &lt; 0xFF; r++)
-{   
-    for(g = 0 ; g &lt; 0xFF; g++)
-    {   
-        for(b = 0 ; b &lt; 0xFF; b++)                                                                                         
-        {   
-            count++;
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
 
-            printf(&quot;\e]4;60;rgb:%d/%d/%d\e\\\e[38;5;60m 0x%02x%02x%02x██████\e[m&quot;, r, g, b, r, g, b); 
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<h2 id="分散-聚集IO"><a href="#分散-聚集IO" class="headerlink" title="分散/聚集IO"></a><strong>分散/聚集IO</strong></h2><p>分散/聚集IO是一种在单次系统调用中对多个缓冲区输入输出的方法，<br>可以把多个缓冲区的数据写到单个数据流，<br>也可以把单个数据流读到多个缓冲区。</p>
+<p>与线性IO（标准读写系统调用）相比有以下优势：</p>
+<ul>
+<li>编码模式更自然，尤其针对分段的数据</li>
+<li>效率更高，单个向量IO操作可以取代多个线性IO操作</li>
+<li>性能更好</li>
+<li>支持原子操作</li>
+</ul>
+<p>Linux实现了POSIX 1003.1-2001中定义的一组实现分散/聚集IO机制的系统调用：</p>
+<pre><code>#include &lt;sys/uio.h&gt;
 
-            if(count%8 == 0)
-                printf(&quot;\n&quot;);
-        }   
-    }   
-}   </code></pre><p>shell中如下进行显示：</p>
-<pre><code>$ echo -en &#39;\e]4;60;rgb:ff/ff/ff\e\\\e[38;5;60m = ██ \e[m\n&#39;</code></pre><p>可以方便进行RGB颜色的查询</p>
+struct iovec {
+    void *iov_base;
+    size_t iov_len;
+};
+
+ssize_t readv(int fd, const struct iovec *iov, int count);
+ssize_t writev(int fd, const struct iovec *iov, int count);</code></pre><p>readv()从fd中读取count个段到参数iov所指定的缓冲区中；<br>writev()从参数iov指定的缓冲区读取count个段，并写入到fd中。<br>每个iovec结构体描述一个独立的、物理不连续的缓冲区，称之为段：</p>
+<p>writev()示例：</p>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/uio.h&gt;
+
+int main(void)
+{
+    struct iovec iov[3];
+    ssize_t nr;
+    int fd, i;
+
+    char *buf = {
+        &quot;AAAAAAAAAAAAAAAAAA\n&quot;,
+        &quot;BBBBBBBBBBBBBBBBBB\n&quot;,
+        &quot;CCCCCCCCCCCCCCCCCC\n&quot;
+    };
+
+    fd = open(&quot;test.txt&quot;, O_WRONLY | O_CREAT | O_TRUNC);
+    if(-1 == fd) {
+        perror(&quot;open&quot;);
+        return 1;
+    }
+
+    /* fill out three iovec structures */
+    for(i = 0; i &lt; 3; i++) {
+        iov[i].iov_base = buf[i];
+        iov[i].iov_len = strlen(buf(i)) + 1;
+    }
+
+    nr = writev(fd, iov, 3);
+    if(-1 == nr) {
+        perror(&quot;writev&quot;);
+        return 1;
+    }
+    printf(&quot;wrote %d bytes\n&quot;, nr);
+
+    if(close(fd)) {
+        perror(&quot;close&quot;);
+        return 1;
+    }
+
+    return 0;
+}</code></pre><h2 id="Event-Poll"><a href="#Event-Poll" class="headerlink" title="Event Poll"></a><strong>Event Poll</strong></h2><p>由于poll()和select()的局限，Linux2.6内核引入了event poll机制。<br>虽然epoll的实现比poll()和select()要复杂的多，epoll解决了前两个都存在的基本性能问题，并增加了一些新的特性。</p>
+<p>对于poll()和select()，每次调用时都需要被监听的文件描述符列表。<br>内核必须遍历所有被监听的文件描述符。<br>当这个文件描述符列表变得很大时，每次调用都要遍历列表就变成规模上的瓶颈。</p>
+<p>epoll把监听注册从实际监听中分离出来，从而解决这个问题。<br>一个系统调用会初始化epoll上下文，<br>另一个从上下文中加入或删除监听的文件描述符，<br>第三个执行真正的时间等待（event wait）。</p>
+<hr>
+<hr>
+<p><strong>创建新的epoll实例</strong></p>
+<pre><code>#include &lt;sys/epoll.h&gt;
+
+int epoll_create(int size);
+int epoll_create1(int flags);</code></pre><p>epoll_create()创建一个epoll的实例，当创建成功后，会占用一个fd，所以记得在使用完之后调用close()，否则fd可能会被耗尽。<br>自从Linux2.6.8版本以后，size值被忽略，内核可以动态的分配大小，只需要size参数大于0即可。</p>
+<p>epoll_create()是老版本的epoll_create1()实现，接受参数flags支持修改epoll行为，当前，只有EPOLL_CLOEXEC是合法flag。<br>当flag = EPOLL_CLOEXEC，创建的epfd会设置FD_CLOEXEC。</p>
+<p>epoll的标准调用方式如下：</p>
+<pre><code>int epfd;
+
+epfd = epoll_create1(0);
+if(epfd &lt; 0)
+    perror(&quot;epoll_create1&quot;);</code></pre><hr>
+<hr>
+<p><strong>epoll控制函数</strong></p>
+<pre><code>#include &lt;sys/epoll.h&gt;
+
+typedef union epoll_data {
+    void        *ptr;
+    int          fd;
+    uint32_t     u32;
+    uint64_t     u64;
+} epoll_data_t;
+
+struct epoll_event {
+    uint32_t     events;      /* Epoll events */
+    epoll_data_t data;        /* User data variable */
+};
+
+int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);</code></pre><p>epoll的事件注册函数，它不同与select()是在监听事件时告诉内核要监听什么类型的事件，而是在这里先注册要监听的事件类型。<br>第一个参数是epoll_create1()的返回值，<br>第二个参数表示动作，用三个宏来表示：</p>
+<ul>
+<li>EPOLL_CTL_ADD：注册新的fd到epfd中</li>
+<li>EPOLL_CTL_MOD：修改已经注册的fd的监听事件</li>
+<li>EPOLL_CTL_DEL：从epfd中删除一个fd</li>
+</ul>
+<p>第三个参数是需要监听的fd，第四个参数是告诉内核需要监听什么事，events可以是以下几个宏的集合：</p>
+<ul>
+<li>EPOLLIN ：表示对应的文件描述符可以读（包括对端SOCKET正常关闭）</li>
+<li>EPOLLOUT：表示对应的文件描述符可以写</li>
+<li>EPOLLPRI：表示对应的文件描述符有紧急的数据可读（这里应该表示有带外数据到来）</li>
+<li>EPOLLERR：表示对应的文件描述符发生错误</li>
+<li>EPOLLHUP：表示对应的文件描述符被挂起</li>
+<li>EPOLLET： 将EPOLL设为边缘触发(Edge Triggered)模式，默认是条件触发(Level Triggered)</li>
+<li>EPOLLONESHOT：只监听一次事件，当监听完这次事件之后，如果还需要继续监听这个socket的话，需要再次把这个socket加入到EPOLL队列里</li>
+</ul>
+<p>event_poll中的data变量是由用户私有使用。<br>当接收到请求的事件后，data会被返回给用户。<br>通常的用法是把event.data.fd设置为fd，这样可以很容易查看那个文件描述符触发了事件。</p>
+<hr>
+<hr>
+<p><strong>等待epoll事件</strong></p>
+<pre><code>#include &lt;sys/epoll.h&gt;
+
+int epoll_wait(int epfd, struct epoll_event *events,
+        int maxevents, int timeout);</code></pre><p>当调用epoll_wait()时，等待epoll实例epfd中的文件fd上的事件，时限为timeout毫秒。<br>成功时，events指向描述每个事件的epoll_event结构体的内存，且最多可以有maxevents个事件，返回值是事件数。<br>当调用返回时，epoll_event结构体中的events变量描述了发生的事件。<br>data变量保留用户在调用epoll_ctl()前的所有内容。</p>
+<hr>
+<hr>
+<p><strong>边缘触发（ET）和条件触发（LT）</strong></p>
+<p>如果epoll_ctl()的参数event中的events设置为EPOLLET，fd上监听方式为边缘触发（ET），否则为条件触发（LT）。</p>
+<p>以下面的生产者和消费者在通过UNIX管道通信时举例：</p>
+<p>1.生产者向管道写入1KB数据<br>2.消费者在管道上调用epoll_wait()，等待管道上有数据并可读</p>
+<p>通过LT，在步骤2中epoll_wait()调用会立即返回，表示管道可读。<br>通过ET，需要步骤1发生后，步骤2的epoll_wait()才会返回。<br>也就是说对于ET，在调用epoll_wait()时，即使管道已经可读，也只有在数据写入之后，调用才会返回。</p>
+<ul>
+<li>LT：效率会低于ET触发，尤其在大并发，大流量的情况下。<br>但是LT对代码编写要求比较低，不容易出现问题。<br>LT模式服务编写上的表现是：只要有数据没有被获取，内核就不断通知你，因此不用担心事件丢失的情况。</li>
+<li>ET：效率非常高，在并发，大流量的情况下，会比LT少很多epoll的系统调用，因此效率高。<br>但是对编程要求高，需要细致的处理每个请求，否则容易发生丢失事件的情况。</li>
+</ul>
+<hr>
+<hr>
+<p><strong>epoll使用例子：</strong></p>
+<p>epoll_wait范围之后应该是一个循环，遍利所有的事件。<br>几乎所有的epoll程序都使用下面的框架：</p>
+<pre><code>for( ; ; )
+{
+    nfds = epoll_wait(epfd,events,20,500);
+    for(i=0;i&lt;nfds;++i)
+    {
+        if(events[i].data.fd==listenfd) //有新的连接
+        {
+            connfd = accept(listenfd,(sockaddr *)&amp;clientaddr, &amp;clilen); //accept这个连接
+            ev.data.fd=connfd;
+            ev.events=EPOLLIN|EPOLLET;
+            epoll_ctl(epfd,EPOLL_CTL_ADD,connfd,&amp;ev); //将新的fd添加到epoll的监听队列中
+        }
+        else if( events[i].events&amp;EPOLLIN ) //接收到数据，读socket
+        {
+            n = read(sockfd, line, MAXLINE)；       //读
+            ev.data.ptr = md;     //md为自定义类型，添加数据
+            ev.events=EPOLLOUT|EPOLLET;
+            epoll_ctl(epfd,EPOLL_CTL_MOD,sockfd,&amp;ev);//修改标识符，等待下一个循环时发送数据，异步处理的精髓
+        }
+        else if(events[i].events&amp;EPOLLOUT) //有数据待发送，写socket
+        {
+            struct myepoll_data* md = (myepoll_data*)events[i].data.ptr;    //取数据
+            sockfd = md-&gt;fd;
+            send( sockfd, md-&gt;ptr, strlen((char*)md-&gt;ptr), 0 );        //发送数据
+            ev.data.fd=sockfd;
+            ev.events=EPOLLIN|EPOLLET;
+            epoll_ctl(epfd,EPOLL_CTL_MOD,sockfd,&amp;ev); //修改标识符，等待下一个循环时接收数据
+        }
+        else
+        {
+            //其他的处理
+        }
+    }
+}</code></pre><h2 id="存储映射"><a href="#存储映射" class="headerlink" title="存储映射"></a><strong>存储映射</strong></h2><p>内存映射支持应用程序将文件映射到内存中，即内存地址和文件数据一一对应。<br>开发人员可以通过内存来访问文件，就像操作内存中的数据块一样，甚至可以写入内存数据区，<br>然后通过透明的映射机制将文件写入磁盘。</p>
+<h3 id="mmap-和munmap"><a href="#mmap-和munmap" class="headerlink" title="mmap()和munmap()"></a><strong>mmap()和munmap()</strong></h3><pre><code>#include &lt;sys/mmap.h&gt;  
+
+void *mmap(void *addr,size_t len,int prot, int flags,int fd,off_t offset); 
+int mummap(void *addr, size_t len);</code></pre><ul>
+<li>addr：建议内核将文件映射到的地址，这只是一个hint，为了可移植性，一般设置为0，调用返回mapping开始的实际地址。 </li>
+<li>fd：要映像文件的描述符。 </li>
+<li>prot描述了内存映像的保护权限，可以使用OR连接以下选项： <ul>
+<li>PROT_READ：区域可读。 </li>
+<li>PROT_WRITE:区域可写 </li>
+<li>PROT_EXEC:区域可执行 </li>
+<li>PROT_NONE:区域不可访问，很少有用。 </li>
+<li>prot不能和打开文件的模式冲突。比如打开了一个只读文件，prot不可以指定为PROT_WRITE。 </li>
+</ul>
+</li>
+<li>flags:描述了内存映像的方式，可以使用OR连接以下选项： <ul>
+<li>MAP_FIXED: addr是必须的，并且不是一个hint，如果内核无法在该地址映像，则失败。具有不可移植性，不推荐使用。 </li>
+<li>MAP_PRIVATE:映像不共享，文件被映像为copy-on-write，任何在内存中的改变，都不会反映在文件或者其他进程的mapping中。 </li>
+<li>MAP_SHARED：映像和其他进程共享映射的同一个文件，写入buffer等效于写入文件，读取映像写操作同时反映在其他进程中。 </li>
+<li>MAP_SHARED和MAP_PRIVATE其中之一必须被指定。 </li>
+</ul>
+</li>
+</ul>
+<p>addr和off的值需要被指定为系统虚拟页的整数倍，可以通过使用_SC_PAGESIZE或_SC_PAGE_SIZE作为sysconf参数获得页的大小。<br>如果文件的大小12字节，但系统页的大小是512字节，那么系统调用会映射512字节，其他的部分被填充为0，<br>我们可以修改另外的500个字节，但是并不反应在文件中，所有我们不能使用mmap来append文件，我们需要首先增大文件到指定的值。</p>
+<p>mummap删除了从addr地址开始，是page对齐的，连续的len字节的映像，一旦被删除，<br>内存中的区域就不在有效，访问会产生SIGSEGV信号。<br>munmap通常传入由mmap返回的addr以及设置的len长度。</p>
+<h3 id="内存映射实例"><a href="#内存映射实例" class="headerlink" title="内存映射实例"></a><strong>内存映射实例</strong></h3><pre><code>#include &lt;stdio.h&gt;  
+#include &lt;sys/types.h&gt;  
+#include &lt;sys/stat.h&gt;  
+#include &lt;fcntl.h&gt;  
+#include &lt;unistd.h&gt;  
+#include &lt;sys/mman.h&gt;  
+
+int main(int argc,char *argv[])
+{  
+    struct stat sb;  
+    off_t i;  
+    char *p;  
+    int fd;  
+
+    if(argc &lt; 2){  
+        fprintf(stderr,&quot;usage: %s &lt;file&gt;\n&quot;,argv[0]);  
+        return 1;  
+    }  
+
+    fd = open(argv[1],O_RDONLY);  
+    if(fd == -1){  
+        perror(&quot;open&quot;);  
+        return 1;  
+    }  
+
+    if(fstat(fd,&amp;sb) == -1){  
+        perror(&quot;fstat&quot;);  
+        return 1;  
+    }  
+
+    if(! S_ISREG(sb.st_mode)){  
+        fprintf(stderr,&quot;%s is not a regular file\n&quot;,argv[1]);  
+        return 1;  
+    }  
+
+    p = mmap(0,sb.st_size, PROT_READ,MAP_SHARED,fd,0);  
+    if(p == MAP_FAILED){  
+        perror(&quot;mmap&quot;);  
+        return 1;  
+    }  
+
+    if(close(fd) == -1){  
+        perror(&quot;close&quot;);  
+        return 1;  
+    }  
+
+    for(i = 0;i &lt; sb.st_size; i++){  
+        putchar(p[len]);  
+    }  
+
+    if(munmap(p,sb.st_size) == -1){  
+        perror(&quot;mummap&quot;);  
+        return 1;  
+    }  
+    return 0;  
+}</code></pre><h3 id="mmap-优缺点"><a href="#mmap-优缺点" class="headerlink" title="mmap()优缺点"></a><strong>mmap()优缺点</strong></h3><p>优点： </p>
+<ol>
+<li>从内存映像文件中读写，避免了read、write多余的拷贝。 </li>
+<li>从内存映像文件中读写，避免了多余的系统调用和用户-内核模式的切换 </li>
+<li>可以多个进程共享内存映像文件。 </li>
+<li>seeking内存映像只需要指针操作，避免系统调用lseek。 </li>
+</ol>
+<p>缺点： </p>
+<ol>
+<li>内存映像需要时整数倍页大小，如果文件较小，会浪费内存。 </li>
+<li>内存映像需要在放在进程地址空间，大的内存映像可能导致地址空间碎片，找不到足够大的空余连续区域供其它用。 </li>
+<li>内核需要维护更多的和内存映像相关的数据结构。 </li>
+</ol>
+<h3 id="调整映射大小"><a href="#调整映射大小" class="headerlink" title="调整映射大小"></a><strong>调整映射大小</strong></h3><pre><code>#define _GNU_SOURCE  
+
+#include &lt;unistd.h&gt;  
+#include &lt;sys/mman.h&gt;  
+
+void *mremap(void *addr, size_t old_size, size_t new_size, unsigned long flags);  </code></pre><p>mremap扩展或者缩小内存映像，从区域[addr,add+old_size]编程一个新的大小new_size。</p>
+<p>flags: </p>
+<ul>
+<li>0:不可以移动来改变内存映像大小。 </li>
+<li>MREMAP_MAYMOVE:如果需要可以移动地址改变内存映像大小。 </li>
+</ul>
+<p>返回值：成功返回重新设置大小之后的内存映像的大小，失败返回MAP_FAILED，并设置errno： </p>
+<ul>
+<li>EAGAIN：内存区域被锁定，无法改变大小。 </li>
+<li>EFAULT：给定区域的一些也有不合法的页或者重新映像存在问题。 </li>
+<li>EINAL：参数不合法。 </li>
+<li>ENOMEM：不移动则无法扩展,如果MREMAP_MAYMOVE没有被设置。 </li>
+</ul>
+<p>glibc经常使用mremap来实现高效的realloc()： </p>
+<pre><code>void * realloc(void *addr, size_t len)
+{  
+    size_t old_size = look_up_mapping_size(addr);  
+    void *p;  
+    p = mremp(addr,old_size, len,MREMAP_MAYMOVE);  
+    if(p == MAP_FAILED)  
+        return NULL;  
+    return p;  
+} </code></pre><h3 id="改变映射区域权限"><a href="#改变映射区域权限" class="headerlink" title="改变映射区域权限"></a><strong>改变映射区域权限</strong></h3><p>mprotect可以允许程序改变已经存在内存区域的permissions： </p>
+<pre><code>#include &lt;sys/mman.h&gt;  
+
+int mprotect(const void *addr, size_t len, int prot);  
+//mprotect (memory, alloc_size, PROT_READ | PROT_WRITE);</code></pre><p>一些系统只能改变由mmap得到的内存映像的protection，Linux可以操作任何一个内存区域。<br>成功返回0，失败返回-1，并设置errno为： </p>
+<ul>
+<li>EACCESS：不可以被设置成prot的permissions，可能是文件打开时只读的，设置成可写 </li>
+<li>EINVAL：参数不合法。 </li>
+<li>ENOMEM：内核内存不足或者所给的内存区域不是进程的合法地址空间。 </li>
+</ul>
+<h3 id="通过映射同步文件"><a href="#通过映射同步文件" class="headerlink" title="通过映射同步文件"></a><strong>通过映射同步文件</strong></h3><p>POSIX提供了和文件操作中fsync类似的将文件和内存映像同步的操作： </p>
+<pre><code>#include &lt;sys/mman.h&gt;  
+
+int msync(void *addr, size_t len, int flags);  </code></pre><p>将内存映像flush到磁盘。没有msync，没有能够保证将mapping的脏数据写回磁盘，除非被unmapped。<br>当修改内存映像，进程直接修改在内核页cache中的文件页，<br>内核可能不会很快将内核的页cache同步到磁盘。</p>
+<p>flags使用OR链接下面选项： </p>
+<ul>
+<li><p>MS_ASYNC:异步的执行同步操作，msync立即返回，更新操作被调度。 </p>
+</li>
+<li><p>MS_INVALIDATE:指定所有其他的内存映像cache副本无效。任何以后的操作都同步到磁盘中。 </p>
+</li>
+<li><p>MS_SYNC：同步的执行同步操作，等将内容写入磁盘在返回。 </p>
+<p>  if(msync(addr,len,MS_ASYNC) == -1)  </p>
+<pre><code>  perror(&quot;msync&quot;);  </code></pre></li>
+</ul>
+<p>成功返回0，失败返回-1，并设置errno： </p>
+<ul>
+<li>EINVAL：MS_SYNC和MS_ASYNC同时被设置或者addr没有页对齐。 </li>
+<li>ENOMEM：所给的内存区域（或者部分）没有被映射。 </li>
+</ul>
+<h3 id="给出映射提示"><a href="#给出映射提示" class="headerlink" title="给出映射提示"></a><strong>给出映射提示</strong></h3><p>Linux提供了madvice来让进程建议内核或者给内核提供线索来使用mapping，这样可以优化mapping的使用。 </p>
+<pre><code>#include &lt;sys/mman.h&gt;  
+
+int madvice(void *addr, size_t len, int advice);  </code></pre><p>madvise() 函数建议内核，在从 addr 指定的地址开始，<br>长度等于 len 参数值的范围内，该区域的用户虚拟内存应遵循特定的使用模式。<br>len如果为0，内核将建议施用于从addr开始的整个映像。advice：可以是以下之一： </p>
+<ul>
+<li>MADV_NORMAL:没有特别的建议。建议使用中等程度的预读。 </li>
+<li>MADV_RANDOM:以随机访问的方式访问指定的区域。建议较少的预读。 </li>
+<li>MADV_SEQUENTIAL：顺序访问指定区域。建议大量预读 </li>
+<li>MADV_WILLNEED：将来要访问指定区域。初始化预读，将指定的页读到内存。 </li>
+<li>MADV_DONTNEED：将来不再访问指定区域。内核释放与指定页关联的资源。后续的读会导致从文件中再度调入。 </li>
+</ul>
+<p><strong>调用mmap()时内核只是建立了逻辑地址到物理地址的映射表，并没有映射任何数据到内存。<br>在你要访问数据时内核会检查数据所在分页是否在内存，如果不在，则发出一次缺页中断。<br>将madvise()和mmap()搭配起来使用，在使用数据前告诉内核这一段数据我要用，将其一次读入内存。</strong></p>
+<ol>
+<li><a href="http://blog.chinaunix.net/uid-24517549-id-4051156.html" target="_blank" rel="noopener">epoll详解</a></li>
+<li><a href="http://www.cnblogs.com/napoleon_liu/archive/2010/07/20/1781578.html" target="_blank" rel="noopener">LT自动挡，ET手动挡(epoll)</a></li>
+<li><a href="http://blog.csdn.net/wangxmin2005/article/details/7587525" target="_blank" rel="noopener">EPOLL LT和ET区别</a></li>
+<li><a href="http://blog.csdn.net/ljx0305/article/details/4065058" target="_blank" rel="noopener">epoll使用详解（精髓）</a></li>
+<li><a href="https://banu.com/blog/2/how-to-use-epoll-a-complete-example-in-c/" target="_blank" rel="noopener">How to use epoll? A complete example in C</a></li>
+<li><a href="http://blog.chinaunix.net/uid-28263175-id-3541869.html" target="_blank" rel="noopener"><strong>Linux的内存映射</strong></a></li>
+</ol>
 
       
     </div>
@@ -353,7 +691,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
+                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -457,6 +795,112 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/18/rgb/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/11/18/rgb/" class="post-title-link" itemprop="url">RGB 颜色空间显示</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-11-19 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-19T00:00:00+08:00">2014-11-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>316</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>代码如下，实现RGB颜色空间的显示：</p>
+<pre><code>for(r = 0 ; r &lt; 0xFF; r++)
+{   
+    for(g = 0 ; g &lt; 0xFF; g++)
+    {   
+        for(b = 0 ; b &lt; 0xFF; b++)                                                                                         
+        {   
+            count++;
+
+            printf(&quot;\e]4;60;rgb:%d/%d/%d\e\\\e[38;5;60m 0x%02x%02x%02x██████\e[m&quot;, r, g, b, r, g, b); 
+
+            if(count%8 == 0)
+                printf(&quot;\n&quot;);
+        }   
+    }   
+}   </code></pre><p>shell中如下进行显示：</p>
+<pre><code>$ echo -en &#39;\e]4;60;rgb:ff/ff/ff\e\\\e[38;5;60m = ██ \e[m\n&#39;</code></pre><p>可以方便进行RGB颜色的查询</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/18/Linux-echo-colors/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -488,7 +932,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
+                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -603,7 +1047,7 @@ echo</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
+                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -833,7 +1277,7 @@ int timer_delete(timer_t timerid);</code></pre><p>*<a href="http://blog.csdn.net
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
+                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1091,7 +1535,7 @@ int sigaction(int signum,const struct sigaction *act,struct sigaction *oldact));
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
+                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1437,7 +1881,7 @@ int main(int argc, char *argv[]){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
+                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1691,7 +2135,7 @@ thread2: unlock 59   i 6</code></pre><p>线程1先执行，获得mutex锁，打�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
+                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2040,7 +2484,7 @@ int munlockall(void);</code></pre><h2 id="投机性内存分配策略"><a href="
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
+                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2239,7 +2683,7 @@ int pthread_cond_timedwait (pthread_cond_t * cptr, pthread_mutex_t *mptr, const 
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
+                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2505,7 +2949,7 @@ printf(&quot;RLIMIT_CORE limits: soft=%ld hard=%ld\n&quot;, rlim.rlim_cur, rlim.
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
+                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2780,7 +3224,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
+                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2877,7 +3321,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
+                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2974,7 +3418,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
+                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -3017,103 +3461,6 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2014/10/21/p2p-find/">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/10/20/Linux-system-programming-02/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/10/20/Linux-system-programming-02/" class="post-title-link" itemprop="url">Linux系统编程-文件I/O</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-10-21 00:00:00" itemprop="dateCreated datePublished" datetime="2014-10-21T00:00:00+08:00">2014-10-21</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-08-24 14:28:20" itemprop="dateModified" datetime="2020-08-24T14:28:20+08:00">2020-08-24</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux System Programming</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>4.4k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>4 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          Linux系统编程读书笔记1
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2014/10/20/Linux-system-programming-02/">
                 Read more &raquo;
               </a>
             </div>
@@ -3183,7 +3530,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">456</span>
+          <span class="site-state-item-count">457</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -3196,7 +3543,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">494</span>
+        <span class="site-state-item-count">495</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
