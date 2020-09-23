@@ -216,6 +216,169 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/04/fat32/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/12/04/fat32/" class="post-title-link" itemprop="url">eCos FAT32 文件系统</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-12-05 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-05T00:00:00+08:00">2014-12-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/eCos/" itemprop="url" rel="index">
+                    <span itemprop="name">eCos</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>4.3k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>4 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p><strong>FAT文件系统部分资料，用于开发eCos FAT接口，&lt;FatFs – FAT&gt; &lt;NTGS-3G – NTFS&gt;</strong></p>
+<hr>
+<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>可怕的问题：FATFS  f_open() 返回可怕的 FR_NO_FILESYS</p>
+<p>SDHC KINGSTON的4G卡 ，在电脑上已经格式化，里面有ABC.TXT文本文件。</p>
+<p>移植好的FATFS文件系统在 万利的EK-STM32F 开发板上 对写SD卡。</p>
+<pre><code>disk_sta=disk_initialize(0);//disk_status        
+f_mount(0, &amp;fatfs[0]);  </code></pre><p>上面两句都运行正常！ 到 </p>
+<pre><code>/* Open source file on the drive 1 */
+res = f_open(&amp;fsrc, &quot;0:/ABC.TXT&quot;, FA_CREATE_NEW | FA_READ);</code></pre><p>就返回可怕的FR_NO_FILESYSTEM</p>
+<p>从网上找来同样的问题的帖子：</p>
+<p>SD卡sector0读出来只有最后两个字节是 55 AA，中间也有几个数据，其他的都是00，<br>check_fs函数返回 FR_NO_FILESYSTEM 无可用的文件系统。<br>网上查了一下FAT系统的资料，发现物理扇区0（MBR）并不是逻辑扇区0，<br>根据第一个sector读出的数据，我的物理扇区的地址应该是0x61而不是0。<br>后来仔细查了一下FATFS的源码，发现只支持 FDISK 和 SFD 格式的FAT系统，<br>于是我猜想如果用fdisk格式化，MBR的物理扇区和逻辑扇区地址就都是0了。<br>然后在linux下用FDISK又格式化了一把，发现情况还是一样。</p>
+<p>我现在在裸机下移植fatfs，出现和你差不多的问题，麻烦楼主能看看</p>
+<pre><code>fmt = check_fs(fs, bsect = 0);                // Check sector 0 if it is a VBR 
+//fmt = check_fs(fs, 243);
+if (fmt == 1) {                                                // Not an FAT-VBR, the disk may be partitioned 
+    // Check the partition listed in top of the partition table 
+    tbl = &amp;fs-&gt;win;        // Partition table 
+    if (tbl) {                                                                        // Is the partition existing? 
+        bsect = LD_DWORD(&amp;tbl);                                        // Partition offset in LBA 
+        fmt = check_fs(fs, bsect);                                        // Check the partition 
+        //fmt = check_fs(fs, 0);
+    }
+}</code></pre><p>第一句话fmt = check_fs(fs, bsect = 0);是去读sd卡的MBR，即第0扇区，数据正常，<br>且根据里面的数据经过bsect = LD_DWORD(&amp;tbl);这句话计算正确得到启动扇区的位置（243），<br>然后fmt = check_fs(fs, bsect);这句话就是去读这个启动扇区内的数据，这里面的数据<br>非常重要，就像我们电脑的C盘，但是返回来全部是0，导致fatfs失败。<br>然后同一张卡在另一块板子的代码上测试正常，里面的数据也正常。<br>那么可以说明一点的是，既然可以读0扇区数据正常那么说明sd的底层读函数是对的，那么为什么读不出来第243扇区的数据？<br>同事怀疑是sd卡初始化中设置成了只能读一次，那么我一开始就读第243扇区，<br>也是返回全0.这就郁闷了。在另一块板子的代码上测试，一开始读243扇区的数据是正常的。<br>最后，我将sd卡格式化，用winhex查看其扇区内容，发现0扇区和243扇区的数据没变。</p>
+<p>FR_NO_FILESYSTEM  问题：</p>
+<p>提示没有在你的目标存储器上建立文件系统，试试res = f_mkfs(0,0,2048);这里的2048是2048 bytes，<br>指的是你的目标存储器的扇区大小 也有可能是你没有执行注册磁盘空间的操作，试试res = f_mount(0,&amp;fs);</p>
+<p>我在读写TF卡的时候也出现过这样的问题，我的解决方式是将卡用卡槽插到PC机上，然后格式化一下，我格式化选择的是FAT格式。</p>
+<p>试试用F_MKFS函数格式化一下<br>未格式化为Fat格式，先在电脑里格式化或者用Fatfs自带的格式化函数格式化SD.记得要格式化为Fatfs支持的格式 </p>
+<p>记得要把文件系统变量放到main函数的外面，比如工作区的变量，文件指针变量等。不这样做会出现一些错误，改了就好。我移植的时候没注意，就一直停顿这里很久，原因不明。</p>
+<p>说明你没有格式化，首先需要执行f_mkfs()函数，此步骤为建立FAT相关的一些表。只需要执行一次就可以了，以后再运行程序不需执行。</p>
+<p>在FATFS中经常用到chk_mount这个函数，主要是对物理驱动器检测它的可用性，即磁盘现在是否可用，避免了磁盘中途掉电的情况，在其中有这么一段程序</p>
+<pre><code>fmt = check_fs(fs, bsect = 0);                // Check sector 0 if it is a VBR /可用的分区记录
+if (fmt == 1) {                                                // Not an FAT-VBR, the disk may be partitioned /
+    //结束符正确，确不是FAT系统，则读取下一个分区的数据，看是否是有效的结束符和FAT系统
+    // Check the partition listed in top of the partition table /
+    tbl = &amp;fs-&gt;win[MBR_Table + LD2PT(vol) * SZ_PTE];// Partition table /下一个分区属性的16字节存储指针
+    if (tbl[4]) {                                                                        // Is the partition existing? /系统ID对于FAT32为0x01，未用是为0
+        bsect = LD_DWORD(&amp;tbl[8]);                                        // Partition offset in LBA /分区偏移地址
+        fmt = check_fs(fs, bsect);        //root record                                // Check the partition /这一句不懂了
+    }
+}        </code></pre><p>这一次它是要检测什么的？？</p>
+<p>后来想了一想，对于我们的硬盘，大多是只有一个分区的，但是有的可能会有多个分区，而对于每一个分区而言，他都有一个MBR区，又称为伪MBR区，存储了这一个分区的引导程序，以及分区的信息，这样的话，如果第一个分区不是FAT系统，我们就查找是否又下一个分区，如果有的话，就开始对下一分区的判断……</p>
+<p>但是为什么它只检测了两个分区呢，可能后面还有分区呢？？？</p>
+<p>if (fmt == 3) return FR_DISK_ERR;<br>if (fmt) return FR_NO_FILESYSTEM; // No FAT volume is found /<br>//两次检测之后还不是FAT系统，就返回错误</p>
+<p>我的理解是：<br>在一些SD1.0中，物理0扇区就是逻辑0扇区，0扇区就是DBR，没有MBR，<br>这种情况也就不存在分区，第一个fmt = check_fs(fs, bsect = 0);会返回0，<br>因为check_fs里的第三个或第四个if判断会检测到DBR里面的FAT系统标识字符串，<br>其中一个会返回0，fmt=0，fmt = check_fs(fs, bsect);就不会执行了 </p>
+<pre><code>if (disk_read(fs-&gt;drive, fs-&gt;win, sect, 1) != RES_OK) // Load boot record  
+    return 3; 
+if (LD_WORD(&amp;fs-&gt;win[BS_55AA]) != 0xAA55) // Check record signature (always placed at offset 510 even if the sector size is &gt;512)  
+    return 2; 
+
+if ((LD_DWORD(&amp;fs-&gt;win[BS_FilSysType]) &amp; 0xFFFFFF) == 0x544146) // Check &quot;FAT&quot; string  
+    return 0; 
+if ((LD_DWORD(&amp;fs-&gt;win[BS_FilSysType32]) &amp; 0xFFFFFF) == 0x544146) 
+    return 0; 
+
+    return 1; </code></pre><p>而在一些有MBR的sd卡中物理0扇区是MBR，mbr里有DBR的偏移信息，<br>执行fmt = check_fs(fs, bsect = 0);的时候，第一个和第二个if会通过，<br>但是mbr里面没有fat标识字符串所以第三个和第四个if不会过，返回1，fmt=1就会执行fmt = check_fs(fs, bsect);<br>其中bsect是从mbr里读出来的逻辑0扇区偏移量，既DBR所在扇区，这次执行就同上面读DBR一样，会再第三个或第三个if返回0.</p>
+<p>chaN的驱动是针对sd，ata，usb，nand的，不单单是sd。我的sd2.0是没有MBR的，0扇区就是DBR。而PC硬盘ata的MBR就在0扇区。<br>我们重装PC的时候硬盘是可以选择NTFS和FAT等格式。<br>在有MBR的前提下，就有DPT，紧接MBR引导代码是DPT和“55AA”，DBR是在偏移X扇区里，X就是代码的tbl[8]的双字（4字节），也就是DPT的OFFSET 8~11。<br>假设有4分区，那么只要第一次检查0扇区是不是DBR，如果不是就检查第二次（只需检查1次即可，无需检查多次，目的是验证是否是FAT），检查偏移X扇区。<br>执行check_fs(fs, bsect);后返回0，则说明第4分区DBR就在X扇区，验证成功，返回！0则错误。</p>
+<p>用电脑上的winhex去看下你的sd卡的0扇区是怎么回事<br>看看是不是mbr，当然 也得了解下这个mbr的结构<br>fat文件系统原理总得知道个大概吧</p>
+<p>可以使用WinHex来查看MBR，方法为：打开WinHex，然后在菜单栏选择“工具”、“打开磁盘”，在“物理驱动器”一栏选择自己的硬盘打开就可以了。</p>
+<p><strong>对U盘的格式化就是按照文件系统的规范完成BUFF的组建，然后写入到指定的扇区中，例如FAT32的DBR、FAT表等。</strong></p>
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ol>
+<li><a href="http://velep.com/archives/714.html" target="_blank" rel="noopener">stm32移植ecos #31，ecos sd driver，SD卡驱动（1）</a></li>
+<li><a href="http://velep.com/archives/725.html" target="_blank" rel="noopener">stm32移植ecos #32，ecos sd driver，SD卡驱动（2）</a></li>
+<li><a href="http://velep.com/archives/729.html" target="_blank" rel="noopener">stm32移植ecos #33，ecos sd driver，SD卡驱动（3）</a></li>
+<li><a href="http://velep.com/archives/732.html" target="_blank" rel="noopener">stm32移植ecos #34，ecos sd driver，SD卡驱动（4）</a></li>
+<li><a href="https://www.sourceware.org/ml/ecos-discuss/2012-07/msg00006.html" target="_blank" rel="noopener">reading size and used space on compact flash (CF) card?</a></li>
+<li><a href="http://velep.com/archives/688.html" target="_blank" rel="noopener">SD卡数据结构与FAT文件系统详细分析（上）</a></li>
+<li><a href="http://velep.com/archives/707.html" target="_blank" rel="noopener">SD卡数据结构与FAT文件系统详细分析（下）</a></li>
+<li><a href="http://elm-chan.org/fsw/ff/00index_e.html" target="_blank" rel="noopener">FatFs - Generic FAT File System Module</a></li>
+<li><a href="http://dengqi.blog.51cto.com/5685776/1349327" target="_blank" rel="noopener">FAT32文件系统详解</a></li>
+<li><a href="http://blog.csdn.net/l545045612/article/details/7490260" target="_blank" rel="noopener">FATFS 移植 （应用部分）</a></li>
+<li><a href="http://bbs.21ic.com/icview-619554-1-1.html" target="_blank" rel="noopener">FATFS  f_open() 返回可怕的 FR_NO_FILESYS</a></li>
+<li><a href="">FAT系统原理.pdf</a></li>
+<li><a href="">FAT白皮书中文版.pdf</a></li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/23/Linux-system-Advanced-File-IO/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +410,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
+                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -691,7 +854,7 @@ int madvice(void *addr, size_t len, int advice);  </code></pre><p>madvise() 函�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
+                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -826,7 +989,7 @@ int madvice(void *addr, size_t len, int advice);  </code></pre><p>madvise() 函�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
+                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -932,7 +1095,7 @@ int madvice(void *addr, size_t len, int advice);  </code></pre><p>madvise() 函�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
+                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1047,7 +1210,7 @@ echo</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
+                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1277,7 +1440,7 @@ int timer_delete(timer_t timerid);</code></pre><p>*<a href="http://blog.csdn.net
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
+                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1535,7 +1698,7 @@ int sigaction(int signum,const struct sigaction *act,struct sigaction *oldact));
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
+                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1881,7 +2044,7 @@ int main(int argc, char *argv[]){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
+                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2135,7 +2298,7 @@ thread2: unlock 59   i 6</code></pre><p>线程1先执行，获得mutex锁，打�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
+                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2484,7 +2647,7 @@ int munlockall(void);</code></pre><h2 id="投机性内存分配策略"><a href="
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
+                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2683,7 +2846,7 @@ int pthread_cond_timedwait (pthread_cond_t * cptr, pthread_mutex_t *mptr, const 
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
+                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2949,7 +3112,7 @@ printf(&quot;RLIMIT_CORE limits: soft=%ld hard=%ld\n&quot;, rlim.rlim_cur, rlim.
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
+                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -3224,7 +3387,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
+                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -3321,7 +3484,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
+                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -3364,103 +3527,6 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2014/10/30/Linux-system-programming-03-io/">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/10/21/p2p-find/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/10/21/p2p-find/" class="post-title-link" itemprop="url">P2P设备和Miracast设备发现过程</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-10-22 00:00:00" itemprop="dateCreated datePublished" datetime="2014-10-22T00:00:00+08:00">2014-10-22</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-21 14:59:09" itemprop="dateModified" datetime="2020-09-21T14:59:09+08:00">2020-09-21</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>7.1k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>6 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          Device Discovery
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2014/10/21/p2p-find/">
                 Read more &raquo;
               </a>
             </div>
@@ -3530,7 +3596,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">457</span>
+          <span class="site-state-item-count">458</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
