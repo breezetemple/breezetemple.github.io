@@ -216,6 +216,189 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/04/04/ecos-mem-info/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/04/04/ecos-mem-info/" class="post-title-link" itemprop="url">eCos Mem Info[转]</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-04-05 00:00:00" itemprop="dateCreated datePublished" datetime="2015-04-05T00:00:00+08:00">2015-04-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/eCos/" itemprop="url" rel="index">
+                    <span itemprop="name">eCos</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.4k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p>嵌入式系统的内存资源是非常有限的，<br>如果配置不当可导致eCos应用程序因为存储空间不足而链接失败。<br>解决这个问题的办法可以是增加更多的内存或者是减少软件对内存资源的使用，通常是后一种办法。<br>既然要减少内存使用量，那么首先要找出都是哪些变量吃光了内存，<br>就是说要对映像符号进行分析，找出最占内存的变量，<br>看看能否避免使用该变量或减少该变量的占用容量。<br>GNU工具链中的nm就是做这个事情用的，按照用户手册的说法，<br>nm是用来解析映像符号的，包括符号使用容量和所在的文件。</p>
+<h2 id="查找最占内存变量"><a href="#查找最占内存变量" class="headerlink" title="查找最占内存变量"></a><strong>查找最占内存变量</strong></h2><pre><code>$ nm --print-size --line-numbers --size-sort app.elf | grep &quot; [dDbB] &quot;  
+......  
+10004154 00000800 b var_data    /cygdrive/f/ecos/hg/packages/net/lwip_tcpip/current/src/ecos/sys_arch.c:84  
+10002fb0 00000b00 b timer_table  
+10001f98 00001000 b main_stack  
+10004994 00001800 b stack_data  /cygdrive/f/ecos/hg/packages/net/lwip_tcpip/current/src/ecos/sys_arch.c:95  
+2007c000 000018b8 b emac_ahb_ram        /cygdrive/f/ecos/hg/packages/devs/eth/arm/lpc2xxx/current/src/if_lpc2xxx.c:357  
+20080388 0000283b b memp_memory /cygdrive/f/ecos/hg/packages/net/lwip_tcpip/current/src/core/memp.c:146  </code></pre><ul>
+<li>–print-size：打印符号符号占用内存量</li>
+<li>–line-numbers：打印符号所在的源文件名及行号</li>
+<li>–size-sort：以符号占用内存量来排序</li>
+<li>app.elf：eCos应用映像文件名</li>
+<li>输出内容按列分别为：符号地址、符号占用内存量、符号类型、所在文件及行号</li>
+<li>grep的作用是过滤不需要的符号，我们这里仅需要存储在RAM中的变量，将常量和函数等过滤掉，<br>注意grep参数的引号和方括号之间有空格。<br>输出结果按照变量内容占用量排序输出，最后输出的是占用量最大的变量。<br>从上面的输出可以看出memp_memory占用的内存最多，通过文件名可以判断这是lwIP内存池，<br>修改lwIP配置减少连接数和缓存数目等可以减少该变量的内存占用量。</li>
+</ul>
+<h2 id="链接失败时的办法"><a href="#链接失败时的办法" class="headerlink" title="链接失败时的办法"></a><strong>链接失败时的办法</strong></h2><p>如果容量超限，压根就不能编译完成，也就谈不上映像文件了，<br>这时候可以修改target.ld文件，修改内存容量，内存容量可以修改成比目标机实际容量更大的值，<br>修改target.ld的目的是可以正确地生成映像文件然后使用nm来分析内存使用情况并进行调整，<br>而不是下载到目标机运行，如果target.ld设定的内存容量比目标机实际内存容量大，<br>即使下载到目标机也不能正常运行。根据nm输出结果及应用需求调整内存使用量，<br>当映像使用的内存容量小于目标机实际内存容量后，恢复target.ld的内存容量设置。</p>
+<h2 id="使用size查看总内存量"><a href="#使用size查看总内存量" class="headerlink" title="使用size查看总内存量"></a><strong>使用size查看总内存量</strong></h2><p>nm打印出每个符号占用的内存量，而size打印映像的总内存量，<br>可以使用size输出快速判断容量是否超限的问题，size还可以显示srec和ihex格式的映像容量。</p>
+<pre><code>$ size app.elf  
+text    data     bss     dec     hex filename  
+158712    1852   43503  204067   31d23 app.elf  </code></pre><h2 id="使用哪个nm？"><a href="#使用哪个nm？" class="headerlink" title="使用哪个nm？"></a><strong>使用哪个nm？</strong></h2><p>nm和size只是对ELF格式的映像文件符号和加载段进行分析，<br>因此跟硬件架构没多大关系，<br>使用nm或arm-eabi-nm的效果是一样的，如果不放心，那就用arm-eabi-nm吧，size同理。</p>
+<h2 id="nm常用参数"><a href="#nm常用参数" class="headerlink" title="nm常用参数"></a><strong>nm常用参数</strong></h2><h3 id="C-–demangle"><a href="#C-–demangle" class="headerlink" title="-C, –demangle"></a><strong>-C, –demangle</strong></h3><p>逆向解析C++符号转换，编译C++源代码时，<br>会将C++符号转换成符号汇编器要求的符号，<br>如果不对C++符号进行逆向解析，那么看到的是汇编符号而不是C++源文件中的符号名。</p>
+<p>使用该参数前，输出汇编符号，晦涩难懂</p>
+<pre><code>$ arm-eabi-nm app.elf  
+......  
+00006adc T _ZN10Cyg_Thread5delayEy  
+......  </code></pre><p>使用该参数后，输出C++符号，与源文件符号一致</p>
+<pre><code>$ arm-eabi-nm -C app.elf  
+    ......  
+00006adc T Cyg_Thread::delay(unsigned long long)  
+    ......  </code></pre><h3 id="l-–line-numbers"><a href="#l-–line-numbers" class="headerlink" title="-l, –line-numbers"></a><strong>-l, –line-numbers</strong></h3><p>输出符号所在的文件名和行号。使用该参数前</p>
+<pre><code>$ arm-eabi-nm app.elf  
+......  
+0001a0c4 T write  </code></pre><p>使用该参数后，行尾追加文件名和行号</p>
+<pre><code>$ arm-eabi-nm -l app.elf  
+......  
+0001a0c4 T write        /cygdrive/f/ecos/hg/packages/io/fileio/current/src/io.cxx:169  </code></pre><h3 id="S-–print-size"><a href="#S-–print-size" class="headerlink" title="-S, –print-size"></a><strong>-S, –print-size</strong></h3><p>输出符号占用内存量。使用该参数前</p>
+<pre><code>$ arm-eabi-nm app.elf  
+......  
+0001a0c4 T write  </code></pre><p>使用该参数后，第2列数字为符号占用内存量</p>
+<pre><code>$ arm-eabi-nm -S app.elf  
+......  
+0001a0c4 00000034 T write  </code></pre><h3 id="n-–numeric-sort"><a href="#n-–numeric-sort" class="headerlink" title="-n, –numeric-sort"></a><strong>-n, –numeric-sort</strong></h3><p>输出结果按照符号地址排序。使用该参数前</p>
+<pre><code>$ arm-eabi-nm app.elf  
+......  
+000202c8 T udp_sendto_if  
+00018ec0 t update_arp_entry  
+10004154 b var_data  
+1000497c b var_handle  
+10004954 b var_mempool  
+00009a60 T vfnprintf  
+0001a0c4 T write  </code></pre><p>使用该参数后，根据第1列数值排序</p>
+<pre><code>$ arm-eabi-nm -n app.elf  
+......  
+100070b0 A __heap1  
+10007fe0 A hal_startup_stack  
+2007c000 A __ahb_sram0_start  
+2007c000 b emac_ahb_ram  
+2007d8b8 A __ahb_sram0_end  
+20080000 A __ahb_sram1_start  
+20080000 b ram_heap  
+20080388 b memp_memory  
+20082bc3 A __ahb_sram1_end  </code></pre><h3 id="–size-sort"><a href="#–size-sort" class="headerlink" title="–size-sort"></a><strong>–size-sort</strong></h3><p>按照内存使用量排序。使用该参数前</p>
+<pre><code>$ arm-eabi-nm -S app.elf  
+......  
+10004154 00000800 b var_data  
+1000497c 00000004 b var_handle  
+10004954 00000028 b var_mempool  
+00009a60 000015f4 T vfnprintf  
+0001a0c4 00000034 T write  </code></pre><p>使用该参数后，根据第2列数值进行排序</p>
+<pre><code>$ arm-eabi-nm -S --size-sort app.elf  
+......  
+10001f98 00001000 b _ZL10main_stack  
+0001cf38 000011dc t tcp_receive  
+00009a60 000015f4 T vfnprintf  
+10004994 00001800 b stack_data  
+2007c000 000018b8 b emac_ahb_ram  
+20080388 0000283b b memp_memory </code></pre>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/04/04/ecos-cpu-load/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +430,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
+                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -382,7 +565,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
+                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -665,7 +848,7 @@ while(cyg_thread_get_next(&amp;thread, &amp;id))
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
+                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -777,7 +960,7 @@ $ luarocks search **</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
+                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -916,7 +1099,7 @@ FIND_PROGRAM</code></pre><p>注意 CMAKE_MODULE_PATH</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
+                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1023,7 +1206,7 @@ $ xclip -sel clip &lt; ~/.ssh/id_rsa.pub</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
+                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1265,7 +1448,7 @@ INSTALL(FILES demo.hpp http.hpp DESTINATION include)</code></pre><h2 id="Ref"><a
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
+                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1484,7 +1667,7 @@ set(var a b c)</code></pre><p>字符串列表可以用 foreach命令叠代（ite
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
+                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1589,7 +1772,7 @@ curl_setopt($ch,CURLOPT_CAINFO,dirname(__FILE__).&#39;/cacert.pem&#39;);</code><
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
+                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1843,7 +2026,7 @@ end</code></pre><p>上面的例子含义：当x&gt;0时，在foo函数处停下�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
+                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2011,7 +2194,7 @@ struct aiocb {
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
+                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2122,7 +2305,7 @@ struct aiocb {
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
+                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2267,7 +2450,7 @@ const char *dlerror(void);</code></pre><p>当动态链接库操作函数执行�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
+                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2368,7 +2551,7 @@ LDFLAGS += -L$(GXSRC_PATH)/lib/$(THIRD_LIB)/ -lkolatv -lpcre</code></pre><p>其�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
+                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2414,262 +2597,6 @@ LDFLAGS += -L$(GXSRC_PATH)/lib/$(THIRD_LIB)/ -lkolatv -lpcre</code></pre><p>其�
 <p><img src="http://images.51cto.com/files/uploadimg/20090603/163946908.jpg" alt="fork()系统调用"></p>
 <p>从图中我们可以看出，调用fork()实际上是调用了中断0x80，通过事先初始化好的IDT，<br>程序转移到了_system_call，最终通过一个函数指针数组sys_call_table[]转化成了调用sys_fork()。</p>
 <p>系统调用起到了连接用户进程和操作系统的桥梁作用，由于桥两端处于不同的态，因此需要使用中断来过渡。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/12/14/socket/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/12/14/socket/" class="post-title-link" itemprop="url">网络编程Socket</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-12-15 00:00:00" itemprop="dateCreated datePublished" datetime="2014-12-15T00:00:00+08:00">2014-12-15</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-23 15:12:08" itemprop="dateModified" datetime="2020-09-23T15:12:08+08:00">2020-09-23</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/Socket/" itemprop="url" rel="index">
-                    <span itemprop="name">Socket</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Network/" itemprop="url" rel="index">
-                    <span itemprop="name">Network</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Network/TCP/" itemprop="url" rel="index">
-                    <span itemprop="name">TCP</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>3.7k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>3 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p>网络中的进程通常由一个三元组来标识，包括<strong>协议、本地地址和端口</strong>。</p>
-<p><strong>主机字节次序与网络字节次序</strong></p>
-<p>对于一个4字节的整数：<code>0x11223344</code>，占用四个字节存储单元，在主机中有两种<strong>主机字节次序</strong>：</p>
-<hr>
-<table border="1" width="400" frame="hsides" rules="rows">
-    <tr>
-        <td></td>
-        <td>Bytes3</td>
-        <td>Bytes2</td>
-        <td>Bytes1</td>
-        <td>Bytes0</td>
-    </tr>
-    <tr>
-        <td>Little Endian :</td>
-        <td>11</td>
-        <td>22</td>
-        <td>33</td>
-        <td>44</td>
-    </tr>
-    <tr>
-        <td>Big Endian :</td>
-        <td>44</td>
-        <td>33</td>
-        <td>22</td>
-        <td>11</td>
-    </tr>
-</table>
-
-<hr>
-<p>x86采用小端方式，PowerPC和Sparc采用大端方式。<br>为了保证互连性，要求所有的数据按照统一字节顺序传输，于是出现了<strong>网络字节次序</strong>，规定与x86的主机字节次序相反。</p>
-<p>在UNIX中提供如下API用于转换：</p>
-<pre><code>#include &lt;arpa/inet.h&gt;
-
-uint32_t htonl(uint32_t hostlong);
-uint16_t htons(uint16_t hostshort);
-uint32_t ntohl(uint32_t netlong);
-uint16_t ntohs(uint16_t netshort);</code></pre><p>进程经网络通信时，有两种方法可以选择：</p>
-<ul>
-<li><p><strong>面向连接方式</strong>，就是通信双方在通信时，要事先建立一条通信线路，<br>其过程有建立连接、使用连接和释放连接三个过程。<br>TCP协议就是一种面向连接服务的协议，电话系统是一个面向连接的模式。</p>
-</li>
-<li><p><strong>无连接方式</strong>，就是通信双方不需要事先建立一条通信线路，<br>而是把每个带有目的地址的包（报文分组）送到线路上，由系统选定路线进行传输。<br>IP、UDP协议就是一种无连接协议，邮政系统是一个无连接的模式。</p>
-<p>  #include &lt;sys/types.h&gt;          /* See NOTES */<br>  #include &lt;sys/socket.h&gt;</p>
-<p>  int socket(int domain, int type, int protocol);</p>
-</li>
-</ul>
-<p>Socket类型：</p>
-<ul>
-<li><strong>流套接字，SOCK_STREAM，用于提供面向连接、可靠的数据传输服务</strong></li>
-<li><strong>数据包套接字，SOCK_DGRAM，用于提供无连接服务，不能保证数据的可靠性</strong></li>
-<li><strong>原始套接字，SOCK_RAW</strong></li>
-</ul>
-<p>Raw socket与标准套接字（SOCK_STREAM、SOCK_DGRAM）的区别：</p>
-<p>raw socket可以读写内核没有处理的IP数据包，而流套接字只能读取TCP数据，数据包套接字只能读取UDP数据。<br>使用raw socket可以避开TCP/IP处理机制，被传送的数据包可以被直接传送给需要它的应用程序。</p>
-<p>raw socket植根于操作系统网络核心（Network Core），而标准socket则“悬浮”于TCP和UDP协议的外围。</p>
-<p>套接字寻址API：</p>
-<pre><code>include &lt;netdb.h&gt;
-
-//获取主机名和IP地址
-struct hostent *gethostbyname(const char *name);
-struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type);
-//获取服务与端口地址
-struct servent *getservbyname(const char *name, const char *proto);
-struct servent *getservbyport(int port, const char *proto);</code></pre><p>套接字选项API：</p>
-<pre><code>#include &lt;sys/types.h&gt;
-#include &lt;sys/socket.h&gt;
-
-//获取套接字选项的设置情况
-int getsockopt(int sockfd, int level, int optname, void *optval, socklen_t *optlen);
-//设置套接字选项
-int setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen);</code></pre><p>套接字API：</p>
-<pre><code>#include &lt;sys/types.h&gt;
-#include &lt;sys/socket.h&gt;
-
-int socket(int domain, int type, int protocol);
-int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
-int listen(int sockfd, int backlog);
-int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
-int accept(int sockfd, struct sockaddr *cliaddr, socklen_t addrlen);
-ssize_t send(int sockfd, const void *buf, size_t len, int flags);
-ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
-ssize_t recv(int sockfd, void *buf, size_t len, int flags);
-ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
-int shutdown(int sockfd, int how);</code></pre><p>bind函数使用通用地址结构<code>struct sockaddr</code>来设置套接字地址，<br>而在网络通信时必须使用<code>sockaddr_in</code>来构造一个套接字地址，<br>所以，调用bind时，需要将<code>sockaddr_in</code>结构类型强制转换为<code>struct sockaddr</code>结构类型。</p>
-<p>listen函数仅被TCP服务器调用。当函数<code>socket</code>创建一个套接字时，它被假设为一个主动套接字，<br>listen将此套接字转换为被动套接字，指示内核应接受向此套接字的连接请求，<br>同时维护两个队列（未完成连接队列、已完成连接队列）排队连接请求。</p>
-<p>服务器套接字进入侦听状态后，必须通过函数accept接收客户进程提交的连接请求，从而完成一个套接字的完整连接。</p>
-<p>套接字的数据收发即可以使用文件库函数 read/write ，也可以使用套接字的专用收发函数 recv/send 。</p>
-<p>TCP是面向连接的通信协议，采用客户机-服务器模式。套接字的全部工作流程如下所述：</p>
-<ol>
-<li>服务器启动进程，调用Socket创建一个基于TCP协议的流套接字描述符。</li>
-<li>其次，服务进程调用bind命名套接字，将套接字描述符绑定到本地地址和本地端口上，至此Socket的半相关描述—{协议，本地地址，本地端口}—完成。</li>
-<li>再次，服务器端调用listen，开始侦听客户端的Socket连接请求。</li>
-<li>接下来，客户端创建套接字描述符，并且调用connect向服务端提交连接请求。服务器端接收到客户端连接请求后，调用accept接受，并创建一个新的套接字描述符与客户端建立连接，然后原套接字描述符继续侦听客户端的连接请求。</li>
-<li>客户端与服务器端的新套接字进行数据传送，调用write或send向对方发送数据，调用read或recv接收数据。</li>
-<li>在数据交流完毕后，双方调用close或者shutdown半闭套接字。</li>
-</ol>
-<p>基于TCP（面向连接）的socket编程TCP是面向连接的，可靠的传输协议</p>
-<p>服务器端程序：</p>
-<ol>
-<li>创建套接字（socket）</li>
-<li>将套接字绑定到一个本机地址和端口上（bind）</li>
-<li>将套接字设为监听模式，准备接收客户请求（listen）</li>
-<li>等待客户请求到来，当请求到来后，接受连接请求，返回一个新的对应于此次连接的套接字（accept）</li>
-<li>用返回的套接字和客户端进行通信（send/recv）</li>
-<li>返回，等待另一个用户的请求</li>
-<li>关闭套接字</li>
-</ol>
-<p>客户端程序：</p>
-<ol>
-<li>创建套接字（socket）</li>
-<li>向服务器端发送连接请求（connect）</li>
-<li>和服务器进行通信（recv/send）</li>
-<li>关闭套接字</li>
-</ol>
-<p>基于UDP（面向无连接）的socket编程UDP是无连接的，不可靠的传输协议</p>
-<p>服务器端（接收端）程序：</p>
-<ol>
-<li>创建套接字(socket)</li>
-<li>将套接字绑定到一个本地地址和端口上（bind）</li>
-<li>等待接收数据（recvfrom）</li>
-<li>关闭套接字</li>
-</ol>
-<p>客户端（发送端）程序：</p>
-<ol>
-<li>创建套接字（socket）</li>
-<li>发送数据（sendto）</li>
-<li>关闭套接字</li>
-</ol>
-<hr>
-<ol>
-<li><a href="http://www.cnblogs.com/chengmin/archive/2010/06/10/1755751.html" target="_blank" rel="noopener">socket与TCP/UDP编程</a></li>
-<li><a href="http://blog.163.com/zhangmaochu@126/blog/static/373606222009118103318856/" target="_blank" rel="noopener">基于Socket的UDP和TCP编程介绍</a></li>
-</ol>
 
       
     </div>
@@ -2735,7 +2662,7 @@ int shutdown(int sockfd, int how);</code></pre><p>bind函数使用通用地址�
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">458</span>
+          <span class="site-state-item-count">459</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
