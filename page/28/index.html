@@ -216,6 +216,196 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/20/gdb-disassemble-debug/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/10/20/gdb-disassemble-debug/" class="post-title-link" itemprop="url">使用反汇编定位未开源库问题</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-10-21 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-21T00:00:00+08:00">2015-10-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index">
+                    <span itemprop="name">C</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>整合版本时，遇到一个必现死机问题，每次出现问题都是调用库中的一个函数。<br>经过排查，初步怀疑是库存在一些问题，或者与外部使用配合出现问题。</p>
+<h2 id="定位问题"><a href="#定位问题" class="headerlink" title="定位问题"></a>定位问题</h2><pre><code>(gdb) set $pc=$epc
+(gdb) i r r10
+r10            0x970038656
+(gdb) info registers 
+r0             0x90972c100x90972c10
+r1             0x90486564-1874303644
+r2             0x970038656
+r3             0xff255
+r4             0x904895de-1874291234
+r5             0xae174
+r6             0x00
+r7             0x00
+r8             0x904d03a0-1874000992
+r9             0x11110009286326793
+r10            0x970038656
+r11            0x6096
+r12            0x11
+r13            0x904d03a0-1874000992
+r14            0x904d02a0-1874001248
+r15            0x90142750-1877727408
+pc             0x9000060a0x9000060a &lt;__default_14&gt;
+epc            0x902abd300x902abd30 &lt;inflate_fast+708&gt;
+psr            0x8f0e0010-1894907888
+epsr           0x800e0150-2146565808
+(gdb) pc
+#0  0x9014279cin xxx_xxm()at xx.c:574
+#1  0x90142750in xxx_xxm()at xx.c:568
+#2  0x9014144ein xxx_xx()at xx.c:2659
+#3  0x90141446in xxx_xx()at xx.c:2658
+#4  0x9014143ein xxx_xx()at xx.c:2657
+#5  0x901413f2in xxx_xx()at xx.c:2657
+#6  0x901413dein xxx_xx()at xx.c:2652
+#7  0x901413d2in xxx_xx()at xx.c:2652
+(gdb) disassemble $pc-10,$pc+10
+Dump of assembler code from 0x90000600 to 0x90000614:
+0x90000600 &lt;__hardware_accelerator+2&gt;:br0x90000600
+0x90000602 &lt;__trap0+0&gt;:bkpt
+0x90000604 &lt;__trap0+2&gt;:br0x90000604
+0x90000606 &lt;__default_13+0&gt;:bkpt
+0x90000608 &lt;__default_13+2&gt;:br0x90000608
+=&gt; 0x9000060a &lt;__default_14+0&gt;:bkpt
+0x9000060c &lt;__default_14+2&gt;:br0x9000060c
+0x9000060e &lt;__default_15+0&gt;:bkpt
+0x90000610 &lt;__default_15+2&gt;:br0x90000610
+0x90000612 &lt;__default_17+0&gt;:bkpt
+End of assembler dump.
+(gdb) bt
+#0  0x9000060a in __default_14 ()
+#1  0x90142750 in xxx_xxm () at xx.c:568
+#2  0x9013cfb8 in func () at c1.c:167
+#3  0x9013f394 in main_entry (args=&lt;value optimized out&gt;) at init.c:14
+#4  0x9008724c in default_thread_function (arg=0x907f32b8) at os/ecos/osapi.c:371
+#5  0x901232f2 in pthread_entry(unsigned int) ()
+#6  0x90127030 in Cyg_HardwareThread::thread_entry(Cyg_Thread*) ()
+#7  0x9012701c in Cyg_Thread::exit() ()
+#8  0xb0b6ccd0 in ?? ()</code></pre><p>可以判断出r10中值出现问题，并且问题出现在文件xx.c的函数xxx_xxm()中，重启跟踪代码：</p>
+<pre><code>(gdb) b xxx_xxm 
+Breakpoint 3 at 0x901425f4: file xx.c, line 524.
+(gdb) c
+Continuing.
+
+Breakpoint 3, xxx_xxm () at xx.c:524
+524xx.c: 没有那个文件或目录.
+in xx.c
+(gdb) display /i $r10
+1: x/i $r10
+0x1111000a:ldm r3-r15, (r0)
+(gdb) display /i $pc
+2: x/i $pc
+=&gt; 0x901425f4 &lt;xxx_xxm+20&gt;:lrw r7, 0x903BA9CC
+(gdb) n
+526in xx.c
+(gdb) 
+574in xx.c
+2: x/i $pc
+=&gt; 0x9014279c &lt;xxx_xxm+444&gt;:mov r7, r2
+1: x/i $r10
+0x1111000a:movi r4, 86
+(gdb) 
+575in xx.c
+2: x/i $pc
+=&gt; 0x901427a6 &lt;xxx_xxm+454&gt;:mov r2, r10
+1: x/i $r10
+0x9700:movi r4, 86</code></pre><p><strong>问题很可能出现在源文件xx.c的574行</strong>，执行过这一行之后，r10的值修改为0x9700，最后请客户检查代码，确认为野指针。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/18/vim-map-nmap/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +437,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
+                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -468,7 +658,7 @@ endfunc </code></pre><p>CTRL-L 插入下一个数值，CTRL-R 复位计数且返
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
+                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -674,7 +864,7 @@ cp $WORK/github.com/golang/lint/golint/_obj/exe/a.out golint</code></pre><h2 id=
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
+                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -843,7 +1033,7 @@ lib/cp936ext.h</code></pre><ol>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
+                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1015,7 +1205,7 @@ int main ( int argc, char *argv[]  )
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
+                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1132,7 +1322,7 @@ gcc -Wl,--gc-sections -o main main.c x.o</code></pre><p>可以保证代码量最
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
+                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1280,7 +1470,7 @@ int main()
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
+                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1592,7 +1782,7 @@ int main(void)
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
+                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2136,7 +2326,7 @@ $ scan-view-3.4 /tmp/scan-build-2016-06-23-125458-27549-1</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
+                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2276,7 +2466,7 @@ udevd (60): /proc/60/oom_adj is deprecated, please use /proc/60/oom_score_adj in
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
+                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2426,7 +2616,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
+                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2517,7 +2707,7 @@ grep XXYYZZ * -Rn --include=&#39;*.[ch]&#39;</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
+                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2633,7 +2823,7 @@ doxygen -g</code></pre><h3 id="生成函数调用图"><a href="#生成函数调�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
+                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2743,7 +2933,7 @@ doxygen -g</code></pre><h3 id="生成函数调用图"><a href="#生成函数调�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
+                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2811,109 +3001,6 @@ libelf-freebsd-dev - Development files for libelf (FreeBSD version)
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/04/05/nm-symbols/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/04/05/nm-symbols/" class="post-title-link" itemprop="url">nm symbols 类型及程序组成</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-04-06 00:00:00" itemprop="dateCreated datePublished" datetime="2015-04-06T00:00:00+08:00">2015-04-06</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-24 15:22:41" itemprop="dateModified" datetime="2020-09-24T15:22:41+08:00">2020-09-24</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/C/" itemprop="url" rel="index">
-                    <span itemprop="name">C</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/C/Linker/" itemprop="url" rel="index">
-                    <span itemprop="name">Linker</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>2.5k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><code>nm symbols</code> 类型列表</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2015/04/05/nm-symbols/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -2964,7 +3051,7 @@ libelf-freebsd-dev - Development files for libelf (FreeBSD version)
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">459</span>
+          <span class="site-state-item-count">460</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -2977,7 +3064,7 @@ libelf-freebsd-dev - Development files for libelf (FreeBSD version)
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">495</span>
+        <span class="site-state-item-count">497</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -3037,7 +3124,7 @@ libelf-freebsd-dev - Development files for libelf (FreeBSD version)
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:29</span>
+    <span title="Reading time total">18:32</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
   </div>

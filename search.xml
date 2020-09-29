@@ -1720,6 +1720,32 @@ $ csky-elf-objdump -h -t output/out.elf</code></pre>
       </tags>
   </entry>
   <entry>
+    <title>ubuntu64位系统32位兼容包</title>
+    <url>/2015/05/07/lib32-for-ubuntu64/</url>
+    <content><![CDATA[<p>ubuntu 14.04 64位无法安装ia32-libs，此包已被移除</p>
+<pre><code>sudo apt-get install ia32-libs</code></pre><p>替换为</p>
+<pre><code>sudo apt-get install libc6:i386
+sudo apt-get install lib32z1 lib32ncurses5 lib32bz2-1.0</code></pre><p>上面这些包基本上都是基本必备库，另外编译中需要到的各个库可以搜索相应的版本，进行安装，例如：</p>
+<pre><code>➜  /home/yanwzh  &gt; sudo apt-cache search libelf
+
+libelf-dev - libelf1 development libraries and header files
+libelf1 - library to read and write ELF files
+libelfg0 - an ELF object file access library
+libelfg0-dev - an ELF object file access library: development files
+libelf-freebsd-1 - library to read and write ELF files
+libelf-freebsd-dev - Development files for libelf (FreeBSD version)
+
+➜  /home/yanwzh  &gt; sudo apt-get install libelf-dev:i386</code></pre><p>使用sudo apt-get install somepkg:i386 来强制安装32位版本</p>
+]]></content>
+      <categories>
+        <category>ubuntu</category>
+      </categories>
+      <tags>
+        <tag>ubuntu</tag>
+        <tag>lib32</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Ubuntu下使用Doxygen和graphviz来产生源代码函数调用图</title>
     <url>/2015/07/01/doxygen-graphviz/</url>
     <content><![CDATA[<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a><strong>安装</strong></h3><pre><code>sudo apt-get install doxygen doxygen-doc doxygen-gui graphviz
@@ -1751,32 +1777,6 @@ doxygen -g</code></pre><h3 id="生成函数调用图"><a href="#生成函数调�
       <tags>
         <tag>Doxygen</tag>
         <tag>Graphviz</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>ubuntu64位系统32位兼容包</title>
-    <url>/2015/05/07/lib32-for-ubuntu64/</url>
-    <content><![CDATA[<p>ubuntu 14.04 64位无法安装ia32-libs，此包已被移除</p>
-<pre><code>sudo apt-get install ia32-libs</code></pre><p>替换为</p>
-<pre><code>sudo apt-get install libc6:i386
-sudo apt-get install lib32z1 lib32ncurses5 lib32bz2-1.0</code></pre><p>上面这些包基本上都是基本必备库，另外编译中需要到的各个库可以搜索相应的版本，进行安装，例如：</p>
-<pre><code>➜  /home/yanwzh  &gt; sudo apt-cache search libelf
-
-libelf-dev - libelf1 development libraries and header files
-libelf1 - library to read and write ELF files
-libelfg0 - an ELF object file access library
-libelfg0-dev - an ELF object file access library: development files
-libelf-freebsd-1 - library to read and write ELF files
-libelf-freebsd-dev - Development files for libelf (FreeBSD version)
-
-➜  /home/yanwzh  &gt; sudo apt-get install libelf-dev:i386</code></pre><p>使用sudo apt-get install somepkg:i386 来强制安装32位版本</p>
-]]></content>
-      <categories>
-        <category>ubuntu</category>
-      </categories>
-      <tags>
-        <tag>ubuntu</tag>
-        <tag>lib32</tag>
       </tags>
   </entry>
   <entry>
@@ -2536,95 +2536,6 @@ module/cascam/adapter/cascam_osd_adapter.c:295:5: warning: (near initialization 
       </tags>
   </entry>
   <entry>
-    <title>shell提取文件扩展名或文件名</title>
-    <url>/2015/10/27/shell-name-suffix/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p>在shell中用于提取文件名或后缀，需要用到以下几个操作符： <strong>%、%%、#、##</strong></p>
-<h2 id="和-操作符"><a href="#和-操作符" class="headerlink" title="% 和 %% 操作符"></a><strong>% 和 %% 操作符</strong></h2><p>用法：</p>
-<pre><code>${VAR%.*}
-${VAR%%.*}</code></pre><p><strong>${VAR%.*}</strong>含义：从<strong>$VAR</strong>中<strong>删除</strong>位于 <strong>%</strong> 右侧的通配符左右匹配的字符串，<strong>通配符从右向左进行匹配</strong>。</p>
-<ul>
-<li><strong>% 属于非贪婪操作符</strong>，从右向左匹配最短结果</li>
-<li><strong>%% 属于贪婪操作符</strong>，从右向左匹配符合条件的最长字符串</li>
-</ul>
-<p>示例如下：</p>
-<pre><code>file=&quot;abc.c&quot;
-name=${file%.*}
-echo file name is: $name
-
-输出结果：
-file name is: abc</code></pre><p>变量 name 赋值abc.c，那么通配符从右向左就会匹配到 .c，所有从 $VAR 中删除匹配结果。</p>
-<pre><code>file=&quot;text.gif.bak.2012&quot;
-name=${file%.*}
-name2=${file%%.*}
-echo file name is: $name
-echo file name is: $name2
-
-输出结果：
-file name is: text.gif.bak    //使用 %
-file name is: text            //使用 %%</code></pre><p>操作符 %% 使用 .* 从右向左贪婪匹配到 .gif.bak.2012</p>
-<h2 id="和-操作符-1"><a href="#和-操作符-1" class="headerlink" title="# 和 ## 操作符"></a><strong># 和 ## 操作符</strong></h2><p>用法：</p>
-<pre><code>${VAR#*.}
-${VAR##*.}</code></pre><p><strong>${VAR#*.}</strong> 含义：从 <strong>$VAR</strong> 中<strong>删除</strong>位于 <strong>#</strong> 右侧的通配符所匹配的字符串，<strong>通配符是左向右进行匹配</strong>。</p>
-<ul>
-<li><strong># 属于非贪婪操作符</strong>，从左向右匹配最短结果</li>
-<li><strong>## 属于贪婪操作符</strong>，从左向右匹配符合条件的最长字符串</li>
-</ul>
-<p>符示例：</p>
-<pre><code>file=&quot;text.gif&quot;
-suffix=${file#*.}
-echo suffix is: $suffix
-
-输出结果：
-suffix is: gif
-
-
-file=&quot;text.gif.bak.2012.txt&quot;
-suffix=${file#*.}
-suffix2=${file##*.}
-echo suffix is: $suffix
-echo suffix is: $suffix2
-
-输出结果：
-suffix is: text.gif.bak.2012     //使用 #
-suffix2 is: txt                  //使用 ##</code></pre><p>操作符 ## 使用 *. 从左向右贪婪匹配到 text.gif.bak.2012</p>
-<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><pre><code>url=&quot;www.baidu.com&quot;
-
-echo ${url%.*}      #移除 .* 所匹配的最右边的内容。
-www.baidu
-
-echo ${url%%.*}     #将从右边开始一直匹配到最左边的 *. 移除，贪婪操作符。
-www
-
-echo ${url#*.}      #移除 *. 所有匹配的最左边的内容。
-baidu.com
-
-echo ${url##*.}     #将从左边开始一直匹配到最右边的 *. 移除，贪婪操作符。
-com</code></pre>]]></content>
-      <categories>
-        <category>Shell</category>
-      </categories>
-      <tags>
-        <tag>shell</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>shell脚本的命令行选项解析</title>
     <url>/2015/10/27/shell-getopts/</url>
     <content><![CDATA[<script type="text/javascript">
@@ -2753,6 +2664,95 @@ test3</code></pre>]]></content>
       </tags>
   </entry>
   <entry>
+    <title>shell提取文件扩展名或文件名</title>
+    <url>/2015/10/27/shell-name-suffix/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p>在shell中用于提取文件名或后缀，需要用到以下几个操作符： <strong>%、%%、#、##</strong></p>
+<h2 id="和-操作符"><a href="#和-操作符" class="headerlink" title="% 和 %% 操作符"></a><strong>% 和 %% 操作符</strong></h2><p>用法：</p>
+<pre><code>${VAR%.*}
+${VAR%%.*}</code></pre><p><strong>${VAR%.*}</strong>含义：从<strong>$VAR</strong>中<strong>删除</strong>位于 <strong>%</strong> 右侧的通配符左右匹配的字符串，<strong>通配符从右向左进行匹配</strong>。</p>
+<ul>
+<li><strong>% 属于非贪婪操作符</strong>，从右向左匹配最短结果</li>
+<li><strong>%% 属于贪婪操作符</strong>，从右向左匹配符合条件的最长字符串</li>
+</ul>
+<p>示例如下：</p>
+<pre><code>file=&quot;abc.c&quot;
+name=${file%.*}
+echo file name is: $name
+
+输出结果：
+file name is: abc</code></pre><p>变量 name 赋值abc.c，那么通配符从右向左就会匹配到 .c，所有从 $VAR 中删除匹配结果。</p>
+<pre><code>file=&quot;text.gif.bak.2012&quot;
+name=${file%.*}
+name2=${file%%.*}
+echo file name is: $name
+echo file name is: $name2
+
+输出结果：
+file name is: text.gif.bak    //使用 %
+file name is: text            //使用 %%</code></pre><p>操作符 %% 使用 .* 从右向左贪婪匹配到 .gif.bak.2012</p>
+<h2 id="和-操作符-1"><a href="#和-操作符-1" class="headerlink" title="# 和 ## 操作符"></a><strong># 和 ## 操作符</strong></h2><p>用法：</p>
+<pre><code>${VAR#*.}
+${VAR##*.}</code></pre><p><strong>${VAR#*.}</strong> 含义：从 <strong>$VAR</strong> 中<strong>删除</strong>位于 <strong>#</strong> 右侧的通配符所匹配的字符串，<strong>通配符是左向右进行匹配</strong>。</p>
+<ul>
+<li><strong># 属于非贪婪操作符</strong>，从左向右匹配最短结果</li>
+<li><strong>## 属于贪婪操作符</strong>，从左向右匹配符合条件的最长字符串</li>
+</ul>
+<p>符示例：</p>
+<pre><code>file=&quot;text.gif&quot;
+suffix=${file#*.}
+echo suffix is: $suffix
+
+输出结果：
+suffix is: gif
+
+
+file=&quot;text.gif.bak.2012.txt&quot;
+suffix=${file#*.}
+suffix2=${file##*.}
+echo suffix is: $suffix
+echo suffix is: $suffix2
+
+输出结果：
+suffix is: text.gif.bak.2012     //使用 #
+suffix2 is: txt                  //使用 ##</code></pre><p>操作符 ## 使用 *. 从左向右贪婪匹配到 text.gif.bak.2012</p>
+<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><pre><code>url=&quot;www.baidu.com&quot;
+
+echo ${url%.*}      #移除 .* 所匹配的最右边的内容。
+www.baidu
+
+echo ${url%%.*}     #将从右边开始一直匹配到最左边的 *. 移除，贪婪操作符。
+www
+
+echo ${url#*.}      #移除 *. 所有匹配的最左边的内容。
+baidu.com
+
+echo ${url##*.}     #将从左边开始一直匹配到最右边的 *. 移除，贪婪操作符。
+com</code></pre>]]></content>
+      <categories>
+        <category>Shell</category>
+      </categories>
+      <tags>
+        <tag>shell</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>python ImageTk加载错误</title>
     <url>/2015/10/29/python-ImageTK/</url>
     <content><![CDATA[<p>python中使用PIL ImageTK出现以下问题：</p>
@@ -2773,6 +2773,50 @@ from PIL import ImageTk</code></pre>]]></content>
       <tags>
         <tag>python</tag>
         <tag>imagetk</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>python pip执行错误</title>
+    <url>/2015/10/29/python-pip/</url>
+    <content><![CDATA[<h2 id="ImportError-cannot-import-name-IncompleteRead"><a href="#ImportError-cannot-import-name-IncompleteRead" class="headerlink" title="ImportError: cannot import name IncompleteRead"></a>ImportError: cannot import name IncompleteRead</h2><pre><code>pip -h
+ImportError: cannot import name IncompleteRead</code></pre><p>pip出现问题，执行修复：</p>
+<pre><code>sudo apt-get remove python-pip
+sudo apt-get install python-pip</code></pre><p>没有解决问题，尝试另一种：</p>
+<pre><code>sudo easy_install pip</code></pre><p>解决此问题</p>
+<h2 id="ImportError-No-module-named-‘pip’"><a href="#ImportError-No-module-named-‘pip’" class="headerlink" title="ImportError: No module named ‘pip’"></a>ImportError: No module named ‘pip’</h2><p>Pip则是一种更为高级的安装工具，它依赖于Setuptools</p>
+<pre><code>pip list
+Traceback (most recent call last):
+File &quot;/usr/local/bin/pip&quot;, line 9, in &lt;module&gt;
+load_entry_point(&#39;pip==1.4.1&#39;, &#39;console_scripts&#39;, &#39;pip&#39;)()
+File &quot;/usr/local/lib/python3.4/dist-packages/setuptools-1.1.5-py3.4.egg /pkg_resources.py&quot;, line 357, in load_entry_point
+def get_entry_info(dist, group, name):
+File &quot;/usr/local/lib/python3.4/dist-packages/setuptools-1.1.5-py3.4.egg/pkg_resources.py&quot;, line 2394, in load_entry_point
+break
+File &quot;/usr/local/lib/python3.4/dist-packages/setuptools-1.1.5-py3.4.egg/pkg_resources.py&quot;, line 2108, in load
+name = some.module:some.attr [extra1,extra2]
+ImportError: No module named &#39;pip&#39;
+
+$ which pip
+/usr/local/bin/pip
+
+$ python2.7 -m pip //here can be just python, btw
+Usage:   
+/usr/bin/python2.7 -m pip &lt;command&gt; [options]
+//and so on...
+
+$ python3.4 -m pip
+/usr/bin/python3.4: No module named pip</code></pre><p>需要安装python3.4下的pip</p>
+<pre><code>$ curl https://bootstrap.pypa.io/get-pip.py | python3.4
+$ python{2.7,3.4} -m pip install -U setuptools</code></pre><p>然后执行</p>
+<pre><code>pip list
+pip install pyinstaller</code></pre><p>均正确，解决此问题</p>
+]]></content>
+      <categories>
+        <category>Python</category>
+      </categories>
+      <tags>
+        <tag>python</tag>
+        <tag>pip</tag>
       </tags>
   </entry>
   <entry>
@@ -2876,50 +2920,6 @@ root.mainloop()                 # 进入消息循环</code></pre><h2 id="Tkinter
       <tags>
         <tag>python</tag>
         <tag>tkinter</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>python pip执行错误</title>
-    <url>/2015/10/29/python-pip/</url>
-    <content><![CDATA[<h2 id="ImportError-cannot-import-name-IncompleteRead"><a href="#ImportError-cannot-import-name-IncompleteRead" class="headerlink" title="ImportError: cannot import name IncompleteRead"></a>ImportError: cannot import name IncompleteRead</h2><pre><code>pip -h
-ImportError: cannot import name IncompleteRead</code></pre><p>pip出现问题，执行修复：</p>
-<pre><code>sudo apt-get remove python-pip
-sudo apt-get install python-pip</code></pre><p>没有解决问题，尝试另一种：</p>
-<pre><code>sudo easy_install pip</code></pre><p>解决此问题</p>
-<h2 id="ImportError-No-module-named-‘pip’"><a href="#ImportError-No-module-named-‘pip’" class="headerlink" title="ImportError: No module named ‘pip’"></a>ImportError: No module named ‘pip’</h2><p>Pip则是一种更为高级的安装工具，它依赖于Setuptools</p>
-<pre><code>pip list
-Traceback (most recent call last):
-File &quot;/usr/local/bin/pip&quot;, line 9, in &lt;module&gt;
-load_entry_point(&#39;pip==1.4.1&#39;, &#39;console_scripts&#39;, &#39;pip&#39;)()
-File &quot;/usr/local/lib/python3.4/dist-packages/setuptools-1.1.5-py3.4.egg /pkg_resources.py&quot;, line 357, in load_entry_point
-def get_entry_info(dist, group, name):
-File &quot;/usr/local/lib/python3.4/dist-packages/setuptools-1.1.5-py3.4.egg/pkg_resources.py&quot;, line 2394, in load_entry_point
-break
-File &quot;/usr/local/lib/python3.4/dist-packages/setuptools-1.1.5-py3.4.egg/pkg_resources.py&quot;, line 2108, in load
-name = some.module:some.attr [extra1,extra2]
-ImportError: No module named &#39;pip&#39;
-
-$ which pip
-/usr/local/bin/pip
-
-$ python2.7 -m pip //here can be just python, btw
-Usage:   
-/usr/bin/python2.7 -m pip &lt;command&gt; [options]
-//and so on...
-
-$ python3.4 -m pip
-/usr/bin/python3.4: No module named pip</code></pre><p>需要安装python3.4下的pip</p>
-<pre><code>$ curl https://bootstrap.pypa.io/get-pip.py | python3.4
-$ python{2.7,3.4} -m pip install -U setuptools</code></pre><p>然后执行</p>
-<pre><code>pip list
-pip install pyinstaller</code></pre><p>均正确，解决此问题</p>
-]]></content>
-      <categories>
-        <category>Python</category>
-      </categories>
-      <tags>
-        <tag>python</tag>
-        <tag>pip</tag>
       </tags>
   </entry>
   <entry>
@@ -15889,204 +15889,6 @@ Dynamic section at offset 0x42f79c contains 29 entries:
       </tags>
   </entry>
   <entry>
-    <title>Movian Plugin Development</title>
-    <url>/2018/01/10/movian-plugin-development/</url>
-    <content><![CDATA[<p>Movian Development</p>
-<a id="more"></a>
-
-<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
-<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
-<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
-<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
-<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
-<pre><code class="json">{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;apiversion&quot;: 1,
-  &quot;id&quot;: &quot;headweb&quot;,
-  &quot;file&quot;: &quot;headweb.js&quot;,
-  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
-  &quot;version&quot;: &quot;1.5.3&quot;,
-  &quot;author&quot;: &quot;Andreas Öman&quot;,
-  &quot;title&quot;: &quot;Headweb&quot;,
-  &quot;icon&quot;: &quot;headweb_square.png&quot;,
-  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
-  &quot;category&quot;: &quot;video&quot;,
-  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
-  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
-}</code></pre>
-<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
-<ul>
-<li>ecmascript - loads the plugin using Duktape.</li>
-<li>views - used for user interface (screen keyboard plugin)</li>
-</ul>
-<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
-<ul>
-<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
-<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
-</ul>
-<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
-<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
-<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
-<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
-<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
-<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
-<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
-<ul>
-<li>“tv” - online TV</li>
-<li>“video” - streaming video</li>
-<li>“music” - streaming music</li>
-<li>“glwview” - UI extentions</li>
-<li>“subtitles” - subtitles</li>
-<li>“glwosk” - on screen keyboard</li>
-</ul>
-<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
-<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
-<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
-<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
-<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
-<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
-<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
-<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
-<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
-<pre><code>{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;file&quot;: &quot;testplugin.js&quot;,
-  &quot;id&quot;: &quot;testplugin&quot;
-}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
-<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
-  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
-})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
-<pre><code>(function(plugin) {
-  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
-    showtime.print(&quot;I was called&quot;);
-  })
-})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
-<p><code>somafa</code> 中的 <code>start URI</code></p>
-<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
-...
-}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
-<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
-<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
-<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
-<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
-<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
-<ul>
-<li>Direct URL</li>
-<li>Via a video page</li>
-</ul>
-<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
-<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
-<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
-<p>To use it first do:</p>
-<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
-      <categories>
-        <category>Movian</category>
-      </categories>
-      <tags>
-        <tag>movian</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>vim-highlight-syntax</title>
-    <url>/2017/12/19/vim-highlight-syntax/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
-<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
-<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
-<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
-<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
-<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
-<pre><code>:syntax
---- 语法项目 ---
-cLabel         xxx default case
-cStructure     xxx union struct typedef enum
-cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
-                   _Thread_local auto
-cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
-cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
-cStatement     xxx return goto asm continue break
-                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
-<p><code>:help group-name</code></p>
-<pre><code>:help group-name
-
-(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
-
-        *Comment        any comment
-
-        *Constant       any constant
-         String         a string constant: &quot;this is a string&quot;
-         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
-         Number         a number constant: 234, 0xff
-         Boolean        a boolean constant: TRUE, false
-         Float          a floating point constant: 2.3e10
-
-        *Identifier     any variable name
-         Function       function name (also: methods for classes)
-        *Statement      any statement
-         Conditional    if, then, else, endif, switch, etc.
-         Repeat         for, do, while, etc.
-         Label          case, default, etc.
-         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
-         Keyword        any other keyword
-         Exception      try, catch, throw
-
-        *PreProc        generic Preprocessor
-         Include        preprocessor #include
-         Define         preprocessor #define
-         Macro          same as Define
-         PreCondit      preprocessor #if, #else, #endif, etc.
-
-        *Type           int, long, char, etc.
-         StorageClass   static, register, volatile, etc.
-         Structure      struct, union, enum, etc.
-         Typedef        A typedef
-
-        *Special        any special symbol
-         SpecialChar    special character in a constant
-         Tag            you can use CTRL-] on this
-         Delimiter      character that needs attention
-         SpecialComment special things inside a comment
-         Debug          debugging statements
-
-        *Underlined     text that stands out, HTML links
-
-        *Ignore         left blank, hidden  hl-Ignore
-
-        *Error          any erroneous construct
-        *Todo           anything that needs extra attention; mostly the
-                        keywords TODO FIXME and XXX</code></pre>]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Editor</category>
-      </categories>
-      <tags>
-        <tag>vim</tag>
-        <tag>highlight</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>proc-pid-intro</title>
-    <url>/2017/12/14/proc-pid-intro/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
-<li><a href="https://github.com/NanXiao/gnu-linux-proc-pid-intro" target="_blank" rel="noopener">GNU/Linux下的/proc/[pid]目录下的文件分析</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>proc</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Linux 支持 NTFS 文件系统</title>
     <url>/2018/11/18/linux-support-ntfs/</url>
     <content><![CDATA[<p><code>Linux 4.9</code> 内核不支持 <code>ntfs</code>，需要移植 <code>ntfs-3g</code> 来支持相关硬盘挂载</p>
@@ -17188,6 +16990,204 @@ ENDFUNCTION(ADD_N_LIBRARY name)</code></pre>
         <tag>linux</tag>
         <tag>dhcp</tag>
         <tag>ifconfig</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>vim-highlight-syntax</title>
+    <url>/2017/12/19/vim-highlight-syntax/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
+<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
+<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
+<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
+<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
+<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
+<pre><code>:syntax
+--- 语法项目 ---
+cLabel         xxx default case
+cStructure     xxx union struct typedef enum
+cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
+                   _Thread_local auto
+cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
+cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
+cStatement     xxx return goto asm continue break
+                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
+<p><code>:help group-name</code></p>
+<pre><code>:help group-name
+
+(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
+
+        *Comment        any comment
+
+        *Constant       any constant
+         String         a string constant: &quot;this is a string&quot;
+         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
+         Number         a number constant: 234, 0xff
+         Boolean        a boolean constant: TRUE, false
+         Float          a floating point constant: 2.3e10
+
+        *Identifier     any variable name
+         Function       function name (also: methods for classes)
+        *Statement      any statement
+         Conditional    if, then, else, endif, switch, etc.
+         Repeat         for, do, while, etc.
+         Label          case, default, etc.
+         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
+         Keyword        any other keyword
+         Exception      try, catch, throw
+
+        *PreProc        generic Preprocessor
+         Include        preprocessor #include
+         Define         preprocessor #define
+         Macro          same as Define
+         PreCondit      preprocessor #if, #else, #endif, etc.
+
+        *Type           int, long, char, etc.
+         StorageClass   static, register, volatile, etc.
+         Structure      struct, union, enum, etc.
+         Typedef        A typedef
+
+        *Special        any special symbol
+         SpecialChar    special character in a constant
+         Tag            you can use CTRL-] on this
+         Delimiter      character that needs attention
+         SpecialComment special things inside a comment
+         Debug          debugging statements
+
+        *Underlined     text that stands out, HTML links
+
+        *Ignore         left blank, hidden  hl-Ignore
+
+        *Error          any erroneous construct
+        *Todo           anything that needs extra attention; mostly the
+                        keywords TODO FIXME and XXX</code></pre>]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Editor</category>
+      </categories>
+      <tags>
+        <tag>vim</tag>
+        <tag>highlight</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>proc-pid-intro</title>
+    <url>/2017/12/14/proc-pid-intro/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
+<li><a href="https://github.com/NanXiao/gnu-linux-proc-pid-intro" target="_blank" rel="noopener">GNU/Linux下的/proc/[pid]目录下的文件分析</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>proc</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Movian Plugin Development</title>
+    <url>/2018/01/10/movian-plugin-development/</url>
+    <content><![CDATA[<p>Movian Development</p>
+<a id="more"></a>
+
+<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
+<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
+<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
+<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
+<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
+<pre><code class="json">{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;apiversion&quot;: 1,
+  &quot;id&quot;: &quot;headweb&quot;,
+  &quot;file&quot;: &quot;headweb.js&quot;,
+  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
+  &quot;version&quot;: &quot;1.5.3&quot;,
+  &quot;author&quot;: &quot;Andreas Öman&quot;,
+  &quot;title&quot;: &quot;Headweb&quot;,
+  &quot;icon&quot;: &quot;headweb_square.png&quot;,
+  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
+  &quot;category&quot;: &quot;video&quot;,
+  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
+  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
+}</code></pre>
+<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
+<ul>
+<li>ecmascript - loads the plugin using Duktape.</li>
+<li>views - used for user interface (screen keyboard plugin)</li>
+</ul>
+<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
+<ul>
+<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
+<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
+</ul>
+<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
+<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
+<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
+<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
+<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
+<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
+<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
+<ul>
+<li>“tv” - online TV</li>
+<li>“video” - streaming video</li>
+<li>“music” - streaming music</li>
+<li>“glwview” - UI extentions</li>
+<li>“subtitles” - subtitles</li>
+<li>“glwosk” - on screen keyboard</li>
+</ul>
+<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
+<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
+<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
+<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
+<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
+<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
+<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
+<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
+<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
+<pre><code>{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;file&quot;: &quot;testplugin.js&quot;,
+  &quot;id&quot;: &quot;testplugin&quot;
+}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
+<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
+  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
+})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
+<pre><code>(function(plugin) {
+  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
+    showtime.print(&quot;I was called&quot;);
+  })
+})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
+<p><code>somafa</code> 中的 <code>start URI</code></p>
+<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
+...
+}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
+<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
+<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
+<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
+<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
+<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
+<ul>
+<li>Direct URL</li>
+<li>Via a video page</li>
+</ul>
+<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
+<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
+<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
+<p>To use it first do:</p>
+<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
+      <categories>
+        <category>Movian</category>
+      </categories>
+      <tags>
+        <tag>movian</tag>
       </tags>
   </entry>
   <entry>
@@ -24690,6 +24690,93 @@ $ lsusb</code></pre>
       <tags>
         <tag>ubuntu</tag>
         <tag>usb</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>BookStack 填坑指南</title>
+    <url>/2020/09/29/how-to-install-bookstack/</url>
+    <content><![CDATA[<p>安装 BookStack 过程中遇到的问题及解决方案</p>
+<a id="more"></a>
+
+<h2 id="安装指南"><a href="#安装指南" class="headerlink" title="安装指南"></a>安装指南</h2><ol>
+<li><a href="https://www.howtoforge.com/how-to-install-bookstack-on-ubuntu-1804/" target="_blank" rel="noopener">How to Install BookStack on Ubuntu 18.04 LTS</a><ul>
+<li>MariaDB</li>
+</ul>
+</li>
+<li><a href="https://www.bookstackapp.com/docs/admin/installation/#ubuntu-1804" target="_blank" rel="noopener">Ubuntu 18.04 Installation Script</a><ul>
+<li>MySQL</li>
+</ul>
+</li>
+</ol>
+<p>采用 <code>MySQL</code> 管理数据</p>
+<h2 id="MySQL"><a href="#MySQL" class="headerlink" title="MySQL"></a>MySQL</h2><p>执行如下命令失败：</p>
+<pre><code class="shell">mysql -u root --execute=&quot;CREATE DATABASE bookstack;&quot;
+mysql -u root --execute=&quot;CREATE USER &#39;bookstack&#39;@&#39;localhost&#39; IDENTIFIED BY &#39;$DB_PASS&#39;;&quot;
+mysql -u root --execute=&quot;GRANT ALL ON bookstack.* TO &#39;bookstack&#39;@&#39;localhost&#39;;FLUSH PRIVILEGES;&quot;</code></pre>
+<p><a href="https://stackoverflow.com/questions/37879448/mysql-fails-on-mysql-error-1524-hy000-plugin-auth-socket-is-not-loaded" target="_blank" rel="noopener">MySQL fails on: mysql “ERROR 1524 (HY000): Plugin ‘auth_socket’ is not loaded”</a></p>
+<ul>
+<li><p>I</p>
+<pre><code class="shell">  $ sudo /etc/init.d/mysql stop # stop mysql service
+  $ sudo mysqld_safe --skip-grant-tables &amp; # start mysql without password
+  # enter -&gt; go
+  $ mysql -uroot # connect to mysql</code></pre>
+</li>
+<li><p>Socket issue: ERROR 2002 (HY000): Can’t connect to local MySQL server through socket ‘/var/run/mysqld/mysqld.sock’</p>
+<pre><code class="shell">  $ sudo mkdir -p /var/run/mysqld; sudo chown mysql /var/run/mysqld
+  $ sudo mysqld_safe --skip-grant-tables &amp;</code></pre>
+</li>
+<li><p>run mysql commands =&gt; copy paste this to cli manually</p>
+<pre><code class="mysql">  use mysql; # use mysql table
+  update user set authentication_string=PASSWORD(&quot;&quot;) where User=&#39;root&#39;; # update password to nothing
+  update user set plugin=&quot;mysql_native_password&quot; where User=&#39;root&#39;; # set password resolving to default mechanism for root user
+
+  flush privileges;
+  quit;</code></pre>
+</li>
+<li><p>F</p>
+<pre><code class="shell">  $ sudo /etc/init.d/mysql stop
+  $ sudo /etc/init.d/mysql start # reset mysql
+  # try login to database, just press enter at password prompt because your password is now blank
+  $ mysql -u root -p</code></pre>
+</li>
+</ul>
+<p><a href="https://stackoverflow.com/questions/44096710/error-1728-hy000-cannot-load-from-mysql-user-the-table-is-probably-corrupted" target="_blank" rel="noopener">ERROR 1728 (HY000): Cannot load from mysql.user. The table is probably corrupted</a></p>
+<pre><code class="shell">$ mysql_upgrade -uroot -p --force</code></pre>
+<p><a href="https://stackoverflow.com/questions/43846950/column-count-of-mysql-user-is-wrong-expected-42-found-44-the-table-is-probabl" target="_blank" rel="noopener">Column count of mysql.user is wrong. Expected 42, found 44. The table is probably corrupted</a></p>
+<pre><code class="shell">$ mysql -u root -p
+mysql&gt; use mysql;
+mysql&gt; alter table mysql.user drop column default_role;
+mysql&gt; alter table mysql.user drop column max_statement_time;
+mysql&gt; alter table mysql.user drop column password_expired;
+mysql&gt; quit;</code></pre>
+<p>手动执行上述三条语句，创建成功</p>
+<h2 id="composer"><a href="#composer" class="headerlink" title="composer"></a>composer</h2><p>部分需要访问 <code>github.com</code> 导致安装失败</p>
+<pre><code class="shell">$ sudo composer config repo.packagist composer https://mirrors.aliyun.com/composer/
+$ sudo composer install</code></pre>
+<h2 id="Apache2"><a href="#Apache2" class="headerlink" title="Apache2"></a>Apache2</h2><p>启动失败，原因是 <code>80</code> 端口被占用</p>
+<pre><code class="shell">$ sudo netstat -ltnp | grep &#39;:80&#39;
+$ sudo lsof -i :80
+$ sudo systemctl stop nginx.service</code></pre>
+<h2 id="wkhtmltopdf"><a href="#wkhtmltopdf" class="headerlink" title="wkhtmltopdf"></a>wkhtmltopdf</h2><ul>
+<li><a href="https://www.bookstackapp.com/docs/admin/pdf-rendering/" target="_blank" rel="noopener">PDF Rendering</a></li>
+<li><a href="https://gist.github.com/lobermann/ca0e7bb2558b3b08923c6ae2c37a26ce" target="_blank" rel="noopener">Install wkhtmltopdf on headless ubuntu 18 vps</a></li>
+</ul>
+<p>手动安装最新版本</p>
+<pre><code class="shell">$ wget https://downloads.wkhtmltopdf.org/0.12/0.12.5/wkhtmltox_0.12.5-1.bionic_amd64.deb
+$ apt-get install fontconfig libxrender1 xfonts-75dpi xfonts-base
+$ dpkg -i wkhtmltox_0.12.5-1.bionic_amd64.deb</code></pre>
+<p>测试</p>
+<pre><code class="shell">$ wkhtmltopdf http://www.baidu.com baidu.pdf</code></pre>
+<p><a href="https://github.com/BookStackApp/BookStack/issues/885" target="_blank" rel="noopener">ProcessTimedOutException when exporting with wkhtmltopdf</a><br><code>BookStack</code> 导出携带不存在图片文章时出错，修改 <code>BookStack/config/snappy.php</code> 中超时 <code>timeout</code> 为 3600</p>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>CI</category>
+      </categories>
+      <tags>
+        <tag>mysql</tag>
+        <tag>bookstack</tag>
+        <tag>wkhtmltopdf</tag>
       </tags>
   </entry>
   <entry>
