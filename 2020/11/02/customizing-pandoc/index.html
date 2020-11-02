@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="定制模板控制 Markdown 转换细节">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Pandoc 定制模板转换 Markdown 为 PDF">
+<meta property="og:url" content="http://yoursite.com/2020/11/02/customizing-pandoc/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="定制模板控制 Markdown 转换细节">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-11-02T06:35:43.000Z">
+<meta property="article:modified_time" content="2020-11-02T07:28:12.089Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="markdown">
+<meta property="article:tag" content="pandoc">
+<meta property="article:tag" content="latex">
+<meta property="article:tag" content="pandoc filter">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2020/11/02/customizing-pandoc/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Pandoc 定制模板转换 Markdown 为 PDF | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/11/02/customizing-pandoc/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Pandoc 定制模板转换 Markdown 为 PDF
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2020-11-02 14:35:43 / Modified: 15:28:12" itemprop="dateCreated datePublished" datetime="2020-11-02T14:35:43+08:00">2020-11-02</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Markdown/" itemprop="url" rel="index">
+                    <span itemprop="name">Markdown</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>1.8k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>定制模板控制 <code>Markdown</code> 转换细节</p>
+<a id="more"></a>
+
+<h2 id="模板"><a href="#模板" class="headerlink" title="模板"></a>模板</h2><p><a href="https://github.com/Wandmalfarbe/pandoc-latex-template.git" target="_blank" rel="noopener">Eisvogel</a></p>
+<p>使用 Metadata 控制</p>
+<h2 id="Pandoc-Filter"><a href="#Pandoc-Filter" class="headerlink" title="Pandoc Filter"></a>Pandoc Filter</h2><p>扩展 <code>Markdown</code></p>
+<ol>
+<li><a href="https://github.com/timofurrer/pandoc-mermaid-filter" target="_blank" rel="noopener">pandoc-mermaid-filter</a></li>
+<li><a href="https://github.com/raghur/mermaid-filter" target="_blank" rel="noopener">mermaid-filter</a></li>
+<li><a href="https://github.com/taqenoqo/pandoc-ditaa-filter" target="_blank" rel="noopener">Pandoc Ditaa Filter</a></li>
+<li><a href="https://github.com/hertogp/imagine" target="_blank" rel="noopener"><strong>Imagine</strong></a></li>
+</ol>
+<p>其中 <code>Imagine</code> 支持如下代码块</p>
+<ul>
+<li>asy</li>
+<li>blockdiag</li>
+<li>boxes</li>
+<li>chartdirector</li>
+<li>ctioga2</li>
+<li>ditaa</li>
+<li>figlet</li>
+<li>flydraw</li>
+<li>gle</li>
+<li>gnuplot</li>
+<li>graphviz</li>
+<li>gri</li>
+<li>inline</li>
+<li>matplotlib</li>
+<li>mermaid</li>
+<li>mscgen</li>
+<li>octave</li>
+<li>plantuml</li>
+<li>ploticus</li>
+<li>plotutils</li>
+<li>protocol</li>
+<li>pygal</li>
+<li>pyxplot</li>
+<li>random</li>
+<li>sample</li>
+<li>wolfram</li>
+</ul>
+<h2 id="Pandoc-控制"><a href="#Pandoc-控制" class="headerlink" title="Pandoc 控制"></a>Pandoc 控制</h2><ul>
+<li>模板即为一组语法集合</li>
+<li>转换为 PDF <code>--pdf-engine=xelatex</code></li>
+<li>使用模板 <code>--template &quot;eisvogel.latex&quot;</code></li>
+</ul>
+<h3 id="支持中文"><a href="#支持中文" class="headerlink" title="支持中文"></a>支持中文</h3><p><code>-V CJKmainfont=&quot;Microsoft YaHei&quot;</code></p>
+<h3 id="高亮"><a href="#高亮" class="headerlink" title="高亮"></a>高亮</h3><ul>
+<li><code>--list-highlight-styles</code></li>
+<li><code>--list-highlight-languages</code></li>
+<li><code>--highlight-style zenburn</code></li>
+</ul>
+<p>定制语法高亮，输出默认并编辑</p>
+<pre><code class="shell">$ pandoc --print-highlight-style=pygments &gt; pygments.theme</code></pre>
+<h3 id="章节编号"><a href="#章节编号" class="headerlink" title="章节编号"></a>章节编号</h3><p><code>--number-sections</code></p>
+<h3 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h3><ul>
+<li><code>--toc</code></li>
+<li><code>--toc-depth</code></li>
+<li><code>-V toc-title</code></li>
+</ul>
+<h3 id="链接颜色"><a href="#链接颜色" class="headerlink" title="链接颜色"></a>链接颜色</h3><p><code>-V colorlinks -V urlcolor=NavyBlue</code></p>
+<h3 id="PDF-margin"><a href="#PDF-margin" class="headerlink" title="PDF margin"></a>PDF margin</h3><p><code>-V geometry:&quot;top=2cm, bottom=1.5cm, left=2cm, right=2cm&quot;</code></p>
+<h3 id="设置放入-head-tex"><a href="#设置放入-head-tex" class="headerlink" title="设置放入 head.tex"></a>设置放入 head.tex</h3><p><code>-H --include-in-header=FILE</code></p>
+<h3 id="Chapter-breaks"><a href="#Chapter-breaks" class="headerlink" title="Chapter breaks"></a>Chapter breaks</h3><pre><code class="latex">\usepackage{sectsty}
+\sectionfont{\clearpage}</code></pre>
+<pre><code class="shell">$ $ pandoc sample_1.md -f gfm -H chapter_break.tex -o sample_1_chapter_break.pdf</code></pre>
+<h3 id="Changing-settings-via-V-option"><a href="#Changing-settings-via-V-option" class="headerlink" title="Changing settings via -V option"></a>Changing settings via -V option</h3><pre><code class="shell">pandoc &quot;$1&quot; \
+    -f gfm \
+    --include-in-header chapter_break.tex \
+    -V linkcolor:blue \
+    -V geometry:a4paper \
+    -V geometry:margin=2cm \
+    -V mainfont=&quot;DejaVu Serif&quot; \
+    -V monofont=&quot;DejaVu Sans Mono&quot; \
+    --pdf-engine=xelatex \
+    -o &quot;$2&quot;</code></pre>
+<ul>
+<li><code>mainfont</code> is for normal text</li>
+<li><code>monofont</code> is for code snippets</li>
+<li><code>geometry</code> for page size and margins</li>
+<li><code>linkcolor</code> to set hyperlink color</li>
+</ul>
+<h3 id="Inline-code"><a href="#Inline-code" class="headerlink" title="Inline code"></a>Inline code</h3><pre><code class="latex">\usepackage{fancyvrb,newverbs,xcolor}
+
+\definecolor{Light}{HTML}{F4F4F4}
+
+\let\oldtexttt\texttt
+\renewcommand{\texttt}[1]{
+  \colorbox{Light}{\oldtexttt{#1}}
+}</code></pre>
+<p>使用方式<code>--include-in-header inline_code.tex</code></p>
+<h3 id="PDF-properties"><a href="#PDF-properties" class="headerlink" title="PDF properties"></a>PDF properties</h3><pre><code class="latex">\usepackage{hyperref}
+
+\hypersetup{
+  pdftitle={My awesome book},
+  pdfauthor={learnbyexample},
+  pdfsubject={pandoc},
+  pdfkeywords={pandoc,pdf,xelatex}
+}</code></pre>
+<h3 id="cover-image"><a href="#cover-image" class="headerlink" title="cover image"></a>cover image</h3><pre><code class="latex">\includegraphics{cover.png}
+\thispagestyle{empty}</code></pre>
+<h3 id="blockquote"><a href="#blockquote" class="headerlink" title="blockquote"></a>blockquote</h3><pre><code class="latex">\usepackage{tcolorbox}
+\newtcolorbox{myquote}{colback=red!5!white, colframe=red!75!black}
+\renewenvironment{quote}{\begin{myquote}}{\end{myquote}}</code></pre>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/markdown/" rel="tag"># markdown</a>
+              <a href="/tags/pandoc/" rel="tag"># pandoc</a>
+              <a href="/tags/latex/" rel="tag"># latex</a>
+              <a href="/tags/pandoc-filter/" rel="tag"># pandoc filter</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2020/10/30/convert-markdown-to-pdf/" rel="next" title="Markdown 转换为 PDF 文档">
+                  <i class="fa fa-chevron-left"></i> Markdown 转换为 PDF 文档
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#模板"><span class="nav-number">1.</span> <span class="nav-text">模板</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pandoc-Filter"><span class="nav-number">2.</span> <span class="nav-text">Pandoc Filter</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pandoc-控制"><span class="nav-number">3.</span> <span class="nav-text">Pandoc 控制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#支持中文"><span class="nav-number">3.1.</span> <span class="nav-text">支持中文</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#高亮"><span class="nav-number">3.2.</span> <span class="nav-text">高亮</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#章节编号"><span class="nav-number">3.3.</span> <span class="nav-text">章节编号</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#目录"><span class="nav-number">3.4.</span> <span class="nav-text">目录</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#链接颜色"><span class="nav-number">3.5.</span> <span class="nav-text">链接颜色</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#PDF-margin"><span class="nav-number">3.6.</span> <span class="nav-text">PDF margin</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#设置放入-head-tex"><span class="nav-number">3.7.</span> <span class="nav-text">设置放入 head.tex</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Chapter-breaks"><span class="nav-number">3.8.</span> <span class="nav-text">Chapter breaks</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Changing-settings-via-V-option"><span class="nav-number">3.9.</span> <span class="nav-text">Changing settings via -V option</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Inline-code"><span class="nav-number">3.10.</span> <span class="nav-text">Inline code</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#PDF-properties"><span class="nav-number">3.11.</span> <span class="nav-text">PDF properties</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cover-image"><span class="nav-number">3.12.</span> <span class="nav-text">cover image</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#blockquote"><span class="nav-number">3.13.</span> <span class="nav-text">blockquote</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">463</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">61</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">500</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">18:36</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

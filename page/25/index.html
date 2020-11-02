@@ -216,6 +216,416 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/07/18/git-with-lantern/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2016/07/18/git-with-lantern/" class="post-title-link" itemprop="url">git通过lantern代理访问github</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-07-19 00:00:00" itemprop="dateCreated datePublished" datetime="2016-07-19T00:00:00+08:00">2016-07-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Git/" itemprop="url" rel="index">
+                    <span itemprop="name">Git</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>最近github可以使用ssh方式，https存在问题</p>
+<pre><code class="bash">git clone https://github.com/Valloric/YouCompleteMe.git                         
+正克隆到 &#39;YouCompleteMe&#39;...
+fatal: unable to access &#39;https://github.com/Valloric/YouCompleteMe.git/&#39;: Failed to connect to github.com port 443: 拒绝连接</code></pre>
+<p>修改为 <code>SSH</code> 方式可以解决问题 <a href="https://help.github.com/articles/changing-a-remote-s-url/" target="_blank" rel="noopener">Changing a remote’s<br>URL</a></p>
+<p>但是vim 插件安装会使用 <code>https</code> ，尝试使用代理来解决问题：</p>
+<pre><code class="bash">git config --global http.proxy 192.168.1.1:8083
+git config --global http.proxy //查询
+git config --global --unset http.proxy //取消</code></pre>
+<p>启动lantern并找到PAC文件</p>
+<pre><code class="bash">Jul 18 01:02:23.713 - 0m0s DEBUG flashlight: pac.go:155 Serving PAC file at
+http://127.0.0.1:16823/proxy_on.pac</code></pre>
+<p>打开浏览器输入该url可以得到PAC文件，如下：</p>
+<pre><code class="pac">var bypassDomains = [&#39;ss1.baidu.com&#39;, &#39;static.zhihu.com&#39;,
+    &#39;camo.githubusercontent.com&#39;, &#39;sugar.zhihu.com&#39;,
+    &#39;pagead2.googlesyndication.com&#39;, &#39;ss0.baidu.com&#39;, &#39;link.zhihu.com&#39;,
+    &#39;www.isupergeek.com&#39;, &#39;ss2.baidu.com&#39;, &#39;www.cnblogs.com&#39;, &#39;blog.marchtea.com&#39;,
+    &#39;secure.gravatar.com&#39;, &#39;ocsp.startssl.com&#39;, &#39;pic2.zhimg.com&#39;,
+    &#39;static.cnblogs.com&#39;, &#39;www.baidu.com&#39;, &#39;www.googletagservices.com&#39;,
+    &#39;ss3.baidu.com&#39;, &#39;code.jquery.com&#39;, &#39;gn.symcd.com&#39;, &#39;www.zhihu.com&#39;,
+    &#39;ssum-sec.casalemedia.com&#39;, &#39;zhstatic.zhihu.com&#39;, &#39;tpc.googlesyndication.com&#39;,
+    &#39;sp2.baidu.com&#39;, &#39;ocsp.digicert.com&#39;, &#39;sp0.baidu.com&#39;,
+    &#39;zhihu-web-analytics.zhihu.com&#39;, &#39;engine.adzerk.net&#39;, &#39;pic1.zhimg.com&#39;,
+    &#39;collector.githubapp.com&#39;, &#39;api.ad.cnblogs.com&#39;, &#39;sync.xmarks.com&#39;,
+    &#39;sp1.baidu.com&#39;, &#39;avatars3.githubusercontent.com&#39;, &#39;pic4.zhimg.com&#39;,
+    &#39;cloud.xmarks.com&#39;, &#39;pixel.quantserve.com&#39;, &#39;stats.g.doubleclick.net&#39;];
+    function FindProxyForURL(url, host) {
+        if (isPlainHostName(host) // including localhost
+                || shExpMatch(host, &quot;*.local&quot;)) {
+            return &quot;DIRECT&quot;;
+        }
+        // only checks plain IP addresses to avoid leaking domain name
+        if (/^[0-9.]+$/.test(host)) {
+            if (isInNet(host, &quot;10.0.0.0&quot;, &quot;255.0.0.0&quot;) ||
+                isInNet(host, &quot;172.16.0.0&quot;, &quot;255.240.0.0&quot;) ||
+                isInNet(host, &quot;192.168.0.0&quot;, &quot;255.255.0.0&quot;) ||
+                isInNet(host, &quot;127.0.0.0&quot;, &quot;255.255.255.0&quot;)) {
+                return &quot;DIRECT&quot;;
+            }
+        }
+        // Lantern desktop version proxies only http(s) and ws(s)
+        if (url.substring(0, 4) != &#39;http&#39; &amp;&amp; (url.substring(0, 2) != &#39;ws&#39;)) {
+            return &quot;DIRECT&quot;;
+        }
+        for (var d in bypassDomains) {
+            if (host == bypassDomains[d]) {
+                return &quot;DIRECT&quot;;
+            }
+        }
+        return &quot;PROXY 127.0.0.1:8787; DIRECT&quot;;
+}</code></pre>
+<p>最后一行代理地址 <code>http://127.0.0.1:8787</code><br>获取了代理地址后就可以设置git的代理了，shell脚本如下：</p>
+<pre><code class="bash">    git config --global http.proxy 127.0.0.1:8787
+    git config --global https.proxy 127.0.0.1:8787</code></pre>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/07/14/vim-text-object/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2016/07/14/vim-text-object/" class="post-title-link" itemprop="url">vim文本对象</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-07-15 00:00:00" itemprop="dateCreated datePublished" datetime="2016-07-15T00:00:00+08:00">2016-07-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Editor/" itemprop="url" rel="index">
+                    <span itemprop="name">Editor</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>846</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="文本对象"><a href="#文本对象" class="headerlink" title="文本对象"></a>文本对象</h2><p><img src="/images/vim/vim-grammar.png" alt="vim-grammar"></p>
+<ul>
+<li>aw：一个词</li>
+<li>as：一句。</li>
+<li>ap：一段。</li>
+<li>ab：一块（包含在圆括号中的）。</li>
+</ul>
+<p>y, d, c, v都可以跟文本对象。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2016/07/14/vim-text-object/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/07/06/vim-tips/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2016/07/06/vim-tips/" class="post-title-link" itemprop="url">vim使用技巧汇总</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-07-07 00:00:00" itemprop="dateCreated datePublished" datetime="2016-07-07T00:00:00+08:00">2016-07-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Editor/" itemprop="url" rel="index">
+                    <span itemprop="name">Editor</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>826</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="文本对象"><a href="#文本对象" class="headerlink" title="文本对象"></a>文本对象</h2><p><img src="/images/vim/vim-grammar.png" alt="vim-grammar"></p>
+<ul>
+<li>aw：一个词</li>
+<li>as：一句。</li>
+<li>ap：一段。</li>
+<li>ab：一块（包含在圆括号中的）。</li>
+</ul>
+<p>y, d, c, v都可以跟文本对象。</p>
+<h2 id="寄存器"><a href="#寄存器" class="headerlink" title="寄存器"></a>寄存器</h2><ul>
+<li>a-z：都可以用作寄存器名。”ayy把当前行的内容放入a寄存器。</li>
+<li>A-Z：用大写字母索引寄存器，可以在寄存器中追加内容。<br>如”Ayy把当前行的内容追加到a寄存器中。</li>
+<li>:reg 显示所有寄存器的内容。</li>
+<li>“”：不加寄存器索引时，默认使用的寄存器。</li>
+<li>“：当前选择缓冲区，”yy把当前行的内容放入当前选择缓冲区。</li>
+<li>“+：系统剪贴板。”+yy把当前行的内容放入系统剪贴板。</li>
+</ul>
+<h2 id="Insert-Mode"><a href="#Insert-Mode" class="headerlink" title="Insert Mode"></a>Insert Mode</h2><ul>
+<li>ctrl-y，重复当前光标上一行的字符</li>
+<li>C-r =，然后输入表达式，就能在 光标处得到计算结果</li>
+</ul>
+<h2 id="Normal-Mode"><a href="#Normal-Mode" class="headerlink" title="Normal Mode"></a>Normal Mode</h2><ul>
+<li>gd，局部变量跳转</li>
+<li>gf，文件跳转</li>
+<li>ga，查看当前字符ascii码</li>
+<li>zz，居中很方便</li>
+<li>``, 可以在两个地方来回改</li>
+<li>Ctrl+a, 自动把光标下的数字加1</li>
+<li>“+p 让你不丢失格式地将内容从系统剪切板粘贴到vim中，* 和 + 这俩全局寄存器</li>
+<li>di( 删除()中内容，类似(), {}, [], ‘’, “”</li>
+<li>ci( 更改()中内容，类似(), {}, [], ‘’, “”</li>
+<li>da( 删除包括()在内的内容，类似(), {}, [], ‘’, “”</li>
+<li>ca( 更改包括()在内的内容，类似(), {}, [], ‘’, “”</li>
+<li>ctrl + o 跳转到上一位置，像浏览器上的 后退 和 前进</li>
+<li>ctrl + i 跳转下一位置（和ctrl + o配合在代码间跳转）</li>
+<li>K 查询系统函数（unix、linux），在linux系统函数上用K跳转到man查询页面</li>
+<li>cc 替换整行</li>
+</ul>
+<h2 id="Command-Mode"><a href="#Command-Mode" class="headerlink" title="Command Mode"></a>Command Mode</h2><ul>
+<li>:Sex，水平分割一个窗口，浏览文件系统</li>
+<li>:Vex, 垂直分割一个窗口，浏览文件系统</li>
+<li>:r !pwd 输入当前路径</li>
+<li>:%!xxd 转换16进制</li>
+<li>:set list 显示不可见字符</li>
+</ul>
+<hr>
+<ol>
+<li><a href="http://gold.xitu.io/entry/56ea7eef731956005c1b6d3f" target="_blank" rel="noopener">老司机乱谈编辑器之神——vim</a></li>
+<li><a href="http://rayninfo.co.uk/vimtips.html" target="_blank" rel="noopener">Best of Vim Tips</a></li>
+<li><a href="http://www.zhihu.com/question/27478597" target="_blank" rel="noopener">Vim 有什么奇技淫巧</a></li>
+<li><a href="http://vimgolf.com/" target="_blank" rel="noopener">VimGolf</a></li>
+<li><a href="http://ningning.today/2014/11/02/Linux/vim%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4/" target="_blank" rel="noopener">vim常用命令</a></li>
+<li><a href="http://vimcasts.org/blog/2013/01/vim-london-january-in-review/" target="_blank" rel="noopener">Vim London January in review</a></li>
+<li><a href="http://whileimautomaton.net/2008/11/vimm3/operator" target="_blank" rel="noopener">operator, the true power of Vim</a></li>
+<li><a href="https://media.pragprog.com/titles/dnvim/vim.pdf" target="_blank" rel="noopener">Practical Vim</a></li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/06/30/c-open-project/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +657,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
+                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -879,7 +1289,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
+                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -974,7 +1384,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
+                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1071,7 +1481,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
+                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1427,7 +1837,7 @@ traceroute to www.baidu.com (115.239.210.27), 30 hops max, 60 byte packets
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
+                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1554,7 +1964,7 @@ imap &lt;C-K&gt; &lt;c-o&gt;:pyf &lt;path-to-this-file&gt;/clang-format.py&lt;cr
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
+                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1711,7 +2121,7 @@ imap &lt;C-K&gt; &lt;c-o&gt;:pyf &lt;path-to-this-file&gt;/clang-format.py&lt;cr
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
+                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1911,7 +2321,7 @@ imap &lt;C-K&gt; &lt;c-o&gt;:pyf &lt;path-to-this-file&gt;/clang-format.py&lt;cr
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
+                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2062,7 +2472,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
+                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2231,7 +2641,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
+                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2378,7 +2788,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
+                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
               </span>
 
           <br>
@@ -2516,7 +2926,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
+                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2626,530 +3036,6 @@ git push</code></pre><ol>
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/27/programmer-sorting-algorithms/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2016/04/27/programmer-sorting-algorithms/" class="post-title-link" itemprop="url">常见排序算法可视化实现</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2016-04-28 00:00:00" itemprop="dateCreated datePublished" datetime="2016-04-28T00:00:00+08:00">2016-04-28</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/C/" itemprop="url" rel="index">
-                    <span itemprop="name">C</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>2.2k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-
-<h2 id="冒泡排序"><a href="#冒泡排序" class="headerlink" title="冒泡排序"></a><strong>冒泡排序</strong></h2><ol>
-<li>比较相邻的元素。如果第一个比第二个大，就交换他们两个。</li>
-<li>对每一对相邻元素作同样的工作，从开始第一对到结尾的最后一对。这步做完后，最后的元素会是最大的数。</li>
-<li>针对所有的元素重复以上的步骤，除了最后一个。</li>
-<li>持续每次对越来越少的元素重复上面的步骤，直到没有任何一对数字需要比较。</li>
-</ol>
-<p><img src="/images/sort/Bubble-sort-example-300px.gif" alt="bubble1"></p>
-<p><img src="/images/sort/bubble.gif" alt="bubble2"></p>
-<p>冒泡排序是与<strong>插入排序</strong>拥有相等的运行时间，但是两种算法在需要的交换次数却很大地不同。<br>在最好的情况，冒泡排序需要O(n^2)次交换，而插入排序只要最多O(n)交换。<br>冒泡排序的实现通常会对已经排序好的数列拙劣地运行（O(n^2)），而插入排序在这个例子只需要O(n)个运算。<br><strong>因此很多现代的算法教科书避免使用冒泡排序，而用插入排序替换之。</strong><br>冒泡排序如果能在内部循环第一次运行时，使用一个旗标来表示有无需要交换的可能，也可以把最好的复杂度降低到O(n)。<br>在这个情况，已经排序好的数列就无交换的需要。若在每次走访数列时，把走访顺序反过来，也可以稍微地改进效率。<br>有时候称为<strong>鸡尾酒排序</strong>，因为算法会从数列的一端到另一端之间穿梭往返。</p>
-<h2 id="鸡尾酒排序"><a href="#鸡尾酒排序" class="headerlink" title="鸡尾酒排序"></a><strong>鸡尾酒排序</strong></h2><p>鸡尾酒排序，也就是<strong>定向冒泡排序</strong>，是冒泡排序的一种变形。<br>此算法与冒泡排序的不同处在于<strong>排序时是以双向在序列中进行排序</strong>。<br>鸡尾酒排序等于是冒泡排序的轻微变形。<strong>不同的地方在于从低到高然后从高到低，而冒泡排序则仅从低到高去比较序列里的每个元素。</strong></p>
-<p><img src="/images/sort/Sorting_shaker_sort_anim.gif" alt="shaker"></p>
-<h2 id="插入排序"><a href="#插入排序" class="headerlink" title="插入排序"></a><strong>插入排序</strong></h2><ol>
-<li>从第一个元素开始，该元素可以认为已经被排序</li>
-<li>取出下一个元素，在已经排序的元素序列中从后向前扫描</li>
-<li>如果该元素（已排序）大于新元素，将该元素移到下一位置</li>
-<li>重复步骤3，直到找到已排序的元素小于或者等于新元素的位置</li>
-<li>将新元素插入到该位置中</li>
-<li>重复步骤2~5</li>
-</ol>
-<p><img src="/images/sort/220px-Insertion-sort-example-300px.gif" alt="Insertion"></p>
-<p><img src="/images/sort/Insertion_sort_animation.gif" alt="Insertion"></p>
-<h2 id="快速排序"><a href="#快速排序" class="headerlink" title="快速排序"></a><strong>快速排序</strong></h2><ol>
-<li>从数列中挑出一个元素，称为 “基准”（pivot），</li>
-<li>重新排序数列，所有元素比基准值小的摆放在基准前面，所有元素比基准值大的摆在基准的后面（相同的数可以到任一边）。<br>在这个分区退出之后，该基准就处于数列的中间位置。这个称为分区（partition）操作。</li>
-<li>递归地（recursive）把小于基准值元素的子数列和大于基准值元素的子数列排序。</li>
-</ol>
-<p><strong>排序效果：</strong></p>
-<p><img src="/images/sort/quick.gif" alt="quick"></p>
-<h2 id="归并排序"><a href="#归并排序" class="headerlink" title="归并排序"></a><strong>归并排序</strong></h2><p><strong>归并排序</strong>是建立在归并操作上的一种有效的排序算法。<br>该算法是采用分治法（Divide and Conquer）的一个非常典型的应用</p>
-<p><strong>步骤：</strong></p>
-<ol>
-<li>申请空间，使其大小为两个已经排序序列之和，该空间用来存放合并后的序列</li>
-<li>设定两个指针，最初位置分别为两个已经排序序列的起始位置</li>
-<li>比较两个指针所指向的元素，选择相对小的元素放入到合并空间，并移动指针到下一位置</li>
-<li>重复步骤3直到某一指针达到序列尾</li>
-<li>将另一序列剩下的所有元素直接复制到合并序列尾</li>
-</ol>
-<p><img src="/images/sort/220px-Merge_sort_animation2.gif" alt="merge"></p>
-<p><img src="/images/sort/Merge-sort-example-300px.gif" alt="merge"></p>
-<h2 id="堆排序"><a href="#堆排序" class="headerlink" title="堆排序"></a><strong>堆排序</strong></h2><p>堆积排序（Heapsort）是指利用堆这种数据结构所设计的一种排序算法。<br>堆是一个近似完全二叉树的结构，并同时满足堆性质：即子结点的键值或索引总是小于（或者大于）它的父节点。</p>
-<p><img src="/images/sort/heap.gif" alt="heap"></p>
-<h2 id="选择排序"><a href="#选择排序" class="headerlink" title="选择排序"></a><strong>选择排序</strong></h2><ol>
-<li>首先在未排序序列中找到最小元素，存放到排序序列的起始位置，</li>
-<li>然后，再从剩余未排序元素中继续寻找最小元素，然后放到排序序列末尾。</li>
-<li>以此类推，直到所有元素均排序完毕。</li>
-</ol>
-<p><img src="/images/sort/selection.gif" alt="selection"></p>
-<h2 id="希尔排序"><a href="#希尔排序" class="headerlink" title="希尔排序"></a><strong>希尔排序</strong></h2><p>希尔排序，也称递减增量排序算法，是插入排序的一种高速而稳定的改进版本。<br>希尔排序是基于插入排序的以下两点性质而提出改进方法的：</p>
-<ol>
-<li>插入排序在对几乎已经排好序的数据操作时， 效率高， 即可以达到线性排序的效率</li>
-<li>但插入排序一般来说是低效的， 因为插入排序每次只能将数据移动一位&gt;</li>
-</ol>
-<p><img src="/images/sort/shell.gif" alt="shell"></p>
-<h2 id="梳排序"><a href="#梳排序" class="headerlink" title="梳排序"></a><strong>梳排序</strong></h2><p>梳排序是改良自冒泡排序和快速排序。</p>
-<p>在冒泡排序算法中，只比较阵列中相邻的二项，即比较的二项的间距(Gap)是1，<br>梳排序提出此间距其实可大于1，<strong>改自插入排序的希尔排序同样提出相同观点。</strong><br>梳排序中，开始时的间距设定为阵列长度，并在循环中以固定比率递减，通常递减率设定为1.24。<br>在一次循环中，梳排序如同冒泡排序一样把阵列从首到尾扫描一次，比较及交换两项，不同的是两项的间距不固定于1。<br>如果间距递减至1，梳排序假定输入阵列大致排序好，并以冒泡排序作最后检查及修正。</p>
-<p><img src="/images/sort/Comb_sort_demo.gif" alt="comb"></p>
-<ol>
-<li><a href="http://functionspace.com/topic/3774/GIFs-of-sorting-algorithms" target="_blank" rel="noopener">GIFs of sorting algorithms</a></li>
-<li><a href="http://www.sorting-algorithms.com/" target="_blank" rel="noopener">Sorting Algorithm Animations</a></li>
-<li><a href="https://www.reddit.com/r/oddlysatisfying/comments/2gnqtp/this_gif_visualizing_a_sorting_algorithm/" target="_blank" rel="noopener">This gif, visualizing a sorting algorithm</a></li>
-<li><a href="https://www.youtube.com/watch?v=kPRA0W1kECg" target="_blank" rel="noopener">15 Sorting Algorithms in 6 Minutes</a></li>
-<li><a href="http://www.wtoutiao.com/p/98aDH0.html" target="_blank" rel="noopener">视觉直观感受 7 种常用的排序算法</a></li>
-<li><a href="https://zh.wikipedia.org/zh-cn/%E6%8E%92%E5%BA%8F%E7%AE%97%E6%B3%95" target="_blank" rel="noopener">排序算法</a></li>
-<li><a href="http://blog.csdn.net/cjf_iceking/article/details/7916194" target="_blank" rel="noopener">插入排序</a></li>
-<li><a href="https://github.com/cdmh/sorting_algorithms" target="_blank" rel="noopener">sorting algorithms</a></li>
-<li><a href="https://www.cs.usfca.edu/~galles/visualization/ComparisonSort.html" target="_blank" rel="noopener">comparisonSort</a></li>
-<li><a href="http://visualgo.net/sorting" target="_blank" rel="noopener">visualgo</a></li>
-<li><a href="http://sorting.at/" target="_blank" rel="noopener"><strong>sort algo</strong></a></li>
-<li><a href="http://sortvis.org/index.html" target="_blank" rel="noopener">sortvis</a></li>
-<li><a href="http://www.codeproject.com/Articles/132757/Visualization-and-Comparison-of-sorting-algorithms" target="_blank" rel="noopener">sort vis tool</a></li>
-</ol>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/25/programmer-float/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2016/04/25/programmer-float/" class="post-title-link" itemprop="url">浮点数你应该知道的基础知识</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2016-04-26 00:00:00" itemprop="dateCreated datePublished" datetime="2016-04-26T00:00:00+08:00">2016-04-26</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/C/" itemprop="url" rel="index">
-                    <span itemprop="name">C</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>4.5k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>4 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-
-<p>作者：卢钧轶(cenalulu) 本文原文地址：<a href="http://cenalulu.github.io/linux/about-denormalized-float-number/" target="_blank" rel="noopener">http://cenalulu.github.io/linux/about-denormalized-float-number/</a></p>
-<p>本文从一个有趣而又令人意外的实验展开，介绍一些关于浮点数你应该知道的基础知识</p>
-<h2 id="一个有趣的实验"><a href="#一个有趣的实验" class="headerlink" title="一个有趣的实验"></a>一个有趣的实验</h2><p>本文从一个有趣而诡异的实验开始。最早这个例子博主是从 Stackoverflow上的一个问题中看到的。<br>为了提高可读性，博主这里做了改写，简化成了以下两段代码：</p>
-<pre><code>#include &lt;iostream&gt;
-#include &lt;string&gt;
-using namespace std;
-
-int main() {
-    const float x=1.1;
-    const float z=1.123;
-    float y=x;
-    for(int j=0;j&lt;90000000;j++)
-    {
-        y*=x;
-        y/=z;
-        y+=0.1f;
-        y-=0.1f;
-    }
-    return 0;
-}
-
-
-#include &lt;iostream&gt;
-#include &lt;string&gt;
-using namespace std;
-
-int main() {
-    const float x=1.1;
-    const float z=1.123;
-    float y=x;
-    for(int j=0;j&lt;90000000;j++)
-    {
-        y*=x;
-        y/=z;
-        y+=0;
-        y-=0;
-    }
-    return 0;
-}</code></pre><p>上面两段代码的唯一差别就是第一段代码中y+=0.1f，而第二段代码中是y+=0。<br>由于y会先加后减同样一个数值，照理说这两段代码的作用和效率应该是完全一样的,当然也是没有任何逻辑意义的。<br>假设现在我告诉你：其中一段代码的效率要比另一段慢7倍。想必读者会认为一定是y+=0.1f的那段慢，毕竟它和y+=0相比看上去要多一些运算。<br><strong>但是，实验结果，却出乎意料， y+=0的那段代码比y+=0.1f足足慢了7倍。</strong><br>世界观被颠覆了有木有？博主是在自己的Macbook Pro上进行的测试，有兴趣的读者也可以在自己的笔记本上试试。<br>（只要是支持SSE2指令集的CPU都会有相似的结果）。</p>
-<pre><code>shell&gt; g++ code1.c -o test1
-shell&gt; g++ code2.c -o test2
-shell&gt; time ./test1
-
-real    0m1.490s
-user    0m1.483s
-sys     0m0.003s
-
-shell&gt; time ./test2
-
-real    0m9.895s
-user    0m9.871s
-sys     0m0.009s</code></pre><p>当然 原文中的投票最高的回答解释的非常好，但博主第一次看的时候是一头雾水，因为大部分基础知识已经还给大学老师了。<br>所以，本着知其然还要知其所以然的态度，博主做了一个详尽的分析和思路整理过程。也希望读者能够从0开始解释这个诡异现象的原因。</p>
-<h2 id="复习浮点数的二进制转换"><a href="#复习浮点数的二进制转换" class="headerlink" title="复习浮点数的二进制转换"></a>复习浮点数的二进制转换</h2><p>现在让我们复习大学计算机基础课程。<br>如果你熟练掌握了浮点数向二进制表达式转换的方法，那么你可以跳过这节。<br>我们先来看下浮点数二进制表达的三个组成部分。</p>
-<p><img src="/images/float/float.png" alt="mmap" title="wizard"></p>
-<p>三个主要成分是：</p>
-<ul>
-<li>Sign（1bit）：表示浮点数是正数还是负数。0表示正数，1表示负数</li>
-<li>Exponent（8bits）：指数部分。类似于科学技术法中的M*10^N中的N，只不过这里是以2为底数而不是10。<br>需要注意的是，这部分中是以2^7-1即127，也即01111111代表2^0，转换时需要根据127作偏移调整。</li>
-<li>Mantissa（23bits）：基数部分。浮点数具体数值的实际表示。</li>
-</ul>
-<p>下面我们来看个实际例子来解释下转换过程。 </p>
-<ul>
-<li>Step 1 改写整数部分 以数值<code>5.2</code>为例。先不考虑指数部分，我们先单纯的将十进制数改写成二进制。 整数部分很简单，<code>5.</code>即<code>101.</code>。</li>
-<li>Step 2 改写小数部分 小数部分我们相当于拆成是<code>2^-1</code>一直到<code>2^-N</code>的和。<br>例如： <code>0.2 = 0.125+0.0625+0.007825+0.00390625</code>即<code>2^-3+2^-4+2^-7+2^-8....</code>，也即<code>.00110011001100110011</code></li>
-<li>Step 3 规格化 现在我们已经有了这么一串二进制<code>101.00110011001100110011</code>。<br>然后我们要将它规格化，也叫<strong>Normalize</strong>。其实原理很简单就是保证小数点前只有一个bit。<br>于是我们就得到了以下表示：<code>1.0100110011001100110011 * 2^2</code>。<br>到此为止我们已经把改写工作完成，接下来就是要把bit填充到三个组成部分中去了。</li>
-<li>Step 4 填充 指数部分（Exponent）：之前说过需要以127作为偏移量调整。<br>因此2的2次方，指数部分偏移成2+127即129，表示成<code>10000001</code>填入。<br>整数部分（Mantissa）：除了简单的填入外，需要特别解释的地方是<code>1.010011</code>中的整数部分1在填充时被舍去了。<br>因为规格化后的数值整部部分总是为1。<br>那大家可能有疑问了，省略整数部分后岂不是<code>1.010011</code>和<code>0.010011</code>就混淆了么？<br>其实并不会，如果你仔细看下后者：会发现他并不是一个规格化的二进制，可以改写成<code>1.0011 * 2^-2</code>。<br>所以省略小数点前的一个bit不会造成任何两个浮点数的混淆。 具体填充后的结果见下图</li>
-</ul>
-<p><img src="/images/float/float2.png" alt="mmap" title="build"></p>
-<p>练习：如果想考验自己是否充分理解这节内容的话，可以随便写一个浮点数尝试转换。通过 浮点二进制转换工具可以验证答案。</p>
-<h2 id="什么是Denormalized-Number"><a href="#什么是Denormalized-Number" class="headerlink" title="什么是Denormalized Number"></a>什么是Denormalized Number</h2><p>了解完浮点数的表达以后，不难看出浮点数的精度和指数范围有很大关系。<br>最低不能低过<code>2^-7-1</code>最高不能高过<code>2^8-1</code>（其中剔除了指数部分全0和全1的特殊情况）。<br>如果超出表达范围那么不得不舍弃末尾的那些小数，我们成为overflow和underflow。<br>甚至有时舍弃都无法表示，例如当我们要表示一个：<code>1.00001111*2^-7</code>这样的超小数值的时候就无法用规格化数值表示，<br>如果不想点其他办法的话，CPU内部就只能把它当做0来处理。<br>那么，这样做有什么问题呢？最显然易见的一种副作用就是：当多次做低精度浮点数舍弃的后，就会出现除数为0的exception，导致异常。<br>当然精度失准严重起来也可以要人命，以下这个事件摘自wikipedia</p>
-<pre><code>On 25 February 1991, a loss of significance in a MIM-104 Patriot missile battery prevented 
-it intercepting an incoming Scud missile in Dhahran, Saudi Arabia, 
-contributing to the death of 28 soldiers from the U.S. 
-Army’s 14th Quartermaster Detachment.[25] See also: Failure at Dhahran</code></pre><p>于是乎就出现了<strong>Denormalized Number（后称非规格化浮点）</strong>。<br>他和规格浮点的区别在于，<strong>规格浮点约定小数点前一位默认是1。而非规格浮点约定小数点前一位可以为0</strong>，<br>这样小数精度就相当于多了最多<code>2^22</code>范围。</p>
-<p>但是，精度的提升是有代价的。由于CPU硬件只支持，或者默认对一个32bit的二进制使用规格化解码。<br>因此需要支持32bit非规格数值的转码和计算的话，需要额外的编码标识，也就是需要额外的硬件或者软件层面的支持。<br>以下是wiki上的两端摘抄，说明了非规格化计算的效率非常低。<br>一般来说，由软件对非规格化浮点数进行处理将带来极大的性能损失，而由硬件处理的情况会稍好一些，<br>但在多数现代处理器上这样的操作仍是缓慢的。<strong>极端情况下，规格化浮点数操作可能比硬件支持的非规格化浮点数操作快100倍。</strong></p>
-<pre><code>For example when using NVIDIA’s CUDA platform, on gaming cards, 
-calculations with double precision take 3 to 24 times longer to complete than calculations using single precision.</code></pre><p>如果要解释为什么有如此大的性能损耗，那就要需要涉及电路设计了，超出了博主的知识范围。<br>当然万能的wiki也是有答案的，有兴趣的读者可以自行查阅。</p>
-<h2 id="回到实验"><a href="#回到实验" class="headerlink" title="回到实验"></a>回到实验</h2><p>总上面的分析中我们得出了以下结论：</p>
-<ul>
-<li>浮点数表示范围有限，精度受限于指数和底数部分的长度，超过精度的小数部分将会被舍弃（underflow）</li>
-<li>为了表示更高精度的浮点数，出现了非规格化浮点数，但是他的计算成本非常高。</li>
-<li>于是我们就可以发现通过几十上百次的循环后，y中存放的数值无限接近于零。<br>CPU将他表示为精度更高的非规格化浮点。<br>而当<code>y+0.1f</code>时为了保留跟重要的底数部分，之后无限接近0（也即y之前存的数值）被舍弃，当<code>y-0.1f</code>后，y又退化为了规格化浮点数。<br>并且之后的每次<code>y*x</code>和<code>y/z</code>时，CPU都执行的是规划化浮点运算。<br>而当<code>y+0</code>，由于加上0值后的y仍然可以被表示为非规格化浮点，因此整个循环的四次运算中CPU都会使用非规格浮点计算，效率就大大降低了。</li>
-</ul>
-<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><p>当然，也有在程序内部也是有办法控制非规范化浮点的使用的。<br>在相关程序的上下文中加上<code>fesetenv(FE_DFL_DISABLE_SSE_DENORMS_ENV)</code>;<br>就可以迫使CPU放弃使用非规范化浮点计算，提高性能。<br>我们用这种办法修改上面实验中的代码后，<code>y+=0</code>的效率就和<code>y+=0.1f</code>就一样了。<br>甚至还比y+=0.1f更快了些，世界观又端正了不是么:) 修改后的代码如下</p>
-<pre><code>#include &lt;iostream&gt;
-#include &lt;string&gt;
-#include &lt;fenv.h&gt;
-using namespace std;
-
-int main() {
-    fesetenv(FE_DFL_DISABLE_SSE_DENORMS_ENV);
-    const float x=1.1;
-    const float z=1.123;
-    float y=x;
-    for(int j=0;j&lt;90000000;j++)
-    {
-        y*=x;
-        y/=z;
-        y+=0;
-        y-=0;
-    }
-    return 0;
-}</code></pre><p>Reference</p>
-<p>什么是非规格化浮点数<br><a href="http://stackoverflow.com/questions/9314534/why-does-changing-0-1f-to-0-slow-down-performance-by-10x" target="_blank" rel="noopener">Why does changing 0.1f to 0 slow down performance by 10x? IEEE floating point Floating point Denormal number</a></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/25/programmer-vim-cheatsheat/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2016/04/25/programmer-vim-cheatsheat/" class="post-title-link" itemprop="url">史上最全Vim快捷键键位图 -- 入门到进阶</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2016-04-26 00:00:00" itemprop="dateCreated datePublished" datetime="2016-04-26T00:00:00+08:00">2016-04-26</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-09-29 14:15:42" itemprop="dateModified" datetime="2020-09-29T14:15:42+08:00">2020-09-29</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/" itemprop="url" rel="index">
-                    <span itemprop="name">Tools</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/Editor/" itemprop="url" rel="index">
-                    <span itemprop="name">Editor</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>643</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<p>作者：卢钧轶(cenalulu) 本文原文地址：<a href="http://cenalulu.github.io/linux/all-vim-cheatsheat/" target="_blank" rel="noopener">http://cenalulu.github.io/linux/all-vim-cheatsheat/</a></p>
-<h2 id="经典版"><a href="#经典版" class="headerlink" title="经典版"></a>经典版</h2><p>下面这个键位图应该是大家最常看见的经典版了。<br>其实这个版本是一系列的入门教程键位图的组合结果。<br>要查看不同编辑模式下的键位图，可以看<a href="http://www.viemu.com/a_vi_vim_graphical_cheat_sheet_tutorial.html" target="_blank" rel="noopener">这里打包下载</a><br>此外，这里还有简体中文版。</p>
-<img src="/images/vim/classic.gif" height="400" width="600" />
-
-
-<hr>
-<h2 id="入门版"><a href="#入门版" class="headerlink" title="入门版"></a>入门版</h2><p>基本操作的入门版。<br><a href="https://github.com/ahrencode/Miscellaneous" target="_blank" rel="noopener">原版出处</a>还有keynote版本可供DIY以及其他相关有用的cheatsheet。</p>
-<img src="/images/vim/entry.png" height="400" width="600" />
-
-<hr>
-<h2 id="进阶版"><a href="#进阶版" class="headerlink" title="进阶版"></a>进阶版</h2><p>下图是300DPI的超清大图，<br>另外<a href="http://michael.peopleofhonoronly.com/vim/" target="_blank" rel="noopener">查看原文</a>还有更多版本：黑白，低分辨率，色盲等</p>
-<img src="/images/vim/advanced.png" height="400" width="600" />
-
-
-<hr>
-<h2 id="增强版"><a href="#增强版" class="headerlink" title="增强版"></a>增强版</h2><p>下图是一个更新时间较新的现代版，含有的信息也更丰富。<br><a href="http://vimcheatsheet.com/" target="_blank" rel="noopener">原文链接</a></p>
-<img src="/images/vim/morden.png" height="400" width="600" />
-
-
-<hr>
-<h2 id="文字版"><a href="#文字版" class="headerlink" title="文字版"></a>文字版</h2><p><a href="http://tnerual.eriogerg.free.fr/vimqrc.pdf" target="_blank" rel="noopener">原文链接</a></p>
-<img src="/images/vim/text.png" height="400" width="600" />
-<img src="/images/vim/text2.png" height="400" width="600" />
-
-
-
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -3200,7 +3086,7 @@ $(document).ready(function(){
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">460</span>
+          <span class="site-state-item-count">463</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -3213,7 +3099,7 @@ $(document).ready(function(){
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">497</span>
+        <span class="site-state-item-count">500</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -3273,7 +3159,7 @@ $(document).ready(function(){
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:32</span>
+    <span title="Reading time total">18:36</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
   </div>

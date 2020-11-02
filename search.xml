@@ -364,158 +364,6 @@ $(document).ready(function(){
       </tags>
   </entry>
   <entry>
-    <title>Linux系统编程-时间</title>
-    <url>/2014/11/13/Linux-system-programming-Time/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
-<p>UNIX系统把绝对时间表示成新纪元至今所经过的秒数，<code>新纪元</code>定义成1970年1月1日早上00:00:00 UTC。<br>UTC（协调世界时，Coordinated Universal Time）相当于GMT或Zulu时间。</p>
-<h2 id="时间的数据结构"><a href="#时间的数据结构" class="headerlink" title="时间的数据结构"></a><strong>时间的数据结构</strong></h2><p><strong>原始表示：</strong></p>
-<pre><code>#incliude &lt;time.h&gt;
-typedef long time_t;</code></pre><hr>
-<p><strong>微秒级精度</strong></p>
-<pre><code>#include &lt;sys/time.h&gt;
-
-struct timeval {
-    time_t      tv_sec;
-    suseconds_t tv_usec;
-};</code></pre><hr>
-<p><strong>纳秒级精度</strong></p>
-<pre><code>#include &lt;time.h&gt;
-
-struct timespec {
-    time_t  tv_sec;
-    long    tv_nsec;
-};</code></pre><hr>
-<p><strong>时间描述</strong></p>
-<pre><code>#include &lt;time.h&gt;
-
-struct tm
-{
-  int tm_sec;           /* Seconds. [0-60] (1 leap second) */
-  int tm_min;           /* Minutes. [0-59] */
-  int tm_hour;          /* Hours.   [0-23] */
-  int tm_mday;          /* Day.     [1-31] */
-  int tm_mon;           /* Month.   [0-11] */
-  int tm_year;          /* Year - 1900.  */
-  int tm_wday;          /* Day of week. [0-6] */
-  int tm_yday;          /* Days in year.[0-365] */
-  int tm_isdst;         /* DST.     [-1/0/1]*/
-
-# ifdef __USE_BSD
-  long int tm_gmtoff;       /* Seconds east of UTC.  */
-  const char *tm_zone;      /* Timezone abbreviation.  */
-# else
-  long int __tm_gmtoff;     /* Seconds east of UTC.  */
-  const char *__tm_zone;    /* Timezone abbreviation.  */
-# endif
-};</code></pre><h2 id="时间API"><a href="#时间API" class="headerlink" title="时间API"></a><strong>时间API</strong></h2><p>在Linux上，所有使用POSIX时钟的函数都需要将目标文件与librt链接：</p>
-<pre><code>$ gcc -Wall -W -O2 -lrt -g -o a a.c</code></pre><p><strong>取得、设置目前时间：</strong></p>
-<pre><code>#include &lt;time.h&gt;
-
-time_t time(time_t *t);
-int stime(time_t *t);</code></pre><p>time()如果参数t非NULL，也将当前时间写入到提供的指针t中。</p>
-<hr>
-<p>对某些需要较高精准度的需求，Linux提供了以下接口，提供微秒级精度支持：</p>
-<pre><code>#include &lt;sys/time.h&gt;
-
-int gettimeofday(struct timeval * tv, struct timezone *tz);  
-int settimeofday(const struct timeval * tv, const struct timezone *tz);</code></pre><p>当前时间tv指向timeval结构体。结构提timezone和参数tz已经废止，都不应该在Linux中使用，建议传NULL。</p>
-<hr>
-<p><strong>用于纳秒级的高级接口：</strong></p>
-<pre><code>#include &lt;time.h&gt;
-
-int clock_gettime(clockid_t clock_id, struct timespec *ts);
-int clock_settime(clockid_t clock_id, const struct timespec *ts);</code></pre><hr>
-<p><strong>文字时间格式函数：</strong></p>
-<pre><code>#include &lt;time.h&gt;
-
-//将tm转换为ASCII字符串
-char * asctime(const struct tm *tm);
-char * asctime_r(const struct tm *tm, char *buf);
-
-//将time_t转换为ASCII字符串
-char * ctime(const struct time_t *tm);
-char * ctime_r(const struct time_t *tm, char *buf);
-
-//将tm转换为time_t，使用本地时间
-time_t mktime(struct tm *tm);
-
-//将time_t转换为tm，使用UTC时区格式
-struct tm * gmtime(const time_t *tp);
-struct tm * gmtime_r(const time_t *tp, struct tm *result);
-
-//将time_t转换为tm，使用本地时区格式
-struct tm * localtime(const time_t *tp);
-struct tm * localtime_r(const time_t *tp, struct tm *result);
-
-//计算秒差
-double difftime(time_t time1, time_t time2);</code></pre><p>后缀_r的函数不使用静态分配的指针，而是通过参数传递。</p>
-<hr>
-<p><strong>睡眠函数：</strong></p>
-<pre><code>#include &lt;unistd.h&gt;
-
-unsigned int sleep(unsigned int seconds);   //秒级
-void usleep(unsigned long usec);            //微秒级</code></pre><hr>
-<p><strong>纳秒级精度睡眠</strong></p>
-<pre><code>#include &lt;time.h&gt;
-
-int nanosleep(const struct timespec *req, struct timrspec *rem);</code></pre><p>这个函数功能是暂停某个线程直到你规定的时间后恢复，参数req就是你要暂停的时间。<br>由于调用nanosleep是使线程进入TASK_INTERRUPTIBLE，这种状态是会相应信号而进入TASK_RUNNING状态的，<br>这就意味着有可能会没有等到你规定的时间就因为其它信号而唤醒，<br>此时函数返回-1，且还剩余的时间会被记录在rem中（rem不为空的情况下）。</p>
-<hr>
-<p><strong>实现睡眠的高级方法？？</strong></p>
-<pre><code>#include &lt;time.h&gt;  
-
-int clock_nanosleep(clockid_t clock_id, int flags,  
-                    const struct timespec *request,  
-                    struct timespec *remain);  </code></pre><hr>
-<p><strong>select()实现sleep可移植实现：</strong></p>
-<pre><code>struct timeval tv = {.tv_sec = 0, .tv_usec = 750};
-
-/* sleep for 750 us */
-select(0, NULL, NULL, NULL, &amp;tv);</code></pre><p>select的精确度为10毫秒，在10毫秒以上很精确，sleep 可以在多线程中使用，只阻塞本线程，不影响所属进程中的其它线程。<br>Linux下短延时推荐使用select函数。</p>
-<h2 id="定时器"><a href="#定时器" class="headerlink" title="定时器"></a><strong>定时器</strong></h2><p><strong>简单定时器接口：</strong></p>
-<pre><code>#include &lt;unistd.h&gt;
-
-unsigned int alarm(unsigned int seconds);</code></pre><p>想要成功调用该函数，需要为SIGALRM信号注册一个信号处理函数：</p>
-<pre><code>signal(SIGALRM, alarm_handler);</code></pre><hr>
-<p><strong>计时器</strong></p>
-<pre><code>#include &lt;sys/time.h&gt;
-
-int getitimer(int which, struct itimerval *value);
-int setitimer(int which, const struct itimerval *value, struct itimerval *ovalue);</code></pre><hr>
-<p><strong>高级定时器</strong></p>
-<pre><code>#include &lt;signal.h&gt;
-#include &lt;time.h&gt;
-
-int timer_create(clockid_t clockid, struct sigevent *evp, timer_t *timerid);
-int timer_settime(timer_t timerid, int flags, const struct itimerspec *value, struct itimerspec *ovalue);
-int timer_gettime(timer_t timerid, struct itimerspec *value);
-int timer_getoverrun(timer_t timerid);
-int timer_delete(timer_t timerid);</code></pre><p>*<a href="http://blog.csdn.net/zjwoody/article/details/7882240" target="_blank" rel="noopener">关于短延迟 sleep usleep nanosleep select</a></p>
-]]></content>
-      <categories>
-        <category>Linux System Programming</category>
-      </categories>
-      <tags>
-        <tag>Time</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>echo/printf输出颜色显示</title>
     <url>/2014/11/18/Linux-echo-colors/</url>
     <content><![CDATA[<p>以下脚本可以查看echo输出的各种颜色效果：</p>
@@ -904,6 +752,158 @@ int shutdown(int sockfd, int how);</code></pre><p>bind函数使用通用地址�
       <tags>
         <tag>socket</tag>
         <tag>network</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Linux系统编程-时间</title>
+    <url>/2014/11/13/Linux-system-programming-Time/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<p>UNIX系统把绝对时间表示成新纪元至今所经过的秒数，<code>新纪元</code>定义成1970年1月1日早上00:00:00 UTC。<br>UTC（协调世界时，Coordinated Universal Time）相当于GMT或Zulu时间。</p>
+<h2 id="时间的数据结构"><a href="#时间的数据结构" class="headerlink" title="时间的数据结构"></a><strong>时间的数据结构</strong></h2><p><strong>原始表示：</strong></p>
+<pre><code>#incliude &lt;time.h&gt;
+typedef long time_t;</code></pre><hr>
+<p><strong>微秒级精度</strong></p>
+<pre><code>#include &lt;sys/time.h&gt;
+
+struct timeval {
+    time_t      tv_sec;
+    suseconds_t tv_usec;
+};</code></pre><hr>
+<p><strong>纳秒级精度</strong></p>
+<pre><code>#include &lt;time.h&gt;
+
+struct timespec {
+    time_t  tv_sec;
+    long    tv_nsec;
+};</code></pre><hr>
+<p><strong>时间描述</strong></p>
+<pre><code>#include &lt;time.h&gt;
+
+struct tm
+{
+  int tm_sec;           /* Seconds. [0-60] (1 leap second) */
+  int tm_min;           /* Minutes. [0-59] */
+  int tm_hour;          /* Hours.   [0-23] */
+  int tm_mday;          /* Day.     [1-31] */
+  int tm_mon;           /* Month.   [0-11] */
+  int tm_year;          /* Year - 1900.  */
+  int tm_wday;          /* Day of week. [0-6] */
+  int tm_yday;          /* Days in year.[0-365] */
+  int tm_isdst;         /* DST.     [-1/0/1]*/
+
+# ifdef __USE_BSD
+  long int tm_gmtoff;       /* Seconds east of UTC.  */
+  const char *tm_zone;      /* Timezone abbreviation.  */
+# else
+  long int __tm_gmtoff;     /* Seconds east of UTC.  */
+  const char *__tm_zone;    /* Timezone abbreviation.  */
+# endif
+};</code></pre><h2 id="时间API"><a href="#时间API" class="headerlink" title="时间API"></a><strong>时间API</strong></h2><p>在Linux上，所有使用POSIX时钟的函数都需要将目标文件与librt链接：</p>
+<pre><code>$ gcc -Wall -W -O2 -lrt -g -o a a.c</code></pre><p><strong>取得、设置目前时间：</strong></p>
+<pre><code>#include &lt;time.h&gt;
+
+time_t time(time_t *t);
+int stime(time_t *t);</code></pre><p>time()如果参数t非NULL，也将当前时间写入到提供的指针t中。</p>
+<hr>
+<p>对某些需要较高精准度的需求，Linux提供了以下接口，提供微秒级精度支持：</p>
+<pre><code>#include &lt;sys/time.h&gt;
+
+int gettimeofday(struct timeval * tv, struct timezone *tz);  
+int settimeofday(const struct timeval * tv, const struct timezone *tz);</code></pre><p>当前时间tv指向timeval结构体。结构提timezone和参数tz已经废止，都不应该在Linux中使用，建议传NULL。</p>
+<hr>
+<p><strong>用于纳秒级的高级接口：</strong></p>
+<pre><code>#include &lt;time.h&gt;
+
+int clock_gettime(clockid_t clock_id, struct timespec *ts);
+int clock_settime(clockid_t clock_id, const struct timespec *ts);</code></pre><hr>
+<p><strong>文字时间格式函数：</strong></p>
+<pre><code>#include &lt;time.h&gt;
+
+//将tm转换为ASCII字符串
+char * asctime(const struct tm *tm);
+char * asctime_r(const struct tm *tm, char *buf);
+
+//将time_t转换为ASCII字符串
+char * ctime(const struct time_t *tm);
+char * ctime_r(const struct time_t *tm, char *buf);
+
+//将tm转换为time_t，使用本地时间
+time_t mktime(struct tm *tm);
+
+//将time_t转换为tm，使用UTC时区格式
+struct tm * gmtime(const time_t *tp);
+struct tm * gmtime_r(const time_t *tp, struct tm *result);
+
+//将time_t转换为tm，使用本地时区格式
+struct tm * localtime(const time_t *tp);
+struct tm * localtime_r(const time_t *tp, struct tm *result);
+
+//计算秒差
+double difftime(time_t time1, time_t time2);</code></pre><p>后缀_r的函数不使用静态分配的指针，而是通过参数传递。</p>
+<hr>
+<p><strong>睡眠函数：</strong></p>
+<pre><code>#include &lt;unistd.h&gt;
+
+unsigned int sleep(unsigned int seconds);   //秒级
+void usleep(unsigned long usec);            //微秒级</code></pre><hr>
+<p><strong>纳秒级精度睡眠</strong></p>
+<pre><code>#include &lt;time.h&gt;
+
+int nanosleep(const struct timespec *req, struct timrspec *rem);</code></pre><p>这个函数功能是暂停某个线程直到你规定的时间后恢复，参数req就是你要暂停的时间。<br>由于调用nanosleep是使线程进入TASK_INTERRUPTIBLE，这种状态是会相应信号而进入TASK_RUNNING状态的，<br>这就意味着有可能会没有等到你规定的时间就因为其它信号而唤醒，<br>此时函数返回-1，且还剩余的时间会被记录在rem中（rem不为空的情况下）。</p>
+<hr>
+<p><strong>实现睡眠的高级方法？？</strong></p>
+<pre><code>#include &lt;time.h&gt;  
+
+int clock_nanosleep(clockid_t clock_id, int flags,  
+                    const struct timespec *request,  
+                    struct timespec *remain);  </code></pre><hr>
+<p><strong>select()实现sleep可移植实现：</strong></p>
+<pre><code>struct timeval tv = {.tv_sec = 0, .tv_usec = 750};
+
+/* sleep for 750 us */
+select(0, NULL, NULL, NULL, &amp;tv);</code></pre><p>select的精确度为10毫秒，在10毫秒以上很精确，sleep 可以在多线程中使用，只阻塞本线程，不影响所属进程中的其它线程。<br>Linux下短延时推荐使用select函数。</p>
+<h2 id="定时器"><a href="#定时器" class="headerlink" title="定时器"></a><strong>定时器</strong></h2><p><strong>简单定时器接口：</strong></p>
+<pre><code>#include &lt;unistd.h&gt;
+
+unsigned int alarm(unsigned int seconds);</code></pre><p>想要成功调用该函数，需要为SIGALRM信号注册一个信号处理函数：</p>
+<pre><code>signal(SIGALRM, alarm_handler);</code></pre><hr>
+<p><strong>计时器</strong></p>
+<pre><code>#include &lt;sys/time.h&gt;
+
+int getitimer(int which, struct itimerval *value);
+int setitimer(int which, const struct itimerval *value, struct itimerval *ovalue);</code></pre><hr>
+<p><strong>高级定时器</strong></p>
+<pre><code>#include &lt;signal.h&gt;
+#include &lt;time.h&gt;
+
+int timer_create(clockid_t clockid, struct sigevent *evp, timer_t *timerid);
+int timer_settime(timer_t timerid, int flags, const struct itimerspec *value, struct itimerspec *ovalue);
+int timer_gettime(timer_t timerid, struct itimerspec *value);
+int timer_getoverrun(timer_t timerid);
+int timer_delete(timer_t timerid);</code></pre><p>*<a href="http://blog.csdn.net/zjwoody/article/details/7882240" target="_blank" rel="noopener">关于短延迟 sleep usleep nanosleep select</a></p>
+]]></content>
+      <categories>
+        <category>Linux System Programming</category>
+      </categories>
+      <tags>
+        <tag>Time</tag>
       </tags>
   </entry>
   <entry>
@@ -3908,78 +3908,6 @@ done</code></pre>]]></content>
       </tags>
   </entry>
   <entry>
-    <title>git中的撤销操作</title>
-    <url>/2016/04/18/git-undo/</url>
-    <content><![CDATA[<p>在Git中，用<code>HEAD</code>表示当前版本，上一个版本就是<code>HEAD^</code>，上上一个版本就是<code>HEAD^^</code>，<br>当然往上100个版本写100个^比较容易数不过来，所以写成<code>HEAD~100</code>。</p>
-<hr>
-<h2 id="撤销一个已提交修改"><a href="#撤销一个已提交修改" class="headerlink" title="撤销一个已提交修改"></a><strong>撤销一个已提交修改</strong></h2><p>撤销某次提交，此次操作之前和之后的commit和history都会保留，并且把这次撤销作为一次最新的提交</p>
-<pre><code>git revert HEAD   撤销前一次 commit
-git revert HEAD^  撤销前前一次 commit
-git revert commit （比如：fa042ce57ebbe5bb9c8db709f719cec2c58ee7ff）撤销指定的版本，撤销也会作为一次提交进行保存。</code></pre><p>git revert是提交一个新的版本，将需要revert的版本的内容再反向修改回去，版本会递增，不影响之前提交的内容</p>
-<h2 id="修改最近一次的提交信息"><a href="#修改最近一次的提交信息" class="headerlink" title="修改最近一次的提交信息"></a><strong>修改最近一次的提交信息</strong></h2><p>提交时，可能没写好或者误操作导致提交的信息不合适，但你还没有 push 到远程分支时，修改上一次的提交信息。</p>
-<pre><code>git commit –amend或git commit --amend -m &quot;Fixes bug #42&quot;</code></pre><p>如果需要修改已push的文件，需要如下操作：</p>
-<pre><code>git rebase -i HEAD~3 
-git commit -amend 
-git rebase --continue</code></pre><h2 id="撤销本地修改"><a href="#撤销本地修改" class="headerlink" title="撤销本地修改"></a><strong>撤销本地修改</strong></h2><pre><code>git checkout -- file</code></pre><p><code>git checkout -- file</code>可以丢弃工作区的修改，把file文件在工作区的修改全部撤销，这里有两种情况：</p>
-<ol>
-<li>一种是自修改后还没有被放到暂存区，现在，撤销修改就回到和版本库一模一样的状态；</li>
-<li>一种是已经添加到暂存区后，又作了修改，现在，撤销修改就回到添加到暂存区后的状态。</li>
-</ol>
-<p>总之，就是<strong>让这个文件回到最近一次git commit或git add时的状态。</strong></p>
-<h2 id="重置修改"><a href="#重置修改" class="headerlink" title="重置修改"></a><strong>重置修改</strong></h2><p>已经使用<code>git add</code>，但是没有使用<code>git commit</code>，需要修改暂存区内容：</p>
-<pre><code>git reset HEAD file</code></pre><p>仅用HEAD指向的目录树充值暂存区，工作区不受影响。相当于把git add命令更新到暂存区的内容撤出暂存区</p>
-<pre><code>git reset --hard HEAD^</code></pre><p>把版本库、暂存区和工作区都回退到HEAD的前一个版本。head版本的提交全部丢失。慎用！</p>
-<pre><code>git reset --hard HEAD</code></pre><p>等价与：</p>
-<pre><code>git reset HEAD file
-git checkout -- file</code></pre><h2 id="版本回退"><a href="#版本回退" class="headerlink" title="版本回退"></a><strong>版本回退</strong></h2><pre><code>git reset --hard HEAD^
-git reset --hard commit_id</code></pre><h2 id="撤销本地后重做"><a href="#撤销本地后重做" class="headerlink" title="撤销本地后重做"></a><strong>撤销本地后重做</strong></h2><p>已经提交了一些内容，并使用git reset –hard撤销了这些更改（见上面），突然意识到：你想还原这些修改！</p>
-<pre><code>git reflog</code></pre><p>git reflog是一个用来恢复项目历史记录的好办法。你可以通过git reflog恢复几乎任何已提交的内容。<br>git reflog与git log类似，只不过git reflog显示的是HEAD变更次数的列表。</p>
-<p>具体一个例子，假设有三个commit， </p>
-<pre><code>git st:
-commit3: add test3.c
-commit2: add test2.c
-commit1: add test1.c</code></pre><p>如果执行git reset –hard HEAD~1则 删除了commit3，如果发现删除错误了，需要恢复commit3，这个时候就要使用</p>
-<pre><code>git reflog
-HEAD@{0}: HEAD~1: updating HEAD
-63ee781 HEAD@{1}: commit: test3:q</code></pre><p>运行git log则没有这一行记录，可以使用git reset –hard 63ee781将红色记录删除，则恢复了cmmit3，运行git log后可以看到：</p>
-<pre><code>git reset --hard 63ee781
-git log
-commit3: add test3.c
-commit2: add test2.c
-commit1: add test1.c</code></pre><h2 id="停止跟踪一个已被跟踪的文件"><a href="#停止跟踪一个已被跟踪的文件" class="headerlink" title="停止跟踪一个已被跟踪的文件"></a><strong>停止跟踪一个已被跟踪的文件</strong></h2><p>场景：你意外将application.log添加到仓库中，现在你每次运行程序，Git都提示application.log中有unstaged的提交。<br>你在.gitignore中写上”*.log”，但仍旧没用——怎样告诉Git“撤销”跟踪这个文件的变化呢？</p>
-<pre><code>git rm --cached application.log</code></pre><p>发生了什么：尽管.gitignore阻止Git跟踪文件的变化，甚至是之前没被跟踪的文件是否存在，<br>但是，一旦文件被add或者commit，Git会开始持续跟踪这 个文件的变化。<br>类似的，如果你用git add –f来“强制”add，或者覆盖.gitignore，Git还是会继续监视变化。所以以后最好不要使用 –f来add .gitignore文件。</p>
-<p>如果你希望移除那些应当被忽略的文件，git rm –cached可以帮助你，并将这些文件保留在磁盘上。<br>因为这个文件现在被忽略了，你将不会在git status中看到它，也不会再把这个文件commit了。</p>
-<h2 id="git-reset-与-git-revert"><a href="#git-reset-与-git-revert" class="headerlink" title="git reset 与 git revert"></a>git reset 与 git revert</h2><p><strong>git revert</strong> 是生成一个新的提交来撤销某次提交，此次提交之前的commit都会被保留</p>
-<p><strong>git reset</strong> 是回到某次提交，提交及之前的commit都会被保留，但是此次之后的修改都会被退回到暂存区</p>
-<p>假设有三个commit， </p>
-<pre><code>git st
-commit3: add test3.c
-commit2: add test2.c
-commit1: add test1.c</code></pre><p>当执行git revert HEAD~1时， commit2被撤销了，git log可以看到：</p>
-<p>revert “commit2”:this reverts commit 5fe21s2…<br>commit3: add test3.c<br>commit2: add test2.c<br>commit1: add test1.c</p>
-<p><strong>git status 没有任何变化</strong>，如果换做执行git reset –soft(默认) HEAD~1后，运行git log</p>
-<pre><code>commit2: add test2.c
-commit1: add test1.c</code></pre><p><strong>运行git status， 则test3.c处于暂存区，准备提交。</strong></p>
-<p>如果换做执行git reset –hard HEAD~1后，</p>
-<p>显示：HEAD is now at commit2，运行git log</p>
-<pre><code>commit2: add test2.c
-commit1: add test1.c</code></pre><p><strong>运行git st， 没有任何变化，工作目录文件也不存在</strong></p>
-<ol>
-<li><a href="http://www.open-open.com/lib/view/open1434097780473.html" target="_blank" rel="noopener">如何在Git中撤销一切</a></li>
-<li><a href="http://www.liaoxuefeng.com/wiki/0013739516305929606dd18361248578c67b8067c8c017b000/001374831943254ee90db11b13d4ba9a73b9047f4fb968d000" target="_blank" rel="noopener">撤销修改</a></li>
-<li><a href="http://www.oschina.net/translate/10-tips-git-next-level" target="_blank" rel="noopener">10 个迅速提升你 Git 水平的提示</a></li>
-<li><a href="https://segmentfault.com/q/1010000000430041" target="_blank" rel="noopener">团队开发里频繁使用 git rebase 来保持树的整洁好吗?</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Git</category>
-      </categories>
-      <tags>
-        <tag>git</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Pandoc 实现 markdown 多格式自由转换</title>
     <url>/2016/04/18/markdown-to-html/</url>
     <content><![CDATA[<p>Pandoc 是由 John MacFarlane 开发的标记语言转换工具，可实现不同标记语言间的格式转换</p>
@@ -4065,6 +3993,78 @@ pandoc math.text -s --katex   -o mathKaTeX.html</code></pre></li>
       <tags>
         <tag>git</tag>
         <tag>webs</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>git中的撤销操作</title>
+    <url>/2016/04/18/git-undo/</url>
+    <content><![CDATA[<p>在Git中，用<code>HEAD</code>表示当前版本，上一个版本就是<code>HEAD^</code>，上上一个版本就是<code>HEAD^^</code>，<br>当然往上100个版本写100个^比较容易数不过来，所以写成<code>HEAD~100</code>。</p>
+<hr>
+<h2 id="撤销一个已提交修改"><a href="#撤销一个已提交修改" class="headerlink" title="撤销一个已提交修改"></a><strong>撤销一个已提交修改</strong></h2><p>撤销某次提交，此次操作之前和之后的commit和history都会保留，并且把这次撤销作为一次最新的提交</p>
+<pre><code>git revert HEAD   撤销前一次 commit
+git revert HEAD^  撤销前前一次 commit
+git revert commit （比如：fa042ce57ebbe5bb9c8db709f719cec2c58ee7ff）撤销指定的版本，撤销也会作为一次提交进行保存。</code></pre><p>git revert是提交一个新的版本，将需要revert的版本的内容再反向修改回去，版本会递增，不影响之前提交的内容</p>
+<h2 id="修改最近一次的提交信息"><a href="#修改最近一次的提交信息" class="headerlink" title="修改最近一次的提交信息"></a><strong>修改最近一次的提交信息</strong></h2><p>提交时，可能没写好或者误操作导致提交的信息不合适，但你还没有 push 到远程分支时，修改上一次的提交信息。</p>
+<pre><code>git commit –amend或git commit --amend -m &quot;Fixes bug #42&quot;</code></pre><p>如果需要修改已push的文件，需要如下操作：</p>
+<pre><code>git rebase -i HEAD~3 
+git commit -amend 
+git rebase --continue</code></pre><h2 id="撤销本地修改"><a href="#撤销本地修改" class="headerlink" title="撤销本地修改"></a><strong>撤销本地修改</strong></h2><pre><code>git checkout -- file</code></pre><p><code>git checkout -- file</code>可以丢弃工作区的修改，把file文件在工作区的修改全部撤销，这里有两种情况：</p>
+<ol>
+<li>一种是自修改后还没有被放到暂存区，现在，撤销修改就回到和版本库一模一样的状态；</li>
+<li>一种是已经添加到暂存区后，又作了修改，现在，撤销修改就回到添加到暂存区后的状态。</li>
+</ol>
+<p>总之，就是<strong>让这个文件回到最近一次git commit或git add时的状态。</strong></p>
+<h2 id="重置修改"><a href="#重置修改" class="headerlink" title="重置修改"></a><strong>重置修改</strong></h2><p>已经使用<code>git add</code>，但是没有使用<code>git commit</code>，需要修改暂存区内容：</p>
+<pre><code>git reset HEAD file</code></pre><p>仅用HEAD指向的目录树充值暂存区，工作区不受影响。相当于把git add命令更新到暂存区的内容撤出暂存区</p>
+<pre><code>git reset --hard HEAD^</code></pre><p>把版本库、暂存区和工作区都回退到HEAD的前一个版本。head版本的提交全部丢失。慎用！</p>
+<pre><code>git reset --hard HEAD</code></pre><p>等价与：</p>
+<pre><code>git reset HEAD file
+git checkout -- file</code></pre><h2 id="版本回退"><a href="#版本回退" class="headerlink" title="版本回退"></a><strong>版本回退</strong></h2><pre><code>git reset --hard HEAD^
+git reset --hard commit_id</code></pre><h2 id="撤销本地后重做"><a href="#撤销本地后重做" class="headerlink" title="撤销本地后重做"></a><strong>撤销本地后重做</strong></h2><p>已经提交了一些内容，并使用git reset –hard撤销了这些更改（见上面），突然意识到：你想还原这些修改！</p>
+<pre><code>git reflog</code></pre><p>git reflog是一个用来恢复项目历史记录的好办法。你可以通过git reflog恢复几乎任何已提交的内容。<br>git reflog与git log类似，只不过git reflog显示的是HEAD变更次数的列表。</p>
+<p>具体一个例子，假设有三个commit， </p>
+<pre><code>git st:
+commit3: add test3.c
+commit2: add test2.c
+commit1: add test1.c</code></pre><p>如果执行git reset –hard HEAD~1则 删除了commit3，如果发现删除错误了，需要恢复commit3，这个时候就要使用</p>
+<pre><code>git reflog
+HEAD@{0}: HEAD~1: updating HEAD
+63ee781 HEAD@{1}: commit: test3:q</code></pre><p>运行git log则没有这一行记录，可以使用git reset –hard 63ee781将红色记录删除，则恢复了cmmit3，运行git log后可以看到：</p>
+<pre><code>git reset --hard 63ee781
+git log
+commit3: add test3.c
+commit2: add test2.c
+commit1: add test1.c</code></pre><h2 id="停止跟踪一个已被跟踪的文件"><a href="#停止跟踪一个已被跟踪的文件" class="headerlink" title="停止跟踪一个已被跟踪的文件"></a><strong>停止跟踪一个已被跟踪的文件</strong></h2><p>场景：你意外将application.log添加到仓库中，现在你每次运行程序，Git都提示application.log中有unstaged的提交。<br>你在.gitignore中写上”*.log”，但仍旧没用——怎样告诉Git“撤销”跟踪这个文件的变化呢？</p>
+<pre><code>git rm --cached application.log</code></pre><p>发生了什么：尽管.gitignore阻止Git跟踪文件的变化，甚至是之前没被跟踪的文件是否存在，<br>但是，一旦文件被add或者commit，Git会开始持续跟踪这 个文件的变化。<br>类似的，如果你用git add –f来“强制”add，或者覆盖.gitignore，Git还是会继续监视变化。所以以后最好不要使用 –f来add .gitignore文件。</p>
+<p>如果你希望移除那些应当被忽略的文件，git rm –cached可以帮助你，并将这些文件保留在磁盘上。<br>因为这个文件现在被忽略了，你将不会在git status中看到它，也不会再把这个文件commit了。</p>
+<h2 id="git-reset-与-git-revert"><a href="#git-reset-与-git-revert" class="headerlink" title="git reset 与 git revert"></a>git reset 与 git revert</h2><p><strong>git revert</strong> 是生成一个新的提交来撤销某次提交，此次提交之前的commit都会被保留</p>
+<p><strong>git reset</strong> 是回到某次提交，提交及之前的commit都会被保留，但是此次之后的修改都会被退回到暂存区</p>
+<p>假设有三个commit， </p>
+<pre><code>git st
+commit3: add test3.c
+commit2: add test2.c
+commit1: add test1.c</code></pre><p>当执行git revert HEAD~1时， commit2被撤销了，git log可以看到：</p>
+<p>revert “commit2”:this reverts commit 5fe21s2…<br>commit3: add test3.c<br>commit2: add test2.c<br>commit1: add test1.c</p>
+<p><strong>git status 没有任何变化</strong>，如果换做执行git reset –soft(默认) HEAD~1后，运行git log</p>
+<pre><code>commit2: add test2.c
+commit1: add test1.c</code></pre><p><strong>运行git status， 则test3.c处于暂存区，准备提交。</strong></p>
+<p>如果换做执行git reset –hard HEAD~1后，</p>
+<p>显示：HEAD is now at commit2，运行git log</p>
+<pre><code>commit2: add test2.c
+commit1: add test1.c</code></pre><p><strong>运行git st， 没有任何变化，工作目录文件也不存在</strong></p>
+<ol>
+<li><a href="http://www.open-open.com/lib/view/open1434097780473.html" target="_blank" rel="noopener">如何在Git中撤销一切</a></li>
+<li><a href="http://www.liaoxuefeng.com/wiki/0013739516305929606dd18361248578c67b8067c8c017b000/001374831943254ee90db11b13d4ba9a73b9047f4fb968d000" target="_blank" rel="noopener">撤销修改</a></li>
+<li><a href="http://www.oschina.net/translate/10-tips-git-next-level" target="_blank" rel="noopener">10 个迅速提升你 Git 水平的提示</a></li>
+<li><a href="https://segmentfault.com/q/1010000000430041" target="_blank" rel="noopener">团队开发里频繁使用 git rebase 来保持树的整洁好吗?</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Git</category>
+      </categories>
+      <tags>
+        <tag>git</tag>
       </tags>
   </entry>
   <entry>
@@ -6814,59 +6814,6 @@ url = BreezeTempleIO.com:breezetemple/breezetemple.github.com.git</code></pre><p
       </tags>
   </entry>
   <entry>
-    <title>vim 中的替换功能</title>
-    <url>/2016/12/14/vim-replace-tips/</url>
-    <content><![CDATA[<h2 id="常用用法"><a href="#常用用法" class="headerlink" title="常用用法"></a>常用用法</h2><pre><code class="vim">%s/old/new/g
-%s/old/new/gc
-%s/\&lt;old\&gt;/new/gc</code></pre>
-<ul>
-<li><code>%</code> 所有行</li>
-<li><code>g</code> 所有匹配</li>
-<li><code>c</code> 替换前确认</li>
-<li><code>&lt;&gt;</code> 确认单词边界，需要使用转义符<code>\</code></li>
-</ul>
-<a id="more"></a>
-
-<h2 id="正则表达式"><a href="#正则表达式" class="headerlink" title="正则表达式"></a>正则表达式</h2><pre><code class="vim">%s/\([^,]*\),\(.*\)/New\1/gc</code></pre>
-<ul>
-<li><code>()</code> 用于反向引用</li>
-<li><code>[^,]</code> 匹配除<code>,</code>之外</li>
-<li><code>*</code> 任意多次 </li>
-<li><code>.</code> 任意字符</li>
-<li><code>\1</code> 反向引用，表示第一个<code>()</code>匹配的内容</li>
-</ul>
-<h2 id="多文件修改"><a href="#多文件修改" class="headerlink" title="多文件修改"></a>多文件修改</h2><h3 id="args-amp-argdo"><a href="#args-amp-argdo" class="headerlink" title="args &amp; argdo"></a>args &amp; argdo</h3><p>需要替换当前目录下所有的<code>.c</code>文件中的<code>Old</code>为<code>New</code>：</p>
-<pre><code class="vim">:args *.c
-:args **/*.c
-:args */*.c
-
-:argdo %s/Old/New/gc | update</code></pre>
-<ul>
-<li><code>*.c</code> 当前目录下的所有<code>.c</code></li>
-<li><code>**/*.c</code> 递归扫描所有下级目录</li>
-<li><code>*/*.c</code> 只扫描下一级目录（即不扫描当前目录）</li>
-<li><code>update</code> 直接更新写入硬盘</li>
-</ul>
-<h3 id="使用宏"><a href="#使用宏" class="headerlink" title="使用宏"></a>使用宏</h3><p>录制 <code>宏命令</code></p>
-<pre><code class="vim">qa
-:%s/\&lt;Old\&gt;/New/g
-:wnext
-q</code></pre>
-<p>使用 <code>宏定义</code></p>
-<pre><code class="vim">100@a</code></pre>
-<h2 id="Tips"><a href="#Tips" class="headerlink" title="Tips"></a>Tips</h2><h3 id="删除多余空格"><a href="#删除多余空格" class="headerlink" title="删除多余空格"></a>删除多余空格</h3><pre><code class="vim">%s/\s\+$//</code></pre>
-<h3 id="删除Windows文本文件中的-“-M”-标记"><a href="#删除Windows文本文件中的-“-M”-标记" class="headerlink" title="删除Windows文本文件中的 “^M” 标记"></a>删除Windows文本文件中的 “^M” 标记</h3><pre><code class="vim">%s/\r//g</code></pre>
-]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Editor</category>
-      </categories>
-      <tags>
-        <tag>vim</tag>
-        <tag>regexp</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>字符串复制相关 (strcpy, strncpy, memcpy, sprintf, snprintf, sizeof, strlen)</title>
     <url>/2016/12/14/string-copy/</url>
     <content><![CDATA[<h2 id="字符数组与字符串"><a href="#字符数组与字符串" class="headerlink" title="字符数组与字符串"></a>字符数组与字符串</h2><ul>
@@ -6979,6 +6926,59 @@ _IO_vsnprintf (string, maxlen, format, args)
         <tag>c</tag>
         <tag>string</tag>
         <tag>memory</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>vim 中的替换功能</title>
+    <url>/2016/12/14/vim-replace-tips/</url>
+    <content><![CDATA[<h2 id="常用用法"><a href="#常用用法" class="headerlink" title="常用用法"></a>常用用法</h2><pre><code class="vim">%s/old/new/g
+%s/old/new/gc
+%s/\&lt;old\&gt;/new/gc</code></pre>
+<ul>
+<li><code>%</code> 所有行</li>
+<li><code>g</code> 所有匹配</li>
+<li><code>c</code> 替换前确认</li>
+<li><code>&lt;&gt;</code> 确认单词边界，需要使用转义符<code>\</code></li>
+</ul>
+<a id="more"></a>
+
+<h2 id="正则表达式"><a href="#正则表达式" class="headerlink" title="正则表达式"></a>正则表达式</h2><pre><code class="vim">%s/\([^,]*\),\(.*\)/New\1/gc</code></pre>
+<ul>
+<li><code>()</code> 用于反向引用</li>
+<li><code>[^,]</code> 匹配除<code>,</code>之外</li>
+<li><code>*</code> 任意多次 </li>
+<li><code>.</code> 任意字符</li>
+<li><code>\1</code> 反向引用，表示第一个<code>()</code>匹配的内容</li>
+</ul>
+<h2 id="多文件修改"><a href="#多文件修改" class="headerlink" title="多文件修改"></a>多文件修改</h2><h3 id="args-amp-argdo"><a href="#args-amp-argdo" class="headerlink" title="args &amp; argdo"></a>args &amp; argdo</h3><p>需要替换当前目录下所有的<code>.c</code>文件中的<code>Old</code>为<code>New</code>：</p>
+<pre><code class="vim">:args *.c
+:args **/*.c
+:args */*.c
+
+:argdo %s/Old/New/gc | update</code></pre>
+<ul>
+<li><code>*.c</code> 当前目录下的所有<code>.c</code></li>
+<li><code>**/*.c</code> 递归扫描所有下级目录</li>
+<li><code>*/*.c</code> 只扫描下一级目录（即不扫描当前目录）</li>
+<li><code>update</code> 直接更新写入硬盘</li>
+</ul>
+<h3 id="使用宏"><a href="#使用宏" class="headerlink" title="使用宏"></a>使用宏</h3><p>录制 <code>宏命令</code></p>
+<pre><code class="vim">qa
+:%s/\&lt;Old\&gt;/New/g
+:wnext
+q</code></pre>
+<p>使用 <code>宏定义</code></p>
+<pre><code class="vim">100@a</code></pre>
+<h2 id="Tips"><a href="#Tips" class="headerlink" title="Tips"></a>Tips</h2><h3 id="删除多余空格"><a href="#删除多余空格" class="headerlink" title="删除多余空格"></a>删除多余空格</h3><pre><code class="vim">%s/\s\+$//</code></pre>
+<h3 id="删除Windows文本文件中的-“-M”-标记"><a href="#删除Windows文本文件中的-“-M”-标记" class="headerlink" title="删除Windows文本文件中的 “^M” 标记"></a>删除Windows文本文件中的 “^M” 标记</h3><pre><code class="vim">%s/\r//g</code></pre>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Editor</category>
+      </categories>
+      <tags>
+        <tag>vim</tag>
+        <tag>regexp</tag>
       </tags>
   </entry>
   <entry>
@@ -11852,8 +11852,8 @@ Server listening on 5201
         <category>Linux</category>
         <category>Socket</category>
         <category>Network</category>
-        <category>Tools</category>
         <category>TCP</category>
+        <category>Tools</category>
         <category>Network</category>
       </categories>
       <tags>
@@ -14392,6 +14392,204 @@ class Weekday(Enum):
       <tags>
         <tag>python</tag>
         <tag>module</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Movian Plugin Development</title>
+    <url>/2018/01/10/movian-plugin-development/</url>
+    <content><![CDATA[<p>Movian Development</p>
+<a id="more"></a>
+
+<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
+<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
+<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
+<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
+<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
+<pre><code class="json">{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;apiversion&quot;: 1,
+  &quot;id&quot;: &quot;headweb&quot;,
+  &quot;file&quot;: &quot;headweb.js&quot;,
+  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
+  &quot;version&quot;: &quot;1.5.3&quot;,
+  &quot;author&quot;: &quot;Andreas Öman&quot;,
+  &quot;title&quot;: &quot;Headweb&quot;,
+  &quot;icon&quot;: &quot;headweb_square.png&quot;,
+  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
+  &quot;category&quot;: &quot;video&quot;,
+  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
+  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
+}</code></pre>
+<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
+<ul>
+<li>ecmascript - loads the plugin using Duktape.</li>
+<li>views - used for user interface (screen keyboard plugin)</li>
+</ul>
+<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
+<ul>
+<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
+<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
+</ul>
+<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
+<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
+<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
+<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
+<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
+<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
+<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
+<ul>
+<li>“tv” - online TV</li>
+<li>“video” - streaming video</li>
+<li>“music” - streaming music</li>
+<li>“glwview” - UI extentions</li>
+<li>“subtitles” - subtitles</li>
+<li>“glwosk” - on screen keyboard</li>
+</ul>
+<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
+<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
+<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
+<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
+<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
+<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
+<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
+<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
+<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
+<pre><code>{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;file&quot;: &quot;testplugin.js&quot;,
+  &quot;id&quot;: &quot;testplugin&quot;
+}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
+<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
+  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
+})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
+<pre><code>(function(plugin) {
+  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
+    showtime.print(&quot;I was called&quot;);
+  })
+})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
+<p><code>somafa</code> 中的 <code>start URI</code></p>
+<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
+...
+}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
+<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
+<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
+<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
+<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
+<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
+<ul>
+<li>Direct URL</li>
+<li>Via a video page</li>
+</ul>
+<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
+<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
+<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
+<p>To use it first do:</p>
+<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
+      <categories>
+        <category>Movian</category>
+      </categories>
+      <tags>
+        <tag>movian</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>vim-highlight-syntax</title>
+    <url>/2017/12/19/vim-highlight-syntax/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
+<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
+<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
+<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
+<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
+<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
+<pre><code>:syntax
+--- 语法项目 ---
+cLabel         xxx default case
+cStructure     xxx union struct typedef enum
+cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
+                   _Thread_local auto
+cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
+cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
+cStatement     xxx return goto asm continue break
+                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
+<p><code>:help group-name</code></p>
+<pre><code>:help group-name
+
+(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
+
+        *Comment        any comment
+
+        *Constant       any constant
+         String         a string constant: &quot;this is a string&quot;
+         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
+         Number         a number constant: 234, 0xff
+         Boolean        a boolean constant: TRUE, false
+         Float          a floating point constant: 2.3e10
+
+        *Identifier     any variable name
+         Function       function name (also: methods for classes)
+        *Statement      any statement
+         Conditional    if, then, else, endif, switch, etc.
+         Repeat         for, do, while, etc.
+         Label          case, default, etc.
+         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
+         Keyword        any other keyword
+         Exception      try, catch, throw
+
+        *PreProc        generic Preprocessor
+         Include        preprocessor #include
+         Define         preprocessor #define
+         Macro          same as Define
+         PreCondit      preprocessor #if, #else, #endif, etc.
+
+        *Type           int, long, char, etc.
+         StorageClass   static, register, volatile, etc.
+         Structure      struct, union, enum, etc.
+         Typedef        A typedef
+
+        *Special        any special symbol
+         SpecialChar    special character in a constant
+         Tag            you can use CTRL-] on this
+         Delimiter      character that needs attention
+         SpecialComment special things inside a comment
+         Debug          debugging statements
+
+        *Underlined     text that stands out, HTML links
+
+        *Ignore         left blank, hidden  hl-Ignore
+
+        *Error          any erroneous construct
+        *Todo           anything that needs extra attention; mostly the
+                        keywords TODO FIXME and XXX</code></pre>]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Editor</category>
+      </categories>
+      <tags>
+        <tag>vim</tag>
+        <tag>highlight</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>proc-pid-intro</title>
+    <url>/2017/12/14/proc-pid-intro/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
+<li><a href="https://github.com/NanXiao/gnu-linux-proc-pid-intro" target="_blank" rel="noopener">GNU/Linux下的/proc/[pid]目录下的文件分析</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>proc</tag>
       </tags>
   </entry>
   <entry>
@@ -16993,204 +17191,6 @@ ENDFUNCTION(ADD_N_LIBRARY name)</code></pre>
       </tags>
   </entry>
   <entry>
-    <title>vim-highlight-syntax</title>
-    <url>/2017/12/19/vim-highlight-syntax/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
-<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
-<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
-<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
-<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
-<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
-<pre><code>:syntax
---- 语法项目 ---
-cLabel         xxx default case
-cStructure     xxx union struct typedef enum
-cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
-                   _Thread_local auto
-cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
-cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
-cStatement     xxx return goto asm continue break
-                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
-<p><code>:help group-name</code></p>
-<pre><code>:help group-name
-
-(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
-
-        *Comment        any comment
-
-        *Constant       any constant
-         String         a string constant: &quot;this is a string&quot;
-         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
-         Number         a number constant: 234, 0xff
-         Boolean        a boolean constant: TRUE, false
-         Float          a floating point constant: 2.3e10
-
-        *Identifier     any variable name
-         Function       function name (also: methods for classes)
-        *Statement      any statement
-         Conditional    if, then, else, endif, switch, etc.
-         Repeat         for, do, while, etc.
-         Label          case, default, etc.
-         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
-         Keyword        any other keyword
-         Exception      try, catch, throw
-
-        *PreProc        generic Preprocessor
-         Include        preprocessor #include
-         Define         preprocessor #define
-         Macro          same as Define
-         PreCondit      preprocessor #if, #else, #endif, etc.
-
-        *Type           int, long, char, etc.
-         StorageClass   static, register, volatile, etc.
-         Structure      struct, union, enum, etc.
-         Typedef        A typedef
-
-        *Special        any special symbol
-         SpecialChar    special character in a constant
-         Tag            you can use CTRL-] on this
-         Delimiter      character that needs attention
-         SpecialComment special things inside a comment
-         Debug          debugging statements
-
-        *Underlined     text that stands out, HTML links
-
-        *Ignore         left blank, hidden  hl-Ignore
-
-        *Error          any erroneous construct
-        *Todo           anything that needs extra attention; mostly the
-                        keywords TODO FIXME and XXX</code></pre>]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Editor</category>
-      </categories>
-      <tags>
-        <tag>vim</tag>
-        <tag>highlight</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>proc-pid-intro</title>
-    <url>/2017/12/14/proc-pid-intro/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
-<li><a href="https://github.com/NanXiao/gnu-linux-proc-pid-intro" target="_blank" rel="noopener">GNU/Linux下的/proc/[pid]目录下的文件分析</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>proc</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Movian Plugin Development</title>
-    <url>/2018/01/10/movian-plugin-development/</url>
-    <content><![CDATA[<p>Movian Development</p>
-<a id="more"></a>
-
-<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
-<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
-<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
-<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
-<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
-<pre><code class="json">{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;apiversion&quot;: 1,
-  &quot;id&quot;: &quot;headweb&quot;,
-  &quot;file&quot;: &quot;headweb.js&quot;,
-  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
-  &quot;version&quot;: &quot;1.5.3&quot;,
-  &quot;author&quot;: &quot;Andreas Öman&quot;,
-  &quot;title&quot;: &quot;Headweb&quot;,
-  &quot;icon&quot;: &quot;headweb_square.png&quot;,
-  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
-  &quot;category&quot;: &quot;video&quot;,
-  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
-  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
-}</code></pre>
-<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
-<ul>
-<li>ecmascript - loads the plugin using Duktape.</li>
-<li>views - used for user interface (screen keyboard plugin)</li>
-</ul>
-<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
-<ul>
-<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
-<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
-</ul>
-<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
-<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
-<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
-<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
-<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
-<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
-<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
-<ul>
-<li>“tv” - online TV</li>
-<li>“video” - streaming video</li>
-<li>“music” - streaming music</li>
-<li>“glwview” - UI extentions</li>
-<li>“subtitles” - subtitles</li>
-<li>“glwosk” - on screen keyboard</li>
-</ul>
-<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
-<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
-<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
-<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
-<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
-<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
-<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
-<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
-<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
-<pre><code>{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;file&quot;: &quot;testplugin.js&quot;,
-  &quot;id&quot;: &quot;testplugin&quot;
-}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
-<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
-  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
-})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
-<pre><code>(function(plugin) {
-  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
-    showtime.print(&quot;I was called&quot;);
-  })
-})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
-<p><code>somafa</code> 中的 <code>start URI</code></p>
-<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
-...
-}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
-<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
-<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
-<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
-<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
-<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
-<ul>
-<li>Direct URL</li>
-<li>Via a video page</li>
-</ul>
-<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
-<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
-<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
-<p>To use it first do:</p>
-<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
-      <categories>
-        <category>Movian</category>
-      </categories>
-      <tags>
-        <tag>movian</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>CPU hotplug in the Kernel</title>
     <url>/2018/12/11/linux-cpu-hotplug/</url>
     <content><![CDATA[<p><code>Linux</code> 支持多核 <code>CPU</code> 热插拔</p>
@@ -18113,8 +18113,8 @@ network={
 ]]></content>
       <categories>
         <category>Network</category>
-        <category>Tools</category>
         <category>TCP</category>
+        <category>Tools</category>
         <category>Network</category>
       </categories>
       <tags>
@@ -19860,7 +19860,7 @@ nvram commit</code></pre><h3 id="K2P-B2-Merlin-刷回官改"><a href="#K2P-B2-Me
 <p>使用 <a href="https://github.com/shd101wyy/markdown-preview-enhanced" target="_blank" rel="noopener">Markdown Preview Enhanced</a> 搭建 markdown 环境</p>
 <a id="more"></a>
 
-<h2 id="Mermaid"><a href="#Mermaid" class="headerlink" title="Mermaid"></a>Mermaid</h2><p><a href="http://knsv.github.io/mermaid/#/" target="_blank" rel="noopener">mermaid</a><br><a href="https://hexo-theme-next.netlify.app/docs/tag-plugins/" target="_blank" rel="noopener">Tag Plugins</a></p>
+<h2 id="Mermaid"><a href="#Mermaid" class="headerlink" title="Mermaid"></a>Mermaid</h2><p><a href="http://mermaid-js.github.io/mermaid/#/" target="_blank" rel="noopener">mermaid</a><br><a href="https://hexo-theme-next.netlify.app/docs/tag-plugins/" target="_blank" rel="noopener">Tag Plugins</a></p>
 <p>使用</p>
 <pre><code>{% mermaid type %}
 {% endmermaid %}</code></pre><ul>
@@ -19980,7 +19980,7 @@ ArrayList : size()
 @enduml
 ` ` `</code></pre>
 <p>效果：</p>
-<img src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBjb250ZW50U2NyaXB0VHlwZT0iYXBwbGljYXRpb24vZWNtYXNjcmlwdCIgY29udGVudFN0eWxlVHlwZT0idGV4dC9jc3MiIGhlaWdodD0iMjIwcHgiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiIHN0eWxlPSJ3aWR0aDoxNjNweDtoZWlnaHQ6MjIwcHg7IiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAxNjMgMjIwIiB3aWR0aD0iMTYzcHgiIHpvb21BbmRQYW49Im1hZ25pZnkiPjxkZWZzPjxmaWx0ZXIgaGVpZ2h0PSIzMDAlIiBpZD0iZnh2MG5kZzc3YWtyZyIgd2lkdGg9IjMwMCUiIHg9Ii0xIiB5PSItMSI+PGZlR2F1c3NpYW5CbHVyIHJlc3VsdD0iYmx1ck91dCIgc3RkRGV2aWF0aW9uPSIyLjAiLz48ZmVDb2xvck1hdHJpeCBpbj0iYmx1ck91dCIgcmVzdWx0PSJibHVyT3V0MiIgdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIC40IDAiLz48ZmVPZmZzZXQgZHg9IjQuMCIgZHk9IjQuMCIgaW49ImJsdXJPdXQyIiByZXN1bHQ9ImJsdXJPdXQzIi8+PGZlQmxlbmQgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iYmx1ck91dDMiIG1vZGU9Im5vcm1hbCIvPjwvZmlsdGVyPjwvZGVmcz48Zz48IS0tTUQ1PVthYTdmNTg2NTMyZTE4NzE5ZTZjZWZhNzBmYzY1MDU4M10KY2xhc3MgT2JqZWN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjYwLjgwNDciIGlkPSJPYmplY3QiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS41OyIgd2lkdGg9IjcyIiB4PSIzOS41IiB5PSI3Ii8+PGVsbGlwc2UgY3g9IjU0LjUiIGN5PSIyMyIgZmlsbD0iI0FERDFCMiIgcng9IjExIiByeT0iMTEiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS4wOyIvPjxwYXRoIGQ9Ik01Ni44NDM4LDE4LjY3MTkgQzU1LjkwNjMsMTguMjM0NCA1NS4zMTI1LDE4LjA5MzggNTQuNDM3NSwxOC4wOTM4IEM1MS44MTI1LDE4LjA5MzggNDkuODEyNSwyMC4xNzE5IDQ5LjgxMjUsMjIuODkwNiBMNDkuODEyNSwyNC4wMTU2IEM0OS44MTI1LDI2LjU5MzggNTEuOTIxOSwyOC40ODQ0IDU0LjgxMjUsMjguNDg0NCBDNTYuMDMxMywyOC40ODQ0IDU3LjE4NzUsMjguMTg3NSA1Ny45Mzc1LDI3LjY0MDYgQzU4LjUxNTYsMjcuMjM0NCA1OC44NDM4LDI2Ljc4MTMgNTguODQzOCwyNi4zOTA2IEM1OC44NDM4LDI1LjkzNzUgNTguNDUzMSwyNS41NDY5IDU3Ljk4NDQsMjUuNTQ2OSBDNTcuNzY1NiwyNS41NDY5IDU3LjU2MjUsMjUuNjI1IDU3LjM3NSwyNS44MTI1IEM1Ni45MjE5LDI2LjI5NjkgNTYuOTIxOSwyNi4yOTY5IDU2LjczNDQsMjYuMzkwNiBDNTYuMzEyNSwyNi42NTYzIDU1LjYyNSwyNi43ODEzIDU0Ljg1OTQsMjYuNzgxMyBDNTIuODEyNSwyNi43ODEzIDUxLjUxNTYsMjUuNjg3NSA1MS41MTU2LDIzLjk4NDQgTDUxLjUxNTYsMjIuODkwNiBDNTEuNTE1NiwyMS4xMDk0IDUyLjc2NTYsMTkuNzk2OSA1NC41LDE5Ljc5NjkgQzU1LjA3ODEsMTkuNzk2OSA1NS42ODc1LDE5Ljk1MzEgNTYuMTU2MywyMC4yMDMxIEM1Ni42NDA2LDIwLjQ4NDQgNTYuODEyNSwyMC43MDMxIDU2LjkwNjMsMjEuMTA5NCBDNTYuOTY4OCwyMS41MTU2IDU3LDIxLjY0MDYgNTcuMTQwNiwyMS43NjU2IEM1Ny4yODEzLDIxLjkwNjMgNTcuNTE1NiwyMi4wMTU2IDU3LjczNDQsMjIuMDE1NiBDNTgsMjIuMDE1NiA1OC4yNjU2LDIxLjg3NSA1OC40Mzc1LDIxLjY1NjMgQzU4LjU0NjksMjEuNSA1OC41NzgxLDIxLjMxMjUgNTguNTc4MSwyMC44OTA2IEw1OC41NzgxLDE5LjQ2ODggQzU4LjU3ODEsMTkuMDMxMyA1OC41NjI1LDE4LjkwNjMgNTguNDY4OCwxOC43NSBDNTguMzEyNSwxOC40ODQ0IDU4LjAzMTMsMTguMzQzOCA1Ny43MzQ0LDE4LjM0MzggQzU3LjQzNzUsMTguMzQzOCA1Ny4yMzQ0LDE4LjQzNzUgNTcuMDE1NiwxOC43NSBMNTYuODQzOCwxOC42NzE5IFogIi8+PHRleHQgZmlsbD0iIzAwMDAwMCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGxlbmd0aEFkanVzdD0ic3BhY2luZ0FuZEdseXBocyIgdGV4dExlbmd0aD0iNDAiIHg9IjY4LjUiIHk9IjI3LjE1NDMiPk9iamVjdDwvdGV4dD48bGluZSBzdHlsZT0ic3Ryb2tlOiAjQTgwMDM2OyBzdHJva2Utd2lkdGg6IDEuNTsiIHgxPSI0MC41IiB4Mj0iMTEwLjUiIHkxPSIzOSIgeTI9IjM5Ii8+PGxpbmUgc3R5bGU9InN0cm9rZTogI0E4MDAzNjsgc3Ryb2tlLXdpZHRoOiAxLjU7IiB4MT0iNDAuNSIgeDI9IjExMC41IiB5MT0iNDciIHkyPSI0NyIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiIHRleHRMZW5ndGg9IjQ2IiB4PSI0NS41IiB5PSI2MS4yMTA0Ij5lcXVhbHMoKTwvdGV4dD48IS0tTUQ1PVthYjg4NzFlZDYzN2Y0MDcwN2I4NjZiYTY1OTc3MzRiY10KY2xhc3MgQXJyYXlMaXN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjczLjYwOTQiIGlkPSJBcnJheUxpc3QiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS41OyIgd2lkdGg9IjEzNyIgeD0iNyIgeT0iMTI4Ii8+PGVsbGlwc2UgY3g9IjQ1Ljg1IiBjeT0iMTQ0IiBmaWxsPSIjQUREMUIyIiByeD0iMTEiIHJ5PSIxMSIgc3R5bGU9InN0cm9rZTogI0E4MDAzNjsgc3Ryb2tlLXdpZHRoOiAxLjA7Ii8+PHBhdGggZD0iTTQ4LjE5MzgsMTM5LjY3MTkgQzQ3LjI1NjMsMTM5LjIzNDQgNDYuNjYyNSwxMzkuMDkzOCA0NS43ODc1LDEzOS4wOTM4IEM0My4xNjI1LDEzOS4wOTM4IDQxLjE2MjUsMTQxLjE3MTkgNDEuMTYyNSwxNDMuODkwNiBMNDEuMTYyNSwxNDUuMDE1NiBDNDEuMTYyNSwxNDcuNTkzOCA0My4yNzE5LDE0OS40ODQ0IDQ2LjE2MjUsMTQ5LjQ4NDQgQzQ3LjM4MTMsMTQ5LjQ4NDQgNDguNTM3NSwxNDkuMTg3NSA0OS4yODc1LDE0OC42NDA2IEM0OS44NjU2LDE0OC4yMzQ0IDUwLjE5MzgsMTQ3Ljc4MTMgNTAuMTkzOCwxNDcuMzkwNiBDNTAuMTkzOCwxNDYuOTM3NSA0OS44MDMxLDE0Ni41NDY5IDQ5LjMzNDQsMTQ2LjU0NjkgQzQ5LjExNTYsMTQ2LjU0NjkgNDguOTEyNSwxNDYuNjI1IDQ4LjcyNSwxNDYuODEyNSBDNDguMjcxOSwxNDcuMjk2OSA0OC4yNzE5LDE0Ny4yOTY5IDQ4LjA4NDQsMTQ3LjM5MDYgQzQ3LjY2MjUsMTQ3LjY1NjMgNDYuOTc1LDE0Ny43ODEzIDQ2LjIwOTQsMTQ3Ljc4MTMgQzQ0LjE2MjUsMTQ3Ljc4MTMgNDIuODY1NiwxNDYuNjg3NSA0Mi44NjU2LDE0NC45ODQ0IEw0Mi44NjU2LDE0My44OTA2IEM0Mi44NjU2LDE0Mi4xMDk0IDQ0LjExNTYsMTQwLjc5NjkgNDUuODUsMTQwLjc5NjkgQzQ2LjQyODEsMTQwLjc5NjkgNDcuMDM3NSwxNDAuOTUzMSA0Ny41MDYzLDE0MS4yMDMxIEM0Ny45OTA2LDE0MS40ODQ0IDQ4LjE2MjUsMTQxLjcwMzEgNDguMjU2MywxNDIuMTA5NCBDNDguMzE4OCwxNDIuNTE1NiA0OC4zNSwxNDIuNjQwNiA0OC40OTA2LDE0Mi43NjU2IEM0OC42MzEzLDE0Mi45MDYzIDQ4Ljg2NTYsMTQzLjAxNTYgNDkuMDg0NCwxNDMuMDE1NiBDNDkuMzUsMTQzLjAxNTYgNDkuNjE1NiwxNDIuODc1IDQ5Ljc4NzUsMTQyLjY1NjMgQzQ5Ljg5NjksMTQyLjUgNDkuOTI4MSwxNDIuMzEyNSA0OS45MjgxLDE0MS44OTA2IEw0OS45MjgxLDE0MC40Njg4IEM0OS45MjgxLDE0MC4wMzEzIDQ5LjkxMjUsMTM5LjkwNjMgNDkuODE4OCwxMzkuNzUgQzQ5LjY2MjUsMTM5LjQ4NDQgNDkuMzgxMywxMzkuMzQzOCA0OS4wODQ0LDEzOS4zNDM4IEM0OC43ODc1LDEzOS4zNDM4IDQ4LjU4NDQsMTM5LjQzNzUgNDguMzY1NiwxMzkuNzUgTDQ4LjE5MzgsMTM5LjY3MTkgWiAiLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIiB0ZXh0TGVuZ3RoPSI1MiIgeD0iNjUuMTUiIHk9IjE0OC4xNTQzIj5BcnJheUxpc3Q8L3RleHQ+PGxpbmUgc3R5bGU9InN0cm9rZTogI0E4MDAzNjsgc3Ryb2tlLXdpZHRoOiAxLjU7IiB4MT0iOCIgeDI9IjE0MyIgeTE9IjE2MCIgeTI9IjE2MCIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiIHRleHRMZW5ndGg9IjEyNSIgeD0iMTMiIHk9IjE3NC4yMTA0Ij5PYmplY3RbXSBlbGVtZW50RGF0YTwvdGV4dD48bGluZSBzdHlsZT0ic3Ryb2tlOiAjQTgwMDM2OyBzdHJva2Utd2lkdGg6IDEuNTsiIHgxPSI4IiB4Mj0iMTQzIiB5MT0iMTgwLjgwNDciIHkyPSIxODAuODA0NyIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiIHRleHRMZW5ndGg9IjMyIiB4PSIxMyIgeT0iMTk1LjAxNTEiPnNpemUoKTwvdGV4dD48IS0tTUQ1PVs3OGVkM2Q1NGM2YWQ5NmZiNjQzNGE0ZTQ1YWE0YjVmMF0KcmV2ZXJzZSBsaW5rIE9iamVjdCB0byBBcnJheUxpc3QtLT48cGF0aCBjb2RlTGluZT0iMSIgZD0iTTc1LjUsODguNTA1IEM3NS41LDEwMS42MjEgNzUuNSwxMTUuNTEyOCA3NS41LDEyNy43NTU1ICIgZmlsbD0ibm9uZSIgaWQ9Ik9iamVjdC1iYWNrdG8tQXJyYXlMaXN0IiBzdHlsZT0ic3Ryb2tlOiAjQTgwMDM2OyBzdHJva2Utd2lkdGg6IDEuMDsiLz48cG9seWdvbiBmaWxsPSJub25lIiBwb2ludHM9IjY4LjUwMDEsODguMjQyLDc1LjUsNjguMjQyLDgyLjUwMDEsODguMjQyLDY4LjUwMDEsODguMjQyIiBzdHlsZT0ic3Ryb2tlOiAjQTgwMDM2OyBzdHJva2Utd2lkdGg6IDEuMDsiLz48IS0tTUQ1PVs1NzI2NWFlNTY1NDViMWVmNTRmYjgyNjA1NDYzOWU3NV0KQHN0YXJ0dW1sDQpPYmplY3QgPHwtIC0gQXJyYXlMaXN0DQpPYmplY3QgOiBlcXVhbHMoKQ0KQXJyYXlMaXN0IDogT2JqZWN0W10gZWxlbWVudERhdGENCkFycmF5TGlzdCA6IHNpemUoKQ0KQGVuZHVtbA0KClBsYW50VU1MIHZlcnNpb24gMS4yMDIwLjE4YmV0YTQoVW5rbm93biBjb21waWxlIHRpbWUpCihHUEwgc291cmNlIGRpc3RyaWJ1dGlvbikKSmF2YSBSdW50aW1lOiBKYXZhKFRNKSBTRSBSdW50aW1lIEVudmlyb25tZW50CkpWTTogSmF2YSBIb3RTcG90KFRNKSA2NC1CaXQgU2VydmVyIFZNCkRlZmF1bHQgRW5jb2Rpbmc6IFVURi04Ckxhbmd1YWdlOiBlbgpDb3VudHJ5OiBVUwotLT48L2c+PC9zdmc+'>
+<img src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBjb250ZW50U2NyaXB0VHlwZT0iYXBwbGljYXRpb24vZWNtYXNjcmlwdCIgY29udGVudFN0eWxlVHlwZT0idGV4dC9jc3MiIGhlaWdodD0iMjE1cHgiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiIHN0eWxlPSJ3aWR0aDoxNThweDtoZWlnaHQ6MjE1cHg7IiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAxNTggMjE1IiB3aWR0aD0iMTU4cHgiIHpvb21BbmRQYW49Im1hZ25pZnkiPjxkZWZzPjxmaWx0ZXIgaGVpZ2h0PSIzMDAlIiBpZD0iZnh2MG5kZzc3YWtyZyIgd2lkdGg9IjMwMCUiIHg9Ii0xIiB5PSItMSI+PGZlR2F1c3NpYW5CbHVyIHJlc3VsdD0iYmx1ck91dCIgc3RkRGV2aWF0aW9uPSIyLjAiLz48ZmVDb2xvck1hdHJpeCBpbj0iYmx1ck91dCIgcmVzdWx0PSJibHVyT3V0MiIgdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIC40IDAiLz48ZmVPZmZzZXQgZHg9IjQuMCIgZHk9IjQuMCIgaW49ImJsdXJPdXQyIiByZXN1bHQ9ImJsdXJPdXQzIi8+PGZlQmxlbmQgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iYmx1ck91dDMiIG1vZGU9Im5vcm1hbCIvPjwvZmlsdGVyPjwvZGVmcz48Zz48IS0tTUQ1PVthYTdmNTg2NTMyZTE4NzE5ZTZjZWZhNzBmYzY1MDU4M10KY2xhc3MgT2JqZWN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjYwLjgwNDciIGlkPSJPYmplY3QiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS41OyIgd2lkdGg9IjcyIiB4PSIzOS41IiB5PSI3Ii8+PGVsbGlwc2UgY3g9IjU0LjUiIGN5PSIyMyIgZmlsbD0iI0FERDFCMiIgcng9IjExIiByeT0iMTEiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS4wOyIvPjxwYXRoIGQ9Ik01Ni44NDM4LDE4LjY3MTkgQzU1LjkwNjMsMTguMjM0NCA1NS4zMTI1LDE4LjA5MzggNTQuNDM3NSwxOC4wOTM4IEM1MS44MTI1LDE4LjA5MzggNDkuODEyNSwyMC4xNzE5IDQ5LjgxMjUsMjIuODkwNiBMNDkuODEyNSwyNC4wMTU2IEM0OS44MTI1LDI2LjU5MzggNTEuOTIxOSwyOC40ODQ0IDU0LjgxMjUsMjguNDg0NCBDNTYuMDMxMywyOC40ODQ0IDU3LjE4NzUsMjguMTg3NSA1Ny45Mzc1LDI3LjY0MDYgQzU4LjUxNTYsMjcuMjM0NCA1OC44NDM4LDI2Ljc4MTMgNTguODQzOCwyNi4zOTA2IEM1OC44NDM4LDI1LjkzNzUgNTguNDUzMSwyNS41NDY5IDU3Ljk4NDQsMjUuNTQ2OSBDNTcuNzY1NiwyNS41NDY5IDU3LjU2MjUsMjUuNjI1IDU3LjM3NSwyNS44MTI1IEM1Ni45MjE5LDI2LjI5NjkgNTYuOTIxOSwyNi4yOTY5IDU2LjczNDQsMjYuMzkwNiBDNTYuMzEyNSwyNi42NTYzIDU1LjYyNSwyNi43ODEzIDU0Ljg1OTQsMjYuNzgxMyBDNTIuODEyNSwyNi43ODEzIDUxLjUxNTYsMjUuNjg3NSA1MS41MTU2LDIzLjk4NDQgTDUxLjUxNTYsMjIuODkwNiBDNTEuNTE1NiwyMS4xMDk0IDUyLjc2NTYsMTkuNzk2OSA1NC41LDE5Ljc5NjkgQzU1LjA3ODEsMTkuNzk2OSA1NS42ODc1LDE5Ljk1MzEgNTYuMTU2MywyMC4yMDMxIEM1Ni42NDA2LDIwLjQ4NDQgNTYuODEyNSwyMC43MDMxIDU2LjkwNjMsMjEuMTA5NCBDNTYuOTY4OCwyMS41MTU2IDU3LDIxLjY0MDYgNTcuMTQwNiwyMS43NjU2IEM1Ny4yODEzLDIxLjkwNjMgNTcuNTE1NiwyMi4wMTU2IDU3LjczNDQsMjIuMDE1NiBDNTgsMjIuMDE1NiA1OC4yNjU2LDIxLjg3NSA1OC40Mzc1LDIxLjY1NjMgQzU4LjU0NjksMjEuNSA1OC41NzgxLDIxLjMxMjUgNTguNTc4MSwyMC44OTA2IEw1OC41NzgxLDE5LjQ2ODggQzU4LjU3ODEsMTkuMDMxMyA1OC41NjI1LDE4LjkwNjMgNTguNDY4OCwxOC43NSBDNTguMzEyNSwxOC40ODQ0IDU4LjAzMTMsMTguMzQzOCA1Ny43MzQ0LDE4LjM0MzggQzU3LjQzNzUsMTguMzQzOCA1Ny4yMzQ0LDE4LjQzNzUgNTcuMDE1NiwxOC43NSBMNTYuODQzOCwxOC42NzE5IFogIiBmaWxsPSIjMDAwMDAwIi8+PHRleHQgZmlsbD0iIzAwMDAwMCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGxlbmd0aEFkanVzdD0ic3BhY2luZ0FuZEdseXBocyIgdGV4dExlbmd0aD0iNDAiIHg9IjY4LjUiIHk9IjI3LjE1NDMiPk9iamVjdDwvdGV4dD48bGluZSBzdHlsZT0ic3Ryb2tlOiAjQTgwMDM2OyBzdHJva2Utd2lkdGg6IDEuNTsiIHgxPSI0MC41IiB4Mj0iMTEwLjUiIHkxPSIzOSIgeTI9IjM5Ii8+PGxpbmUgc3R5bGU9InN0cm9rZTogI0E4MDAzNjsgc3Ryb2tlLXdpZHRoOiAxLjU7IiB4MT0iNDAuNSIgeDI9IjExMC41IiB5MT0iNDciIHkyPSI0NyIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiIHRleHRMZW5ndGg9IjQ2IiB4PSI0NS41IiB5PSI2MS4yMTA0Ij5lcXVhbHMoKTwvdGV4dD48IS0tTUQ1PVthYjg4NzFlZDYzN2Y0MDcwN2I4NjZiYTY1OTc3MzRiY10KY2xhc3MgQXJyYXlMaXN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjczLjYwOTQiIGlkPSJBcnJheUxpc3QiIHN0eWxlPSJzdHJva2U6ICNBODAwMzY7IHN0cm9rZS13aWR0aDogMS41OyIgd2lkdGg9IjEzNyIgeD0iNyIgeT0iMTI4Ii8+PGVsbGlwc2UgY3g9IjQ1Ljg1IiBjeT0iMTQ0IiBmaWxsPSIjQUREMUIyIiByeD0iMTEiIHJ5PSIxMSIgc3R5bGU9InN0cm9rZTogI0E4MDAzNjsgc3Ryb2tlLXdpZHRoOiAxLjA7Ii8+PHBhdGggZD0iTTQ4LjE5MzgsMTM5LjY3MTkgQzQ3LjI1NjMsMTM5LjIzNDQgNDYuNjYyNSwxMzkuMDkzOCA0NS43ODc1LDEzOS4wOTM4IEM0My4xNjI1LDEzOS4wOTM4IDQxLjE2MjUsMTQxLjE3MTkgNDEuMTYyNSwxNDMuODkwNiBMNDEuMTYyNSwxNDUuMDE1NiBDNDEuMTYyNSwxNDcuNTkzOCA0My4yNzE5LDE0OS40ODQ0IDQ2LjE2MjUsMTQ5LjQ4NDQgQzQ3LjM4MTMsMTQ5LjQ4NDQgNDguNTM3NSwxNDkuMTg3NSA0OS4yODc1LDE0OC42NDA2IEM0OS44NjU2LDE0OC4yMzQ0IDUwLjE5MzgsMTQ3Ljc4MTMgNTAuMTkzOCwxNDcuMzkwNiBDNTAuMTkzOCwxNDYuOTM3NSA0OS44MDMxLDE0Ni41NDY5IDQ5LjMzNDQsMTQ2LjU0NjkgQzQ5LjExNTYsMTQ2LjU0NjkgNDguOTEyNSwxNDYuNjI1IDQ4LjcyNSwxNDYuODEyNSBDNDguMjcxOSwxNDcuMjk2OSA0OC4yNzE5LDE0Ny4yOTY5IDQ4LjA4NDQsMTQ3LjM5MDYgQzQ3LjY2MjUsMTQ3LjY1NjMgNDYuOTc1LDE0Ny43ODEzIDQ2LjIwOTQsMTQ3Ljc4MTMgQzQ0LjE2MjUsMTQ3Ljc4MTMgNDIuODY1NiwxNDYuNjg3NSA0Mi44NjU2LDE0NC45ODQ0IEw0Mi44NjU2LDE0My44OTA2IEM0Mi44NjU2LDE0Mi4xMDk0IDQ0LjExNTYsMTQwLjc5NjkgNDUuODUsMTQwLjc5NjkgQzQ2LjQyODEsMTQwLjc5NjkgNDcuMDM3NSwxNDAuOTUzMSA0Ny41MDYzLDE0MS4yMDMxIEM0Ny45OTA2LDE0MS40ODQ0IDQ4LjE2MjUsMTQxLjcwMzEgNDguMjU2MywxNDIuMTA5NCBDNDguMzE4OCwxNDIuNTE1NiA0OC4zNSwxNDIuNjQwNiA0OC40OTA2LDE0Mi43NjU2IEM0OC42MzEzLDE0Mi45MDYzIDQ4Ljg2NTYsMTQzLjAxNTYgNDkuMDg0NCwxNDMuMDE1NiBDNDkuMzUsMTQzLjAxNTYgNDkuNjE1NiwxNDIuODc1IDQ5Ljc4NzUsMTQyLjY1NjMgQzQ5Ljg5NjksMTQyLjUgNDkuOTI4MSwxNDIuMzEyNSA0OS45MjgxLDE0MS44OTA2IEw0OS45MjgxLDE0MC40Njg4IEM0OS45MjgxLDE0MC4wMzEzIDQ5LjkxMjUsMTM5LjkwNjMgNDkuODE4OCwxMzkuNzUgQzQ5LjY2MjUsMTM5LjQ4NDQgNDkuMzgxMywxMzkuMzQzOCA0OS4wODQ0LDEzOS4zNDM4IEM0OC43ODc1LDEzOS4zNDM4IDQ4LjU4NDQsMTM5LjQzNzUgNDguMzY1NiwxMzkuNzUgTDQ4LjE5MzgsMTM5LjY3MTkgWiAiIGZpbGw9IiMwMDAwMDAiLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIiB0ZXh0TGVuZ3RoPSI1MiIgeD0iNjUuMTUiIHk9IjE0OC4xNTQzIj5BcnJheUxpc3Q8L3RleHQ+PGxpbmUgc3R5bGU9InN0cm9rZTogI0E4MDAzNjsgc3Ryb2tlLXdpZHRoOiAxLjU7IiB4MT0iOCIgeDI9IjE0MyIgeTE9IjE2MCIgeTI9IjE2MCIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiIHRleHRMZW5ndGg9IjEyNSIgeD0iMTMiIHk9IjE3NC4yMTA0Ij5PYmplY3RbXSBlbGVtZW50RGF0YTwvdGV4dD48bGluZSBzdHlsZT0ic3Ryb2tlOiAjQTgwMDM2OyBzdHJva2Utd2lkdGg6IDEuNTsiIHgxPSI4IiB4Mj0iMTQzIiB5MT0iMTgwLjgwNDciIHkyPSIxODAuODA0NyIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiIHRleHRMZW5ndGg9IjMyIiB4PSIxMyIgeT0iMTk1LjAxNTEiPnNpemUoKTwvdGV4dD48IS0tTUQ1PVs3OGVkM2Q1NGM2YWQ5NmZiNjQzNGE0ZTQ1YWE0YjVmMF0KcmV2ZXJzZSBsaW5rIE9iamVjdCB0byBBcnJheUxpc3QtLT48cGF0aCBjb2RlTGluZT0iMSIgZD0iTTc1LjUsODguNTA1IEM3NS41LDEwMS42MjEgNzUuNSwxMTUuNTEyOCA3NS41LDEyNy43NTU1ICIgZmlsbD0ibm9uZSIgaWQ9Ik9iamVjdC1iYWNrdG8tQXJyYXlMaXN0IiBzdHlsZT0ic3Ryb2tlOiAjQTgwMDM2OyBzdHJva2Utd2lkdGg6IDEuMDsiLz48cG9seWdvbiBmaWxsPSJub25lIiBwb2ludHM9IjY4LjUwMDEsODguMjQyLDc1LjUsNjguMjQyLDgyLjUwMDEsODguMjQyLDY4LjUwMDEsODguMjQyIiBzdHlsZT0ic3Ryb2tlOiAjQTgwMDM2OyBzdHJva2Utd2lkdGg6IDEuMDsiLz48IS0tTUQ1PVszZTg5OTM2NTc2MTFkOWI1NDk4OWJhZDJiNGYzM2Q2Zl0KQHN0YXJ0dW1sDQpPYmplY3QgPHwtIC0gQXJyYXlMaXN0DQpPYmplY3QgOiBlcXVhbHMoKQ0KQXJyYXlMaXN0IDogT2JqZWN0W10gZWxlbWVudERhdGENCkFycmF5TGlzdCA6IHNpemUoKQ0KQGVuZHVtbA0KClBsYW50VU1MIHZlcnNpb24gMS4yMDIwLjIwYmV0YTkoVW5rbm93biBjb21waWxlIHRpbWUpCihHUEwgc291cmNlIGRpc3RyaWJ1dGlvbikKSmF2YSBSdW50aW1lOiBKYXZhKFRNKSBTRSBSdW50aW1lIEVudmlyb25tZW50CkpWTTogSmF2YSBIb3RTcG90KFRNKSA2NC1CaXQgU2VydmVyIFZNCkRlZmF1bHQgRW5jb2Rpbmc6IFVURi04Ckxhbmd1YWdlOiBlbgpDb3VudHJ5OiBVUwotLT48L2c+PC9zdmc+'>
 
 <h2 id="Markdown-Preview-Enhanced"><a href="#Markdown-Preview-Enhanced" class="headerlink" title="Markdown Preview Enhanced"></a><strong>Markdown Preview Enhanced</strong></h2><p><strong>Markdown Preview Enhanced</strong> 是一款为 <a href="https://atom.io/packages/markdown-preview-enhanced" target="_blank" rel="noopener"><strong>Atom</strong></a> 以及 <a href="https://marketplace.visualstudio.com/items?itemName=shd101wyy.markdown-preview-enhanced" target="_blank" rel="noopener"><strong>Visual Studio Code</strong></a> 编辑器编写的<strong>超级强大的</strong> Markdown 插件。 这款插件意在让你拥有飘逸的 Markdown 写作体验。</p>
 <p><strong>Markdown Preview Enhanced</strong> 内部支持 <code>flow charts</code>, <code>sequence diagrams</code>, <code>mermaid</code>, <code>PlantUML</code>, <code>WaveDrom</code>, <code>GraphViz</code>，<code>Vega &amp; Vega-lite</code>，<code>Ditaa</code> 图像渲染。 你也可以通过使用 <a href="https://shd101wyy.github.io/markdown-preview-enhanced/#/zh-cn/code-chunk" target="_blank" rel="noopener">Code Chunk</a> 来渲染 <code>TikZ</code>, <code>Python Matplotlib</code>, <code>Plotly</code> 等图像。</p>
@@ -24693,6 +24693,67 @@ $ lsusb</code></pre>
       </tags>
   </entry>
   <entry>
+    <title>Ubuntu 安装 Pandoc 和 TeX Live</title>
+    <url>/2020/09/27/pandoc-with-texlive/</url>
+    <content><![CDATA[<p>ubuntu18.04 下 <code>pandoc</code> + <code>LaTeX</code> 将 <code>markdown</code> 转为 <code>pdf</code></p>
+<a id="more"></a>
+
+<h2 id="Pandoc"><a href="#Pandoc" class="headerlink" title="Pandoc"></a>Pandoc</h2><pre><code class="shell">$ sudo dpkg -r pandoc
+$ sudo apt purge pandoc
+$ wget https://github.com/jgm/pandoc/releases/download/2.10.1/pandoc-2.10.1-1-amd64.deb
+$ sudo dpkg -i pandoc-2.10.1-1-amd64.deb
+$ sudo apt install xzdec</code></pre>
+<h2 id="TeX-Live"><a href="#TeX-Live" class="headerlink" title="TeX Live"></a>TeX Live</h2><p><code>TeX Live</code> 是 <code>LaTeX</code> 的发行版，<code>tlmgr</code> 用于管理安装后的程序，包管理器</p>
+<h3 id="卸载"><a href="#卸载" class="headerlink" title="卸载"></a>卸载</h3><pre><code class="shell">$ sudo apt purge texlive*
+$ sudo rm -rf /usr/local/texlive/* and rm -rf ~/.texlive*
+$ sudo rm -rf /usr/local/share/texmf
+$ sudo rm -rf /var/lib/texmf
+$ sudo rm -rf /etc/texmf
+$ sudo apt remove tex-common --purge
+$ rm -rf ~/.texlive
+$ find -L /usr/local/bin/ -lname /usr/local/texlive/*/bin/* | sudo xargs rm</code></pre>
+<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><h4 id="apt"><a href="#apt" class="headerlink" title="apt"></a>apt</h4><pre><code class="shell">$ sudo apt install texlive-full</code></pre>
+<h4 id="sh"><a href="#sh" class="headerlink" title="sh"></a>sh</h4><ol>
+<li>安装<pre><code>$ wget https://mirrors.nju.edu.cn/CTAN/systems/texlive/tlnet/install-tl.zip
+$ sudo perl install-tl</code></pre></li>
+<li>配置环境 <code>~/.zshrc</code><pre><code>export PATH=$PATH:/usr/local/texlive/2020/bin/x86_64-linux
+export MANPATH=/usr/local/texlive/2020/texmf-dist/doc/man
+export INFOPATH=/usr/local/texlive/2020/texmf-dist/doc/info</code></pre></li>
+<li>-设置字体- 导致乱码<pre><code class="shell">$ sudo cp /usr/local/texlive/2020/texmf-var/fonts/conf/texlive-fontconfig.conf /etc/fonts/conf.d/09-texlive.conf
+$ sudo fc-cache -fv
+</code></pre>
+</li>
+</ol>
+<p>$ sudo rm sudo fc-cache -fv<br>$ sudo fc-cache -fv</p>
+<pre><code>4. 更新为国内源，可选
+```shell
+$ sudo visudo
+# add /usr/local/texlive/2020/bin/x86_64-linux to secure_path
+$ sudo tlmgr option repository https://mirrors.tuna.tsinghua.edu.cn/CTAN/systems/texlive/tlnet</code></pre><ol start="5">
+<li>更新<pre><code class="shell">$ sudo tlmgr update --list
+$ sudo tlmgr update --self --all</code></pre>
+</li>
+</ol>
+<h2 id="Editor"><a href="#Editor" class="headerlink" title="Editor"></a>Editor</h2><p>vscode <code>LaTeX Workshop</code></p>
+<h2 id="Eisvogel"><a href="#Eisvogel" class="headerlink" title="Eisvogel"></a>Eisvogel</h2><p><a href="https://github.com/Wandmalfarbe/pandoc-latex-template" target="_blank" rel="noopener">Eisvogel</a></p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://matnoble.me/tech/ubuntu/install-texlive/" target="_blank" rel="noopener">Windows + Ubuntu 安装配置更新卸载 TeXLive 指南</a></li>
+<li><a href="https://tug.org/texlive/quickinstall.html" target="_blank" rel="noopener">TeX Live - Quick install</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/136931926" target="_blank" rel="noopener">TeX Live 2020 安装指南</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Markdown</category>
+      </categories>
+      <tags>
+        <tag>markdown</tag>
+        <tag>pandoc</tag>
+        <tag>latex</tag>
+        <tag>texlive</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>BookStack 填坑指南</title>
     <url>/2020/09/29/how-to-install-bookstack/</url>
     <content><![CDATA[<p>安装 BookStack 过程中遇到的问题及解决方案</p>
@@ -24777,6 +24838,199 @@ $ dpkg -i wkhtmltox_0.12.5-1.bionic_amd64.deb</code></pre>
         <tag>mysql</tag>
         <tag>bookstack</tag>
         <tag>wkhtmltopdf</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Markdown 转换为 PDF 文档</title>
+    <url>/2020/10/30/convert-markdown-to-pdf/</url>
+    <content><![CDATA[<p>记录将 <code>Markdown</code> 转换为 <code>PDF</code> 过程</p>
+<ul>
+<li>GitBook 整体/部分/单章导出</li>
+<li>Pandoc 导出 </li>
+<li>Typora 导出</li>
+<li>VSCode MPE 导出</li>
+</ul>
+<a id="more"></a>
+
+<h2 id="GitBook"><a href="#GitBook" class="headerlink" title="GitBook"></a>GitBook</h2><p>支持安装插件以扩展功能，例如：</p>
+<ul>
+<li>flowchart.js</li>
+<li>mermaid.js</li>
+<li>UML绘图</li>
+</ul>
+<p>使用上述插件后，<code>Markdown</code> 在原生基础上做出了扩展，是超集</p>
+<p><code>GitBook</code> 使用命令 <code>gitbook pdf</code> 导出电子书，其目录及内容依赖于比选项 <code>SUMMARY.md</code>。因此导出部分/单章内容时需要修改 <code>SUMMARY.md</code> 以满足需求。导出转换流程 <code>Markdown源码</code> -&gt; <code>HTML资源</code> -&gt; <code>PDF</code>，因此影响 <code>HTML</code> 的相关插件对最终输出效果均有影响。</p>
+<p><code>README.md</code> 为比选项，因此导出单章时需要将内容重命名为 <code>README.md</code> 以避免引入 <code>introduction</code> 章节。</p>
+<h2 id="Pandoc"><a href="#Pandoc" class="headerlink" title="Pandoc"></a>Pandoc</h2><p>使用模板 <a href="https://github.com/Wandmalfarbe/pandoc-latex-template.git" target="_blank" rel="noopener">Eisvogel</a></p>
+<p>在文档中增加元数据</p>
+<pre><code class="markdown">---
+title: &quot;DSM-CC&quot;
+author: Breeze
+date: &quot;2020-02-20&quot;
+subject: &quot;Markdown&quot;
+keywords: [Markdown, Example]
+table-use-row-colors: false
+toc-own-page: true
+header-left: &quot;National&quot;
+titlepage: true,
+titlepage-text-color: &quot;000000&quot;
+titlepage-rule-color: &quot;360049&quot;
+titlepage-rule-height: 0
+titlepage-background: &quot;titlepage-background/backgrounds/background1.pdf&quot;
+logo-width: 120
+...</code></pre>
+<pre><code class="shell">$ pandoc &quot;index.md&quot; -o &quot;chinese.pdf&quot; --from markdown --template &quot;../eisvogel.latex&quot; --listings --pdf-engine=xelatex -V CJKmainfont=&quot;Microsoft YaHei&quot; --number-sections --toc</code></pre>
+<blockquote>
+<p>如果 Markdown 源码存在扩展会导致这部分输出异常，例如 GitBook 中插件部分扩展。优点是可以方便定制 LaTeX 模板</p>
+</blockquote>
+<p>扩展：</p>
+<ul>
+<li><a href="http://pages.tzengyuxio.me/pandoc/" target="_blank" rel="noopener">Pandoc’s Markdown 語法中文翻譯</a></li>
+<li><a href="https://texblog.org/2011/01/27/add-your-logo-to-the-title-page/" target="_blank" rel="noopener">Title Page 增加 Logo</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/81704534" target="_blank" rel="noopener">如何使用 Pandoc 和 LaTeX 制作漂亮的 pdf</a></li>
+<li><a href="https://pandoc.org/MANUAL.html#general-options" target="_blank" rel="noopener">Pandoc General options</a></li>
+<li><a href="https://learnbyexample.github.io/customizing-pandoc/" target="_blank" rel="noopener">Customizing pandoc to generate beautiful pdf and epub from markdown</a></li>
+<li><a href="https://gowa.club/macOS/%E4%BD%BF%E7%94%A8pandoc%E8%BD%AC%E6%8D%A2pdf%E4%B8%8Edocx%E5%8A%A0%E4%B8%8A%E4%B9%A6%E7%AD%BE%E7%9B%AE%E5%BD%95.html" target="_blank" rel="noopener">使用pandoc转换pdf与docx加上书签目录</a></li>
+<li><a href="https://yijiebuyi.com/blog/17e31502e8a6229a18971a2499f0e72b.html" target="_blank" rel="noopener">pandoc markdown 生成pdf文档</a></li>
+<li><a href="https://jdhao.github.io/2017/12/10/pandoc-markdown-with-chinese/" target="_blank" rel="noopener">使用 Pandoc 把 Markdown 转为 PDF 文件</a></li>
+<li><a href="http://www.biexiaoyu1994.com/%E5%AE%9E%E7%94%A8%E5%B7%A5%E5%85%B7/2019/10/21/latex_summary/" target="_blank" rel="noopener">LaTex 语法总结</a></li>
+<li><a href="https://www.latextemplates.com/" target="_blank" rel="noopener">LaTeX Templates</a></li>
+<li><a href="https://uoftcoders.github.io/studyGroup/lessons/misc/pandoc-intro/lesson/" target="_blank" rel="noopener">How to use Pandoc and Markdown for writing scientific manuscripts</a></li>
+<li><a href="https://afoo.me/posts/2013-07-10-how-to-transform-chinese-pdf-with-pandoc.html" target="_blank" rel="noopener">pandoc中文pdf转换攻略</a></li>
+</ul>
+<h2 id="Typora"><a href="#Typora" class="headerlink" title="Typora"></a>Typora</h2><p>所见即所得，方便本地编辑导出 PDF</p>
+<h2 id="VSCode"><a href="#VSCode" class="headerlink" title="VSCode"></a>VSCode</h2><p>基于插件 <a href="https://shd101wyy.github.io/markdown-preview-enhanced/#/zh-cn/pandoc-pdf" target="_blank" rel="noopener">MPE Pandoc</a> 本地编辑导出 PDF</p>
+<p>TODOs</p>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Markdown</category>
+      </categories>
+      <tags>
+        <tag>markdown</tag>
+        <tag>pandoc</tag>
+        <tag>gitbook</tag>
+        <tag>latex</tag>
+        <tag>texlive</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Pandoc 定制模板转换 Markdown 为 PDF</title>
+    <url>/2020/11/02/customizing-pandoc/</url>
+    <content><![CDATA[<p>定制模板控制 <code>Markdown</code> 转换细节</p>
+<a id="more"></a>
+
+<h2 id="模板"><a href="#模板" class="headerlink" title="模板"></a>模板</h2><p><a href="https://github.com/Wandmalfarbe/pandoc-latex-template.git" target="_blank" rel="noopener">Eisvogel</a></p>
+<p>使用 Metadata 控制</p>
+<h2 id="Pandoc-Filter"><a href="#Pandoc-Filter" class="headerlink" title="Pandoc Filter"></a>Pandoc Filter</h2><p>扩展 <code>Markdown</code></p>
+<ol>
+<li><a href="https://github.com/timofurrer/pandoc-mermaid-filter" target="_blank" rel="noopener">pandoc-mermaid-filter</a></li>
+<li><a href="https://github.com/raghur/mermaid-filter" target="_blank" rel="noopener">mermaid-filter</a></li>
+<li><a href="https://github.com/taqenoqo/pandoc-ditaa-filter" target="_blank" rel="noopener">Pandoc Ditaa Filter</a></li>
+<li><a href="https://github.com/hertogp/imagine" target="_blank" rel="noopener"><strong>Imagine</strong></a></li>
+</ol>
+<p>其中 <code>Imagine</code> 支持如下代码块</p>
+<ul>
+<li>asy</li>
+<li>blockdiag</li>
+<li>boxes</li>
+<li>chartdirector</li>
+<li>ctioga2</li>
+<li>ditaa</li>
+<li>figlet</li>
+<li>flydraw</li>
+<li>gle</li>
+<li>gnuplot</li>
+<li>graphviz</li>
+<li>gri</li>
+<li>inline</li>
+<li>matplotlib</li>
+<li>mermaid</li>
+<li>mscgen</li>
+<li>octave</li>
+<li>plantuml</li>
+<li>ploticus</li>
+<li>plotutils</li>
+<li>protocol</li>
+<li>pygal</li>
+<li>pyxplot</li>
+<li>random</li>
+<li>sample</li>
+<li>wolfram</li>
+</ul>
+<h2 id="Pandoc-控制"><a href="#Pandoc-控制" class="headerlink" title="Pandoc 控制"></a>Pandoc 控制</h2><ul>
+<li>模板即为一组语法集合</li>
+<li>转换为 PDF <code>--pdf-engine=xelatex</code></li>
+<li>使用模板 <code>--template &quot;eisvogel.latex&quot;</code></li>
+</ul>
+<h3 id="支持中文"><a href="#支持中文" class="headerlink" title="支持中文"></a>支持中文</h3><p><code>-V CJKmainfont=&quot;Microsoft YaHei&quot;</code></p>
+<h3 id="高亮"><a href="#高亮" class="headerlink" title="高亮"></a>高亮</h3><ul>
+<li><code>--list-highlight-styles</code></li>
+<li><code>--list-highlight-languages</code></li>
+<li><code>--highlight-style zenburn</code></li>
+</ul>
+<p>定制语法高亮，输出默认并编辑</p>
+<pre><code class="shell">$ pandoc --print-highlight-style=pygments &gt; pygments.theme</code></pre>
+<h3 id="章节编号"><a href="#章节编号" class="headerlink" title="章节编号"></a>章节编号</h3><p><code>--number-sections</code></p>
+<h3 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h3><ul>
+<li><code>--toc</code></li>
+<li><code>--toc-depth</code></li>
+<li><code>-V toc-title</code></li>
+</ul>
+<h3 id="链接颜色"><a href="#链接颜色" class="headerlink" title="链接颜色"></a>链接颜色</h3><p><code>-V colorlinks -V urlcolor=NavyBlue</code></p>
+<h3 id="PDF-margin"><a href="#PDF-margin" class="headerlink" title="PDF margin"></a>PDF margin</h3><p><code>-V geometry:&quot;top=2cm, bottom=1.5cm, left=2cm, right=2cm&quot;</code></p>
+<h3 id="设置放入-head-tex"><a href="#设置放入-head-tex" class="headerlink" title="设置放入 head.tex"></a>设置放入 head.tex</h3><p><code>-H --include-in-header=FILE</code></p>
+<h3 id="Chapter-breaks"><a href="#Chapter-breaks" class="headerlink" title="Chapter breaks"></a>Chapter breaks</h3><pre><code class="latex">\usepackage{sectsty}
+\sectionfont{\clearpage}</code></pre>
+<pre><code class="shell">$ $ pandoc sample_1.md -f gfm -H chapter_break.tex -o sample_1_chapter_break.pdf</code></pre>
+<h3 id="Changing-settings-via-V-option"><a href="#Changing-settings-via-V-option" class="headerlink" title="Changing settings via -V option"></a>Changing settings via -V option</h3><pre><code class="shell">pandoc &quot;$1&quot; \
+    -f gfm \
+    --include-in-header chapter_break.tex \
+    -V linkcolor:blue \
+    -V geometry:a4paper \
+    -V geometry:margin=2cm \
+    -V mainfont=&quot;DejaVu Serif&quot; \
+    -V monofont=&quot;DejaVu Sans Mono&quot; \
+    --pdf-engine=xelatex \
+    -o &quot;$2&quot;</code></pre>
+<ul>
+<li><code>mainfont</code> is for normal text</li>
+<li><code>monofont</code> is for code snippets</li>
+<li><code>geometry</code> for page size and margins</li>
+<li><code>linkcolor</code> to set hyperlink color</li>
+</ul>
+<h3 id="Inline-code"><a href="#Inline-code" class="headerlink" title="Inline code"></a>Inline code</h3><pre><code class="latex">\usepackage{fancyvrb,newverbs,xcolor}
+
+\definecolor{Light}{HTML}{F4F4F4}
+
+\let\oldtexttt\texttt
+\renewcommand{\texttt}[1]{
+  \colorbox{Light}{\oldtexttt{#1}}
+}</code></pre>
+<p>使用方式<code>--include-in-header inline_code.tex</code></p>
+<h3 id="PDF-properties"><a href="#PDF-properties" class="headerlink" title="PDF properties"></a>PDF properties</h3><pre><code class="latex">\usepackage{hyperref}
+
+\hypersetup{
+  pdftitle={My awesome book},
+  pdfauthor={learnbyexample},
+  pdfsubject={pandoc},
+  pdfkeywords={pandoc,pdf,xelatex}
+}</code></pre>
+<h3 id="cover-image"><a href="#cover-image" class="headerlink" title="cover image"></a>cover image</h3><pre><code class="latex">\includegraphics{cover.png}
+\thispagestyle{empty}</code></pre>
+<h3 id="blockquote"><a href="#blockquote" class="headerlink" title="blockquote"></a>blockquote</h3><pre><code class="latex">\usepackage{tcolorbox}
+\newtcolorbox{myquote}{colback=red!5!white, colframe=red!75!black}
+\renewenvironment{quote}{\begin{myquote}}{\end{myquote}}</code></pre>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Markdown</category>
+      </categories>
+      <tags>
+        <tag>markdown</tag>
+        <tag>pandoc</tag>
+        <tag>latex</tag>
+        <tag>pandoc filter</tag>
       </tags>
   </entry>
   <entry>
@@ -27971,8 +28225,8 @@ net.core.wmem_max = 16777216</code></pre><p>一般来说，<strong>理论上的R
         <category>Linux</category>
         <category>Socket</category>
         <category>Network</category>
-        <category>Tools</category>
         <category>TCP</category>
+        <category>Tools</category>
         <category>Network</category>
       </categories>
       <tags>
@@ -34799,8 +35053,8 @@ rtsp://192.168.128.5/?src=1&amp;fe=1&amp;freq=12720&amp;pol=v&amp;msys=dvbs2&amp
 ]]></content>
       <categories>
         <category>Network</category>
-        <category>Tools</category>
         <category>TCP</category>
+        <category>Tools</category>
         <category>HTTP</category>
         <category>Network</category>
       </categories>
