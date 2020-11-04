@@ -216,6 +216,212 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/27/shell-getopts/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/10/27/shell-getopts/" class="post-title-link" itemprop="url">shell脚本的命令行选项解析</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-10-28 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-28T00:00:00+08:00">2015-10-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-11-04 17:19:41" itemprop="dateModified" datetime="2020-11-04T17:19:41+08:00">2020-11-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Shell/" itemprop="url" rel="index">
+                    <span itemprop="name">Shell</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.1k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p>标准UNIX命一般都提供大量的选项和参数，例如：</p>
+<pre><code>ps --help
+Usage:
+ps [options]
+
+Try &#39;ps --help &lt;simple|list|output|threads|misc|all&gt;&#39;
+or &#39;ps --help &lt;s|l|o|t|m|a&gt;&#39;
+for additional help text.</code></pre><p>在这些工具的命令行处理中使用了C函数<strong>getopt</strong>；<br>shell脚本可以通过使用<strong>getopts</strong>来保持与UNIX一致的风格。</p>
+<h2 id="常用shell参数变量"><a href="#常用shell参数变量" class="headerlink" title="常用shell参数变量"></a>常用shell参数变量</h2><ul>
+<li>$0 ：即命令本身，相当于C/C++中的argv[0]</li>
+<li>$1 ：第一个参数.</li>
+<li>$2, $3, $4 … ：第2、3、4个参数，依次类推。</li>
+<li>$#  参数的个数，不包括命令本身</li>
+<li>$@ ：参数本身的列表，也不包括命令本身</li>
+<li>$* ：和$@相同，但”$*“ 和 “$@”(加引号)并不同，”$*“将所有的参数解释成一个字符串，而”$@”是一个参数数组。</li>
+</ul>
+<h2 id="getopts"><a href="#getopts" class="headerlink" title="getopts"></a>getopts</h2><p>getopts有两个参数，<br>第一个参数是一个字符串，包括字符和“：”，每一个字符都是一个有效的选项，<br>如果字符后面带有“：”，表示这个字符有自己的参数。<br>如果字符串最前面带有“：”，表示开启静默模式，屏蔽系统提示错误。<br>getopts从命令中获取这些参数，并且删去了“-”，<br>并将其赋值在第二个参数中，如果带有自己参数，这个参数赋值在“OPTARG”中。</p>
+<p>在使用getopts命令的时候，shell会自动产生两个变量OPTIND和OPTARG。<br>OPTIND初始值为1，其含义是下一个待处理的参数的索引。<br>只要存在，getopts命令返回true，所以一般getopts命令使用while循环；<br>OPTARG是当getopts获取到其期望的参数后存入的位置。</p>
+<h2 id="脚本"><a href="#脚本" class="headerlink" title="脚本"></a>脚本</h2><pre><code>[ $# -eq 0   ] &amp;&amp; usage
+
+# option_string以冒号开头表示屏蔽脚本的系统提示错误，自己处理错误提示。
+# 后面接合法的单字母选项，选项后若有冒号，则表示该选项必须接具体的参数
+
+while getopts :s:t:i:oh OPTION
+do
+    case $OPTION in
+        s)
+            STRING=$OPTARG
+            ;;
+
+        t)
+            STRING=`cat $OPTARG`
+            ;;
+
+        i)
+            IN=$OPTARG        #$OPTARG为特殊变量，表示选项的具体参数
+            ;;
+
+        o)
+            OUT=$OPTARG        #$OPTARG为特殊变量，表示选项的具体参数
+            ;;
+
+        h)
+            echo &quot;\033[31mHelp Info:\033[0m&quot;
+            java -jar sfntly-builds/java-openjdk-8/sfnttool/sfnttool.jar -h
+            exit 1
+        ;;
+
+        \?)                       #如果出现错误，则解析为?
+            usage
+            ;;
+    esac
+done
+
+#$OPTIND表示第几个选项，初始值为1
+#shift $(($OPTIND - 1))
+#if [ $# -eq 0  ]; then
+#    usage
+#fi</code></pre><h2 id="shift"><a href="#shift" class="headerlink" title="shift"></a>shift</h2><p>使用shift $(($OPTIND-1))的作用是:<br>通过shift $(($OPTIND - 1))的处理，$*中就只保留了除去选项内容的参数，可以在其后进行正常的shell编程处理，例如：</p>
+<pre><code>./xx -i in -o out para1 para2 ...</code></pre><p>经过处理之后，$*为 <strong>para1 para2</strong>，方便后续脚本处理</p>
+<pre><code>while getopts s:h OPTION
+do
+    case $OPTION in
+        s)
+            STRING=$OPTARG
+            ;;
+
+        h)
+            echo &quot;\033[31mHelp Info:\033[0m&quot;
+            exit 1
+        ;;
+
+        \?)                       #如果出现错误，则解析为?
+            usage
+            ;;
+    esac
+done
+
+echo &quot;OPTIND:&quot;$OPTIND
+shift $(($OPTIND - 1))      #除了选项之外，该脚本必须接至少一个参数
+
+echo $0
+echo $*
+echo $@
+
+if [ $# -eq 0  ]; then
+    usage
+fi
+
+for file in $@          #依次处理剩余的参数
+do
+    echo $file
+done</code></pre><p>执行结果如下：</p>
+<pre><code>➜  /data/OpenSourceCode/subset-ttf  &gt; ./test.sh -s &quot;123&quot; test1 test2 test3
+OPTIND:3
+./test.sh               $0
+test1 test2 test3       $*
+test1 test2 test3       $@
+test1                   file
+test2
+test3</code></pre>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/27/shell-name-suffix/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +453,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
+                <time title="Modified: 2020-11-04 17:19:41" itemprop="dateModified" datetime="2020-11-04T17:19:41+08:00">2020-11-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -414,7 +620,7 @@ com</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
+                <time title="Modified: 2020-11-04 17:19:41" itemprop="dateModified" datetime="2020-11-04T17:19:41+08:00">2020-11-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -736,7 +942,7 @@ files := $(shell echo *.c)</code></pre><p>注意，这个函数会新生成一�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
+                <time title="Modified: 2020-11-04 17:19:41" itemprop="dateModified" datetime="2020-11-04T17:19:41+08:00">2020-11-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -859,7 +1065,7 @@ module/cascam/adapter/cascam_osd_adapter.c:295:5: warning: (near initialization 
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
+                <time title="Modified: 2020-11-04 17:19:41" itemprop="dateModified" datetime="2020-11-04T17:19:41+08:00">2020-11-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1049,7 +1255,7 @@ in xx.c
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
+                <time title="Modified: 2020-11-04 17:19:41" itemprop="dateModified" datetime="2020-11-04T17:19:41+08:00">2020-11-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1270,7 +1476,7 @@ endfunc </code></pre><p>CTRL-L 插入下一个数值，CTRL-R 复位计数且返
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
+                <time title="Modified: 2020-11-04 17:19:41" itemprop="dateModified" datetime="2020-11-04T17:19:41+08:00">2020-11-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1476,7 +1682,7 @@ cp $WORK/github.com/golang/lint/golint/_obj/exe/a.out golint</code></pre><h2 id=
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
+                <time title="Modified: 2020-11-04 17:19:41" itemprop="dateModified" datetime="2020-11-04T17:19:41+08:00">2020-11-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1645,7 +1851,7 @@ lib/cp936ext.h</code></pre><ol>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
+                <time title="Modified: 2020-11-04 17:19:41" itemprop="dateModified" datetime="2020-11-04T17:19:41+08:00">2020-11-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1817,7 +2023,7 @@ int main ( int argc, char *argv[]  )
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
+                <time title="Modified: 2020-11-04 17:19:41" itemprop="dateModified" datetime="2020-11-04T17:19:41+08:00">2020-11-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1934,7 +2140,7 @@ gcc -Wl,--gc-sections -o main main.c x.o</code></pre><p>可以保证代码量最
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
+                <time title="Modified: 2020-11-04 17:19:41" itemprop="dateModified" datetime="2020-11-04T17:19:41+08:00">2020-11-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2082,7 +2288,7 @@ int main()
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
+                <time title="Modified: 2020-11-04 17:19:41" itemprop="dateModified" datetime="2020-11-04T17:19:41+08:00">2020-11-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2394,7 +2600,7 @@ int main(void)
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
+                <time title="Modified: 2020-11-04 17:19:41" itemprop="dateModified" datetime="2020-11-04T17:19:41+08:00">2020-11-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2938,7 +3144,7 @@ $ scan-view-3.4 /tmp/scan-build-2016-06-23-125458-27549-1</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
+                <time title="Modified: 2020-11-04 17:19:41" itemprop="dateModified" datetime="2020-11-04T17:19:41+08:00">2020-11-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -3078,7 +3284,7 @@ udevd (60): /proc/60/oom_adj is deprecated, please use /proc/60/oom_score_adj in
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
+                <time title="Modified: 2020-11-04 17:19:41" itemprop="dateModified" datetime="2020-11-04T17:19:41+08:00">2020-11-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -3193,97 +3399,6 @@ $(document).ready(function(){
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/01/grep-special/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/07/01/grep-special/" class="post-title-link" itemprop="url">Grep搜索特定文件</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-07-02 00:00:00" itemprop="dateCreated datePublished" datetime="2015-07-02T00:00:00+08:00">2015-07-02</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-02 15:28:12" itemprop="dateModified" datetime="2020-11-02T15:28:12+08:00">2020-11-02</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Shell/" itemprop="url" rel="index">
-                    <span itemprop="name">Shell</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>120</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="Script"><a href="#Script" class="headerlink" title="Script"></a><strong>Script</strong></h3><pre><code>grep XXYYZZ * -Rn --include=&#39;*.c&#39;
-grep XXYYZZ * -Rn --include=&#39;*.h&#39;
-grep XXYYZZ * -Rn --include=&#39;*.[ch]&#39;</code></pre>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -3334,7 +3449,7 @@ grep XXYYZZ * -Rn --include=&#39;*.[ch]&#39;</code></pre>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">463</span>
+          <span class="site-state-item-count">464</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
