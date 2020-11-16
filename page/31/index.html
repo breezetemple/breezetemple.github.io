@@ -216,6 +216,352 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/11/Linux-system-programming-File-and-Directory-Management/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/11/11/Linux-system-programming-File-and-Directory-Management/" class="post-title-link" itemprop="url">Linux系统编程-文件和目录管理</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-11-12 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-12T00:00:00+08:00">2014-11-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-11-16 16:31:37" itemprop="dateModified" datetime="2020-11-16T16:31:37+08:00">2020-11-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux System Programming</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <ul>
+<li>toc<br>{:toc}</li>
+</ul>
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<h2 id="获得文件metadata的Stat家族"><a href="#获得文件metadata的Stat家族" class="headerlink" title="获得文件metadata的Stat家族"></a>获得文件metadata的Stat家族</h2><pre><code>#include &lt;sys/types.h&gt;  
+#include &lt;sys/stat.h&gt;  
+#include &lt;unistd.h&gt;  
+
+struct stat{  
+    dev_t st_dev; /*包含文件的设备号*/  
+    ino_t st_ino; /*文件inode序列号 */  
+    mode_t st_mode;/*文件的mode*/  
+    nlink_t st_nlink; /*硬链接的数量*/  
+    uid_t st_uid; /*文件的用户id*/  
+    gid_t st_gid; /*文件的goup id*/  
+    off_t st_size;/*文件大小*/  
+
+    time_t st_atime;/*最后一次访问时间*/  
+    time_t st_mtime;/*最后一次修改时间*/  
+    time_t st_ctime;/*最后一次状态改变时间*/  
+}  
+
+int lstat(const char * restrict path, struct stat * restrict buf);  
+int stat(const char *restrict path, struct stat * restrict buf);  
+int fstat(int fd,struct stat *buf);  </code></pre><p>对于软链来说： </p>
+<ul>
+<li>lstat返回软链本身的状态 </li>
+<li>stat返回软链所指文件的状态 </li>
+</ul>
+<p>例子： </p>
+<pre><code>#include &lt;stdio.h&gt;  
+#include &lt;time.h&gt;  
+#include &lt;sys/stat.h&gt;  
+
+int isdirectory(char *path) {  
+    struct stat statbuf;  
+
+    if (stat(path, &amp;statbuf) == -1)  
+        return 0;  
+    else  
+        return S_ISDIR(statbuf.st_mode);  
+}  </code></pre><h2 id="文件权限"><a href="#文件权限" class="headerlink" title="文件权限"></a>文件权限</h2><p>设置文件权限的系统调用： </p>
+<pre><code>#include &lt;sys/types.h&gt;  
+#include &lt;sys/stat.h&gt;  
+
+int chmod(const char *path, mode_t mode);  
+int fchmod(int fd,mode_t mode);  </code></pre><p>成功返回0，失败返回-1，并设置errno： </p>
+<ul>
+<li>EACCESS：没有搜索path的权限 </li>
+<li>EBADF：fd不合法的文件描述符（仅fchmod) </li>
+<li>EFAULT:path不合法的指针（仅chmod) </li>
+<li>EIO：文件系统内部I/O错误 </li>
+<li>ELOOP：由于symbolic link导致解析path死循环 </li>
+<li>ENAMETOOLONG：path太长（仅chmod) </li>
+<li>ENOENT：path不存在 </li>
+<li>ENOME：内存不足 </li>
+<li>ENOTDIR：不是一个目录（仅chmod) </li>
+<li>EPERM:进程不是文件的owner或者缺少CAP_FOWNER能力。 </li>
+<li>EROFS：文件在只读文件系统中。 </li>
+</ul>
+<h2 id="文件的所有者"><a href="#文件的所有者" class="headerlink" title="文件的所有者"></a>文件的所有者</h2><p>stat结构中st_uid和st_gid提供了文件的所有者和group，以下系统调用可以改变所有者： </p>
+<pre><code>#include &lt;sys/types.h&gt;  
+#include &lt;unistd.h&gt;  
+
+int chown(const char *path, uid_t owner, gid_t group);  
+int lchown(const char *path, uid_t owner, gid_t group);  
+int fchown(int fd, uid_t owner, gid_t group);  </code></pre><p>chown和lchown区别：chown会follow simbolic link，改变link的目标文件，lchmod改变符号链接本身。<br>成功过返回0，失败返回-1，并设置errno。 </p>
+<pre><code>struct group *gr;  
+int ret;  
+
+gr = getgrnam(&quot;officers&quot;);  
+if(! gr){  
+    perror(&quot;getgrnam&quot;);  
+    return 1;  
+}  
+
+ret = chmod(&quot;manifest.txt&quot;,-1,gr-&gt;gr_gid);  
+if(ret){  
+    perror(&quot;chmod&quot;);  
+    return 1;  
+}  </code></pre><p>设置为root拥有者： </p>
+<pre><code>int make_root_owner(int fd){  
+    int ret;  
+
+    ret = fchown(fd,0,0);  
+    if(ret)  
+        perror(&quot;fchown&quot;);  
+    return ret;  
+}  </code></pre><p>进程需要有CAP_CHOWN能力，也就是必须是root为所有。 </p>
+<h2 id="文件系统Navigation"><a href="#文件系统Navigation" class="headerlink" title="文件系统Navigation"></a>文件系统Navigation</h2><h3 id="改变当前的工作目录"><a href="#改变当前的工作目录" class="headerlink" title="改变当前的工作目录"></a>改变当前的工作目录</h3><pre><code>#include &lt;unistd.h&gt;  
+
+int chdir(const char *path);  
+int fchdir(int fd);  </code></pre><p>将当前的工作目录指定为path：</p>
+<pre><code>char *dir = &quot;/tmp&quot;;  
+if(chdir(dir) == -1)  
+    perror(&quot;Failed to change current working directory to /tmp&quot;);  </code></pre><h3 id="获得当前工作目录"><a href="#获得当前工作目录" class="headerlink" title="获得当前工作目录"></a>获得当前工作目录</h3><pre><code>#include &lt;unistd.h&gt;  
+
+char *getcwd(char *buf, size_t size);  
+
+例子： 
+
+#include &lt;limits.h&gt;  
+#include &lt;stdio.h&gt;  
+#include &lt;unistd.h&gt;  
+#ifndef PATH_MAX  
+#define PATH_MAX 255  
+#endif  
+
+int main(void)
+{  
+    char mycwd[PATH_MAX];  
+    if(getcwd(mycwd,PATH_MAX) == NULL){  
+        perror(&quot;Failed to get current working directory&quot;);  
+        return 1;  
+    }  
+    printf(&quot;Current working directory: %s\n&quot;,mycwd);  
+    return 0;  
+}  </code></pre><h3 id="path-conf"><a href="#path-conf" class="headerlink" title="path conf"></a>path conf</h3><pre><code>#include &lt;unistd.h&gt;  
+
+long fpathconf(int fd, int name);  
+long pathconf(const char *path,int name);  
+sysconf(int name);  </code></pre><h2 id="创建目录"><a href="#创建目录" class="headerlink" title="创建目录"></a>创建目录</h2><pre><code>#include &lt;sys/stat.h&gt;  
+#include &lt;sys/types.h&gt;  
+
+int mkdir(const char *path, mode_t mode);  </code></pre><p>成功返回0，失败返回-1，并设置好errno。没有可以递归删除与rm -r等价的系统调用。<br>如果目录非空，失败设置errno为ENOTEMPTY。 </p>
+<pre><code>int ret;  
+
+ret = rmdir(&quot;/home/fuliang/test&quot;);  
+if(ret)  
+    perror(&quot;rmdir&quot;);  </code></pre><h2 id="删除目录"><a href="#删除目录" class="headerlink" title="删除目录"></a>删除目录</h2><pre><code>#include &lt;unistd.h&gt;  
+
+int rmdir(const char *path);  
+
+成功返回0，失败返回-1 </code></pre><h2 id="文件夹访问"><a href="#文件夹访问" class="headerlink" title="文件夹访问"></a>文件夹访问</h2><h3 id="opendir-closedir-readdir"><a href="#opendir-closedir-readdir" class="headerlink" title="opendir closedir, readdir"></a>opendir closedir, readdir</h3><pre><code>#include &lt;dirent.h&gt;  
+DIR *opendir(const char *dirname);  
+struct dirent *readdir(DIR *dirp);  
+int closedir(DIR *dirp);  
+void rewinddir(DIR *dirp);  </code></pre><p>例子：显示pathname下的文件： </p>
+<pre><code>#include &lt;dirent.h&gt;  
+#include &lt;errno.h&gt;  
+#include &lt;stdio.h&gt;  
+
+int main(int argc, char *argv[])
+{  
+    struct dirent *direntp;  
+    DIR *dirp;  
+
+    if(argc != 2){  
+        fprintf(stderr,&quot;Usage %s directory_name\n&quot;, argv[0]);  
+    }  
+
+    if((dirp = opendir(argv[1])) == NULL){  
+        perror(&quot;Failed to open directory&quot;);  
+        return 1;  
+    }  
+
+    while((direntp = readdir(dirp)) != NULL)  
+        printf(&quot;%s\n&quot;, direntp-&gt;d_name);  
+    while((closedir(dirp) == -1) &amp;&amp; (errno == EINTR)) ;  
+    return 0;   
+}  </code></pre><p>dirent结构： </p>
+<pre><code>struct dirent{  
+    ino_t d_ino; /* inode number */  
+    off_t d_off; /* offset to the next dirent */  
+    unsigned short d_reclen; /* length of this record */  
+    unsigned char d_type; /* type of file */  
+    char d_name[256]; /*filename*/    
+};  </code></pre><p>POSIX仅需要d_name字段，其他的都是可选的或者是linux特有的。<br>可移植性的程序应该只访问d_name字段。 </p>
+<p>从Dir可以获得文件描述符： </p>
+<pre><code>#define _BSD_SOURCE  
+#include &lt;sys/types.h&gt;  
+#include &lt;dirent.h&gt;  
+
+int dirfd(DIR *dir);  </code></pre><p>这个是BSD的一个扩展，并不是POSIX标准。 </p>
+<h3 id="访问文件的状态信息"><a href="#访问文件的状态信息" class="headerlink" title="访问文件的状态信息"></a>访问文件的状态信息</h3><p>lstat、stat </p>
+<h2 id="硬链接和软链接"><a href="#硬链接和软链接" class="headerlink" title="硬链接和软链接"></a>硬链接和软链接</h2><p>硬链接：两个path指向同一个inode.<br>软链接：单独的一个文件，里面存储了链接文件的路径。 </p>
+<h3 id="创建和删除一个硬链接"><a href="#创建和删除一个硬链接" class="headerlink" title="创建和删除一个硬链接"></a>创建和删除一个硬链接</h3><pre><code>#include &lt;unistd.h&gt;  
+
+int link(const char *path1, const char *path2);  
+int unlink(const char *path);  </code></pre><p>为有path1指定的文件创建一个新的目录项。 </p>
+<pre><code>#include &lt;stdio.h&gt;  
+#include &lt;unistd.h&gt;  
+
+if (link(&quot;/dirA/name1&quot;,&quot;dirB/name2&quot;) == -1)  
+    perror(&quot;Failed to make a new link in /dirB&quot;);  </code></pre><h3 id="创建和删除一个硬链接-1"><a href="#创建和删除一个硬链接-1" class="headerlink" title="创建和删除一个硬链接"></a>创建和删除一个硬链接</h3><pre><code>#include &lt;unistd.h&gt;  
+
+int symlink(const char *path1, const char *path2);  </code></pre><h2 id="拷贝或者移动文件"><a href="#拷贝或者移动文件" class="headerlink" title="拷贝或者移动文件"></a>拷贝或者移动文件</h2><p>拷贝和移动文件时两个最基本的文件操作任务，可以使用shell命令cp和mv来完成。 </p>
+<h3 id="拷贝文件"><a href="#拷贝文件" class="headerlink" title="拷贝文件"></a>拷贝文件</h3><p>Unix没有提供此操作的系统调用或者库来完成拷贝文件和目录，但可以使用cp命令来手工执行这个任务。<br>拷贝一个文件src到目标dst，要执行的操作步骤： </p>
+<ol>
+<li>打开src </li>
+<li>打开dst，创建如果不存在，清空如果存在。 </li>
+<li>将src读取到内存 </li>
+<li>将从src读取到的内容写入dst </li>
+<li>继续指导所有内容从src写到dst </li>
+<li>关闭dst </li>
+<li>关闭src </li>
+</ol>
+<p>如果拷贝一个目录，递归拷贝目录本身及其子目录通过mkdir及其采用上面步骤拷贝文件。 </p>
+<h3 id="移动"><a href="#移动" class="headerlink" title="移动"></a>移动</h3><p>Unix提供了移动文件的系统调用。ANSI C使用这个调用来移动文件，POSIX标准将其用于文件和目录。 </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+int rename(const char *oldpath, const char *newpath);  </code></pre><p>将路径名称从oldpath改成newpath，内容和inode没有变化。newpath需要在同一文件系统中。<br>成功返回0，失败返回-1，并设置errno。 </p>
+<h2 id="创建临时文件"><a href="#创建临时文件" class="headerlink" title="创建临时文件"></a>创建临时文件</h2><p>ISO C标准定义了两个标准I/O函数来创建临时文件。 </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+char *tmpnam(char *ptr); /*返回执行路径的指针*/  
+FILE *tmpfile(void); /*返回文件指针，错误则为NULL*/  </code></pre><p>tmpnam每次产生一个不同的合法的路径名字。如果ptr是NULL，生成一个存储在静态区域的名字，<br>并返回指向它的指针，所以如果连续调用两次会覆盖前一次的tmpname。<br>如果指定了ptr，则它被假设指向一个数组，并且长度不小于L_tmpnam（&lt;stdio.h&gt;中定义）。<br>例子： </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+int main(void){  
+    char name[L_tmpnam],line[MAXLINE];  
+    FILE *fp;  
+
+    printf(&quot;%s\n&quot;,tmpnam(NULL));  
+    tmpname(name);  
+    printf(&quot;%s\n&quot;,name);  
+
+    if((fp = tmpfile()) == NULL){  
+        perror(&quot;tmpfile&quot;);  
+        return 1;  
+    }  
+
+    fputs(&quot;one line of output\n&quot;,fp);  
+    rewind(fp);  
+
+    if(fgets(line,sizeof(line),fp) == NULL){  
+        perror(&quot;fgets&quot;);  
+        return 1;  
+    }  
+    fputs(line,stdout);  
+
+    return 0;  
+}  </code></pre><p>XSI扩展定义了两个另外的方法来操作临时文件： </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+char *tempnam(const char *directory, const char *prefix);  
+int mkstemp(char *template);  </code></pre><p>tempnam和tmpnam一样，但是可以指定目录和前缀来生成临时文件名。 </p>
+<ol>
+<li>如果环境变量定义了TMPDIR，则使用它作为目录。 </li>
+<li>如果directory不为NULL，则使用它。 </li>
+<li>在&lt;stdio.h&gt;中的P_tmpdir作为目录。 </li>
+<li>本地的目录，通常/tmp被作为临时目录。 </li>
+</ol>
+<p>前缀prefix如果不为NULL，至少5个字节。<br>生成的名字是通过malloc动态申请的内存，所以要使用free释放。 </p>
+<pre><code>#include &lt;stdio.h&gt;  
+
+int main(int argc, char *argv[]){  
+    if(argc != 3){  
+        pintf(&quot;usage: %s &lt;directory&gt; &lt;prefix&gt;&quot;,argv[0]);  
+        return 1;  
+    }  
+
+    printf(&quot;%s\n&quot;,tempnam(argv[1][0] != &#39; &#39; ? argv[1] : NULL, argv[2][0] != &#39; &#39; ? argv[2] : NULL));  
+
+    return 0;  
+}  </code></pre><p>mkstemp和tmpfile类似，只是返回了文件描述符，并且mkstemp生成的临时文件不会自动清除。<br>path的后六个字符要设置为XXXXXX，通过替换它来生成不同的名字。 </p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/11/Linux-system-programming-pthread_cont/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +593,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-09 14:13:05" itemprop="dateModified" datetime="2020-11-09T14:13:05+08:00">2020-11-09</time>
+                <time title="Modified: 2020-11-16 16:31:37" itemprop="dateModified" datetime="2020-11-16T16:31:37+08:00">2020-11-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -501,7 +847,7 @@ thread2: unlock 59   i 6</code></pre><p>线程1先执行，获得mutex锁，打�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-09 14:13:05" itemprop="dateModified" datetime="2020-11-09T14:13:05+08:00">2020-11-09</time>
+                <time title="Modified: 2020-11-16 16:31:37" itemprop="dateModified" datetime="2020-11-16T16:31:37+08:00">2020-11-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -850,7 +1196,7 @@ int munlockall(void);</code></pre><h2 id="投机性内存分配策略"><a href="
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-09 14:13:05" itemprop="dateModified" datetime="2020-11-09T14:13:05+08:00">2020-11-09</time>
+                <time title="Modified: 2020-11-16 16:31:37" itemprop="dateModified" datetime="2020-11-16T16:31:37+08:00">2020-11-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1049,7 +1395,7 @@ int pthread_cond_timedwait (pthread_cond_t * cptr, pthread_mutex_t *mptr, const 
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-09 14:13:05" itemprop="dateModified" datetime="2020-11-09T14:13:05+08:00">2020-11-09</time>
+                <time title="Modified: 2020-11-16 16:31:37" itemprop="dateModified" datetime="2020-11-16T16:31:37+08:00">2020-11-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1315,7 +1661,7 @@ printf(&quot;RLIMIT_CORE limits: soft=%ld hard=%ld\n&quot;, rlim.rlim_cur, rlim.
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-09 14:13:05" itemprop="dateModified" datetime="2020-11-09T14:13:05+08:00">2020-11-09</time>
+                <time title="Modified: 2020-11-16 16:31:37" itemprop="dateModified" datetime="2020-11-16T16:31:37+08:00">2020-11-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1590,7 +1936,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-09 14:13:05" itemprop="dateModified" datetime="2020-11-09T14:13:05+08:00">2020-11-09</time>
+                <time title="Modified: 2020-11-16 16:31:37" itemprop="dateModified" datetime="2020-11-16T16:31:37+08:00">2020-11-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1687,7 +2033,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-09 14:13:05" itemprop="dateModified" datetime="2020-11-09T14:13:05+08:00">2020-11-09</time>
+                <time title="Modified: 2020-11-16 16:31:37" itemprop="dateModified" datetime="2020-11-16T16:31:37+08:00">2020-11-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1784,7 +2130,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-09 14:13:05" itemprop="dateModified" datetime="2020-11-09T14:13:05+08:00">2020-11-09</time>
+                <time title="Modified: 2020-11-16 16:31:37" itemprop="dateModified" datetime="2020-11-16T16:31:37+08:00">2020-11-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1881,7 +2227,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-09 14:13:05" itemprop="dateModified" datetime="2020-11-09T14:13:05+08:00">2020-11-09</time>
+                <time title="Modified: 2020-11-16 16:31:37" itemprop="dateModified" datetime="2020-11-16T16:31:37+08:00">2020-11-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1978,7 +2324,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-09 14:13:05" itemprop="dateModified" datetime="2020-11-09T14:13:05+08:00">2020-11-09</time>
+                <time title="Modified: 2020-11-16 16:31:37" itemprop="dateModified" datetime="2020-11-16T16:31:37+08:00">2020-11-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2075,7 +2421,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-09 14:13:05" itemprop="dateModified" datetime="2020-11-09T14:13:05+08:00">2020-11-09</time>
+                <time title="Modified: 2020-11-16 16:31:37" itemprop="dateModified" datetime="2020-11-16T16:31:37+08:00">2020-11-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2295,7 +2641,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-09 14:13:05" itemprop="dateModified" datetime="2020-11-09T14:13:05+08:00">2020-11-09</time>
+                <time title="Modified: 2020-11-16 16:31:37" itemprop="dateModified" datetime="2020-11-16T16:31:37+08:00">2020-11-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2399,7 +2745,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-09 14:13:05" itemprop="dateModified" datetime="2020-11-09T14:13:05+08:00">2020-11-09</time>
+                <time title="Modified: 2020-11-16 16:31:37" itemprop="dateModified" datetime="2020-11-16T16:31:37+08:00">2020-11-16</time>
               </span>
 
           <br>
@@ -2634,7 +2980,7 @@ _   底线
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-09 14:13:05" itemprop="dateModified" datetime="2020-11-09T14:13:05+08:00">2020-11-09</time>
+                <time title="Modified: 2020-11-16 16:31:37" itemprop="dateModified" datetime="2020-11-16T16:31:37+08:00">2020-11-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2696,110 +3042,11 @@ _   底线
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/10/04/iptables-introduction/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/10/04/iptables-introduction/" class="post-title-link" itemprop="url">iptables简介</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-10-05 00:00:00" itemprop="dateCreated datePublished" datetime="2014-10-05T00:00:00+08:00">2014-10-05</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-11-09 14:13:05" itemprop="dateModified" datetime="2020-11-09T14:13:05+08:00">2020-11-09</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>2.4k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>iptables是Linux系统中最重要的<strong>网络管控工具</strong>。它与Kernel中的netfilter模块配合工作，<br>其主要功能是为netfilter设置一些过滤（filter）或网络地址转换（NAT）的规则。当Kernel收到网络数据包后，<br>将会依据iptables设置的规则进行相应的操作。</p>
-<h2 id="iptables原理"><a href="#iptables原理" class="headerlink" title="iptables原理"></a>iptables原理</h2><p>iptables的语法比较复杂，但工作原理较易理解。清楚iptables的前提是理解它的<strong>表（Table）、链（Chain）和规则（Rule）</strong>。<br>三者关系如下图所示：</p>
-<p><img src="http://static.thegeekstuff.com/wp-content/uploads/2011/01/iptables-table-chain-rule-structure.png" alt="tables"></p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2014/10/04/iptables-introduction/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/30/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/30/">30</a><span class="page-number current">31</span>
+    <a class="extend prev" rel="prev" href="/page/30/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/30/">30</a><span class="page-number current">31</span><a class="page-number" href="/page/32/">32</a><a class="extend next" rel="next" href="/page/32/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
   </nav>
 
 
@@ -2845,7 +3092,7 @@ _   底线
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">465</span>
+          <span class="site-state-item-count">466</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -2858,7 +3105,7 @@ _   底线
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">502</span>
+        <span class="site-state-item-count">504</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -2918,7 +3165,7 @@ _   底线
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:37</span>
+    <span title="Reading time total">18:38</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
   </div>
