@@ -13857,204 +13857,6 @@ int main()
       </tags>
   </entry>
   <entry>
-    <title>Movian Plugin Development</title>
-    <url>/2018/01/10/movian-plugin-development/</url>
-    <content><![CDATA[<p>Movian Development</p>
-<a id="more"></a>
-
-<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
-<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
-<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
-<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
-<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
-<pre><code class="json">{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;apiversion&quot;: 1,
-  &quot;id&quot;: &quot;headweb&quot;,
-  &quot;file&quot;: &quot;headweb.js&quot;,
-  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
-  &quot;version&quot;: &quot;1.5.3&quot;,
-  &quot;author&quot;: &quot;Andreas Öman&quot;,
-  &quot;title&quot;: &quot;Headweb&quot;,
-  &quot;icon&quot;: &quot;headweb_square.png&quot;,
-  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
-  &quot;category&quot;: &quot;video&quot;,
-  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
-  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
-}</code></pre>
-<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
-<ul>
-<li>ecmascript - loads the plugin using Duktape.</li>
-<li>views - used for user interface (screen keyboard plugin)</li>
-</ul>
-<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
-<ul>
-<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
-<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
-</ul>
-<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
-<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
-<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
-<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
-<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
-<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
-<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
-<ul>
-<li>“tv” - online TV</li>
-<li>“video” - streaming video</li>
-<li>“music” - streaming music</li>
-<li>“glwview” - UI extentions</li>
-<li>“subtitles” - subtitles</li>
-<li>“glwosk” - on screen keyboard</li>
-</ul>
-<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
-<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
-<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
-<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
-<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
-<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
-<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
-<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
-<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
-<pre><code>{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;file&quot;: &quot;testplugin.js&quot;,
-  &quot;id&quot;: &quot;testplugin&quot;
-}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
-<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
-  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
-})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
-<pre><code>(function(plugin) {
-  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
-    showtime.print(&quot;I was called&quot;);
-  })
-})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
-<p><code>somafa</code> 中的 <code>start URI</code></p>
-<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
-...
-}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
-<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
-<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
-<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
-<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
-<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
-<ul>
-<li>Direct URL</li>
-<li>Via a video page</li>
-</ul>
-<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
-<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
-<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
-<p>To use it first do:</p>
-<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
-      <categories>
-        <category>Movian</category>
-      </categories>
-      <tags>
-        <tag>movian</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>vim-highlight-syntax</title>
-    <url>/2017/12/19/vim-highlight-syntax/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
-<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
-<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
-<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
-<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
-<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
-<pre><code>:syntax
---- 语法项目 ---
-cLabel         xxx default case
-cStructure     xxx union struct typedef enum
-cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
-                   _Thread_local auto
-cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
-cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
-cStatement     xxx return goto asm continue break
-                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
-<p><code>:help group-name</code></p>
-<pre><code>:help group-name
-
-(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
-
-        *Comment        any comment
-
-        *Constant       any constant
-         String         a string constant: &quot;this is a string&quot;
-         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
-         Number         a number constant: 234, 0xff
-         Boolean        a boolean constant: TRUE, false
-         Float          a floating point constant: 2.3e10
-
-        *Identifier     any variable name
-         Function       function name (also: methods for classes)
-        *Statement      any statement
-         Conditional    if, then, else, endif, switch, etc.
-         Repeat         for, do, while, etc.
-         Label          case, default, etc.
-         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
-         Keyword        any other keyword
-         Exception      try, catch, throw
-
-        *PreProc        generic Preprocessor
-         Include        preprocessor #include
-         Define         preprocessor #define
-         Macro          same as Define
-         PreCondit      preprocessor #if, #else, #endif, etc.
-
-        *Type           int, long, char, etc.
-         StorageClass   static, register, volatile, etc.
-         Structure      struct, union, enum, etc.
-         Typedef        A typedef
-
-        *Special        any special symbol
-         SpecialChar    special character in a constant
-         Tag            you can use CTRL-] on this
-         Delimiter      character that needs attention
-         SpecialComment special things inside a comment
-         Debug          debugging statements
-
-        *Underlined     text that stands out, HTML links
-
-        *Ignore         left blank, hidden  hl-Ignore
-
-        *Error          any erroneous construct
-        *Todo           anything that needs extra attention; mostly the
-                        keywords TODO FIXME and XXX</code></pre>]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Editor</category>
-      </categories>
-      <tags>
-        <tag>vim</tag>
-        <tag>highlight</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>proc-pid-intro</title>
-    <url>/2017/12/14/proc-pid-intro/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
-<li><a href="https://github.com/NanXiao/gnu-linux-proc-pid-intro" target="_blank" rel="noopener">GNU/Linux下的/proc/[pid]目录下的文件分析</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>proc</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Linux-Device-Tree</title>
     <url>/2018/09/20/Linux-Device-Tree/</url>
     <content><![CDATA[<a id="more"></a>
@@ -17656,6 +17458,204 @@ hd[a-z]*    0:6 660</code></pre>
       </tags>
   </entry>
   <entry>
+    <title>Movian Plugin Development</title>
+    <url>/2018/01/10/movian-plugin-development/</url>
+    <content><![CDATA[<p>Movian Development</p>
+<a id="more"></a>
+
+<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
+<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
+<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
+<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
+<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
+<pre><code class="json">{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;apiversion&quot;: 1,
+  &quot;id&quot;: &quot;headweb&quot;,
+  &quot;file&quot;: &quot;headweb.js&quot;,
+  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
+  &quot;version&quot;: &quot;1.5.3&quot;,
+  &quot;author&quot;: &quot;Andreas Öman&quot;,
+  &quot;title&quot;: &quot;Headweb&quot;,
+  &quot;icon&quot;: &quot;headweb_square.png&quot;,
+  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
+  &quot;category&quot;: &quot;video&quot;,
+  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
+  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
+}</code></pre>
+<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
+<ul>
+<li>ecmascript - loads the plugin using Duktape.</li>
+<li>views - used for user interface (screen keyboard plugin)</li>
+</ul>
+<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
+<ul>
+<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
+<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
+</ul>
+<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
+<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
+<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
+<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
+<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
+<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
+<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
+<ul>
+<li>“tv” - online TV</li>
+<li>“video” - streaming video</li>
+<li>“music” - streaming music</li>
+<li>“glwview” - UI extentions</li>
+<li>“subtitles” - subtitles</li>
+<li>“glwosk” - on screen keyboard</li>
+</ul>
+<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
+<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
+<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
+<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
+<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
+<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
+<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
+<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
+<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
+<pre><code>{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;file&quot;: &quot;testplugin.js&quot;,
+  &quot;id&quot;: &quot;testplugin&quot;
+}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
+<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
+  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
+})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
+<pre><code>(function(plugin) {
+  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
+    showtime.print(&quot;I was called&quot;);
+  })
+})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
+<p><code>somafa</code> 中的 <code>start URI</code></p>
+<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
+...
+}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
+<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
+<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
+<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
+<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
+<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
+<ul>
+<li>Direct URL</li>
+<li>Via a video page</li>
+</ul>
+<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
+<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
+<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
+<p>To use it first do:</p>
+<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
+      <categories>
+        <category>Movian</category>
+      </categories>
+      <tags>
+        <tag>movian</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>vim-highlight-syntax</title>
+    <url>/2017/12/19/vim-highlight-syntax/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
+<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
+<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
+<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
+<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
+<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
+<pre><code>:syntax
+--- 语法项目 ---
+cLabel         xxx default case
+cStructure     xxx union struct typedef enum
+cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
+                   _Thread_local auto
+cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
+cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
+cStatement     xxx return goto asm continue break
+                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
+<p><code>:help group-name</code></p>
+<pre><code>:help group-name
+
+(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
+
+        *Comment        any comment
+
+        *Constant       any constant
+         String         a string constant: &quot;this is a string&quot;
+         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
+         Number         a number constant: 234, 0xff
+         Boolean        a boolean constant: TRUE, false
+         Float          a floating point constant: 2.3e10
+
+        *Identifier     any variable name
+         Function       function name (also: methods for classes)
+        *Statement      any statement
+         Conditional    if, then, else, endif, switch, etc.
+         Repeat         for, do, while, etc.
+         Label          case, default, etc.
+         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
+         Keyword        any other keyword
+         Exception      try, catch, throw
+
+        *PreProc        generic Preprocessor
+         Include        preprocessor #include
+         Define         preprocessor #define
+         Macro          same as Define
+         PreCondit      preprocessor #if, #else, #endif, etc.
+
+        *Type           int, long, char, etc.
+         StorageClass   static, register, volatile, etc.
+         Structure      struct, union, enum, etc.
+         Typedef        A typedef
+
+        *Special        any special symbol
+         SpecialChar    special character in a constant
+         Tag            you can use CTRL-] on this
+         Delimiter      character that needs attention
+         SpecialComment special things inside a comment
+         Debug          debugging statements
+
+        *Underlined     text that stands out, HTML links
+
+        *Ignore         left blank, hidden  hl-Ignore
+
+        *Error          any erroneous construct
+        *Todo           anything that needs extra attention; mostly the
+                        keywords TODO FIXME and XXX</code></pre>]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Editor</category>
+      </categories>
+      <tags>
+        <tag>vim</tag>
+        <tag>highlight</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>proc-pid-intro</title>
+    <url>/2017/12/14/proc-pid-intro/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
+<li><a href="https://github.com/NanXiao/gnu-linux-proc-pid-intro" target="_blank" rel="noopener">GNU/Linux下的/proc/[pid]目录下的文件分析</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>proc</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>使用 mdev 检测 3g 设备并自动连接</title>
     <url>/2018/12/27/detect-3g-device-by-mdev/</url>
     <content><![CDATA[<p><code>udev</code> 有 <code>rules</code> 用于 <code>3G</code> 设备的自动连接，而嵌入式系统中使用精简版的 <code>mdev</code>，没有 <code>rules</code> 来完成 <code>3G</code> 设备的自动连接，本文记录折腾过程</p>
@@ -18776,6 +18776,15 @@ POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(status ram time background_jobs command_exec
     <content><![CDATA[<p>使用 <code>wireshark</code> 分析加密 <code>802.11</code> 数据</p>
 <a id="more"></a>
 
+<ul>
+<li>查看 wifi 频段</li>
+<li>配置 monitor<pre><code class="shell">$ sudo ifconfig wlx1cbfce3fa407 down
+$ sudo iwconfig wlx1cbfce3fa407 mode monitor
+$ sudo ifconfig wlx1cbfce3fa407 up
+$ sudo iwconfig wlx1cbfce3fa407 channel 3
+$ sudo wireshark</code></pre>
+</li>
+</ul>
 <p>基于 <code>monitor</code> 模式，使用 <code>wireshark</code> 抓取空中包时，只能分析到 <code>802.11</code> 协议层，更底层被加密，此时可以使用 <code>wireshark</code> 来完成解密</p>
 <p>设置如下</p>
 <p><code>编辑</code> -&gt; <code>首选项</code> -&gt; <code>protocols</code> -&gt; <code>IEEE 802.11</code></p>
@@ -18797,9 +18806,12 @@ POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(status ram time background_jobs command_exec
 <li><code>wireshark</code> : <code>2.6.8</code></li>
 </ul>
 <p><del>貌似不是很稳定，重新打开 wireshark 有时不能解密</del><br><del>删除 ~/.config/wireshark 之后重新来过才行</del></p>
-<p>使用 <code>WPA-PSK</code> 解密</p>
+<p><del>使用 <code>WPA-PSK</code> 解密</del></p>
+<p>本质原因是需要获取到 <code>full four EAPOL handshakes</code>，在 <code>wireshark</code> 中使用 <code>eapol.keydes.type == 2</code> 检查是否收到</p>
 <h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
 <li><a href="https://blog.csdn.net/sinat_21455985/article/details/50772659" target="_blank" rel="noopener">解密 WEP 和 WPA-PSK/WPA-PSK 加密的数据包</a></li>
+<li><a href="https://osqa-ask.wireshark.org/questions/61469/unable-to-decrypt-wifi-data" target="_blank" rel="noopener">Unable to decrypt Wifi data</a></li>
+<li><a href="https://wiki.wireshark.org/HowToDecrypt802.11" target="_blank" rel="noopener">How to Decrypt 802.11</a></li>
 </ol>
 ]]></content>
       <categories>
@@ -26398,127 +26410,6 @@ printf(&quot;RLIMIT_CORE limits: soft=%ld hard=%ld\n&quot;, rlim.rlim_cur, rlim.
       </tags>
   </entry>
   <entry>
-    <title>Linux系统编程-线程</title>
-    <url>/2014/11/10/Linux-system-programming-thread/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
-<p>线程是指在单个进程内，多路并行执行的创建和管理单元。由于线程引入了数据竞争和死锁，相关的编程错误不计其数。</p>
-<h2 id="进程和线程"><a href="#进程和线程" class="headerlink" title="进程和线程"></a><strong>进程和线程</strong></h2><p>现代操作系统包括了两种对用户空间的基础的虚拟抽象：<strong>虚拟内存和虚拟处理器</strong>。<br>它们使进程认为自己独占机器资源。</p>
-<p>虚拟内存为每个进程提供独立的内存地址空间，该内存地址连续映射到物理内存上。<br>虚拟处理器使得进程“感觉”只有自己正在运行，操作系统对其“隐藏”了事实：多个进程在可能多个处理器上以多任务方式同时运行。</p>
-<p>虚拟内存是和进程相关的，与线程无关。<br>因此，每个进程有独立的内存空间，而进程中的所有线程共享这份空间。</p>
-<p>虚拟处理器是和线程相关的，与进程无关。每个线程都是可独立调度的实体，支持单个进程每次“处理”多个操作。</p>
-<p>和进程一样，线程也“感觉”自己独占一个处理器。<br>但是，和进程不一样的是，线程没有“感觉”自己独占内存–进程中的所有线程共享内存空间。</p>
-<h2 id="多线程"><a href="#多线程" class="headerlink" title="多线程"></a><strong>多线程</strong></h2><p>进程是正在运行的程序的抽象。但是，为什么要分离执行单元，引入线程？多线程机制有以下优点：</p>
-<ul>
-<li>编程抽象：将工作分为多个模块，每个模块分配一个执行单元（线程）。<br>利用这种方法的设计模式包括“每个连接一个线程”和线程池模式</li>
-<li>并发性：对多处理器提供了实现“真正并发”的高效方式。<br>每个线程有自己的虚拟处理器，作为独立的调度实体，可以在多处理器上运行多个线程，从而提高系统吞吐量</li>
-<li>提高响应能力：单线程进程中，一个长时间运行的任务会影响应用对用户输入的响应，多线程中可以有一条线程响应用户输入</li>
-<li>I/O阻塞：单线程中，I/O阻塞会影响整个进程</li>
-<li>上下文切换：线程间切换的代价显著低于进程间的上下文切换</li>
-<li>内存保存：线程提供了一种可以共享内存，并同时利用多个执行单元的高效方式</li>
-</ul>
-<p><strong>上下文切换</strong>：线程的一大性能优势是同一进程内的线程之间切换代价很低。<br>在任何系统上，进程内切换的代价低于进程间切换，前者通常是后者的一部分。<br>在非Linux系统上，这种差别非常明显，进程间通信（IPC）代价非常高。<br>因此，很多系统上，称线程为“轻量级进程”。在Linux中，进程间切换代价并不高，而进程内切换的成本接近于0：<br>接近进入和退出内核的代价。进程的代价不高，但是线程的代价更低。</p>
-<h2 id="线程模型"><a href="#线程模型" class="headerlink" title="线程模型"></a><strong>线程模型</strong></h2><p>在系统上实现线程模型的方式有好几种，因内核和用户空间提供的支持而有一定程度的级别差异。</p>
-<p>最简单的是内核为线程提供了本地支持的情况，每个内核线程直接转换成用户空间的线程。<br>这种模型称为“1:1线程模型”，也称为“内核级线程模型”。<br>在Linux中只是简单的将线程实现成能够共享资源的进程。<br>线程库通过系统调用clone()创建一个新的线程，返回的“进程”直接作为用户空间的线程。</p>
-<p>“用户级线程模型”是“N:1线程模型”，一个N个线程的进程只会映射到一个内核进程。</p>
-<p>“混合式线程模型”是“N:M线程模型”，上述两中的综合，但是模型过于复杂。</p>
-<p>Linux上普遍的线程模型是第一种。</p>
-<h2 id="线程模式"><a href="#线程模式" class="headerlink" title="线程模式"></a><strong>线程模式</strong></h2><p>创建多线程应用最重要的一步是确定线程模式，线程模式也是应用程序的逻辑处理和I/O模式，<br>可能存在很多抽象和实现细节，但两个核心的编程模式是：</p>
-<ul>
-<li><strong>每个连接对应一个线程（thread-per-connection）</strong></li>
-<li><strong>事件驱动（event-driven）</strong></li>
-</ul>
-<h2 id="并发性、并行性和竞争"><a href="#并发性、并行性和竞争" class="headerlink" title="并发性、并行性和竞争"></a><strong>并发性、并行性和竞争</strong></h2><p>并发性与并行性？？</p>
-<p><strong>竞争条件</strong>是指由两个或多个线程对共享资源的非同步访问而导致错误的程序行为。<br>共享资源可以是系统硬件、内核资源或内存中的数据。后者最常见，称为数据竞争（date race）。<br>竞争发生的窗口–需要同步的代码–成为“临界区”。</p>
-<h2 id="同步，互斥和死锁"><a href="#同步，互斥和死锁" class="headerlink" title="同步，互斥和死锁"></a><strong>同步，互斥和死锁</strong></h2><p>最常用来完成同步，实现临界区原子操作的技术是锁（lock），在Pthreads中称之为“互斥（mutexes）”。</p>
-<p><strong>锁住数据，而不是代码</strong>，当锁和代码关联起来时，锁的语义就很难理解。<br>随着时间变化，锁和数据之间的关系就不会很清晰，程序员会为数据引入新的使用方式，而不会包含相应的锁。<br>把锁和数据关联，这个映射就会很清晰。</p>
-<p>互斥的引入会带来编程BUG：死锁。</p>
-<p>避免死锁需要从一开始的设计中为多线程设计好锁的机制。<br>互斥体应该和数据关联，而不是和代码关联，从而有清晰的数据层。<br>针对死锁（ABBA）问题，需要明确互斥获取的顺序。</p>
-<h2 id="Pthreads"><a href="#Pthreads" class="headerlink" title="Pthreads"></a><strong>Pthreads</strong></h2><p>Linux内核只为线程的支持提供了底层原语，比如clone()系统调用。<br>POSIX对线程库进行了标准化，称之为POSIX线程，简称为Pthreads。<br>是UNIX系统上C／C++语言的主要线程解决方案。</p>
-<h3 id="Pthread-API"><a href="#Pthread-API" class="headerlink" title="Pthread API"></a><strong>Pthread API</strong></h3><p>Pthreads是由glibc提供，存在于独立库libpthread中，使用时需要显示链接：</p>
-<pre><code>gcc -Wall -Werror -pthread b.c -o b</code></pre><p>Pthread API在文件&lt;pthread.h&gt;中定义，每个函数前缀都是pthread_，可以分为两大类：<br><strong>线程管理（创建、销毁、连接和detach线程等）</strong>和<strong>同步（互斥、条件变量等）</strong>。</p>
-<pre><code>#include &lt;pthread.h&gt;
-
-int pthread_create(pthread_t *tid, const pthread_attr_t *attr, void *(*func) (void *), void *arg);
-int pthread_join (pthread_t tid, void ** status);
-pthread_t pthread_self (void);
-int pthread_equal(pthread_t t1, pthread_t t2);
-int pthread_detach (pthread_t tid);
-void pthread_exit (void *status);
-int pthread_cancel(pthread_t thread);
-
-int pthread_mutex_lock(pthread_mutex_t * mptr); 
-int pthread_mutex_unlock(pthread_mutex_t * mptr); 
-
-int pthread_cond_wait(pthread_cond_t *cptr, pthread_mutex_t *mptr); 
-int pthread_cond_signal(pthread_cond_t *cptr); 
-int pthread_cond_broadcast (pthread_cond_t * cptr);
-int pthread_cond_timedwait (pthread_cond_t * cptr, pthread_mutex_t *mptr, const struct timespec *abstime);</code></pre><p>pthread_create用于创建一个线程，成功返回0，否则返回错误码（不使用errno）。</p>
-<ul>
-<li>pthread_t <em>tid：线程id的类型为pthread_t，通常为无符号整型，当调用pthread_create成功时，通过</em>tid指针返回。</li>
-<li>const pthread_attr_t *attr：指定创建线程的属性，如线程优先级、初始栈大小、是否为守护进程等。<br>可以使用NULL来使用默认值，通常情况下我们都是使用默认值。</li>
-<li>void <em>(</em>func) (void *)：函数指针func，指定当新的线程创建之后，将执行的函数。</li>
-<li>void *arg：线程将执行的函数的参数。如果想传递多个参数，请将它们封装在一个结构体中。</li>
-</ul>
-<p>pthread_join用于等待某个线程退出，成功返回0，否则返回错误码（不使用errno）。<br>成功调用时，调用线程会被阻塞，直到由tid指定的线程终止，用于线程同步。</p>
-<ul>
-<li>pthread_t tid：指定要等待的线程ID</li>
-<li>void ** status：如果不为NULL，那么线程的返回值存储在status指向的空间中（这就是为什么status是二级指针的原因！这种才参数也称为“值-结果”参数）。</li>
-</ul>
-<p>默认情况下，线程是创建成可join的。<br>pthread_detach用于是指定线程变为分离状态（不可join），就像进程脱离终端而变为后台进程类似。<br>成功返回0，否则返回错误码（不使用errno）。变为分离状态的线程，如果线程退出，它的所有资源将全部释放。<br>而如果不是分离状态，线程必须保留它的线程ID，退出状态直到其它线程对它调用了pthread_join。</p>
-<p><strong>pthread_join()或pthread_detach()都应该在进程中每个线程上调用，这样当线程终止时，也会释放资源。</strong></p>
-<p>pthread_self用于返回当前线程的ID</p>
-<p>pthread_equal用于比较两个线程ID是否一样，如果不同返回0</p>
-<p>pthread_exit用于终止线程，可以指定返回值，以便其他线程通过pthread_join函数获取该线程的返回值。</p>
-<p>pthread_cancel用于通过其他线程调用来结束线程。</p>
-<p>在对临界资源进行操作之前需要pthread_mutex_lock先加锁，操作完之后pthread_mutex_unlock再解锁。<br>而且在这之前需要声明一个pthread_mutex_t类型的变量，用作前面两个函数的参数。</p>
-<pre><code>int withdraw(struct account *account, int amount)
-{
-    pthread_mutex_lock(&amp;account-&gt;mutex);
-    const int balance = account-&gt;balance;
-    if(balance &lt; amount)
-    {
-        pthread_mutex_unlock(&amp;account-&gt;mutex);
-        return -1;
-    }
-
-    account-&gt;balance = balance - amount;
-    pthread_mutex_unlock(&amp;account-&gt;mutex);
-
-    disburse_money(amount);
-
-    return 0;
-}</code></pre><p>在这个例子中，不是使用全局锁，而是在结构体中定义一把锁，这样每个account实例都有自己的锁，实现对数据的加锁。</p>
-<p>条件变量是一种同步机制，允许线程挂起，直到共享数据上的某些条件得到满足。<br>条件变量上的基本操作有：触发条件(当条件变为 true 时)；等待条件，挂起线程直到其他线程触发条件。<br>条件变量要和互斥量相联结，以避免出现条件竞争–一个线程预备等待一个条件变量，<br>当它在真正进入等待之前，另一个线程恰好触发了该条件。</p>
-<h2 id="References"><a href="#References" class="headerlink" title="References"></a>References</h2><ul>
-<li><a href="http://fanqiang.chinaunix.net/a4/b8/20010811/0905001105.html" target="_blank" rel="noopener">Linux下的多线程编程</a></li>
-<li><a href="http://www.cnblogs.com/skynet/archive/2010/10/30/1865267.HTML" target="_blank" rel="noopener">Linux多线程编程-吴秦</a></li>
-</ul>
-]]></content>
-      <categories>
-        <category>Linux System Programming</category>
-      </categories>
-      <tags>
-        <tag>thread</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Linux系统编程-文件和目录管理</title>
     <url>/2014/11/11/Linux-system-programming-File-and-Directory-Management/</url>
     <content><![CDATA[<ul>
@@ -26782,6 +26673,127 @@ int main(int argc, char *argv[]){
       <categories>
         <category>Linux System Programming</category>
       </categories>
+  </entry>
+  <entry>
+    <title>Linux系统编程-线程</title>
+    <url>/2014/11/10/Linux-system-programming-thread/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<p>线程是指在单个进程内，多路并行执行的创建和管理单元。由于线程引入了数据竞争和死锁，相关的编程错误不计其数。</p>
+<h2 id="进程和线程"><a href="#进程和线程" class="headerlink" title="进程和线程"></a><strong>进程和线程</strong></h2><p>现代操作系统包括了两种对用户空间的基础的虚拟抽象：<strong>虚拟内存和虚拟处理器</strong>。<br>它们使进程认为自己独占机器资源。</p>
+<p>虚拟内存为每个进程提供独立的内存地址空间，该内存地址连续映射到物理内存上。<br>虚拟处理器使得进程“感觉”只有自己正在运行，操作系统对其“隐藏”了事实：多个进程在可能多个处理器上以多任务方式同时运行。</p>
+<p>虚拟内存是和进程相关的，与线程无关。<br>因此，每个进程有独立的内存空间，而进程中的所有线程共享这份空间。</p>
+<p>虚拟处理器是和线程相关的，与进程无关。每个线程都是可独立调度的实体，支持单个进程每次“处理”多个操作。</p>
+<p>和进程一样，线程也“感觉”自己独占一个处理器。<br>但是，和进程不一样的是，线程没有“感觉”自己独占内存–进程中的所有线程共享内存空间。</p>
+<h2 id="多线程"><a href="#多线程" class="headerlink" title="多线程"></a><strong>多线程</strong></h2><p>进程是正在运行的程序的抽象。但是，为什么要分离执行单元，引入线程？多线程机制有以下优点：</p>
+<ul>
+<li>编程抽象：将工作分为多个模块，每个模块分配一个执行单元（线程）。<br>利用这种方法的设计模式包括“每个连接一个线程”和线程池模式</li>
+<li>并发性：对多处理器提供了实现“真正并发”的高效方式。<br>每个线程有自己的虚拟处理器，作为独立的调度实体，可以在多处理器上运行多个线程，从而提高系统吞吐量</li>
+<li>提高响应能力：单线程进程中，一个长时间运行的任务会影响应用对用户输入的响应，多线程中可以有一条线程响应用户输入</li>
+<li>I/O阻塞：单线程中，I/O阻塞会影响整个进程</li>
+<li>上下文切换：线程间切换的代价显著低于进程间的上下文切换</li>
+<li>内存保存：线程提供了一种可以共享内存，并同时利用多个执行单元的高效方式</li>
+</ul>
+<p><strong>上下文切换</strong>：线程的一大性能优势是同一进程内的线程之间切换代价很低。<br>在任何系统上，进程内切换的代价低于进程间切换，前者通常是后者的一部分。<br>在非Linux系统上，这种差别非常明显，进程间通信（IPC）代价非常高。<br>因此，很多系统上，称线程为“轻量级进程”。在Linux中，进程间切换代价并不高，而进程内切换的成本接近于0：<br>接近进入和退出内核的代价。进程的代价不高，但是线程的代价更低。</p>
+<h2 id="线程模型"><a href="#线程模型" class="headerlink" title="线程模型"></a><strong>线程模型</strong></h2><p>在系统上实现线程模型的方式有好几种，因内核和用户空间提供的支持而有一定程度的级别差异。</p>
+<p>最简单的是内核为线程提供了本地支持的情况，每个内核线程直接转换成用户空间的线程。<br>这种模型称为“1:1线程模型”，也称为“内核级线程模型”。<br>在Linux中只是简单的将线程实现成能够共享资源的进程。<br>线程库通过系统调用clone()创建一个新的线程，返回的“进程”直接作为用户空间的线程。</p>
+<p>“用户级线程模型”是“N:1线程模型”，一个N个线程的进程只会映射到一个内核进程。</p>
+<p>“混合式线程模型”是“N:M线程模型”，上述两中的综合，但是模型过于复杂。</p>
+<p>Linux上普遍的线程模型是第一种。</p>
+<h2 id="线程模式"><a href="#线程模式" class="headerlink" title="线程模式"></a><strong>线程模式</strong></h2><p>创建多线程应用最重要的一步是确定线程模式，线程模式也是应用程序的逻辑处理和I/O模式，<br>可能存在很多抽象和实现细节，但两个核心的编程模式是：</p>
+<ul>
+<li><strong>每个连接对应一个线程（thread-per-connection）</strong></li>
+<li><strong>事件驱动（event-driven）</strong></li>
+</ul>
+<h2 id="并发性、并行性和竞争"><a href="#并发性、并行性和竞争" class="headerlink" title="并发性、并行性和竞争"></a><strong>并发性、并行性和竞争</strong></h2><p>并发性与并行性？？</p>
+<p><strong>竞争条件</strong>是指由两个或多个线程对共享资源的非同步访问而导致错误的程序行为。<br>共享资源可以是系统硬件、内核资源或内存中的数据。后者最常见，称为数据竞争（date race）。<br>竞争发生的窗口–需要同步的代码–成为“临界区”。</p>
+<h2 id="同步，互斥和死锁"><a href="#同步，互斥和死锁" class="headerlink" title="同步，互斥和死锁"></a><strong>同步，互斥和死锁</strong></h2><p>最常用来完成同步，实现临界区原子操作的技术是锁（lock），在Pthreads中称之为“互斥（mutexes）”。</p>
+<p><strong>锁住数据，而不是代码</strong>，当锁和代码关联起来时，锁的语义就很难理解。<br>随着时间变化，锁和数据之间的关系就不会很清晰，程序员会为数据引入新的使用方式，而不会包含相应的锁。<br>把锁和数据关联，这个映射就会很清晰。</p>
+<p>互斥的引入会带来编程BUG：死锁。</p>
+<p>避免死锁需要从一开始的设计中为多线程设计好锁的机制。<br>互斥体应该和数据关联，而不是和代码关联，从而有清晰的数据层。<br>针对死锁（ABBA）问题，需要明确互斥获取的顺序。</p>
+<h2 id="Pthreads"><a href="#Pthreads" class="headerlink" title="Pthreads"></a><strong>Pthreads</strong></h2><p>Linux内核只为线程的支持提供了底层原语，比如clone()系统调用。<br>POSIX对线程库进行了标准化，称之为POSIX线程，简称为Pthreads。<br>是UNIX系统上C／C++语言的主要线程解决方案。</p>
+<h3 id="Pthread-API"><a href="#Pthread-API" class="headerlink" title="Pthread API"></a><strong>Pthread API</strong></h3><p>Pthreads是由glibc提供，存在于独立库libpthread中，使用时需要显示链接：</p>
+<pre><code>gcc -Wall -Werror -pthread b.c -o b</code></pre><p>Pthread API在文件&lt;pthread.h&gt;中定义，每个函数前缀都是pthread_，可以分为两大类：<br><strong>线程管理（创建、销毁、连接和detach线程等）</strong>和<strong>同步（互斥、条件变量等）</strong>。</p>
+<pre><code>#include &lt;pthread.h&gt;
+
+int pthread_create(pthread_t *tid, const pthread_attr_t *attr, void *(*func) (void *), void *arg);
+int pthread_join (pthread_t tid, void ** status);
+pthread_t pthread_self (void);
+int pthread_equal(pthread_t t1, pthread_t t2);
+int pthread_detach (pthread_t tid);
+void pthread_exit (void *status);
+int pthread_cancel(pthread_t thread);
+
+int pthread_mutex_lock(pthread_mutex_t * mptr); 
+int pthread_mutex_unlock(pthread_mutex_t * mptr); 
+
+int pthread_cond_wait(pthread_cond_t *cptr, pthread_mutex_t *mptr); 
+int pthread_cond_signal(pthread_cond_t *cptr); 
+int pthread_cond_broadcast (pthread_cond_t * cptr);
+int pthread_cond_timedwait (pthread_cond_t * cptr, pthread_mutex_t *mptr, const struct timespec *abstime);</code></pre><p>pthread_create用于创建一个线程，成功返回0，否则返回错误码（不使用errno）。</p>
+<ul>
+<li>pthread_t <em>tid：线程id的类型为pthread_t，通常为无符号整型，当调用pthread_create成功时，通过</em>tid指针返回。</li>
+<li>const pthread_attr_t *attr：指定创建线程的属性，如线程优先级、初始栈大小、是否为守护进程等。<br>可以使用NULL来使用默认值，通常情况下我们都是使用默认值。</li>
+<li>void <em>(</em>func) (void *)：函数指针func，指定当新的线程创建之后，将执行的函数。</li>
+<li>void *arg：线程将执行的函数的参数。如果想传递多个参数，请将它们封装在一个结构体中。</li>
+</ul>
+<p>pthread_join用于等待某个线程退出，成功返回0，否则返回错误码（不使用errno）。<br>成功调用时，调用线程会被阻塞，直到由tid指定的线程终止，用于线程同步。</p>
+<ul>
+<li>pthread_t tid：指定要等待的线程ID</li>
+<li>void ** status：如果不为NULL，那么线程的返回值存储在status指向的空间中（这就是为什么status是二级指针的原因！这种才参数也称为“值-结果”参数）。</li>
+</ul>
+<p>默认情况下，线程是创建成可join的。<br>pthread_detach用于是指定线程变为分离状态（不可join），就像进程脱离终端而变为后台进程类似。<br>成功返回0，否则返回错误码（不使用errno）。变为分离状态的线程，如果线程退出，它的所有资源将全部释放。<br>而如果不是分离状态，线程必须保留它的线程ID，退出状态直到其它线程对它调用了pthread_join。</p>
+<p><strong>pthread_join()或pthread_detach()都应该在进程中每个线程上调用，这样当线程终止时，也会释放资源。</strong></p>
+<p>pthread_self用于返回当前线程的ID</p>
+<p>pthread_equal用于比较两个线程ID是否一样，如果不同返回0</p>
+<p>pthread_exit用于终止线程，可以指定返回值，以便其他线程通过pthread_join函数获取该线程的返回值。</p>
+<p>pthread_cancel用于通过其他线程调用来结束线程。</p>
+<p>在对临界资源进行操作之前需要pthread_mutex_lock先加锁，操作完之后pthread_mutex_unlock再解锁。<br>而且在这之前需要声明一个pthread_mutex_t类型的变量，用作前面两个函数的参数。</p>
+<pre><code>int withdraw(struct account *account, int amount)
+{
+    pthread_mutex_lock(&amp;account-&gt;mutex);
+    const int balance = account-&gt;balance;
+    if(balance &lt; amount)
+    {
+        pthread_mutex_unlock(&amp;account-&gt;mutex);
+        return -1;
+    }
+
+    account-&gt;balance = balance - amount;
+    pthread_mutex_unlock(&amp;account-&gt;mutex);
+
+    disburse_money(amount);
+
+    return 0;
+}</code></pre><p>在这个例子中，不是使用全局锁，而是在结构体中定义一把锁，这样每个account实例都有自己的锁，实现对数据的加锁。</p>
+<p>条件变量是一种同步机制，允许线程挂起，直到共享数据上的某些条件得到满足。<br>条件变量上的基本操作有：触发条件(当条件变为 true 时)；等待条件，挂起线程直到其他线程触发条件。<br>条件变量要和互斥量相联结，以避免出现条件竞争–一个线程预备等待一个条件变量，<br>当它在真正进入等待之前，另一个线程恰好触发了该条件。</p>
+<h2 id="References"><a href="#References" class="headerlink" title="References"></a>References</h2><ul>
+<li><a href="http://fanqiang.chinaunix.net/a4/b8/20010811/0905001105.html" target="_blank" rel="noopener">Linux下的多线程编程</a></li>
+<li><a href="http://www.cnblogs.com/skynet/archive/2010/10/30/1865267.HTML" target="_blank" rel="noopener">Linux多线程编程-吴秦</a></li>
+</ul>
+]]></content>
+      <categories>
+        <category>Linux System Programming</category>
+      </categories>
+      <tags>
+        <tag>thread</tag>
+      </tags>
   </entry>
   <entry>
     <title>Linux系统编程-多线程同步条件变量</title>
