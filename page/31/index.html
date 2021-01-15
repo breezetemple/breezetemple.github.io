@@ -216,6 +216,236 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/13/Linux-system-programming-Time/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/11/13/Linux-system-programming-Time/" class="post-title-link" itemprop="url">Linux系统编程-时间</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-11-14 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-14T00:00:00+08:00">2014-11-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-System-Programming/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux System Programming</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<p>UNIX系统把绝对时间表示成新纪元至今所经过的秒数，<code>新纪元</code>定义成1970年1月1日早上00:00:00 UTC。<br>UTC（协调世界时，Coordinated Universal Time）相当于GMT或Zulu时间。</p>
+<h2 id="时间的数据结构"><a href="#时间的数据结构" class="headerlink" title="时间的数据结构"></a><strong>时间的数据结构</strong></h2><p><strong>原始表示：</strong></p>
+<pre><code>#incliude &lt;time.h&gt;
+typedef long time_t;</code></pre><hr>
+<p><strong>微秒级精度</strong></p>
+<pre><code>#include &lt;sys/time.h&gt;
+
+struct timeval {
+    time_t      tv_sec;
+    suseconds_t tv_usec;
+};</code></pre><hr>
+<p><strong>纳秒级精度</strong></p>
+<pre><code>#include &lt;time.h&gt;
+
+struct timespec {
+    time_t  tv_sec;
+    long    tv_nsec;
+};</code></pre><hr>
+<p><strong>时间描述</strong></p>
+<pre><code>#include &lt;time.h&gt;
+
+struct tm
+{
+  int tm_sec;           /* Seconds. [0-60] (1 leap second) */
+  int tm_min;           /* Minutes. [0-59] */
+  int tm_hour;          /* Hours.   [0-23] */
+  int tm_mday;          /* Day.     [1-31] */
+  int tm_mon;           /* Month.   [0-11] */
+  int tm_year;          /* Year - 1900.  */
+  int tm_wday;          /* Day of week. [0-6] */
+  int tm_yday;          /* Days in year.[0-365] */
+  int tm_isdst;         /* DST.     [-1/0/1]*/
+
+# ifdef __USE_BSD
+  long int tm_gmtoff;       /* Seconds east of UTC.  */
+  const char *tm_zone;      /* Timezone abbreviation.  */
+# else
+  long int __tm_gmtoff;     /* Seconds east of UTC.  */
+  const char *__tm_zone;    /* Timezone abbreviation.  */
+# endif
+};</code></pre><h2 id="时间API"><a href="#时间API" class="headerlink" title="时间API"></a><strong>时间API</strong></h2><p>在Linux上，所有使用POSIX时钟的函数都需要将目标文件与librt链接：</p>
+<pre><code>$ gcc -Wall -W -O2 -lrt -g -o a a.c</code></pre><p><strong>取得、设置目前时间：</strong></p>
+<pre><code>#include &lt;time.h&gt;
+
+time_t time(time_t *t);
+int stime(time_t *t);</code></pre><p>time()如果参数t非NULL，也将当前时间写入到提供的指针t中。</p>
+<hr>
+<p>对某些需要较高精准度的需求，Linux提供了以下接口，提供微秒级精度支持：</p>
+<pre><code>#include &lt;sys/time.h&gt;
+
+int gettimeofday(struct timeval * tv, struct timezone *tz);  
+int settimeofday(const struct timeval * tv, const struct timezone *tz);</code></pre><p>当前时间tv指向timeval结构体。结构提timezone和参数tz已经废止，都不应该在Linux中使用，建议传NULL。</p>
+<hr>
+<p><strong>用于纳秒级的高级接口：</strong></p>
+<pre><code>#include &lt;time.h&gt;
+
+int clock_gettime(clockid_t clock_id, struct timespec *ts);
+int clock_settime(clockid_t clock_id, const struct timespec *ts);</code></pre><hr>
+<p><strong>文字时间格式函数：</strong></p>
+<pre><code>#include &lt;time.h&gt;
+
+//将tm转换为ASCII字符串
+char * asctime(const struct tm *tm);
+char * asctime_r(const struct tm *tm, char *buf);
+
+//将time_t转换为ASCII字符串
+char * ctime(const struct time_t *tm);
+char * ctime_r(const struct time_t *tm, char *buf);
+
+//将tm转换为time_t，使用本地时间
+time_t mktime(struct tm *tm);
+
+//将time_t转换为tm，使用UTC时区格式
+struct tm * gmtime(const time_t *tp);
+struct tm * gmtime_r(const time_t *tp, struct tm *result);
+
+//将time_t转换为tm，使用本地时区格式
+struct tm * localtime(const time_t *tp);
+struct tm * localtime_r(const time_t *tp, struct tm *result);
+
+//计算秒差
+double difftime(time_t time1, time_t time2);</code></pre><p>后缀_r的函数不使用静态分配的指针，而是通过参数传递。</p>
+<hr>
+<p><strong>睡眠函数：</strong></p>
+<pre><code>#include &lt;unistd.h&gt;
+
+unsigned int sleep(unsigned int seconds);   //秒级
+void usleep(unsigned long usec);            //微秒级</code></pre><hr>
+<p><strong>纳秒级精度睡眠</strong></p>
+<pre><code>#include &lt;time.h&gt;
+
+int nanosleep(const struct timespec *req, struct timrspec *rem);</code></pre><p>这个函数功能是暂停某个线程直到你规定的时间后恢复，参数req就是你要暂停的时间。<br>由于调用nanosleep是使线程进入TASK_INTERRUPTIBLE，这种状态是会相应信号而进入TASK_RUNNING状态的，<br>这就意味着有可能会没有等到你规定的时间就因为其它信号而唤醒，<br>此时函数返回-1，且还剩余的时间会被记录在rem中（rem不为空的情况下）。</p>
+<hr>
+<p><strong>实现睡眠的高级方法？？</strong></p>
+<pre><code>#include &lt;time.h&gt;  
+
+int clock_nanosleep(clockid_t clock_id, int flags,  
+                    const struct timespec *request,  
+                    struct timespec *remain);  </code></pre><hr>
+<p><strong>select()实现sleep可移植实现：</strong></p>
+<pre><code>struct timeval tv = {.tv_sec = 0, .tv_usec = 750};
+
+/* sleep for 750 us */
+select(0, NULL, NULL, NULL, &amp;tv);</code></pre><p>select的精确度为10毫秒，在10毫秒以上很精确，sleep 可以在多线程中使用，只阻塞本线程，不影响所属进程中的其它线程。<br>Linux下短延时推荐使用select函数。</p>
+<h2 id="定时器"><a href="#定时器" class="headerlink" title="定时器"></a><strong>定时器</strong></h2><p><strong>简单定时器接口：</strong></p>
+<pre><code>#include &lt;unistd.h&gt;
+
+unsigned int alarm(unsigned int seconds);</code></pre><p>想要成功调用该函数，需要为SIGALRM信号注册一个信号处理函数：</p>
+<pre><code>signal(SIGALRM, alarm_handler);</code></pre><hr>
+<p><strong>计时器</strong></p>
+<pre><code>#include &lt;sys/time.h&gt;
+
+int getitimer(int which, struct itimerval *value);
+int setitimer(int which, const struct itimerval *value, struct itimerval *ovalue);</code></pre><hr>
+<p><strong>高级定时器</strong></p>
+<pre><code>#include &lt;signal.h&gt;
+#include &lt;time.h&gt;
+
+int timer_create(clockid_t clockid, struct sigevent *evp, timer_t *timerid);
+int timer_settime(timer_t timerid, int flags, const struct itimerspec *value, struct itimerspec *ovalue);
+int timer_gettime(timer_t timerid, struct itimerspec *value);
+int timer_getoverrun(timer_t timerid);
+int timer_delete(timer_t timerid);</code></pre><p>*<a href="http://blog.csdn.net/zjwoody/article/details/7882240" target="_blank" rel="noopener">关于短延迟 sleep usleep nanosleep select</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/11/12/Linux-system-programming-signals/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +477,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -505,7 +735,7 @@ int sigaction(int signum,const struct sigaction *act,struct sigaction *oldact));
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -851,7 +1081,7 @@ int main(int argc, char *argv[]){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1105,7 +1335,7 @@ thread2: unlock 59   i 6</code></pre><p>线程1先执行，获得mutex锁，打�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1454,7 +1684,7 @@ int munlockall(void);</code></pre><h2 id="投机性内存分配策略"><a href="
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1653,7 +1883,7 @@ int pthread_cond_timedwait (pthread_cond_t * cptr, pthread_mutex_t *mptr, const 
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1919,7 +2149,7 @@ printf(&quot;RLIMIT_CORE limits: soft=%ld hard=%ld\n&quot;, rlim.rlim_cur, rlim.
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2194,7 +2424,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2291,7 +2521,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2388,7 +2618,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2485,7 +2715,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2582,7 +2812,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2679,7 +2909,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2899,7 +3129,7 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2968,241 +3198,6 @@ int daemon(int nochdir, int noclose);</code></pre><p>参数：</p>
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/10/04/makedown-syntax/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/10/04/makedown-syntax/" class="post-title-link" itemprop="url">makedown-syntax</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2014-10-05 00:00:00" itemprop="dateCreated datePublished" datetime="2014-10-05T00:00:00+08:00">2014-10-05</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
-              </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>2.6k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <hr>
-<p>layout: post<br>title: Makedown语法简介<br>description:<br>category: 编辑<br>tags: makedown</p>
-<hr>
-<ul>
-<li><a href="#p">段落和换行</a></li>
-<li><a href="#header">标题</a></li>
-<li><a href="#quote">引用</a></li>
-<li><a href="#list">列表</a></li>
-<li><a href="#code">代码</a></li>
-<li><a href="#hr">分隔线</a></li>
-<li><a href="#link">链接</a></li>
-<li><a href="#em">强调</a></li>
-<li><a href="#img">图片</a></li>
-<li><a href="#backslash">反斜杠</a></li>
-</ul>
-<hr>
-<h2 id="p">段落和换行</h2>
-
-<p>一个 Markdown 段落是由一个或多个连续的文本行组成，它的前后要有一个以上的空行（空行的定义是显示上看起来像是空的，便会被视为空行。比方说，若某一行只包含空格和制表符，则该行也会被视为空行）。普通段落不该用空格或制表符来缩进。</p>
-<p>简单说：连续两个回车完成对段落的换行。</p>
-<h2 id="header">标题</h2>
-
-<p>在Markdown当中设置标题，有两种方式：<br>第一种：通过在文字下方添加四个以上的“=”和“-”，他们分别表示一级标题和二级标题。例如：</p>
-<pre><code>H1
-=======
-H2
--------</code></pre><h1 id="H1"><a href="#H1" class="headerlink" title="H1"></a>H1</h1><h2 id="H2"><a href="#H2" class="headerlink" title="H2"></a>H2</h2><p>第二种：在文字开头加上 “#”，通过“#”数量表示几级标题。（一共只有1~6级标题，1级标题字体最大）例如：</p>
-<pre><code># H1
-## H2
-##### H5</code></pre><h1 id="H1-1"><a href="#H1-1" class="headerlink" title="H1"></a>H1</h1><h2 id="H2-1"><a href="#H2-1" class="headerlink" title="H2"></a>H2</h2><h5 id="H5"><a href="#H5" class="headerlink" title="H5"></a>H5</h5><h2 id="quote">引用</h2>
-
-<p>通过在文字开头添加“&gt;”表示块注释。区块引用可以嵌套（例如：引用内的引用），只要根据层次加上不同数量的 <code>&gt;</code> ：                                                      </p>
-<pre><code>&gt; This is the first level of quoting.
-&gt;   
-&gt; &gt; This is nested blockquote.
-&gt;   
-&gt; Back to the first level.</code></pre><blockquote>
-<p>This is the first level of quoting.</p>
-<blockquote>
-<p>This is nested blockquote.</p>
-</blockquote>
-<p>Back to the first level.</p>
-</blockquote>
-<p>引用的区块内也可以使用其他的 Markdown 语法，包括标题、列表、代码区块等：</p>
-<pre><code>&gt; ## 这是一个标题。
-&gt;   
-&gt; 1.   这是第一行列表项。
-&gt; 2.   这是第二行列表项。</code></pre><blockquote>
-<h2 id="这是一个标题。"><a href="#这是一个标题。" class="headerlink" title="这是一个标题。"></a>这是一个标题。</h2><ol>
-<li>这是第一行列表项。</li>
-<li>这是第二行列表项。</li>
-</ol>
-</blockquote>
-<h2 id="list">列表</h2>
-
-<p>Markdown 支持有序列表和无序列表。</p>
-<p>无序列表使用星号、加号或是减号作为列表标记：</p>
-<pre><code>*   Red
-*   Green
-*   Blue</code></pre><ul>
-<li>Red</li>
-<li>Green</li>
-<li>Blue</li>
-</ul>
-<p>等同于：</p>
-<pre><code>+   Red
-+   Green
-+   Blue</code></pre><ul>
-<li>Red</li>
-<li>Green</li>
-<li>Blue</li>
-</ul>
-<p>也等同于：</p>
-<pre><code>-   Red
--   Green
--   Blue</code></pre><ul>
-<li>Red</li>
-<li>Green</li>
-<li>Blue</li>
-</ul>
-<p>有序列表则使用数字接着一个英文句点：</p>
-<pre><code>1.  Bird
-2.  McHale
-3.  Parish</code></pre><ol>
-<li>Bird</li>
-<li>McHale</li>
-<li>Parish</li>
-</ol>
-<h2 id="code">代码</h2>
-
-<p>实现方式有两种：</p>
-<p>第一种：简单文字出现一个代码框。使用`（<code>不是单引号而是左上角的ESC下面~中的</code>）</p>
-<pre><code>`&lt;blockquote&gt;`</code></pre><p><code>&lt;blockquote&gt;</code></p>
-<p>第二种：大片文字需要实现代码框。使用Tab和四个空格。</p>
-<pre><code>int main()
-{
-//
-}</code></pre><h2 id="hr">分隔线</h2>
-
-<p>你可以在一行中用三个以上的星号、减号、底线来建立一个分隔线，行内不能有其他东西。你也可以在星号或是减号中间插入空格。</p>
-<pre><code>***
----</code></pre><hr>
-<hr>
-<h2 id="link">链接</h2>
-
-<p>Markdown中有两种方式实现链接，分别为内联方式和引用方式，不管是哪一种，链接文字都是用 [方括号] 来标记。</p>
-<p>内联方式：</p>
-<pre><code>This is an [example link](http://example.com/).</code></pre><p>This is an <a href="http://example.com/" target="_blank" rel="noopener">example link</a>.</p>
-<p>引用方式：</p>
-<pre><code>I get 10 times more traffic from [Google][1] than from [Yahoo][2] or [MSN][3].  
-...
-[1]: http://google.com/        &quot;Google&quot; 
-[2]: http://search.yahoo.com/  &quot;Yahoo Search&quot; 
-[3]: http://search.msn.com/    &quot;MSN Search&quot;</code></pre><p>I get 10 times more traffic from [Google][1] than from [Yahoo][2] or [MSN][3].<br>…<br>[1]: <a href="http://google.com/" target="_blank" rel="noopener">http://google.com/</a>        “Google”<br>[2]: <a href="http://search.yahoo.com/" target="_blank" rel="noopener">http://search.yahoo.com/</a>  “Yahoo Search”<br>[3]: <a href="http://search.msn.com/" target="_blank" rel="noopener">http://search.msn.com/</a>    “MSN Search”</p>
-<h2 id="em">强调</h2>
-
-<p>Markdown 使用星号（<code>*</code>）和底线（<code>_</code>）作为标记强调字词的符号，被 <code>*</code> 或 <code>_</code> 包围的字词会被转成用 <code>&lt;em&gt;</code> 标签包围，用两个 <code>*</code> 或 <code>_</code> 包起来的话，则会被转成 <code>&lt;strong&gt;</code>，例如： </p>
-<p>1个为斜体，两个为粗体。</p>
-<pre><code>*single asterisks*
-_single underscores_
-**double asterisks**
-__double underscores__</code></pre><p><em>single asterisks</em><br><em>single underscores</em><br><strong>double asterisks</strong><br><strong>double underscores</strong></p>
-<p>你可以随便用你喜欢的样式，唯一的限制是，你用什么符号开启标签，就要用什么符号结束。</p>
-<p>强调也可以直接插在文字中间：</p>
-<pre><code>un*frigging*believable</code></pre><p>un<em>frigging</em>believable</p>
-<p>但是<strong>如果你的 <code>*</code> 和 <code>_</code> 两边都有空白的话，它们就只会被当成普通的符号</strong>。</p>
-<p>如果要在文字前后直接插入普通的星号或底线，你可以用反斜线：</p>
-<pre><code>\*this text is surrounded by literal asterisks\*</code></pre><p>*this text is surrounded by literal asterisks*</p>
-<h2 id="img">图片</h2>
-
-<p>图片的处理方式和链接的处理方式，非常的类似。</p>
-<p>内联方式：</p>
-<pre><code>![alt text](/path/to/img.jpg &quot;Title&quot;)</code></pre><p>引用方式：</p>
-<pre><code>![alt text][id] 
-...
-[id]: /path/to/img.jpg &quot;Title&quot;</code></pre><h2 id="backslash">反斜杠</h2>
-
-<p>Markdown 可以利用反斜杠来插入一些在语法中有其它意义的符号，例如：如果你想要用星号加在文字旁边的方式来做出强调效果（但不用 <code>&lt;em&gt;</code> 标签），你可以在星号的前面加上反斜杠：</p>
-<pre><code>\*literal asterisks\*</code></pre><p>*literal asterisks*</p>
-<p>Markdown 支持以下这些符号前面加上反斜杠来帮助插入普通的符号：</p>
-<pre><code>\   反斜线
-`   反引号
-*   星号
-_   底线
-{}  花括号
-[]  方括号
-()  括弧
-#   井字号
-+   加号
--   减号
-.   英文句点
-!   惊叹号</code></pre><p>References：</p>
-<ul>
-<li><a href="http://wowubuntu.com/markdown/#em" target="_blank" rel="noopener">http://wowubuntu.com/markdown/#em</a></li>
-<li><a href="http://wowubuntu.com/markdown/basic.html" target="_blank" rel="noopener">http://wowubuntu.com/markdown/basic.html</a></li>
-<li><a href="http://daringfireball.net/projects/markdown/syntax" target="_blank" rel="noopener">http://daringfireball.net/projects/markdown/syntax</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -3253,20 +3248,20 @@ _   底线
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">467</span>
+          <span class="site-state-item-count">468</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">62</span>
+        <span class="site-state-item-count">63</span>
         <span class="site-state-item-name">categories</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">504</span>
+        <span class="site-state-item-count">506</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -3310,7 +3305,7 @@ _   底线
 <div class="copyright">
   
   &copy; 2014 – 
-  <span itemprop="copyrightYear">2020</span>
+  <span itemprop="copyrightYear">2021</span>
   <span class="with-love">
     <i class="fa fa-user"></i>
   </span>
@@ -3326,7 +3321,7 @@ _   底线
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:40</span>
+    <span title="Reading time total">18:42</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
   </div>

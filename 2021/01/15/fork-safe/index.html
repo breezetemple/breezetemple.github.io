@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="多线程下进程安全及 fork 使用注意事项  非进程安全容易导致死锁未考虑 fork 时文件的处理 fcntl(fd, F_SETFD, FD_CLOEXEC)">
+<meta property="og:type" content="article">
+<meta property="og:title" content="fork safety 以及多线程环境下注意事项">
+<meta property="og:url" content="http://yoursite.com/2021/01/15/fork-safe/index.html">
+<meta property="og:site_name" content="IT日记">
+<meta property="og:description" content="多线程下进程安全及 fork 使用注意事项  非进程安全容易导致死锁未考虑 fork 时文件的处理 fcntl(fd, F_SETFD, FD_CLOEXEC)">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/linux/fork-deadlock.png">
+<meta property="article:published_time" content="2021-01-15T02:07:57.000Z">
+<meta property="article:modified_time" content="2021-01-15T05:23:10.128Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="malloc">
+<meta property="article:tag" content="fork">
+<meta property="article:tag" content="multithread">
+<meta property="article:tag" content="fork safety">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/linux/fork-deadlock.png">
+
+<link rel="canonical" href="http://yoursite.com/2021/01/15/fork-safe/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>fork safety 以及多线程环境下注意事项 | IT日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">IT日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Life is Now.</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2021/01/15/fork-safe/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          fork safety 以及多线程环境下注意事项
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2021-01-15 10:07:57 / Modified: 13:23:10" itemprop="dateCreated datePublished" datetime="2021-01-15T10:07:57+08:00">2021-01-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/Fork/" itemprop="url" rel="index">
+                    <span itemprop="name">Fork</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>1.7k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>多线程下进程安全及 fork 使用注意事项</p>
+<blockquote>
+<p>非进程安全容易导致死锁<br>未考虑 fork 时文件的处理 <code>fcntl(fd, F_SETFD, FD_CLOEXEC)</code></p>
+</blockquote>
+<a id="more"></a>
+
+<h2 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h2><ul>
+<li>Reentrant Function 可重入函数</li>
+<li>Thread-Safe Function 线程安全函数</li>
+<li>signal-safety - async-signal-safe functions 异步信号安全函数</li>
+</ul>
+<h2 id="fork-amp-fork-safety-amp-signal-safety"><a href="#fork-amp-fork-safety-amp-signal-safety" class="headerlink" title="fork &amp; fork safety &amp; signal-safety"></a>fork &amp; fork safety &amp; signal-safety</h2><pre><code class="shell">$ man fork
+    Note the following further points:
+
+    *  The child process is created with a single thread—the one that called fork().  The entire virtual address space of the  parent  is  repli‐
+        cated  in the child, including the states of mutexes, condition variables, and other pthreads objects; the use of pthread_atfork(3) may be
+        helpful for dealing with problems that this can cause.
+
+    *  After a fork() in a multithreaded program, the child can safely call only async-signal-safe functions (see  signal-safety(7))  until  such
+        time as it calls execve(2).</code></pre>
+<ul>
+<li><strong>只复制了父进程中当前线程到子进程</strong>，如果父进程是多线程，那个其他线程在子进程中消失</li>
+<li>子进程得到父进程拷贝，包括互斥锁、条件变量…，这会导致死锁，是问题的根源</li>
+<li><strong>互斥锁，就是多线程fork大部分问题的关键部分</strong></li>
+<li>可以使用 <code>pthread_atfork</code> 处理部分问题，例外如<strong>库函数不受控制</strong>，还需要考虑锁的顺序，在大型程序中无实用价值</li>
+<li><code>fork</code> 后，在执行 <code>execve</code> 前，只能调用 <code>async-signal-safe functions</code>，其他函数都有风险</li>
+</ul>
+<p>死锁模型如下：<br><img src="/images/linux/fork-deadlock.png" alt=""></p>
+<ul>
+<li>T1 持有锁</li>
+<li>T2 <code>fork</code> 后，子进程中只存在 T2 线程，获取不到锁导致死锁</li>
+<li><code>pthread_atfork</code> 只能解决简单模型</li>
+<li><code>fork</code> 之后，<code>execve</code> 之前，只能调用 <code>async-signal-safe functions</code></li>
+<li><code>libc</code> 中很多函数都使用锁，而且不是 <code>async-signal-safe functions</code>，例如 <code>malloc/free</code></li>
+<li><code>fork</code> 之后，<code>execve</code>之前，使用内存分配函数存在风险</li>
+<li><code>execve</code> 后会重置所有进程状态，之前线程获取的锁会直接被销毁</li>
+</ul>
+<p>查看 <code>async-signal-safe functions</code> 列表：</p>
+<pre><code class="shell">$ man signal-safety</code></pre>
+<h2 id="uclibc-amp-glibc"><a href="#uclibc-amp-glibc" class="headerlink" title="uclibc &amp; glibc"></a>uclibc &amp; glibc</h2><ul>
+<li><a href="https://wiki.strongswan.org/issues/990" target="_blank" rel="noopener">unsafe use of malloc after fork</a></li>
+<li><code>glibc</code> 中 <code>malloc</code> 不存在问题<blockquote>
+<p>malloc/malloc.c (malloc_atfork, free_atfork): Remove<br>Remove malloc hooks from fork handler.  They are no longer needed because malloc runs right before fork, and no malloc calls from other fork handlers are not possible anymore.</p>
+</blockquote>
+</li>
+<li><code>uclibc</code> 中 <code>malloc</code> 存在问题</li>
+</ul>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><ul>
+<li><code>fork</code> 后立即调用 <code>execve</code>，两者之间只允许调用 <code>async-signal-safe functions</code></li>
+<li>在程序启动其他线程前 <code>fork</code> 子进程，需要考虑 <code>C++</code> 静态构造函数</li>
+<li>在多线程中避免使用 <code>fork</code>，使用 <code>pthread_create</code> 代替</li>
+</ul>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ul>
+<li><a href="http://timd.cn/fork-safety-and-thread-safety/" target="_blank" rel="noopener">fork-safe和thread-safe简介</a></li>
+<li><a href="https://blog.kghost.info/2013/04/27/fork-multi-thread/" target="_blank" rel="noopener">多线程程序中使用 Fork/Exec</a></li>
+<li><a href="https://www.cnblogs.com/liyuan989/p/4279210.html" target="_blank" rel="noopener">谨慎使用多线程中的fork</a></li>
+<li><a href="https://www.evanjones.ca/fork-is-dangerous.html" target="_blank" rel="noopener">fork() without exec() is dangerous in large programs</a></li>
+<li><a href="https://my.oschina.net/lowkey2046/blog/672450" target="_blank" rel="noopener">多线程程序里不准使用fork</a></li>
+<li><a href="https://docs.oracle.com/cd/E19253-01/819-7051/6n919hpaq/index.html" target="_blank" rel="noopener">进程创建中的 fork 问题</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/malloc/" rel="tag"># malloc</a>
+              <a href="/tags/fork/" rel="tag"># fork</a>
+              <a href="/tags/multithread/" rel="tag"># multithread</a>
+              <a href="/tags/fork-safety/" rel="tag"># fork safety</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2020/11/24/config-git-with-multi-email-address/" rel="next" title="Using Git with Multiple Email Addresses">
+                  <i class="fa fa-chevron-left"></i> Using Git with Multiple Email Addresses
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#概念"><span class="nav-number">1.</span> <span class="nav-text">概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#fork-amp-fork-safety-amp-signal-safety"><span class="nav-number">2.</span> <span class="nav-text">fork &amp; fork safety &amp; signal-safety</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#uclibc-amp-glibc"><span class="nav-number">3.</span> <span class="nav-text">uclibc &amp; glibc</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#解决方案"><span class="nav-number">4.</span> <span class="nav-text">解决方案</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">5.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">468</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">63</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">506</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/breezetemple" title="GitHub &rarr; https://github.com/breezetemple" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">18:42</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

@@ -216,6 +216,318 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/09/10/gcc-attributes/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/09/10/gcc-attributes/" class="post-title-link" itemprop="url">几个有用的gcc attribute</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-09-11 00:00:00" itemprop="dateCreated datePublished" datetime="2015-09-11T00:00:00+08:00">2015-09-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index">
+                    <span itemprop="name">C</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>5k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h2 id="align属性"><a href="#align属性" class="headerlink" title="align属性"></a>align属性</h2><p>align属性不仅可以修饰变量，类型， 还可以修饰函数， 举个例子：</p>
+<h3 id="修饰变量"><a href="#修饰变量" class="headerlink" title="修饰变量"></a>修饰变量</h3><pre><code>int a = 0;
+
+int main(void)
+{
+    printf(&quot;a = %d\n&quot;, a);
+}</code></pre><p>用gdb看下变量a的地址：</p>
+<pre><code>(gdb) p/x &amp;a
+$1 = 0x60087c</code></pre><p>变量a地址是编译器随意生成的， 这个例子碰巧分配到了8字节对齐的位置上。<br>用align属性修饰下：</p>
+<pre><code>int a __attribute__((aligned(8))) = 0;
+
+(gdb) p/x &amp;a
+$1 = 0x600880</code></pre><p>编译器会把变量a生成在8字节对齐的内存地址上。</p>
+<h3 id="修饰类型"><a href="#修饰类型" class="headerlink" title="修饰类型"></a>修饰类型</h3><pre><code>int a __attribute__((aligned(8))) = 0;
+
+struct test {
+    int a;
+} __attribute__((aligned(8)));
+
+struct test aa;
+
+int main(void)
+{
+    printf(&quot;a = %d\n&quot;, a);
+}</code></pre><p>经过align修饰后，struct test数据结构定义的所有变量都会出现在8字节对齐的内存上。</p>
+<pre><code>(gdb) p/x &amp;aa
+$1 = 0x600888</code></pre><h3 id="修饰函数"><a href="#修饰函数" class="headerlink" title="修饰函数"></a>修饰函数</h3><pre><code>void test1(void) __attribute__((aligned(2)));
+
+void  test1(void)
+{
+    printf(&quot;hello, world.\n&quot;);
+}
+
+int main(void)
+{
+    test1();
+}</code></pre><p>经过align修饰后，函数出现在8字节对齐的内存上。</p>
+<pre><code>(gdb) p test1 
+$1 = {&lt;text variable, no debug info&gt;} 0x400538 &lt;test1&gt;</code></pre><h2 id="always-inline属性"><a href="#always-inline属性" class="headerlink" title="always_inline属性"></a>always_inline属性</h2><p>gcc有个inline关键字，可以将一个函数定义为内嵌形式：</p>
+<pre><code>static inline void test2(void);
+
+void test1(void)
+{
+    printf(&quot;hehe.\n&quot;);
+}
+
+void test2(void)
+{
+    asm(&quot;nop&quot;);
+}
+
+void test(void)
+{
+    test1();
+    test2();
+}
+
+int main(void)
+{
+    test();
+}</code></pre><p>按照inline的定义， test在调用test2函数的时候， 会直接将test2函数的代码展开在test函数内部，<br>这样就减少了一次函数调用过程， 加快了代码的执行速度， 用gdb反汇编看下：</p>
+<pre><code>(gdb) disass test
+Dump of assembler code for function test:
+0x00000000004004a8 :    push   %rbp
+0x00000000004004a9 :    mov    %rsp,%rbp
+0x00000000004004ac :    callq  0x400498 
+0x00000000004004b1 :    callq  0x4004b8 
+0x00000000004004b6 :   leaveq
+0x00000000004004b7 :   retq
+End of assembler dump.</code></pre><p>你可以看到，gcc并没有把test2函数展开，明明已经使用inline修饰了。<br>因为虽然用inline做了修饰，但是gcc会根据代码的逻辑来优化到底有没有必要使用inline代码。<br>像这种简单的代码，用inline代码效果不大，因此gcc并没有按照inline要求来生成代码。</p>
+<pre><code>static inline void test2(void) __attribute__((always_inline));
+加入always_inline属性后呢？
+(gdb) disass test
+Dump of assembler code for function test:
+0x00000000004004a8 :    push   %rbp
+0x00000000004004a9 :    mov    %rsp,%rbp
+0x00000000004004ac :    callq  0x400498 
+0x00000000004004b1 :    nop
+0x00000000004004b2 :   leaveq
+0x00000000004004b3 :   retq
+End of assembler dump.</code></pre><p>这次你会看到在调用完test1后， 直接把test2的代码， 也是nop语句加入在了test函数内。</p>
+<h2 id="constructor-amp-destructor"><a href="#constructor-amp-destructor" class="headerlink" title="constructor &amp; destructor"></a>constructor &amp; destructor</h2><p>很犀利的2个属性，用于修饰某个函数，经过constructor属性修饰过的函数，<br>可以在main函数运行前就可以先运行完毕，同理destructor在进程exit之前执行。</p>
+<pre><code>#include&lt;stdio.h&gt;
+
+void test1(void) __attribute__((aligned(8)));
+
+void  test1(void)
+{
+    printf(&quot;hello, world.\n&quot;);
+}
+
+void __attribute__((constructor)) test2(void)
+{
+    printf(&quot;hehe.\n&quot;);
+}
+
+void __attribute__((destructor)) test3(void)
+{
+    printf(&quot;haha.\n&quot;);
+}
+
+int main(void)
+{
+    test1();
+}</code></pre><p>执行输出如下：</p>
+<pre><code>➜  /data/test/1  &gt; ./main 
+hehe.
+hello, world.
+haha.</code></pre><h2 id="fastcall-amp-regparm属性"><a href="#fastcall-amp-regparm属性" class="headerlink" title="fastcall &amp; regparm属性"></a>fastcall &amp; regparm属性</h2><p>在c语言中，通过函数传递参数通常使用堆栈的方式，如：<br>    test(a, b, c);<br>参数从右到左依次压入堆栈c, b, a。<br>函数执行完后，还要把这3个参数从堆栈中弹出来，如果一个函数每秒钟有上万次调用，<br>这将非常耗时，为了加快代码运行速度，gcc扩展了fastcall和regparm2个属性，<br>对于fastcall属性，一个函数的前2个参数分别通过ecx和edx来传递，剩下的则是使用堆栈来传递。<br>对于regparm，它的用法如下regparm(n), 函数的1到n个参数，分别通过eax, edx, ecx来传递，最多就使用3个寄存器，<br>其余参数通过堆栈来传递。注意这2个属性只在x86平台有效。很对编译平台fastcall默认开启。</p>
+<pre><code>int __attribute__((fastcall)) test1(int a, int b)
+{
+    return a + b;
+}
+
+int __attribute__((regparm(2))) test2(int a, int b)
+{
+    return a + b;
+}
+
+int test3(int a, int b)
+{
+    return a + b;
+}
+
+int main(void)
+{
+    test1(1, 2);
+    test2(1, 2);
+    test3(1, 2);
+}
+
+(gdb) disass test1
+Dump of assembler code for function test1:
+0x08048354 :   push   %ebp
+0x08048355 :   mov    %esp,%ebp
+0x08048357 :   sub    $0x8,%esp 在堆栈里先分配了8个字节的空间
+0x0804835a :   mov    %ecx,-0x4(%ebp) 将ecx的值放入第一个变量里
+0x0804835d :   mov    %edx,-0x8(%ebp) 将edx的值放入第二个变量里
+0x08048360 :  mov    -0x8(%ebp),%eax
+0x08048363 :  add    -0x4(%ebp),%eax
+0x08048366 :  leave
+0x08048367 :  ret
+End of assembler dump.
+
+(gdb) disass test2
+Dump of assembler code for function test2:
+0x08048368 :   push   %ebp
+0x08048369 :   mov    %esp,%ebp
+0x0804836b :   sub    $0x8,%esp
+0x0804836e :   mov    %eax,-0x4(%ebp)
+0x08048371 :   mov    %edx,-0x8(%ebp)
+0x08048374 :  mov    -0x8(%ebp),%eax
+0x08048377 :  add    -0x4(%ebp),%eax
+0x0804837a :  leave
+0x0804837b :  ret
+End of assembler dump.
+
+(gdb) disass test3
+Dump of assembler code for function test3:
+0x0804837c :   push   %ebp
+0x0804837d :   mov    %esp,%ebp
+0x0804837f :   mov    0xc(%ebp),%eax 堆栈形式来传递参数，0×c(%ebp)保存第二个参数
+0x08048382 :   add    0x8(%ebp),%eax 堆栈形式来传递参数，0×8(%ebp)保存第一个参数
+0x08048385 :   pop    %ebp
+0x08048386 :  ret
+End of assembler dump.</code></pre><h2 id="packed属性"><a href="#packed属性" class="headerlink" title="packed属性"></a>packed属性</h2><p>用于修饰struct, union, enum数据结构，看如下的例子：</p>
+<pre><code>struct test {
+    char a;
+    int b;
+};
+
+struct test1 {
+    char a;
+    int b;
+}__attribute__((packed));
+
+int main(void)
+{
+    printf(&quot;%d, %d\n&quot;, sizeof(struct test), sizeof(struct test1));
+}</code></pre><p>struct test结构，理论来说一共有1+4=5字节的大小，但是gcc默认编译出来的大小是8，也就是说char是按照4字节来分配空间的。<br>加上packed修饰后，就会按照实际的类型大小来计算。</p>
+<pre><code>➜  /data/test/1  &gt; ./main 
+8, 5</code></pre><h2 id="section属性"><a href="#section属性" class="headerlink" title="section属性"></a>section属性</h2><p>gcc编译后的二进制文件为elf格式，代码中的函数部分会默认的链接到elf文件的text section中，<br>变量则会链接到bss和data section中。如果想把代码或变量放到特定的section中，就可以使用section属性来修饰。</p>
+<pre><code>int __attribute__((section(&quot;TEST&quot;))) test1(int a, int b)
+{
+    return a + b;
+}
+
+int test2(int a, int b)
+{
+    return a + b;
+}
+
+int main(void)
+{
+    test1(1, 2);
+    test2(1, 2);
+}</code></pre><p>使用readelf来观察下test二进制格式。</p>
+<pre><code>➜  /data/test/1  &gt; readelf -S main
+[13] .text             PROGBITS         0000000000400400  00000400
+00000000000001a2  0000000000000000  AX       0     0     16
+[14] TEST              PROGBITS         00000000004005a2  000005a2
+0000000000000014  0000000000000000  AX       0     0     1</code></pre><p>文件多出了一个TEST section，它的起始地址为0x4005a2, 大小为0x14， 它的地址范围在 0x4005a2 – 0x4005b6。<br>text section的起始地址为0x400400, 大小为0x1a2， 它的地址范围在0x400400 – 0x4005a2。</p>
+<p>在来看下test1, test2符号表的地址：</p>
+<pre><code>➜  /data/test/1  &gt; readelf -s main
+57: 00000000004005a2    20 FUNC    GLOBAL DEFAULT   14 test1
+68: 00000000004004f6    20 FUNC    GLOBAL DEFAULT   13 test2</code></pre><p>可以看到test2确实被链接在text section中， 而test1链接在TEST section中。</p>
+<h2 id="PS"><a href="#PS" class="headerlink" title="PS"></a>PS</h2><p>更多关于gcc attribute的介绍请看<a href="http://gcc.gnu.org/onlinedocs/gcc-4.3.2//gcc/Variable-Attributes.html#Variable-Attributes" target="_blank" rel="noopener">gcc手册</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/08/19/analysis-tools/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +559,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -760,146 +1072,6 @@ $ scan-view-3.4 /tmp/scan-build-2016-06-23-125458-27549-1</code></pre>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/06/Linux-OOM-Killer/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/07/06/Linux-OOM-Killer/" class="post-title-link" itemprop="url">Linux下malloc函数和OOM Killer</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-07-07 00:00:00" itemprop="dateCreated datePublished" datetime="2015-07-07T00:00:00+08:00">2015-07-07</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>3.1k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>3 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<h3 id="Malloc函数和OOM-Killer"><a href="#Malloc函数和OOM-Killer" class="headerlink" title="Malloc函数和OOM Killer"></a><strong>Malloc函数和OOM Killer</strong></h3><p>Linux下malloc函数主要用来在用户空间从heap申请内存，申请成功返回指向所分配内存的指针，申请失败返回NULL。<br><strong>默认情况下，Linux内核使用“乐观的”分配内存策略</strong>，首先粗略估计系统可使用的内存数，然后分配内存，<br>但是在使用的时候才真正把这块分配的内存给你。<br>这样一来，即使用malloc申请内存没有返回NULL，你也不一定能完全使用这块内存，<br>特别是在一次或连续多次申请很多内存的时候。</p>
-<p>如果一直连续用malloc申请内存，而不真正使用，所申请的内存总数可以超过真正可以使用的内存数。<br>但是当真正使用这块内存，比如用memset或bzero函数一次性把所申请到的大块内存“使用掉”，<br>Linux系统就会Out Of Memory，这个时候OOM Killer就会kill掉用户空间的其他进程来腾出更多可使用内存。</p>
-<p>OOM Killer根据OOM score来决定kill哪个进程，OOM score可以看/proc/<PID>/oom_score，<br>score由badness函数计算得出，根据进程运行时间长短，进程优先级，进程所使用的内存数等等。<br>可以通过/proc/<PID>/oom_adj来干预计算socre，这个值的取值范围是-17～15，<br>如果是-17该进程就永远不会被kill（这个可能也和内核版本有关，不见得所有内核版本都支持，得实际试试）。</p>
-<p>“默认情况”Linux是这种做的，“默认情况”是指/proc/sys/vm/overcommit_memory为0的时候。<br>这个参数也可以调整，如果为1表示“来着不拒”，只要你malloc过来申请，我啥都不做，立马给你分配内存，<br>这样的话性能就会有大幅度的提高；<br>如果为2表示Linux会精确计算所有可使用的内存和所申请的内存，如果所申请的超过的可使用的内存数就返回NULL。<br>可使用的内存值计算方法，虚拟内存（swap）+ /proc/sys/vm/overcommit_memory（百分比） × 物理内存。<br>/proc/sys/vm/overcommit_memory默认值为50,计算起来就是50%的物理内存数。</p>
-<p>Linux自身内核会占一部分内存，还有buffer/cache所占用的内存，<br>所以实际上能被malloc申请后使用的内存并非物理内存大小，<br>demsg的输出里面包含了相关信息（如果看不到，可能是被别的信息冲掉了，重启系统，在系统起来后马上看）：</p>
-<pre><code>Memory: 2071220k/2097152k available (2122k kernel code, 24584k reserved, 884k data, 228k init, 1179584k highmem)</code></pre><h3 id="关于OOM-Killer的proc文件系统"><a href="#关于OOM-Killer的proc文件系统" class="headerlink" title="关于OOM Killer的proc文件系统"></a><strong>关于OOM Killer的proc文件系统</strong></h3><p>下面开始介绍与OOM Killer相关的proc文件系统。</p>
-<h4 id="proc-PID-oom-adj"><a href="#proc-PID-oom-adj" class="headerlink" title="/proc/PID/oom_adj"></a><strong>/proc/PID/oom_adj</strong></h4><p>为/proc/PID/oom_adj设置值就可以调整得分。<br>调整值的范围为–16~15。正的值容易被OOM Killer选定。负值可能性较低。<br>例如，当指定3时，得分就变为23倍；当指定–5时，得分就变为1/25。</p>
-<p>“–17”是一个特殊的值。如果设置为–17，就会禁止OOM Killer发出的信号（从Linux 2.6.12开始支持设置–17）。</p>
-<p>在OOM Killer运行的情况下，为了实现远程登录而想要将sshd排除在对象外时，可以执行下列命令。</p>
-<pre><code># cat /proc/&#39;cat /var/run/sshd.pid&#39;/oom_score
-15
-# echo -17 &gt;  /proc/&#39;cat /var/run/sshd.pid&#39;/oom_adj
-# tail /proc/&#39;cat /var/run/sshd.pid&#39;/oom_*
-==&gt; /proc/2278/oom_adj &lt;==
--17
-==&gt; /proc/2278/oom_score &lt;==
-0                               /*得分变成0*/</code></pre><p>从Linux 2.6.18开始可以使用/proc/PID/oom_adj。内容记载在Documentation /filesystems/proc.txt中。</p>
-<h4 id="proc-sys-vm-panic-on-oom"><a href="#proc-sys-vm-panic-on-oom" class="headerlink" title="/proc/sys/vm/panic_on_oom"></a><strong>/proc/sys/vm/panic_on_oom</strong></h4><p>将/proc/sys/vm/panic_on_oom设置为1时，在OOM Killer运行时可以不发送进程信号，而是使内核产生重大故障。</p>
-<pre><code># echo 1 &gt; /proc/sys/vm/panic_on_oom</code></pre><h4 id="proc-sys-vm-oom-kill-allocating-task"><a href="#proc-sys-vm-oom-kill-allocating-task" class="headerlink" title="/proc/sys/vm/oom_kill_allocating_task"></a><strong>/proc/sys/vm/oom_kill_allocating_task</strong></h4><p>从Linux 2.6.24开始proc文件系统就有oom_kill_allocating_task。<br>如果对此设置除0以外的值，则促使OOM Killer运行的进程自身将接收信号。此处省略对所有进程的得分计算过程。</p>
-<pre><code># echo 1 &gt; /proc/sys/vm/oom_kill_allocating_task</code></pre><p>这样就不需要参照所有进程，但是也不会考虑进程的优先级和root权限等，只发送信号。</p>
-<h4 id="proc-sys-vm-oom-dump-tasks"><a href="#proc-sys-vm-oom-dump-tasks" class="headerlink" title="/proc/sys/vm/oom_dump_tasks"></a><strong>/proc/sys/vm/oom_dump_tasks</strong></h4><p>从Linux 2.6.25开始，将oom_dump_tasks设置为除0以外的值时，在OOM Killer运行时的输出中会增加进程的列表信息。</p>
-<pre><code># echo 1 &gt; /proc/sys/vm/oom_dump_tasks</code></pre><p>列表信息显示如下，可以使用dmesg或syslog来确认。</p>
-<pre><code>[ pid ]   uid  tgid total_vm      rss cpu oom_adj name
-[    1]     0     1     2580        1   0       0 init
-[  500]     0   500     3231        0   1     -17 udevd
-[ 2736]     0  2736     1470        1   0       0 syslogd
-[ 2741]     0  2741      944        0   0       0 klogd
-[ 2765]    81  2765     5307        0   0       0 dbus-daemon
-[ 2861]     0  2861      944        0   0       0 acpid
-...
-[ 3320]     0  3320   525842   241215   1       0 stress</code></pre><h4 id="proc-PID-oom-score-adj"><a href="#proc-PID-oom-score-adj" class="headerlink" title="/proc/PID/oom_score_adj"></a><strong>/proc/PID/oom_score_adj</strong></h4><p>从Linux 2.6.36开始都安装了/proc/<PID>/oom_score_adj，<br>此后将替换为/proc/PID/oom_adj。<br>即使当前是对/proc/PID/oom_adj进行的设置，在内核内部进行变换后的值也是针对/proc/PID/oom_score_adj设置的。</p>
-<p>可以设置–1000~1000之间的值。设置为–1000时，该进程就被排除在OOM Killer强制终止的对象外。</p>
-<p>在内核2.6.36以后的版本中写入oom_adj，只会输出一次如下的信息。</p>
-<pre><code># dmesg
-.....
-udevd (60): /proc/60/oom_adj is deprecated, please use /proc/60/oom_score_adj instead.</code></pre>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/06/Linux-malloc/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -931,7 +1103,7 @@ udevd (60): /proc/60/oom_adj is deprecated, please use /proc/60/oom_score_adj in
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1050,6 +1222,146 @@ $(document).ready(function(){
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/06/Linux-OOM-Killer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/07/06/Linux-OOM-Killer/" class="post-title-link" itemprop="url">Linux下malloc函数和OOM Killer</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-07-07 00:00:00" itemprop="dateCreated datePublished" datetime="2015-07-07T00:00:00+08:00">2015-07-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.1k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h3 id="Malloc函数和OOM-Killer"><a href="#Malloc函数和OOM-Killer" class="headerlink" title="Malloc函数和OOM Killer"></a><strong>Malloc函数和OOM Killer</strong></h3><p>Linux下malloc函数主要用来在用户空间从heap申请内存，申请成功返回指向所分配内存的指针，申请失败返回NULL。<br><strong>默认情况下，Linux内核使用“乐观的”分配内存策略</strong>，首先粗略估计系统可使用的内存数，然后分配内存，<br>但是在使用的时候才真正把这块分配的内存给你。<br>这样一来，即使用malloc申请内存没有返回NULL，你也不一定能完全使用这块内存，<br>特别是在一次或连续多次申请很多内存的时候。</p>
+<p>如果一直连续用malloc申请内存，而不真正使用，所申请的内存总数可以超过真正可以使用的内存数。<br>但是当真正使用这块内存，比如用memset或bzero函数一次性把所申请到的大块内存“使用掉”，<br>Linux系统就会Out Of Memory，这个时候OOM Killer就会kill掉用户空间的其他进程来腾出更多可使用内存。</p>
+<p>OOM Killer根据OOM score来决定kill哪个进程，OOM score可以看/proc/<PID>/oom_score，<br>score由badness函数计算得出，根据进程运行时间长短，进程优先级，进程所使用的内存数等等。<br>可以通过/proc/<PID>/oom_adj来干预计算socre，这个值的取值范围是-17～15，<br>如果是-17该进程就永远不会被kill（这个可能也和内核版本有关，不见得所有内核版本都支持，得实际试试）。</p>
+<p>“默认情况”Linux是这种做的，“默认情况”是指/proc/sys/vm/overcommit_memory为0的时候。<br>这个参数也可以调整，如果为1表示“来着不拒”，只要你malloc过来申请，我啥都不做，立马给你分配内存，<br>这样的话性能就会有大幅度的提高；<br>如果为2表示Linux会精确计算所有可使用的内存和所申请的内存，如果所申请的超过的可使用的内存数就返回NULL。<br>可使用的内存值计算方法，虚拟内存（swap）+ /proc/sys/vm/overcommit_memory（百分比） × 物理内存。<br>/proc/sys/vm/overcommit_memory默认值为50,计算起来就是50%的物理内存数。</p>
+<p>Linux自身内核会占一部分内存，还有buffer/cache所占用的内存，<br>所以实际上能被malloc申请后使用的内存并非物理内存大小，<br>demsg的输出里面包含了相关信息（如果看不到，可能是被别的信息冲掉了，重启系统，在系统起来后马上看）：</p>
+<pre><code>Memory: 2071220k/2097152k available (2122k kernel code, 24584k reserved, 884k data, 228k init, 1179584k highmem)</code></pre><h3 id="关于OOM-Killer的proc文件系统"><a href="#关于OOM-Killer的proc文件系统" class="headerlink" title="关于OOM Killer的proc文件系统"></a><strong>关于OOM Killer的proc文件系统</strong></h3><p>下面开始介绍与OOM Killer相关的proc文件系统。</p>
+<h4 id="proc-PID-oom-adj"><a href="#proc-PID-oom-adj" class="headerlink" title="/proc/PID/oom_adj"></a><strong>/proc/PID/oom_adj</strong></h4><p>为/proc/PID/oom_adj设置值就可以调整得分。<br>调整值的范围为–16~15。正的值容易被OOM Killer选定。负值可能性较低。<br>例如，当指定3时，得分就变为23倍；当指定–5时，得分就变为1/25。</p>
+<p>“–17”是一个特殊的值。如果设置为–17，就会禁止OOM Killer发出的信号（从Linux 2.6.12开始支持设置–17）。</p>
+<p>在OOM Killer运行的情况下，为了实现远程登录而想要将sshd排除在对象外时，可以执行下列命令。</p>
+<pre><code># cat /proc/&#39;cat /var/run/sshd.pid&#39;/oom_score
+15
+# echo -17 &gt;  /proc/&#39;cat /var/run/sshd.pid&#39;/oom_adj
+# tail /proc/&#39;cat /var/run/sshd.pid&#39;/oom_*
+==&gt; /proc/2278/oom_adj &lt;==
+-17
+==&gt; /proc/2278/oom_score &lt;==
+0                               /*得分变成0*/</code></pre><p>从Linux 2.6.18开始可以使用/proc/PID/oom_adj。内容记载在Documentation /filesystems/proc.txt中。</p>
+<h4 id="proc-sys-vm-panic-on-oom"><a href="#proc-sys-vm-panic-on-oom" class="headerlink" title="/proc/sys/vm/panic_on_oom"></a><strong>/proc/sys/vm/panic_on_oom</strong></h4><p>将/proc/sys/vm/panic_on_oom设置为1时，在OOM Killer运行时可以不发送进程信号，而是使内核产生重大故障。</p>
+<pre><code># echo 1 &gt; /proc/sys/vm/panic_on_oom</code></pre><h4 id="proc-sys-vm-oom-kill-allocating-task"><a href="#proc-sys-vm-oom-kill-allocating-task" class="headerlink" title="/proc/sys/vm/oom_kill_allocating_task"></a><strong>/proc/sys/vm/oom_kill_allocating_task</strong></h4><p>从Linux 2.6.24开始proc文件系统就有oom_kill_allocating_task。<br>如果对此设置除0以外的值，则促使OOM Killer运行的进程自身将接收信号。此处省略对所有进程的得分计算过程。</p>
+<pre><code># echo 1 &gt; /proc/sys/vm/oom_kill_allocating_task</code></pre><p>这样就不需要参照所有进程，但是也不会考虑进程的优先级和root权限等，只发送信号。</p>
+<h4 id="proc-sys-vm-oom-dump-tasks"><a href="#proc-sys-vm-oom-dump-tasks" class="headerlink" title="/proc/sys/vm/oom_dump_tasks"></a><strong>/proc/sys/vm/oom_dump_tasks</strong></h4><p>从Linux 2.6.25开始，将oom_dump_tasks设置为除0以外的值时，在OOM Killer运行时的输出中会增加进程的列表信息。</p>
+<pre><code># echo 1 &gt; /proc/sys/vm/oom_dump_tasks</code></pre><p>列表信息显示如下，可以使用dmesg或syslog来确认。</p>
+<pre><code>[ pid ]   uid  tgid total_vm      rss cpu oom_adj name
+[    1]     0     1     2580        1   0       0 init
+[  500]     0   500     3231        0   1     -17 udevd
+[ 2736]     0  2736     1470        1   0       0 syslogd
+[ 2741]     0  2741      944        0   0       0 klogd
+[ 2765]    81  2765     5307        0   0       0 dbus-daemon
+[ 2861]     0  2861      944        0   0       0 acpid
+...
+[ 3320]     0  3320   525842   241215   1       0 stress</code></pre><h4 id="proc-PID-oom-score-adj"><a href="#proc-PID-oom-score-adj" class="headerlink" title="/proc/PID/oom_score_adj"></a><strong>/proc/PID/oom_score_adj</strong></h4><p>从Linux 2.6.36开始都安装了/proc/<PID>/oom_score_adj，<br>此后将替换为/proc/PID/oom_adj。<br>即使当前是对/proc/PID/oom_adj进行的设置，在内核内部进行变换后的值也是针对/proc/PID/oom_score_adj设置的。</p>
+<p>可以设置–1000~1000之间的值。设置为–1000时，该进程就被排除在OOM Killer强制终止的对象外。</p>
+<p>在内核2.6.36以后的版本中写入oom_adj，只会输出一次如下的信息。</p>
+<pre><code># dmesg
+.....
+udevd (60): /proc/60/oom_adj is deprecated, please use /proc/60/oom_score_adj instead.</code></pre>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/01/grep-special/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1081,7 +1393,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1172,7 +1484,7 @@ grep XXYYZZ * -Rn --include=&#39;*.[ch]&#39;</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1288,7 +1600,7 @@ doxygen -g</code></pre><h3 id="生成函数调用图"><a href="#生成函数调�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1398,7 +1710,7 @@ doxygen -g</code></pre><h3 id="生成函数调用图"><a href="#生成函数调�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1501,7 +1813,7 @@ libelf-freebsd-dev - Development files for libelf (FreeBSD version)
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1604,7 +1916,7 @@ libelf-freebsd-dev - Development files for libelf (FreeBSD version)
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1787,7 +2099,7 @@ text    data     bss     dec     hex filename
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1922,7 +2234,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2205,7 +2517,7 @@ while(cyg_thread_get_next(&amp;thread, &amp;id))
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2317,7 +2629,7 @@ $ luarocks search **</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2425,113 +2737,6 @@ FIND_PROGRAM</code></pre><p>注意 CMAKE_MODULE_PATH</p>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/03/04/git-push/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/03/04/git-push/" class="post-title-link" itemprop="url">github push避免输入用户名和密码</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-03-05 00:00:00" itemprop="dateCreated datePublished" datetime="2015-03-05T00:00:00+08:00">2015-03-05</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/" itemprop="url" rel="index">
-                    <span itemprop="name">Tools</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/GitHub/" itemprop="url" rel="index">
-                    <span itemprop="name">GitHub</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>601</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>github上传代码时，每次都需要输入用户名和密码，原因是使用了https方式进行push：</p>
-<pre><code>$ git clone https://github.com/breezetemple/breezetemple.github.com.git</code></pre><p>使用以下命令更换为使用ssh方式：</p>
-<pre><code>$ git remote -v
-origin  https://github.com/breezetemple/breezetemple.github.com.git (fetch)
-origin  https://github.com/breezetemple/breezetemple.github.com.git (push)
-$ git remote rm origin
-$ git remote add origin git@github.com:breezetemple/breezetemple.github.com.git
-$ git push origin master 
-Everything up-to-date</code></pre><p>或者使用如下命令初始化：</p>
-<pre><code>git clone git@github.com:breezetemple/breezetemple.github.com.git</code></pre><p>另外，需要将ssh pub key上传到github：</p>
-<pre><code>$ ls ~/.ssh/id_rsa.pub                
-/home/yanwzh/.ssh/id_rsa.pub
-$ xclip -sel clip &lt; ~/.ssh/id_rsa.pub</code></pre>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/03/04/cmake-02/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2563,7 +2768,7 @@ $ xclip -sel clip &lt; ~/.ssh/id_rsa.pub</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-12-14 15:00:00" itemprop="dateModified" datetime="2020-12-14T15:00:00+08:00">2020-12-14</time>
+                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2820,20 +3025,20 @@ INSTALL(FILES demo.hpp http.hpp DESTINATION include)</code></pre><h2 id="Ref"><a
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">467</span>
+          <span class="site-state-item-count">468</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">62</span>
+        <span class="site-state-item-count">63</span>
         <span class="site-state-item-name">categories</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">504</span>
+        <span class="site-state-item-count">506</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -2877,7 +3082,7 @@ INSTALL(FILES demo.hpp http.hpp DESTINATION include)</code></pre><h2 id="Ref"><a
 <div class="copyright">
   
   &copy; 2014 – 
-  <span itemprop="copyrightYear">2020</span>
+  <span itemprop="copyrightYear">2021</span>
   <span class="with-love">
     <i class="fa fa-user"></i>
   </span>
@@ -2893,7 +3098,7 @@ INSTALL(FILES demo.hpp http.hpp DESTINATION include)</code></pre><h2 id="Ref"><a
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:40</span>
+    <span title="Reading time total">18:42</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
   </div>
