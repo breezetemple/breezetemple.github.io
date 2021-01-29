@@ -216,7 +216,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/03/04/git-push/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/03/04/cmake-02/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -230,7 +230,7 @@
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/2015/03/04/git-push/" class="post-title-link" itemprop="url">github push避免输入用户名和密码</a>
+            <a href="/2015/03/04/cmake-02/" class="post-title-link" itemprop="url">cmake使用</a>
         </h1>
 
         <div class="post-meta">
@@ -247,7 +247,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
+                <time title="Modified: 2021-01-29 13:31:06" itemprop="dateModified" datetime="2021-01-29T13:31:06+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -255,14 +255,8 @@
               </span>
               <span class="post-meta-item-text">In</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/" itemprop="url" rel="index">
-                    <span itemprop="name">Tools</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/GitHub/" itemprop="url" rel="index">
-                    <span itemprop="name">GitHub</span>
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
                   </a>
                 </span>
             </span>
@@ -273,14 +267,14 @@
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>601</span>
+              <span>5.5k</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="fa fa-clock-o"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
+              <span>5 mins.</span>
             </span>
 
         </div>
@@ -292,19 +286,160 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>github上传代码时，每次都需要输入用户名和密码，原因是使用了https方式进行push：</p>
-<pre><code>$ git clone https://github.com/breezetemple/breezetemple.github.com.git</code></pre><p>使用以下命令更换为使用ssh方式：</p>
-<pre><code>$ git remote -v
-origin  https://github.com/breezetemple/breezetemple.github.com.git (fetch)
-origin  https://github.com/breezetemple/breezetemple.github.com.git (push)
-$ git remote rm origin
-$ git remote add origin git@github.com:breezetemple/breezetemple.github.com.git
-$ git push origin master 
-Everything up-to-date</code></pre><p>或者使用如下命令初始化：</p>
-<pre><code>git clone git@github.com:breezetemple/breezetemple.github.com.git</code></pre><p>另外，需要将ssh pub key上传到github：</p>
-<pre><code>$ ls ~/.ssh/id_rsa.pub                
-/home/yanwzh/.ssh/id_rsa.pub
-$ xclip -sel clip &lt; ~/.ssh/id_rsa.pub</code></pre>
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<h2 id="A-Basic-Starting-Point-Step1"><a href="#A-Basic-Starting-Point-Step1" class="headerlink" title="A Basic Starting Point (Step1)"></a>A Basic Starting Point (Step1)</h2><p>CMakeLists.txt文件：</p>
+<pre><code>cmake_minimum_required (VERSION 2.6)
+project (Tutorial)
+add_executable(Tutorial tutorial.cxx)</code></pre><p>cmake_minimum_required：是判断需要cmake的最小版本号。所有程序都需要这个。</p>
+<p>project:用于指定工程的名字。</p>
+<p>add_executable命令用于指定程序从哪些源文件生成。此例中 程序 Tutorial则是tutorial.cxx 源文件生成。</p>
+<p><strong>添加版本号和配置头文件：</strong></p>
+<pre><code>cmake_minimum_required (VERSION 2.6)
+project (Tutorial)
+# The version number.
+set (Tutorial_VERSION_MAJOR 1)
+set (Tutorial_VERSION_MINOR 0)
+
+# configure a header file to pass some of the CMake settings
+# to the source code
+configure_file (
+        &quot;${PROJECT_SOURCE_DIR}/TutorialConfig.h.in&quot;
+        &quot;${PROJECT_BINARY_DIR}/TutorialConfig.h&quot;
+        )
+
+# add the binary tree to the search path for include files
+# so that we will find TutorialConfig.h
+include_directories(&quot;${PROJECT_BINARY_DIR}&quot;)
+
+# add the executable
+add_executable(Tutorial tutorial.cxx)</code></pre><p>因为配置文件会被生成到二进制目录中，所以我们需要把二进制目录加入到头文件搜索路径中<br>(include），然后我们在源码目录中建立如下 ‘TutorialConfig.h.in’：</p>
+<pre><code>    // the configured options and settings for Tutorial
+    #define Tutorial_VERSION_MAJOR @Tutorial_VERSION_MAJOR@
+    #define Tutorial_VERSION_MINOR @Tutorial_VERSION_MINOR@</code></pre><p>执行cmake时，配置文件头文件中@Tutorial_VERSION_MAJOR@ 和 @Tutorial_VERSION_MINOR@的值将会被<br>CMakeLists.txt文件中指定的值所替换。然后我们可以在源文件tutorial.cxx引用这个所定义的宏：</p>
+<pre><code>fprintf(stdout,&quot;%s Version %d.%d\n&quot;,
+    argv[0],
+    Tutorial_VERSION_MAJOR,
+    Tutorial_VERSION_MINOR);
+fprintf(stdout,&quot;Usage: %s number\n&quot;,argv[0]);</code></pre><h2 id="Adding-a-Library-Step-2"><a href="#Adding-a-Library-Step-2" class="headerlink" title="Adding a Library (Step 2)"></a>Adding a Library (Step 2)</h2><p>添加一个库到工程中：</p>
+<pre><code>add_library(MathFunctions mysqrt.cxx)</code></pre><p>将mysqrt.cxx源文件打包为库文件MathFunctions，<br>使用add_subdirectory命令指示这个目录需要进行编译。<br>用include_directories命令添加MathFunctions目录，<br>是为了能让编译程序找到 mysqrt.h 头文件。<br>然后用target_link_libraries命令把生成的库链接到执行文件中：</p>
+<pre><code>#增加头文件搜索目录
+include_directories (&quot;${PROJECT_SOURCE_DIR}/MathFunctions&quot;)
+#增加子目录
+add_subdirectory (MathFunctions) 
+# 生成执行文件
+add_executable (Tutorial tutorial.cxx)
+#链接库
+target_link_libraries (Tutorial MathFunctions)</code></pre><h2 id="Installing-and-Testing-Step-3"><a href="#Installing-and-Testing-Step-3" class="headerlink" title="Installing and Testing (Step 3)"></a>Installing and Testing (Step 3)</h2><p>在工程中增加一个安装规则和测试支持。我们需要把库安装到bin目录下，把头文件安装到include下：</p>
+<pre><code>install (TARGETS MathFunctions DESTINATION bin)
+install (FILES MathFunctions.h DESTINATION include)</code></pre><p>对于这个向导程序，需要在顶层CMakeList.txt文件中增加下面行，安装执行文件和头文件。</p>
+<pre><code># 安装程序 Tutorial到安装目录的bin子目录中
+install (TARGETS Tutorial DESTINATION bin)
+#安装头文件到安装目录中的include目录中
+install (FILES &quot;${PROJECT_BINARY_DIR}/TutorialConfig.h&quot; DESTINATION include)</code></pre><p>CMake用变量CMAKE_INSTALL_PREFIX决定安装的根目录。</p>
+<h2 id="常用cmake命令"><a href="#常用cmake命令" class="headerlink" title="常用cmake命令"></a>常用cmake命令</h2><h3 id="检查CMake版本"><a href="#检查CMake版本" class="headerlink" title="检查CMake版本"></a>检查CMake版本</h3><p>cmake版本至少为2.8</p>
+<pre><code>cmake_minimum_required(VERSION 2.8)</code></pre><h3 id="定义工程名称"><a href="#定义工程名称" class="headerlink" title="定义工程名称"></a>定义工程名称</h3><p>工程名为helloworld</p>
+<pre><code>project(helloworld)</code></pre><h3 id="查找源文件"><a href="#查找源文件" class="headerlink" title="查找源文件"></a>查找源文件</h3><p>查找当前目录下所有的源文件并保存到SRC_LIST变量里</p>
+<pre><code>aux_source_directory(. SRC_LIST)</code></pre><p>查找src目录下所有以cmake开头的文件并保存到CMAKE_FILES变量里</p>
+<pre><code>file(GLOB CMAKE_FILES &quot;src/cmake*&quot;)</code></pre><p>file命令同时支持目录递归查找</p>
+<pre><code>file(GLOB_RECURSE CMAKE_FILES &quot;src/cmake*&quot;)</code></pre><p>按照官方文档的说法，不建议使用file的GLOB指令来收集工程的源文件，原文解释如下：</p>
+<p>We do not recommend using GLOB to collect a list of source files from your source tree.<br>If no CMakeLists.txt file changes when a source is added or removed<br>then the generated build system cannot know when to ask CMake to regenerate.<br>大意就是，GLOB收集的源文件增加或删除，而CMakeLists.txt没有发生修改时，CMake不能识别这些文件。<br>其实，当CMakeLists.txt使用aux_source_directory和file glob查找工程源文件时，如果添加或删除源文件，都需要重新运行CMake。</p>
+<h3 id="set命令"><a href="#set命令" class="headerlink" title="set命令"></a>set命令</h3><p>经常配合set命令使用的CMake变量，使用set(variable value)进行设置。</p>
+<ul>
+<li>CMAKE_VERBOSE_MAKEFILE on 输出详细的编译和链接信息</li>
+<li>CMAKE_CXX_COMPILER “g++” c++编译器</li>
+<li>CMAKE_CXX_FLAGS “-Wall” c++编译器参数<ul>
+<li>CMAKE_CXX_FLAGS_DEBUG debug版本对应的编译器参数</li>
+<li>CMAKE_CXX_FLAGS_RELEASE release版本对应的编译器参数</li>
+</ul>
+</li>
+<li>EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin 可执行文件的输出目录</li>
+<li>LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib 链接库的输出目录</li>
+</ul>
+<p>set命令还可以设置自定义变量，比如</p>
+<pre><code>set(MY_GREETINGS &quot;hello world&quot;)</code></pre><h3 id="包含目录和链接目录"><a href="#包含目录和链接目录" class="headerlink" title="包含目录和链接目录"></a>包含目录和链接目录</h3><p>将./include和./abc加入包含目录列表</p>
+<pre><code>include_directories(
+        ./include
+        ./abc
+        )</code></pre><p>将./lib加入编译器链接阶段的搜索目录列表</p>
+<pre><code>link_directories(
+        ./lib
+        )</code></pre><h3 id="添加生成目标"><a href="#添加生成目标" class="headerlink" title="添加生成目标"></a>添加生成目标</h3><p>使用SRC_LIST源文件列表里的文件生成一个可执行文件hello</p>
+<pre><code>add_executable(hello ${SRC_LIST})</code></pre><p>使用SRC_LIST源文件列表里的文件生成一个静态链接库libhello.a</p>
+<pre><code>add_library(hello STATIC ${SRC_LIST})</code></pre><p>使用SRC_LIST源文件列表里的文件生成一个动态链接库libhello.so</p>
+<pre><code>add_library(hello SHARED ${SRC_LIST})</code></pre><p>将若干库文件链接到生成的目标hello(libhello.a或libhello.so)</p>
+<pre><code>target_link_libraries(hello A B.a C.so)</code></pre><p><strong>需要注意的是，target_link_libraries里库文件的顺序符合gcc链接顺序的规则，<br>即被依赖的库放在依赖它的库的后面，比如上面的命令里，<br>libA.so可能依赖于libB.a和libC.so，<br>如果顺序有错，链接时会报错。<br>还有一点，B.a会告诉CMake优先使用静态链接库libB.a，<br>C.so会告诉CMake优先使用动态链接库libC.so，也可直接使用库文件的相对路径或绝对路径。</strong></p>
+<h3 id="自定义链接选项"><a href="#自定义链接选项" class="headerlink" title="自定义链接选项"></a>自定义链接选项</h3><p>有时候需要自定义链接选项，比如需要单独对B.a使用–whole-archive选项，可以</p>
+<pre><code>target_link_libraryies(hello A -Wl,--whole-archive B.a -Wl,--no-whole-archive C.so)</code></pre><h3 id="自定义Makefile目标"><a href="#自定义Makefile目标" class="headerlink" title="自定义Makefile目标"></a>自定义Makefile目标</h3><p>运行下面的whatever目标make whatever，会先创建一个目录./hello，然后将当前目录的a.txt拷贝到新建的./hello目录里。</p>
+<pre><code>add_custom_command(
+        OUTPUT ./hello/a.txt
+        COMMAND mkdir -p ./hello 
+        cp a.txt ./hello
+        DEPENDS a.txt
+        )
+add_custom_target(whatever DEPENDS ./hello/a.txt)</code></pre><p>自定义目标还可以使用add_dependencies命令加入到其他目标的依赖列表里，当执行make demo时，whatever目标会被自动调用。</p>
+<pre><code>add_executable(demo ${SRC_LIST})
+add_dependencies(demo whatever)</code></pre><h3 id="其他常用命令"><a href="#其他常用命令" class="headerlink" title="其他常用命令"></a>其他常用命令</h3><p>包含其他目录的CMakeLists.txt</p>
+<pre><code>include(/path/to/another/CMakeLists.txt)</code></pre><p>if命令</p>
+<pre><code>if(${MY_BUILD_TYPE} MATCHES &quot;debug&quot;)
+    ...
+else()
+    ...
+endif()</code></pre><p>list命令</p>
+<pre><code>list(APPEND SRC_LIST 
+        a.cpp
+        b.cpp
+    )
+
+list(REMOVE_ITEM SRC_LIST
+        a.cpp
+    )</code></pre><h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><pre><code>CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+PROJECT(demo)
+
+# add include dir
+INCLUDE_DIRECTORIES(.)
+INCLUDE_DIRECTORIES(lua/src)
+
+# add source dir
+AUX_SOURCE_DIRECTORY(lua/src/           SRCS)
+AUX_SOURCE_DIRECTORY(lua/lua-cjson-xml/ SRCS)
+
+ADD_LIBRARY(demo ${SRCS})
+
+SET(CMAKE_BUILD_TYPE &quot;Release&quot;)
+
+ADD_DEFINITIONS(-D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -Wno-deprecated-declarations )
+
+SET(CMAKE_EXE_LINKER_FLAGS &quot;--static&quot;)
+ADD_EXECUTABLE(test main.cpp)
+TARGET_LINK_LIBRARIES(A demo jansson dl pthread curl z)
+
+INSTALL(FILES demo.hpp http.hpp DESTINATION include)</code></pre><h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><p>引用文档：</p>
+<ol>
+<li><a href="http://www.cmake.org/cmake/help/v3.0/manual/cmake-language.7.html#syntax" target="_blank" rel="noopener">cmake syntax</a></li>
+<li><a href="http://www.cmake.org/cmake-tutorial/" target="_blank" rel="noopener">cmake tutorial</a></li>
+<li><a href="http://www.cmake.org/Wiki/CMake_Useful_Variables" target="_blank" rel="noopener">CMake常用变量列表</a></li>
+<li><a href="http://www.cmake.org/documentation/" target="_blank" rel="noopener">CMake文档列表</a></li>
+<li><a href="http://www.cmake.org/cmake/help/v3.0/manual/cmake-modules.7.html" target="_blank" rel="noopener">cmake modules</a></li>
+<li><a href="http://blog.atime.me/note/cmake.html" target="_blank" rel="noopener">CMake 使用总结</a></li>
+<li><a href="http://www.cnblogs.com/coderfenghc/archive/2013/01/20/2846621.html" target="_blank" rel="noopener">CMake 用法导览</a></li>
+</ol>
+
       
     </div>
 
@@ -354,7 +489,7 @@ $ xclip -sel clip &lt; ~/.ssh/id_rsa.pub</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
+                <time title="Modified: 2021-01-29 13:31:06" itemprop="dateModified" datetime="2021-01-29T13:31:06+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -573,7 +708,7 @@ set(var a b c)</code></pre><p>字符串列表可以用 foreach命令叠代（ite
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
+                <time title="Modified: 2021-01-29 13:31:06" itemprop="dateModified" datetime="2021-01-29T13:31:06+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -678,7 +813,7 @@ curl_setopt($ch,CURLOPT_CAINFO,dirname(__FILE__).&#39;/cacert.pem&#39;);</code><
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
+                <time title="Modified: 2021-01-29 13:31:06" itemprop="dateModified" datetime="2021-01-29T13:31:06+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -932,7 +1067,7 @@ end</code></pre><p>上面的例子含义：当x&gt;0时，在foo函数处停下�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
+                <time title="Modified: 2021-01-29 13:31:06" itemprop="dateModified" datetime="2021-01-29T13:31:06+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1100,7 +1235,7 @@ struct aiocb {
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
+                <time title="Modified: 2021-01-29 13:31:06" itemprop="dateModified" datetime="2021-01-29T13:31:06+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1211,7 +1346,7 @@ struct aiocb {
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
+                <time title="Modified: 2021-01-29 13:31:06" itemprop="dateModified" datetime="2021-01-29T13:31:06+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1356,7 +1491,7 @@ const char *dlerror(void);</code></pre><p>当动态链接库操作函数执行�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
+                <time title="Modified: 2021-01-29 13:31:06" itemprop="dateModified" datetime="2021-01-29T13:31:06+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1457,7 +1592,7 @@ LDFLAGS += -L$(GXSRC_PATH)/lib/$(THIRD_LIB)/ -lkolatv -lpcre</code></pre><p>其�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
+                <time title="Modified: 2021-01-29 13:31:06" itemprop="dateModified" datetime="2021-01-29T13:31:06+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1553,7 +1688,7 @@ LDFLAGS += -L$(GXSRC_PATH)/lib/$(THIRD_LIB)/ -lkolatv -lpcre</code></pre><p>其�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
+                <time title="Modified: 2021-01-29 13:31:06" itemprop="dateModified" datetime="2021-01-29T13:31:06+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1809,7 +1944,7 @@ int shutdown(int sockfd, int how);</code></pre><p>bind函数使用通用地址�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
+                <time title="Modified: 2021-01-29 13:31:06" itemprop="dateModified" datetime="2021-01-29T13:31:06+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1972,7 +2107,7 @@ if ((LD_DWORD(&amp;fs-&gt;win[BS_FilSysType32]) &amp; 0xFFFFFF) == 0x544146)
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
+                <time title="Modified: 2021-01-29 13:31:06" itemprop="dateModified" datetime="2021-01-29T13:31:06+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2416,7 +2551,7 @@ int madvice(void *addr, size_t len, int advice);  </code></pre><p>madvise() 函�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
+                <time title="Modified: 2021-01-29 13:31:06" itemprop="dateModified" datetime="2021-01-29T13:31:06+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2551,7 +2686,7 @@ int madvice(void *addr, size_t len, int advice);  </code></pre><p>madvise() 函�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
+                <time title="Modified: 2021-01-29 13:31:06" itemprop="dateModified" datetime="2021-01-29T13:31:06+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2657,7 +2792,7 @@ int madvice(void *addr, size_t len, int advice);  </code></pre><p>madvise() 函�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-01-15 13:23:10" itemprop="dateModified" datetime="2021-01-15T13:23:10+08:00">2021-01-15</time>
+                <time title="Modified: 2021-01-29 13:31:06" itemprop="dateModified" datetime="2021-01-29T13:31:06+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">

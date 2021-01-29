@@ -1433,6 +1433,31 @@ FIND_PROGRAM</code></pre><p>注意 CMAKE_MODULE_PATH</p>
       </tags>
   </entry>
   <entry>
+    <title>github push避免输入用户名和密码</title>
+    <url>/2015/03/04/git-push/</url>
+    <content><![CDATA[<p>github上传代码时，每次都需要输入用户名和密码，原因是使用了https方式进行push：</p>
+<pre><code>$ git clone https://github.com/breezetemple/breezetemple.github.com.git</code></pre><p>使用以下命令更换为使用ssh方式：</p>
+<pre><code>$ git remote -v
+origin  https://github.com/breezetemple/breezetemple.github.com.git (fetch)
+origin  https://github.com/breezetemple/breezetemple.github.com.git (push)
+$ git remote rm origin
+$ git remote add origin git@github.com:breezetemple/breezetemple.github.com.git
+$ git push origin master 
+Everything up-to-date</code></pre><p>或者使用如下命令初始化：</p>
+<pre><code>git clone git@github.com:breezetemple/breezetemple.github.com.git</code></pre><p>另外，需要将ssh pub key上传到github：</p>
+<pre><code>$ ls ~/.ssh/id_rsa.pub                
+/home/yanwzh/.ssh/id_rsa.pub
+$ xclip -sel clip &lt; ~/.ssh/id_rsa.pub</code></pre>]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>GitHub</category>
+      </categories>
+      <tags>
+        <tag>github</tag>
+        <tag>git</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Linux lua及依赖库安装</title>
     <url>/2015/03/10/lua-run/</url>
     <content><![CDATA[<p>lua5.2暂时不使用，使用lua5.1+luarocks</p>
@@ -1464,31 +1489,6 @@ $ luarocks search **</code></pre>]]></content>
       </categories>
       <tags>
         <tag>lua</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>github push避免输入用户名和密码</title>
-    <url>/2015/03/04/git-push/</url>
-    <content><![CDATA[<p>github上传代码时，每次都需要输入用户名和密码，原因是使用了https方式进行push：</p>
-<pre><code>$ git clone https://github.com/breezetemple/breezetemple.github.com.git</code></pre><p>使用以下命令更换为使用ssh方式：</p>
-<pre><code>$ git remote -v
-origin  https://github.com/breezetemple/breezetemple.github.com.git (fetch)
-origin  https://github.com/breezetemple/breezetemple.github.com.git (push)
-$ git remote rm origin
-$ git remote add origin git@github.com:breezetemple/breezetemple.github.com.git
-$ git push origin master 
-Everything up-to-date</code></pre><p>或者使用如下命令初始化：</p>
-<pre><code>git clone git@github.com:breezetemple/breezetemple.github.com.git</code></pre><p>另外，需要将ssh pub key上传到github：</p>
-<pre><code>$ ls ~/.ssh/id_rsa.pub                
-/home/yanwzh/.ssh/id_rsa.pub
-$ xclip -sel clip &lt; ~/.ssh/id_rsa.pub</code></pre>]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>GitHub</category>
-      </categories>
-      <tags>
-        <tag>github</tag>
-        <tag>git</tag>
       </tags>
   </entry>
   <entry>
@@ -1821,6 +1821,69 @@ grep XXYYZZ * -Rn --include=&#39;*.[ch]&#39;</code></pre>]]></content>
       </tags>
   </entry>
   <entry>
+    <title>Linux下malloc函数和OOM Killer</title>
+    <url>/2015/07/06/Linux-OOM-Killer/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h3 id="Malloc函数和OOM-Killer"><a href="#Malloc函数和OOM-Killer" class="headerlink" title="Malloc函数和OOM Killer"></a><strong>Malloc函数和OOM Killer</strong></h3><p>Linux下malloc函数主要用来在用户空间从heap申请内存，申请成功返回指向所分配内存的指针，申请失败返回NULL。<br><strong>默认情况下，Linux内核使用“乐观的”分配内存策略</strong>，首先粗略估计系统可使用的内存数，然后分配内存，<br>但是在使用的时候才真正把这块分配的内存给你。<br>这样一来，即使用malloc申请内存没有返回NULL，你也不一定能完全使用这块内存，<br>特别是在一次或连续多次申请很多内存的时候。</p>
+<p>如果一直连续用malloc申请内存，而不真正使用，所申请的内存总数可以超过真正可以使用的内存数。<br>但是当真正使用这块内存，比如用memset或bzero函数一次性把所申请到的大块内存“使用掉”，<br>Linux系统就会Out Of Memory，这个时候OOM Killer就会kill掉用户空间的其他进程来腾出更多可使用内存。</p>
+<p>OOM Killer根据OOM score来决定kill哪个进程，OOM score可以看/proc/<PID>/oom_score，<br>score由badness函数计算得出，根据进程运行时间长短，进程优先级，进程所使用的内存数等等。<br>可以通过/proc/<PID>/oom_adj来干预计算socre，这个值的取值范围是-17～15，<br>如果是-17该进程就永远不会被kill（这个可能也和内核版本有关，不见得所有内核版本都支持，得实际试试）。</p>
+<p>“默认情况”Linux是这种做的，“默认情况”是指/proc/sys/vm/overcommit_memory为0的时候。<br>这个参数也可以调整，如果为1表示“来着不拒”，只要你malloc过来申请，我啥都不做，立马给你分配内存，<br>这样的话性能就会有大幅度的提高；<br>如果为2表示Linux会精确计算所有可使用的内存和所申请的内存，如果所申请的超过的可使用的内存数就返回NULL。<br>可使用的内存值计算方法，虚拟内存（swap）+ /proc/sys/vm/overcommit_memory（百分比） × 物理内存。<br>/proc/sys/vm/overcommit_memory默认值为50,计算起来就是50%的物理内存数。</p>
+<p>Linux自身内核会占一部分内存，还有buffer/cache所占用的内存，<br>所以实际上能被malloc申请后使用的内存并非物理内存大小，<br>demsg的输出里面包含了相关信息（如果看不到，可能是被别的信息冲掉了，重启系统，在系统起来后马上看）：</p>
+<pre><code>Memory: 2071220k/2097152k available (2122k kernel code, 24584k reserved, 884k data, 228k init, 1179584k highmem)</code></pre><h3 id="关于OOM-Killer的proc文件系统"><a href="#关于OOM-Killer的proc文件系统" class="headerlink" title="关于OOM Killer的proc文件系统"></a><strong>关于OOM Killer的proc文件系统</strong></h3><p>下面开始介绍与OOM Killer相关的proc文件系统。</p>
+<h4 id="proc-PID-oom-adj"><a href="#proc-PID-oom-adj" class="headerlink" title="/proc/PID/oom_adj"></a><strong>/proc/PID/oom_adj</strong></h4><p>为/proc/PID/oom_adj设置值就可以调整得分。<br>调整值的范围为–16~15。正的值容易被OOM Killer选定。负值可能性较低。<br>例如，当指定3时，得分就变为23倍；当指定–5时，得分就变为1/25。</p>
+<p>“–17”是一个特殊的值。如果设置为–17，就会禁止OOM Killer发出的信号（从Linux 2.6.12开始支持设置–17）。</p>
+<p>在OOM Killer运行的情况下，为了实现远程登录而想要将sshd排除在对象外时，可以执行下列命令。</p>
+<pre><code># cat /proc/&#39;cat /var/run/sshd.pid&#39;/oom_score
+15
+# echo -17 &gt;  /proc/&#39;cat /var/run/sshd.pid&#39;/oom_adj
+# tail /proc/&#39;cat /var/run/sshd.pid&#39;/oom_*
+==&gt; /proc/2278/oom_adj &lt;==
+-17
+==&gt; /proc/2278/oom_score &lt;==
+0                               /*得分变成0*/</code></pre><p>从Linux 2.6.18开始可以使用/proc/PID/oom_adj。内容记载在Documentation /filesystems/proc.txt中。</p>
+<h4 id="proc-sys-vm-panic-on-oom"><a href="#proc-sys-vm-panic-on-oom" class="headerlink" title="/proc/sys/vm/panic_on_oom"></a><strong>/proc/sys/vm/panic_on_oom</strong></h4><p>将/proc/sys/vm/panic_on_oom设置为1时，在OOM Killer运行时可以不发送进程信号，而是使内核产生重大故障。</p>
+<pre><code># echo 1 &gt; /proc/sys/vm/panic_on_oom</code></pre><h4 id="proc-sys-vm-oom-kill-allocating-task"><a href="#proc-sys-vm-oom-kill-allocating-task" class="headerlink" title="/proc/sys/vm/oom_kill_allocating_task"></a><strong>/proc/sys/vm/oom_kill_allocating_task</strong></h4><p>从Linux 2.6.24开始proc文件系统就有oom_kill_allocating_task。<br>如果对此设置除0以外的值，则促使OOM Killer运行的进程自身将接收信号。此处省略对所有进程的得分计算过程。</p>
+<pre><code># echo 1 &gt; /proc/sys/vm/oom_kill_allocating_task</code></pre><p>这样就不需要参照所有进程，但是也不会考虑进程的优先级和root权限等，只发送信号。</p>
+<h4 id="proc-sys-vm-oom-dump-tasks"><a href="#proc-sys-vm-oom-dump-tasks" class="headerlink" title="/proc/sys/vm/oom_dump_tasks"></a><strong>/proc/sys/vm/oom_dump_tasks</strong></h4><p>从Linux 2.6.25开始，将oom_dump_tasks设置为除0以外的值时，在OOM Killer运行时的输出中会增加进程的列表信息。</p>
+<pre><code># echo 1 &gt; /proc/sys/vm/oom_dump_tasks</code></pre><p>列表信息显示如下，可以使用dmesg或syslog来确认。</p>
+<pre><code>[ pid ]   uid  tgid total_vm      rss cpu oom_adj name
+[    1]     0     1     2580        1   0       0 init
+[  500]     0   500     3231        0   1     -17 udevd
+[ 2736]     0  2736     1470        1   0       0 syslogd
+[ 2741]     0  2741      944        0   0       0 klogd
+[ 2765]    81  2765     5307        0   0       0 dbus-daemon
+[ 2861]     0  2861      944        0   0       0 acpid
+...
+[ 3320]     0  3320   525842   241215   1       0 stress</code></pre><h4 id="proc-PID-oom-score-adj"><a href="#proc-PID-oom-score-adj" class="headerlink" title="/proc/PID/oom_score_adj"></a><strong>/proc/PID/oom_score_adj</strong></h4><p>从Linux 2.6.36开始都安装了/proc/<PID>/oom_score_adj，<br>此后将替换为/proc/PID/oom_adj。<br>即使当前是对/proc/PID/oom_adj进行的设置，在内核内部进行变换后的值也是针对/proc/PID/oom_score_adj设置的。</p>
+<p>可以设置–1000~1000之间的值。设置为–1000时，该进程就被排除在OOM Killer强制终止的对象外。</p>
+<p>在内核2.6.36以后的版本中写入oom_adj，只会输出一次如下的信息。</p>
+<pre><code># dmesg
+.....
+udevd (60): /proc/60/oom_adj is deprecated, please use /proc/60/oom_score_adj instead.</code></pre>]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>malloc</tag>
+        <tag>OOM Killer</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>linux内存分配原理（brk和mmap）（转载）</title>
     <url>/2015/07/06/Linux-malloc/</url>
     <content><![CDATA[<script type="text/javascript">
@@ -1890,69 +1953,6 @@ $(document).ready(function(){
       </categories>
       <tags>
         <tag>malloc</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Linux下malloc函数和OOM Killer</title>
-    <url>/2015/07/06/Linux-OOM-Killer/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<h3 id="Malloc函数和OOM-Killer"><a href="#Malloc函数和OOM-Killer" class="headerlink" title="Malloc函数和OOM Killer"></a><strong>Malloc函数和OOM Killer</strong></h3><p>Linux下malloc函数主要用来在用户空间从heap申请内存，申请成功返回指向所分配内存的指针，申请失败返回NULL。<br><strong>默认情况下，Linux内核使用“乐观的”分配内存策略</strong>，首先粗略估计系统可使用的内存数，然后分配内存，<br>但是在使用的时候才真正把这块分配的内存给你。<br>这样一来，即使用malloc申请内存没有返回NULL，你也不一定能完全使用这块内存，<br>特别是在一次或连续多次申请很多内存的时候。</p>
-<p>如果一直连续用malloc申请内存，而不真正使用，所申请的内存总数可以超过真正可以使用的内存数。<br>但是当真正使用这块内存，比如用memset或bzero函数一次性把所申请到的大块内存“使用掉”，<br>Linux系统就会Out Of Memory，这个时候OOM Killer就会kill掉用户空间的其他进程来腾出更多可使用内存。</p>
-<p>OOM Killer根据OOM score来决定kill哪个进程，OOM score可以看/proc/<PID>/oom_score，<br>score由badness函数计算得出，根据进程运行时间长短，进程优先级，进程所使用的内存数等等。<br>可以通过/proc/<PID>/oom_adj来干预计算socre，这个值的取值范围是-17～15，<br>如果是-17该进程就永远不会被kill（这个可能也和内核版本有关，不见得所有内核版本都支持，得实际试试）。</p>
-<p>“默认情况”Linux是这种做的，“默认情况”是指/proc/sys/vm/overcommit_memory为0的时候。<br>这个参数也可以调整，如果为1表示“来着不拒”，只要你malloc过来申请，我啥都不做，立马给你分配内存，<br>这样的话性能就会有大幅度的提高；<br>如果为2表示Linux会精确计算所有可使用的内存和所申请的内存，如果所申请的超过的可使用的内存数就返回NULL。<br>可使用的内存值计算方法，虚拟内存（swap）+ /proc/sys/vm/overcommit_memory（百分比） × 物理内存。<br>/proc/sys/vm/overcommit_memory默认值为50,计算起来就是50%的物理内存数。</p>
-<p>Linux自身内核会占一部分内存，还有buffer/cache所占用的内存，<br>所以实际上能被malloc申请后使用的内存并非物理内存大小，<br>demsg的输出里面包含了相关信息（如果看不到，可能是被别的信息冲掉了，重启系统，在系统起来后马上看）：</p>
-<pre><code>Memory: 2071220k/2097152k available (2122k kernel code, 24584k reserved, 884k data, 228k init, 1179584k highmem)</code></pre><h3 id="关于OOM-Killer的proc文件系统"><a href="#关于OOM-Killer的proc文件系统" class="headerlink" title="关于OOM Killer的proc文件系统"></a><strong>关于OOM Killer的proc文件系统</strong></h3><p>下面开始介绍与OOM Killer相关的proc文件系统。</p>
-<h4 id="proc-PID-oom-adj"><a href="#proc-PID-oom-adj" class="headerlink" title="/proc/PID/oom_adj"></a><strong>/proc/PID/oom_adj</strong></h4><p>为/proc/PID/oom_adj设置值就可以调整得分。<br>调整值的范围为–16~15。正的值容易被OOM Killer选定。负值可能性较低。<br>例如，当指定3时，得分就变为23倍；当指定–5时，得分就变为1/25。</p>
-<p>“–17”是一个特殊的值。如果设置为–17，就会禁止OOM Killer发出的信号（从Linux 2.6.12开始支持设置–17）。</p>
-<p>在OOM Killer运行的情况下，为了实现远程登录而想要将sshd排除在对象外时，可以执行下列命令。</p>
-<pre><code># cat /proc/&#39;cat /var/run/sshd.pid&#39;/oom_score
-15
-# echo -17 &gt;  /proc/&#39;cat /var/run/sshd.pid&#39;/oom_adj
-# tail /proc/&#39;cat /var/run/sshd.pid&#39;/oom_*
-==&gt; /proc/2278/oom_adj &lt;==
--17
-==&gt; /proc/2278/oom_score &lt;==
-0                               /*得分变成0*/</code></pre><p>从Linux 2.6.18开始可以使用/proc/PID/oom_adj。内容记载在Documentation /filesystems/proc.txt中。</p>
-<h4 id="proc-sys-vm-panic-on-oom"><a href="#proc-sys-vm-panic-on-oom" class="headerlink" title="/proc/sys/vm/panic_on_oom"></a><strong>/proc/sys/vm/panic_on_oom</strong></h4><p>将/proc/sys/vm/panic_on_oom设置为1时，在OOM Killer运行时可以不发送进程信号，而是使内核产生重大故障。</p>
-<pre><code># echo 1 &gt; /proc/sys/vm/panic_on_oom</code></pre><h4 id="proc-sys-vm-oom-kill-allocating-task"><a href="#proc-sys-vm-oom-kill-allocating-task" class="headerlink" title="/proc/sys/vm/oom_kill_allocating_task"></a><strong>/proc/sys/vm/oom_kill_allocating_task</strong></h4><p>从Linux 2.6.24开始proc文件系统就有oom_kill_allocating_task。<br>如果对此设置除0以外的值，则促使OOM Killer运行的进程自身将接收信号。此处省略对所有进程的得分计算过程。</p>
-<pre><code># echo 1 &gt; /proc/sys/vm/oom_kill_allocating_task</code></pre><p>这样就不需要参照所有进程，但是也不会考虑进程的优先级和root权限等，只发送信号。</p>
-<h4 id="proc-sys-vm-oom-dump-tasks"><a href="#proc-sys-vm-oom-dump-tasks" class="headerlink" title="/proc/sys/vm/oom_dump_tasks"></a><strong>/proc/sys/vm/oom_dump_tasks</strong></h4><p>从Linux 2.6.25开始，将oom_dump_tasks设置为除0以外的值时，在OOM Killer运行时的输出中会增加进程的列表信息。</p>
-<pre><code># echo 1 &gt; /proc/sys/vm/oom_dump_tasks</code></pre><p>列表信息显示如下，可以使用dmesg或syslog来确认。</p>
-<pre><code>[ pid ]   uid  tgid total_vm      rss cpu oom_adj name
-[    1]     0     1     2580        1   0       0 init
-[  500]     0   500     3231        0   1     -17 udevd
-[ 2736]     0  2736     1470        1   0       0 syslogd
-[ 2741]     0  2741      944        0   0       0 klogd
-[ 2765]    81  2765     5307        0   0       0 dbus-daemon
-[ 2861]     0  2861      944        0   0       0 acpid
-...
-[ 3320]     0  3320   525842   241215   1       0 stress</code></pre><h4 id="proc-PID-oom-score-adj"><a href="#proc-PID-oom-score-adj" class="headerlink" title="/proc/PID/oom_score_adj"></a><strong>/proc/PID/oom_score_adj</strong></h4><p>从Linux 2.6.36开始都安装了/proc/<PID>/oom_score_adj，<br>此后将替换为/proc/PID/oom_adj。<br>即使当前是对/proc/PID/oom_adj进行的设置，在内核内部进行变换后的值也是针对/proc/PID/oom_score_adj设置的。</p>
-<p>可以设置–1000~1000之间的值。设置为–1000时，该进程就被排除在OOM Killer强制终止的对象外。</p>
-<p>在内核2.6.36以后的版本中写入oom_adj，只会输出一次如下的信息。</p>
-<pre><code># dmesg
-.....
-udevd (60): /proc/60/oom_adj is deprecated, please use /proc/60/oom_score_adj instead.</code></pre>]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>malloc</tag>
-        <tag>OOM Killer</tag>
       </tags>
   </entry>
   <entry>
@@ -2251,120 +2251,6 @@ lib/cp936ext.h</code></pre><ol>
       </tags>
   </entry>
   <entry>
-    <title>使用反汇编定位未开源库问题</title>
-    <url>/2015/10/20/gdb-disassemble-debug/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>整合版本时，遇到一个必现死机问题，每次出现问题都是调用库中的一个函数。<br>经过排查，初步怀疑是库存在一些问题，或者与外部使用配合出现问题。</p>
-<h2 id="定位问题"><a href="#定位问题" class="headerlink" title="定位问题"></a>定位问题</h2><pre><code>(gdb) set $pc=$epc
-(gdb) i r r10
-r10            0x970038656
-(gdb) info registers 
-r0             0x90972c100x90972c10
-r1             0x90486564-1874303644
-r2             0x970038656
-r3             0xff255
-r4             0x904895de-1874291234
-r5             0xae174
-r6             0x00
-r7             0x00
-r8             0x904d03a0-1874000992
-r9             0x11110009286326793
-r10            0x970038656
-r11            0x6096
-r12            0x11
-r13            0x904d03a0-1874000992
-r14            0x904d02a0-1874001248
-r15            0x90142750-1877727408
-pc             0x9000060a0x9000060a &lt;__default_14&gt;
-epc            0x902abd300x902abd30 &lt;inflate_fast+708&gt;
-psr            0x8f0e0010-1894907888
-epsr           0x800e0150-2146565808
-(gdb) pc
-#0  0x9014279cin xxx_xxm()at xx.c:574
-#1  0x90142750in xxx_xxm()at xx.c:568
-#2  0x9014144ein xxx_xx()at xx.c:2659
-#3  0x90141446in xxx_xx()at xx.c:2658
-#4  0x9014143ein xxx_xx()at xx.c:2657
-#5  0x901413f2in xxx_xx()at xx.c:2657
-#6  0x901413dein xxx_xx()at xx.c:2652
-#7  0x901413d2in xxx_xx()at xx.c:2652
-(gdb) disassemble $pc-10,$pc+10
-Dump of assembler code from 0x90000600 to 0x90000614:
-0x90000600 &lt;__hardware_accelerator+2&gt;:br0x90000600
-0x90000602 &lt;__trap0+0&gt;:bkpt
-0x90000604 &lt;__trap0+2&gt;:br0x90000604
-0x90000606 &lt;__default_13+0&gt;:bkpt
-0x90000608 &lt;__default_13+2&gt;:br0x90000608
-=&gt; 0x9000060a &lt;__default_14+0&gt;:bkpt
-0x9000060c &lt;__default_14+2&gt;:br0x9000060c
-0x9000060e &lt;__default_15+0&gt;:bkpt
-0x90000610 &lt;__default_15+2&gt;:br0x90000610
-0x90000612 &lt;__default_17+0&gt;:bkpt
-End of assembler dump.
-(gdb) bt
-#0  0x9000060a in __default_14 ()
-#1  0x90142750 in xxx_xxm () at xx.c:568
-#2  0x9013cfb8 in func () at c1.c:167
-#3  0x9013f394 in main_entry (args=&lt;value optimized out&gt;) at init.c:14
-#4  0x9008724c in default_thread_function (arg=0x907f32b8) at os/ecos/osapi.c:371
-#5  0x901232f2 in pthread_entry(unsigned int) ()
-#6  0x90127030 in Cyg_HardwareThread::thread_entry(Cyg_Thread*) ()
-#7  0x9012701c in Cyg_Thread::exit() ()
-#8  0xb0b6ccd0 in ?? ()</code></pre><p>可以判断出r10中值出现问题，并且问题出现在文件xx.c的函数xxx_xxm()中，重启跟踪代码：</p>
-<pre><code>(gdb) b xxx_xxm 
-Breakpoint 3 at 0x901425f4: file xx.c, line 524.
-(gdb) c
-Continuing.
-
-Breakpoint 3, xxx_xxm () at xx.c:524
-524xx.c: 没有那个文件或目录.
-in xx.c
-(gdb) display /i $r10
-1: x/i $r10
-0x1111000a:ldm r3-r15, (r0)
-(gdb) display /i $pc
-2: x/i $pc
-=&gt; 0x901425f4 &lt;xxx_xxm+20&gt;:lrw r7, 0x903BA9CC
-(gdb) n
-526in xx.c
-(gdb) 
-574in xx.c
-2: x/i $pc
-=&gt; 0x9014279c &lt;xxx_xxm+444&gt;:mov r7, r2
-1: x/i $r10
-0x1111000a:movi r4, 86
-(gdb) 
-575in xx.c
-2: x/i $pc
-=&gt; 0x901427a6 &lt;xxx_xxm+454&gt;:mov r2, r10
-1: x/i $r10
-0x9700:movi r4, 86</code></pre><p><strong>问题很可能出现在源文件xx.c的574行</strong>，执行过这一行之后，r10的值修改为0x9700，最后请客户检查代码，确认为野指针。</p>
-]]></content>
-      <categories>
-        <category>C</category>
-      </categories>
-      <tags>
-        <tag>gcc</tag>
-        <tag>gdb</tag>
-        <tag>disassemble</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>vim配置golang开发环境</title>
     <url>/2015/10/15/go-with-vim/</url>
     <content><![CDATA[<script type="text/javascript">
@@ -2487,6 +2373,120 @@ cp $WORK/github.com/golang/lint/golint/_obj/exe/a.out golint</code></pre><h2 id=
         <tag>vim</tag>
         <tag>go</tag>
         <tag>sdk</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>使用反汇编定位未开源库问题</title>
+    <url>/2015/10/20/gdb-disassemble-debug/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>整合版本时，遇到一个必现死机问题，每次出现问题都是调用库中的一个函数。<br>经过排查，初步怀疑是库存在一些问题，或者与外部使用配合出现问题。</p>
+<h2 id="定位问题"><a href="#定位问题" class="headerlink" title="定位问题"></a>定位问题</h2><pre><code>(gdb) set $pc=$epc
+(gdb) i r r10
+r10            0x970038656
+(gdb) info registers 
+r0             0x90972c100x90972c10
+r1             0x90486564-1874303644
+r2             0x970038656
+r3             0xff255
+r4             0x904895de-1874291234
+r5             0xae174
+r6             0x00
+r7             0x00
+r8             0x904d03a0-1874000992
+r9             0x11110009286326793
+r10            0x970038656
+r11            0x6096
+r12            0x11
+r13            0x904d03a0-1874000992
+r14            0x904d02a0-1874001248
+r15            0x90142750-1877727408
+pc             0x9000060a0x9000060a &lt;__default_14&gt;
+epc            0x902abd300x902abd30 &lt;inflate_fast+708&gt;
+psr            0x8f0e0010-1894907888
+epsr           0x800e0150-2146565808
+(gdb) pc
+#0  0x9014279cin xxx_xxm()at xx.c:574
+#1  0x90142750in xxx_xxm()at xx.c:568
+#2  0x9014144ein xxx_xx()at xx.c:2659
+#3  0x90141446in xxx_xx()at xx.c:2658
+#4  0x9014143ein xxx_xx()at xx.c:2657
+#5  0x901413f2in xxx_xx()at xx.c:2657
+#6  0x901413dein xxx_xx()at xx.c:2652
+#7  0x901413d2in xxx_xx()at xx.c:2652
+(gdb) disassemble $pc-10,$pc+10
+Dump of assembler code from 0x90000600 to 0x90000614:
+0x90000600 &lt;__hardware_accelerator+2&gt;:br0x90000600
+0x90000602 &lt;__trap0+0&gt;:bkpt
+0x90000604 &lt;__trap0+2&gt;:br0x90000604
+0x90000606 &lt;__default_13+0&gt;:bkpt
+0x90000608 &lt;__default_13+2&gt;:br0x90000608
+=&gt; 0x9000060a &lt;__default_14+0&gt;:bkpt
+0x9000060c &lt;__default_14+2&gt;:br0x9000060c
+0x9000060e &lt;__default_15+0&gt;:bkpt
+0x90000610 &lt;__default_15+2&gt;:br0x90000610
+0x90000612 &lt;__default_17+0&gt;:bkpt
+End of assembler dump.
+(gdb) bt
+#0  0x9000060a in __default_14 ()
+#1  0x90142750 in xxx_xxm () at xx.c:568
+#2  0x9013cfb8 in func () at c1.c:167
+#3  0x9013f394 in main_entry (args=&lt;value optimized out&gt;) at init.c:14
+#4  0x9008724c in default_thread_function (arg=0x907f32b8) at os/ecos/osapi.c:371
+#5  0x901232f2 in pthread_entry(unsigned int) ()
+#6  0x90127030 in Cyg_HardwareThread::thread_entry(Cyg_Thread*) ()
+#7  0x9012701c in Cyg_Thread::exit() ()
+#8  0xb0b6ccd0 in ?? ()</code></pre><p>可以判断出r10中值出现问题，并且问题出现在文件xx.c的函数xxx_xxm()中，重启跟踪代码：</p>
+<pre><code>(gdb) b xxx_xxm 
+Breakpoint 3 at 0x901425f4: file xx.c, line 524.
+(gdb) c
+Continuing.
+
+Breakpoint 3, xxx_xxm () at xx.c:524
+524xx.c: 没有那个文件或目录.
+in xx.c
+(gdb) display /i $r10
+1: x/i $r10
+0x1111000a:ldm r3-r15, (r0)
+(gdb) display /i $pc
+2: x/i $pc
+=&gt; 0x901425f4 &lt;xxx_xxm+20&gt;:lrw r7, 0x903BA9CC
+(gdb) n
+526in xx.c
+(gdb) 
+574in xx.c
+2: x/i $pc
+=&gt; 0x9014279c &lt;xxx_xxm+444&gt;:mov r7, r2
+1: x/i $r10
+0x1111000a:movi r4, 86
+(gdb) 
+575in xx.c
+2: x/i $pc
+=&gt; 0x901427a6 &lt;xxx_xxm+454&gt;:mov r2, r10
+1: x/i $r10
+0x9700:movi r4, 86</code></pre><p><strong>问题很可能出现在源文件xx.c的574行</strong>，执行过这一行之后，r10的值修改为0x9700，最后请客户检查代码，确认为野指针。</p>
+]]></content>
+      <categories>
+        <category>C</category>
+      </categories>
+      <tags>
+        <tag>gcc</tag>
+        <tag>gdb</tag>
+        <tag>disassemble</tag>
       </tags>
   </entry>
   <entry>
@@ -11862,8 +11862,8 @@ Server listening on 5201
         <category>Linux</category>
         <category>Socket</category>
         <category>Network</category>
-        <category>TCP</category>
         <category>Tools</category>
+        <category>TCP</category>
         <category>Network</category>
       </categories>
       <tags>
@@ -14656,204 +14656,6 @@ class MongoDBPipeline(object):
       </tags>
   </entry>
   <entry>
-    <title>Movian Plugin Development</title>
-    <url>/2018/01/10/movian-plugin-development/</url>
-    <content><![CDATA[<p>Movian Development</p>
-<a id="more"></a>
-
-<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
-<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
-<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
-<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
-<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
-<pre><code class="json">{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;apiversion&quot;: 1,
-  &quot;id&quot;: &quot;headweb&quot;,
-  &quot;file&quot;: &quot;headweb.js&quot;,
-  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
-  &quot;version&quot;: &quot;1.5.3&quot;,
-  &quot;author&quot;: &quot;Andreas Öman&quot;,
-  &quot;title&quot;: &quot;Headweb&quot;,
-  &quot;icon&quot;: &quot;headweb_square.png&quot;,
-  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
-  &quot;category&quot;: &quot;video&quot;,
-  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
-  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
-}</code></pre>
-<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
-<ul>
-<li>ecmascript - loads the plugin using Duktape.</li>
-<li>views - used for user interface (screen keyboard plugin)</li>
-</ul>
-<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
-<ul>
-<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
-<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
-</ul>
-<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
-<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
-<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
-<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
-<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
-<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
-<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
-<ul>
-<li>“tv” - online TV</li>
-<li>“video” - streaming video</li>
-<li>“music” - streaming music</li>
-<li>“glwview” - UI extentions</li>
-<li>“subtitles” - subtitles</li>
-<li>“glwosk” - on screen keyboard</li>
-</ul>
-<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
-<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
-<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
-<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
-<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
-<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
-<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
-<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
-<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
-<pre><code>{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;file&quot;: &quot;testplugin.js&quot;,
-  &quot;id&quot;: &quot;testplugin&quot;
-}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
-<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
-  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
-})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
-<pre><code>(function(plugin) {
-  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
-    showtime.print(&quot;I was called&quot;);
-  })
-})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
-<p><code>somafa</code> 中的 <code>start URI</code></p>
-<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
-...
-}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
-<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
-<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
-<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
-<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
-<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
-<ul>
-<li>Direct URL</li>
-<li>Via a video page</li>
-</ul>
-<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
-<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
-<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
-<p>To use it first do:</p>
-<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
-      <categories>
-        <category>Movian</category>
-      </categories>
-      <tags>
-        <tag>movian</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>vim-highlight-syntax</title>
-    <url>/2017/12/19/vim-highlight-syntax/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
-<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
-<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
-<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
-<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
-<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
-<pre><code>:syntax
---- 语法项目 ---
-cLabel         xxx default case
-cStructure     xxx union struct typedef enum
-cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
-                   _Thread_local auto
-cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
-cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
-cStatement     xxx return goto asm continue break
-                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
-<p><code>:help group-name</code></p>
-<pre><code>:help group-name
-
-(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
-
-        *Comment        any comment
-
-        *Constant       any constant
-         String         a string constant: &quot;this is a string&quot;
-         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
-         Number         a number constant: 234, 0xff
-         Boolean        a boolean constant: TRUE, false
-         Float          a floating point constant: 2.3e10
-
-        *Identifier     any variable name
-         Function       function name (also: methods for classes)
-        *Statement      any statement
-         Conditional    if, then, else, endif, switch, etc.
-         Repeat         for, do, while, etc.
-         Label          case, default, etc.
-         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
-         Keyword        any other keyword
-         Exception      try, catch, throw
-
-        *PreProc        generic Preprocessor
-         Include        preprocessor #include
-         Define         preprocessor #define
-         Macro          same as Define
-         PreCondit      preprocessor #if, #else, #endif, etc.
-
-        *Type           int, long, char, etc.
-         StorageClass   static, register, volatile, etc.
-         Structure      struct, union, enum, etc.
-         Typedef        A typedef
-
-        *Special        any special symbol
-         SpecialChar    special character in a constant
-         Tag            you can use CTRL-] on this
-         Delimiter      character that needs attention
-         SpecialComment special things inside a comment
-         Debug          debugging statements
-
-        *Underlined     text that stands out, HTML links
-
-        *Ignore         left blank, hidden  hl-Ignore
-
-        *Error          any erroneous construct
-        *Todo           anything that needs extra attention; mostly the
-                        keywords TODO FIXME and XXX</code></pre>]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Editor</category>
-      </categories>
-      <tags>
-        <tag>vim</tag>
-        <tag>highlight</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>proc-pid-intro</title>
-    <url>/2017/12/14/proc-pid-intro/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
-<li><a href="https://github.com/NanXiao/gnu-linux-proc-pid-intro" target="_blank" rel="noopener">GNU/Linux下的/proc/[pid]目录下的文件分析</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>proc</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>某 HTTPS 链接无法正常播放</title>
     <url>/2018/10/22/https-url-error/</url>
     <content><![CDATA[<p>某个 <code>https</code> 无法播放，通过抓包来分析问题</p>
@@ -15845,6 +15647,23 @@ networking/nslookup.c:202:     * after getaddrinfo (in server_print). This repor
         <tag>kernel</tag>
         <tag>wext</tag>
         <tag>cfg80211</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>proc-pid-intro</title>
+    <url>/2017/12/14/proc-pid-intro/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
+<li><a href="https://github.com/NanXiao/gnu-linux-proc-pid-intro" target="_blank" rel="noopener">GNU/Linux下的/proc/[pid]目录下的文件分析</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>proc</tag>
       </tags>
   </entry>
   <entry>
@@ -17113,6 +16932,187 @@ make install</code></pre>
       </tags>
   </entry>
   <entry>
+    <title>vim-highlight-syntax</title>
+    <url>/2017/12/19/vim-highlight-syntax/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
+<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
+<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
+<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
+<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
+<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
+<pre><code>:syntax
+--- 语法项目 ---
+cLabel         xxx default case
+cStructure     xxx union struct typedef enum
+cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
+                   _Thread_local auto
+cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
+cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
+cStatement     xxx return goto asm continue break
+                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
+<p><code>:help group-name</code></p>
+<pre><code>:help group-name
+
+(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
+
+        *Comment        any comment
+
+        *Constant       any constant
+         String         a string constant: &quot;this is a string&quot;
+         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
+         Number         a number constant: 234, 0xff
+         Boolean        a boolean constant: TRUE, false
+         Float          a floating point constant: 2.3e10
+
+        *Identifier     any variable name
+         Function       function name (also: methods for classes)
+        *Statement      any statement
+         Conditional    if, then, else, endif, switch, etc.
+         Repeat         for, do, while, etc.
+         Label          case, default, etc.
+         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
+         Keyword        any other keyword
+         Exception      try, catch, throw
+
+        *PreProc        generic Preprocessor
+         Include        preprocessor #include
+         Define         preprocessor #define
+         Macro          same as Define
+         PreCondit      preprocessor #if, #else, #endif, etc.
+
+        *Type           int, long, char, etc.
+         StorageClass   static, register, volatile, etc.
+         Structure      struct, union, enum, etc.
+         Typedef        A typedef
+
+        *Special        any special symbol
+         SpecialChar    special character in a constant
+         Tag            you can use CTRL-] on this
+         Delimiter      character that needs attention
+         SpecialComment special things inside a comment
+         Debug          debugging statements
+
+        *Underlined     text that stands out, HTML links
+
+        *Ignore         left blank, hidden  hl-Ignore
+
+        *Error          any erroneous construct
+        *Todo           anything that needs extra attention; mostly the
+                        keywords TODO FIXME and XXX</code></pre>]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Editor</category>
+      </categories>
+      <tags>
+        <tag>vim</tag>
+        <tag>highlight</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Movian Plugin Development</title>
+    <url>/2018/01/10/movian-plugin-development/</url>
+    <content><![CDATA[<p>Movian Development</p>
+<a id="more"></a>
+
+<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
+<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
+<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
+<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
+<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
+<pre><code class="json">{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;apiversion&quot;: 1,
+  &quot;id&quot;: &quot;headweb&quot;,
+  &quot;file&quot;: &quot;headweb.js&quot;,
+  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
+  &quot;version&quot;: &quot;1.5.3&quot;,
+  &quot;author&quot;: &quot;Andreas Öman&quot;,
+  &quot;title&quot;: &quot;Headweb&quot;,
+  &quot;icon&quot;: &quot;headweb_square.png&quot;,
+  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
+  &quot;category&quot;: &quot;video&quot;,
+  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
+  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
+}</code></pre>
+<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
+<ul>
+<li>ecmascript - loads the plugin using Duktape.</li>
+<li>views - used for user interface (screen keyboard plugin)</li>
+</ul>
+<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
+<ul>
+<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
+<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
+</ul>
+<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
+<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
+<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
+<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
+<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
+<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
+<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
+<ul>
+<li>“tv” - online TV</li>
+<li>“video” - streaming video</li>
+<li>“music” - streaming music</li>
+<li>“glwview” - UI extentions</li>
+<li>“subtitles” - subtitles</li>
+<li>“glwosk” - on screen keyboard</li>
+</ul>
+<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
+<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
+<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
+<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
+<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
+<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
+<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
+<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
+<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
+<pre><code>{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;file&quot;: &quot;testplugin.js&quot;,
+  &quot;id&quot;: &quot;testplugin&quot;
+}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
+<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
+  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
+})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
+<pre><code>(function(plugin) {
+  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
+    showtime.print(&quot;I was called&quot;);
+  })
+})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
+<p><code>somafa</code> 中的 <code>start URI</code></p>
+<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
+...
+}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
+<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
+<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
+<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
+<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
+<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
+<ul>
+<li>Direct URL</li>
+<li>Via a video page</li>
+</ul>
+<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
+<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
+<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
+<p>To use it first do:</p>
+<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
+      <categories>
+        <category>Movian</category>
+      </categories>
+      <tags>
+        <tag>movian</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>使用 cmake 同时生成静态和动态库</title>
     <url>/2018/12/05/how-to-use-cmake-build-both-static-and-shared-library/</url>
     <content><![CDATA[<p>使用 <code>cmake</code> 同时编译出静态和动态库文件</p>
@@ -18123,8 +18123,8 @@ network={
 ]]></content>
       <categories>
         <category>Network</category>
-        <category>TCP</category>
         <category>Tools</category>
+        <category>TCP</category>
         <category>Network</category>
       </categories>
       <tags>
@@ -20002,7 +20002,7 @@ ArrayList : size()
 @enduml
 ` ` `</code></pre>
 <p>效果：</p>
-<img src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBjb250ZW50U2NyaXB0VHlwZT0iYXBwbGljYXRpb24vZWNtYXNjcmlwdCIgY29udGVudFN0eWxlVHlwZT0idGV4dC9jc3MiIGhlaWdodD0iMjE1cHgiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiIHN0eWxlPSJ3aWR0aDoxNThweDtoZWlnaHQ6MjE1cHg7IiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAxNTggMjE1IiB3aWR0aD0iMTU4cHgiIHpvb21BbmRQYW49Im1hZ25pZnkiPjxkZWZzPjxmaWx0ZXIgaGVpZ2h0PSIzMDAlIiBpZD0iZnh2MG5kZzc3YWtyZyIgd2lkdGg9IjMwMCUiIHg9Ii0xIiB5PSItMSI+PGZlR2F1c3NpYW5CbHVyIHJlc3VsdD0iYmx1ck91dCIgc3RkRGV2aWF0aW9uPSIyLjAiLz48ZmVDb2xvck1hdHJpeCBpbj0iYmx1ck91dCIgcmVzdWx0PSJibHVyT3V0MiIgdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIC40IDAiLz48ZmVPZmZzZXQgZHg9IjQuMCIgZHk9IjQuMCIgaW49ImJsdXJPdXQyIiByZXN1bHQ9ImJsdXJPdXQzIi8+PGZlQmxlbmQgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iYmx1ck91dDMiIG1vZGU9Im5vcm1hbCIvPjwvZmlsdGVyPjwvZGVmcz48Zz48IS0tTUQ1PVthYTdmNTg2NTMyZTE4NzE5ZTZjZWZhNzBmYzY1MDU4M10KY2xhc3MgT2JqZWN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjYwLjgwNDciIGlkPSJPYmplY3QiIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS41OyIgd2lkdGg9IjcyIiB4PSIzOS41IiB5PSI3Ii8+PGVsbGlwc2UgY3g9IjU0LjUiIGN5PSIyMyIgZmlsbD0iI0FERDFCMiIgcng9IjExIiByeT0iMTEiIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS4wOyIvPjxwYXRoIGQ9Ik01Ni44NDM4LDE4LjY3MTkgQzU1LjkwNjMsMTguMjM0NCA1NS4zMTI1LDE4LjA5MzggNTQuNDM3NSwxOC4wOTM4IEM1MS44MTI1LDE4LjA5MzggNDkuODEyNSwyMC4xNzE5IDQ5LjgxMjUsMjIuODkwNiBMNDkuODEyNSwyNC4wMTU2IEM0OS44MTI1LDI2LjU5MzggNTEuOTIxOSwyOC40ODQ0IDU0LjgxMjUsMjguNDg0NCBDNTYuMDMxMywyOC40ODQ0IDU3LjE4NzUsMjguMTg3NSA1Ny45Mzc1LDI3LjY0MDYgQzU4LjUxNTYsMjcuMjM0NCA1OC44NDM4LDI2Ljc4MTMgNTguODQzOCwyNi4zOTA2IEM1OC44NDM4LDI1LjkzNzUgNTguNDUzMSwyNS41NDY5IDU3Ljk4NDQsMjUuNTQ2OSBDNTcuNzY1NiwyNS41NDY5IDU3LjU2MjUsMjUuNjI1IDU3LjM3NSwyNS44MTI1IEM1Ni45MjE5LDI2LjI5NjkgNTYuOTIxOSwyNi4yOTY5IDU2LjczNDQsMjYuMzkwNiBDNTYuMzEyNSwyNi42NTYzIDU1LjYyNSwyNi43ODEzIDU0Ljg1OTQsMjYuNzgxMyBDNTIuODEyNSwyNi43ODEzIDUxLjUxNTYsMjUuNjg3NSA1MS41MTU2LDIzLjk4NDQgTDUxLjUxNTYsMjIuODkwNiBDNTEuNTE1NiwyMS4xMDk0IDUyLjc2NTYsMTkuNzk2OSA1NC41LDE5Ljc5NjkgQzU1LjA3ODEsMTkuNzk2OSA1NS42ODc1LDE5Ljk1MzEgNTYuMTU2MywyMC4yMDMxIEM1Ni42NDA2LDIwLjQ4NDQgNTYuODEyNSwyMC43MDMxIDU2LjkwNjMsMjEuMTA5NCBDNTYuOTY4OCwyMS41MTU2IDU3LDIxLjY0MDYgNTcuMTQwNiwyMS43NjU2IEM1Ny4yODEzLDIxLjkwNjMgNTcuNTE1NiwyMi4wMTU2IDU3LjczNDQsMjIuMDE1NiBDNTgsMjIuMDE1NiA1OC4yNjU2LDIxLjg3NSA1OC40Mzc1LDIxLjY1NjMgQzU4LjU0NjksMjEuNSA1OC41NzgxLDIxLjMxMjUgNTguNTc4MSwyMC44OTA2IEw1OC41NzgxLDE5LjQ2ODggQzU4LjU3ODEsMTkuMDMxMyA1OC41NjI1LDE4LjkwNjMgNTguNDY4OCwxOC43NSBDNTguMzEyNSwxOC40ODQ0IDU4LjAzMTMsMTguMzQzOCA1Ny43MzQ0LDE4LjM0MzggQzU3LjQzNzUsMTguMzQzOCA1Ny4yMzQ0LDE4LjQzNzUgNTcuMDE1NiwxOC43NSBMNTYuODQzOCwxOC42NzE5IFogIiBmaWxsPSIjMDAwMDAwIi8+PHRleHQgZmlsbD0iIzAwMDAwMCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGxlbmd0aEFkanVzdD0ic3BhY2luZyIgdGV4dExlbmd0aD0iNDAiIHg9IjY4LjUiIHk9IjI3LjE1NDMiPk9iamVjdDwvdGV4dD48bGluZSBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuNTsiIHgxPSI0MC41IiB4Mj0iMTEwLjUiIHkxPSIzOSIgeTI9IjM5Ii8+PGxpbmUgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjU7IiB4MT0iNDAuNSIgeDI9IjExMC41IiB5MT0iNDciIHkyPSI0NyIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmciIHRleHRMZW5ndGg9IjQ2IiB4PSI0NS41IiB5PSI2MS4yMTA0Ij5lcXVhbHMoKTwvdGV4dD48IS0tTUQ1PVthYjg4NzFlZDYzN2Y0MDcwN2I4NjZiYTY1OTc3MzRiY10KY2xhc3MgQXJyYXlMaXN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjczLjYwOTQiIGlkPSJBcnJheUxpc3QiIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS41OyIgd2lkdGg9IjEzNyIgeD0iNyIgeT0iMTI4Ii8+PGVsbGlwc2UgY3g9IjQ1Ljg1IiBjeT0iMTQ0IiBmaWxsPSIjQUREMUIyIiByeD0iMTEiIHJ5PSIxMSIgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjA7Ii8+PHBhdGggZD0iTTQ4LjE5MzgsMTM5LjY3MTkgQzQ3LjI1NjMsMTM5LjIzNDQgNDYuNjYyNSwxMzkuMDkzOCA0NS43ODc1LDEzOS4wOTM4IEM0My4xNjI1LDEzOS4wOTM4IDQxLjE2MjUsMTQxLjE3MTkgNDEuMTYyNSwxNDMuODkwNiBMNDEuMTYyNSwxNDUuMDE1NiBDNDEuMTYyNSwxNDcuNTkzOCA0My4yNzE5LDE0OS40ODQ0IDQ2LjE2MjUsMTQ5LjQ4NDQgQzQ3LjM4MTMsMTQ5LjQ4NDQgNDguNTM3NSwxNDkuMTg3NSA0OS4yODc1LDE0OC42NDA2IEM0OS44NjU2LDE0OC4yMzQ0IDUwLjE5MzgsMTQ3Ljc4MTMgNTAuMTkzOCwxNDcuMzkwNiBDNTAuMTkzOCwxNDYuOTM3NSA0OS44MDMxLDE0Ni41NDY5IDQ5LjMzNDQsMTQ2LjU0NjkgQzQ5LjExNTYsMTQ2LjU0NjkgNDguOTEyNSwxNDYuNjI1IDQ4LjcyNSwxNDYuODEyNSBDNDguMjcxOSwxNDcuMjk2OSA0OC4yNzE5LDE0Ny4yOTY5IDQ4LjA4NDQsMTQ3LjM5MDYgQzQ3LjY2MjUsMTQ3LjY1NjMgNDYuOTc1LDE0Ny43ODEzIDQ2LjIwOTQsMTQ3Ljc4MTMgQzQ0LjE2MjUsMTQ3Ljc4MTMgNDIuODY1NiwxNDYuNjg3NSA0Mi44NjU2LDE0NC45ODQ0IEw0Mi44NjU2LDE0My44OTA2IEM0Mi44NjU2LDE0Mi4xMDk0IDQ0LjExNTYsMTQwLjc5NjkgNDUuODUsMTQwLjc5NjkgQzQ2LjQyODEsMTQwLjc5NjkgNDcuMDM3NSwxNDAuOTUzMSA0Ny41MDYzLDE0MS4yMDMxIEM0Ny45OTA2LDE0MS40ODQ0IDQ4LjE2MjUsMTQxLjcwMzEgNDguMjU2MywxNDIuMTA5NCBDNDguMzE4OCwxNDIuNTE1NiA0OC4zNSwxNDIuNjQwNiA0OC40OTA2LDE0Mi43NjU2IEM0OC42MzEzLDE0Mi45MDYzIDQ4Ljg2NTYsMTQzLjAxNTYgNDkuMDg0NCwxNDMuMDE1NiBDNDkuMzUsMTQzLjAxNTYgNDkuNjE1NiwxNDIuODc1IDQ5Ljc4NzUsMTQyLjY1NjMgQzQ5Ljg5NjksMTQyLjUgNDkuOTI4MSwxNDIuMzEyNSA0OS45MjgxLDE0MS44OTA2IEw0OS45MjgxLDE0MC40Njg4IEM0OS45MjgxLDE0MC4wMzEzIDQ5LjkxMjUsMTM5LjkwNjMgNDkuODE4OCwxMzkuNzUgQzQ5LjY2MjUsMTM5LjQ4NDQgNDkuMzgxMywxMzkuMzQzOCA0OS4wODQ0LDEzOS4zNDM4IEM0OC43ODc1LDEzOS4zNDM4IDQ4LjU4NDQsMTM5LjQzNzUgNDguMzY1NiwxMzkuNzUgTDQ4LjE5MzgsMTM5LjY3MTkgWiAiIGZpbGw9IiMwMDAwMDAiLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nIiB0ZXh0TGVuZ3RoPSI1MiIgeD0iNjUuMTUiIHk9IjE0OC4xNTQzIj5BcnJheUxpc3Q8L3RleHQ+PGxpbmUgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjU7IiB4MT0iOCIgeDI9IjE0MyIgeTE9IjE2MCIgeTI9IjE2MCIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmciIHRleHRMZW5ndGg9IjEyNSIgeD0iMTMiIHk9IjE3NC4yMTA0Ij5PYmplY3RbXSBlbGVtZW50RGF0YTwvdGV4dD48bGluZSBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuNTsiIHgxPSI4IiB4Mj0iMTQzIiB5MT0iMTgwLjgwNDciIHkyPSIxODAuODA0NyIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmciIHRleHRMZW5ndGg9IjMyIiB4PSIxMyIgeT0iMTk1LjAxNTEiPnNpemUoKTwvdGV4dD48IS0tTUQ1PVs3OGVkM2Q1NGM2YWQ5NmZiNjQzNGE0ZTQ1YWE0YjVmMF0KcmV2ZXJzZSBsaW5rIE9iamVjdCB0byBBcnJheUxpc3QtLT48cGF0aCBjb2RlTGluZT0iMSIgZD0iTTc1LjUsODguNTA1IEM3NS41LDEwMS42MjEgNzUuNSwxMTUuNTEyOCA3NS41LDEyNy43NTU1ICIgZmlsbD0ibm9uZSIgaWQ9Ik9iamVjdC1iYWNrdG8tQXJyYXlMaXN0IiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuMDsiLz48cG9seWdvbiBmaWxsPSJub25lIiBwb2ludHM9IjY4LjUwMDEsODguMjQyLDc1LjUsNjguMjQyLDgyLjUwMDEsODguMjQyLDY4LjUwMDEsODguMjQyIiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuMDsiLz48IS0tTUQ1PVs1ZGNhNjVmZWNjZWQ4YTZjZTNhZGZhZmU3NjA4YmNmN10KQHN0YXJ0dW1sDQpPYmplY3QgPHwtIC0gQXJyYXlMaXN0DQpPYmplY3QgOiBlcXVhbHMoKQ0KQXJyYXlMaXN0IDogT2JqZWN0W10gZWxlbWVudERhdGENCkFycmF5TGlzdCA6IHNpemUoKQ0KQGVuZHVtbA0KClBsYW50VU1MIHZlcnNpb24gMS4yMDIwLjI3YmV0YTgoVW5rbm93biBjb21waWxlIHRpbWUpCihHUEwgc291cmNlIGRpc3RyaWJ1dGlvbikKSmF2YSBSdW50aW1lOiBKYXZhKFRNKSBTRSBSdW50aW1lIEVudmlyb25tZW50CkpWTTogSmF2YSBIb3RTcG90KFRNKSA2NC1CaXQgU2VydmVyIFZNCkRlZmF1bHQgRW5jb2Rpbmc6IFVURi04Ckxhbmd1YWdlOiBlbgpDb3VudHJ5OiBVUwotLT48L2c+PC9zdmc+'>
+<img src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBjb250ZW50U2NyaXB0VHlwZT0iYXBwbGljYXRpb24vZWNtYXNjcmlwdCIgY29udGVudFN0eWxlVHlwZT0idGV4dC9jc3MiIGhlaWdodD0iMjE1cHgiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiIHN0eWxlPSJ3aWR0aDoxNThweDtoZWlnaHQ6MjE1cHg7IiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAxNTggMjE1IiB3aWR0aD0iMTU4cHgiIHpvb21BbmRQYW49Im1hZ25pZnkiPjxkZWZzPjxmaWx0ZXIgaGVpZ2h0PSIzMDAlIiBpZD0iZnh2MG5kZzc3YWtyZyIgd2lkdGg9IjMwMCUiIHg9Ii0xIiB5PSItMSI+PGZlR2F1c3NpYW5CbHVyIHJlc3VsdD0iYmx1ck91dCIgc3RkRGV2aWF0aW9uPSIyLjAiLz48ZmVDb2xvck1hdHJpeCBpbj0iYmx1ck91dCIgcmVzdWx0PSJibHVyT3V0MiIgdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIC40IDAiLz48ZmVPZmZzZXQgZHg9IjQuMCIgZHk9IjQuMCIgaW49ImJsdXJPdXQyIiByZXN1bHQ9ImJsdXJPdXQzIi8+PGZlQmxlbmQgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iYmx1ck91dDMiIG1vZGU9Im5vcm1hbCIvPjwvZmlsdGVyPjwvZGVmcz48Zz48IS0tTUQ1PVthYTdmNTg2NTMyZTE4NzE5ZTZjZWZhNzBmYzY1MDU4M10KY2xhc3MgT2JqZWN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjYwLjgwNDciIGlkPSJPYmplY3QiIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS41OyIgd2lkdGg9IjcyIiB4PSIzOS41IiB5PSI3Ii8+PGVsbGlwc2UgY3g9IjU0LjUiIGN5PSIyMyIgZmlsbD0iI0FERDFCMiIgcng9IjExIiByeT0iMTEiIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS4wOyIvPjxwYXRoIGQ9Ik01Ni44NDM4LDE4LjY3MTkgQzU1LjkwNjMsMTguMjM0NCA1NS4zMTI1LDE4LjA5MzggNTQuNDM3NSwxOC4wOTM4IEM1MS44MTI1LDE4LjA5MzggNDkuODEyNSwyMC4xNzE5IDQ5LjgxMjUsMjIuODkwNiBMNDkuODEyNSwyNC4wMTU2IEM0OS44MTI1LDI2LjU5MzggNTEuOTIxOSwyOC40ODQ0IDU0LjgxMjUsMjguNDg0NCBDNTYuMDMxMywyOC40ODQ0IDU3LjE4NzUsMjguMTg3NSA1Ny45Mzc1LDI3LjY0MDYgQzU4LjUxNTYsMjcuMjM0NCA1OC44NDM4LDI2Ljc4MTMgNTguODQzOCwyNi4zOTA2IEM1OC44NDM4LDI1LjkzNzUgNTguNDUzMSwyNS41NDY5IDU3Ljk4NDQsMjUuNTQ2OSBDNTcuNzY1NiwyNS41NDY5IDU3LjU2MjUsMjUuNjI1IDU3LjM3NSwyNS44MTI1IEM1Ni45MjE5LDI2LjI5NjkgNTYuOTIxOSwyNi4yOTY5IDU2LjczNDQsMjYuMzkwNiBDNTYuMzEyNSwyNi42NTYzIDU1LjYyNSwyNi43ODEzIDU0Ljg1OTQsMjYuNzgxMyBDNTIuODEyNSwyNi43ODEzIDUxLjUxNTYsMjUuNjg3NSA1MS41MTU2LDIzLjk4NDQgTDUxLjUxNTYsMjIuODkwNiBDNTEuNTE1NiwyMS4xMDk0IDUyLjc2NTYsMTkuNzk2OSA1NC41LDE5Ljc5NjkgQzU1LjA3ODEsMTkuNzk2OSA1NS42ODc1LDE5Ljk1MzEgNTYuMTU2MywyMC4yMDMxIEM1Ni42NDA2LDIwLjQ4NDQgNTYuODEyNSwyMC43MDMxIDU2LjkwNjMsMjEuMTA5NCBDNTYuOTY4OCwyMS41MTU2IDU3LDIxLjY0MDYgNTcuMTQwNiwyMS43NjU2IEM1Ny4yODEzLDIxLjkwNjMgNTcuNTE1NiwyMi4wMTU2IDU3LjczNDQsMjIuMDE1NiBDNTgsMjIuMDE1NiA1OC4yNjU2LDIxLjg3NSA1OC40Mzc1LDIxLjY1NjMgQzU4LjU0NjksMjEuNSA1OC41NzgxLDIxLjMxMjUgNTguNTc4MSwyMC44OTA2IEw1OC41NzgxLDE5LjQ2ODggQzU4LjU3ODEsMTkuMDMxMyA1OC41NjI1LDE4LjkwNjMgNTguNDY4OCwxOC43NSBDNTguMzEyNSwxOC40ODQ0IDU4LjAzMTMsMTguMzQzOCA1Ny43MzQ0LDE4LjM0MzggQzU3LjQzNzUsMTguMzQzOCA1Ny4yMzQ0LDE4LjQzNzUgNTcuMDE1NiwxOC43NSBMNTYuODQzOCwxOC42NzE5IFogIiBmaWxsPSIjMDAwMDAwIi8+PHRleHQgZmlsbD0iIzAwMDAwMCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGxlbmd0aEFkanVzdD0ic3BhY2luZyIgdGV4dExlbmd0aD0iNDAiIHg9IjY4LjUiIHk9IjI3LjE1NDMiPk9iamVjdDwvdGV4dD48bGluZSBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuNTsiIHgxPSI0MC41IiB4Mj0iMTEwLjUiIHkxPSIzOSIgeTI9IjM5Ii8+PGxpbmUgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjU7IiB4MT0iNDAuNSIgeDI9IjExMC41IiB5MT0iNDciIHkyPSI0NyIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmciIHRleHRMZW5ndGg9IjQ2IiB4PSI0NS41IiB5PSI2MS4yMTA0Ij5lcXVhbHMoKTwvdGV4dD48IS0tTUQ1PVthYjg4NzFlZDYzN2Y0MDcwN2I4NjZiYTY1OTc3MzRiY10KY2xhc3MgQXJyYXlMaXN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjczLjYwOTQiIGlkPSJBcnJheUxpc3QiIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS41OyIgd2lkdGg9IjEzNyIgeD0iNyIgeT0iMTI4Ii8+PGVsbGlwc2UgY3g9IjQ1Ljg1IiBjeT0iMTQ0IiBmaWxsPSIjQUREMUIyIiByeD0iMTEiIHJ5PSIxMSIgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjA7Ii8+PHBhdGggZD0iTTQ4LjE5MzgsMTM5LjY3MTkgQzQ3LjI1NjMsMTM5LjIzNDQgNDYuNjYyNSwxMzkuMDkzOCA0NS43ODc1LDEzOS4wOTM4IEM0My4xNjI1LDEzOS4wOTM4IDQxLjE2MjUsMTQxLjE3MTkgNDEuMTYyNSwxNDMuODkwNiBMNDEuMTYyNSwxNDUuMDE1NiBDNDEuMTYyNSwxNDcuNTkzOCA0My4yNzE5LDE0OS40ODQ0IDQ2LjE2MjUsMTQ5LjQ4NDQgQzQ3LjM4MTMsMTQ5LjQ4NDQgNDguNTM3NSwxNDkuMTg3NSA0OS4yODc1LDE0OC42NDA2IEM0OS44NjU2LDE0OC4yMzQ0IDUwLjE5MzgsMTQ3Ljc4MTMgNTAuMTkzOCwxNDcuMzkwNiBDNTAuMTkzOCwxNDYuOTM3NSA0OS44MDMxLDE0Ni41NDY5IDQ5LjMzNDQsMTQ2LjU0NjkgQzQ5LjExNTYsMTQ2LjU0NjkgNDguOTEyNSwxNDYuNjI1IDQ4LjcyNSwxNDYuODEyNSBDNDguMjcxOSwxNDcuMjk2OSA0OC4yNzE5LDE0Ny4yOTY5IDQ4LjA4NDQsMTQ3LjM5MDYgQzQ3LjY2MjUsMTQ3LjY1NjMgNDYuOTc1LDE0Ny43ODEzIDQ2LjIwOTQsMTQ3Ljc4MTMgQzQ0LjE2MjUsMTQ3Ljc4MTMgNDIuODY1NiwxNDYuNjg3NSA0Mi44NjU2LDE0NC45ODQ0IEw0Mi44NjU2LDE0My44OTA2IEM0Mi44NjU2LDE0Mi4xMDk0IDQ0LjExNTYsMTQwLjc5NjkgNDUuODUsMTQwLjc5NjkgQzQ2LjQyODEsMTQwLjc5NjkgNDcuMDM3NSwxNDAuOTUzMSA0Ny41MDYzLDE0MS4yMDMxIEM0Ny45OTA2LDE0MS40ODQ0IDQ4LjE2MjUsMTQxLjcwMzEgNDguMjU2MywxNDIuMTA5NCBDNDguMzE4OCwxNDIuNTE1NiA0OC4zNSwxNDIuNjQwNiA0OC40OTA2LDE0Mi43NjU2IEM0OC42MzEzLDE0Mi45MDYzIDQ4Ljg2NTYsMTQzLjAxNTYgNDkuMDg0NCwxNDMuMDE1NiBDNDkuMzUsMTQzLjAxNTYgNDkuNjE1NiwxNDIuODc1IDQ5Ljc4NzUsMTQyLjY1NjMgQzQ5Ljg5NjksMTQyLjUgNDkuOTI4MSwxNDIuMzEyNSA0OS45MjgxLDE0MS44OTA2IEw0OS45MjgxLDE0MC40Njg4IEM0OS45MjgxLDE0MC4wMzEzIDQ5LjkxMjUsMTM5LjkwNjMgNDkuODE4OCwxMzkuNzUgQzQ5LjY2MjUsMTM5LjQ4NDQgNDkuMzgxMywxMzkuMzQzOCA0OS4wODQ0LDEzOS4zNDM4IEM0OC43ODc1LDEzOS4zNDM4IDQ4LjU4NDQsMTM5LjQzNzUgNDguMzY1NiwxMzkuNzUgTDQ4LjE5MzgsMTM5LjY3MTkgWiAiIGZpbGw9IiMwMDAwMDAiLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nIiB0ZXh0TGVuZ3RoPSI1MiIgeD0iNjUuMTUiIHk9IjE0OC4xNTQzIj5BcnJheUxpc3Q8L3RleHQ+PGxpbmUgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjU7IiB4MT0iOCIgeDI9IjE0MyIgeTE9IjE2MCIgeTI9IjE2MCIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmciIHRleHRMZW5ndGg9IjEyNSIgeD0iMTMiIHk9IjE3NC4yMTA0Ij5PYmplY3RbXSBlbGVtZW50RGF0YTwvdGV4dD48bGluZSBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuNTsiIHgxPSI4IiB4Mj0iMTQzIiB5MT0iMTgwLjgwNDciIHkyPSIxODAuODA0NyIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmciIHRleHRMZW5ndGg9IjMyIiB4PSIxMyIgeT0iMTk1LjAxNTEiPnNpemUoKTwvdGV4dD48IS0tTUQ1PVs3OGVkM2Q1NGM2YWQ5NmZiNjQzNGE0ZTQ1YWE0YjVmMF0KcmV2ZXJzZSBsaW5rIE9iamVjdCB0byBBcnJheUxpc3QtLT48cGF0aCBjb2RlTGluZT0iMSIgZD0iTTc1LjUsODguNTA1IEM3NS41LDEwMS42MjEgNzUuNSwxMTUuNTEyOCA3NS41LDEyNy43NTU1ICIgZmlsbD0ibm9uZSIgaWQ9Ik9iamVjdC1iYWNrdG8tQXJyYXlMaXN0IiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuMDsiLz48cG9seWdvbiBmaWxsPSJub25lIiBwb2ludHM9IjY4LjUwMDEsODguMjQyLDc1LjUsNjguMjQyLDgyLjUwMDEsODguMjQyLDY4LjUwMDEsODguMjQyIiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuMDsiLz48IS0tTUQ1PVtiNjgwZjY5M2JjOGY5MWIwNTRhYjlkMmJkNmM4NWNkOV0KQHN0YXJ0dW1sDQpPYmplY3QgPHwtIC0gQXJyYXlMaXN0DQpPYmplY3QgOiBlcXVhbHMoKQ0KQXJyYXlMaXN0IDogT2JqZWN0W10gZWxlbWVudERhdGENCkFycmF5TGlzdCA6IHNpemUoKQ0KQGVuZHVtbA0KClBsYW50VU1MIHZlcnNpb24gMS4yMDIxLjAxYmV0YTcoVW5rbm93biBjb21waWxlIHRpbWUpCihHUEwgc291cmNlIGRpc3RyaWJ1dGlvbikKSmF2YSBSdW50aW1lOiBKYXZhKFRNKSBTRSBSdW50aW1lIEVudmlyb25tZW50CkpWTTogSmF2YSBIb3RTcG90KFRNKSA2NC1CaXQgU2VydmVyIFZNCkRlZmF1bHQgRW5jb2Rpbmc6IFVURi04Ckxhbmd1YWdlOiBlbgpDb3VudHJ5OiBVUwotLT48L2c+PC9zdmc+'>
 
 <h2 id="Markdown-Preview-Enhanced"><a href="#Markdown-Preview-Enhanced" class="headerlink" title="Markdown Preview Enhanced"></a><strong>Markdown Preview Enhanced</strong></h2><p><strong>Markdown Preview Enhanced</strong> 是一款为 <a href="https://atom.io/packages/markdown-preview-enhanced" target="_blank" rel="noopener"><strong>Atom</strong></a> 以及 <a href="https://marketplace.visualstudio.com/items?itemName=shd101wyy.markdown-preview-enhanced" target="_blank" rel="noopener"><strong>Visual Studio Code</strong></a> 编辑器编写的<strong>超级强大的</strong> Markdown 插件。 这款插件意在让你拥有飘逸的 Markdown 写作体验。</p>
 <p><strong>Markdown Preview Enhanced</strong> 内部支持 <code>flow charts</code>, <code>sequence diagrams</code>, <code>mermaid</code>, <code>PlantUML</code>, <code>WaveDrom</code>, <code>GraphViz</code>，<code>Vega &amp; Vega-lite</code>，<code>Ditaa</code> 图像渲染。 你也可以通过使用 <a href="https://shd101wyy.github.io/markdown-preview-enhanced/#/zh-cn/code-chunk" target="_blank" rel="noopener">Code Chunk</a> 来渲染 <code>TikZ</code>, <code>Python Matplotlib</code>, <code>Plotly</code> 等图像。</p>
@@ -25159,6 +25159,7 @@ libtest.a(rmdec.c.o): warning: defined here</code></pre><h2 id="原因"><a href=
 <li><a href="https://4pda.ru/forum/index.php?showtopic=1002233&st=40" target="_blank" rel="noopener">固件</a></li>
 <li><a href="https://4pda.ru/forum/index.php?showtopic=1002233&st=2880#entry100655364" target="_blank" rel="noopener">Turbo 固件系列</a></li>
 <li><a href="https://4pda.ru/forum/index.php?showtopic=993324" target="_blank" rel="noopener">SLIMBOX</a></li>
+<li><a href="https://www.bilibili.com/read/cv9065539/" target="_blank" rel="noopener">X96 Max+ 卡刷 SlimBOX，使用原生的ATV</a></li>
 </ul>
 </li>
 <li>EmuELEC<ul>
@@ -25171,6 +25172,10 @@ libtest.a(rmdec.c.o): warning: defined here</code></pre><h2 id="原因"><a href=
 <li>OpenWrt<ul>
 <li><a href="https://www.right.com.cn/forum/thread-4055451-1-1.html" target="_blank" rel="noopener">[2020-10-29] 47+O S905x3(含x2)、N1、贝壳云、我家云等OP固件</a></li>
 <li><a href="https://www.right.com.cn/forum/thread-981406-1-1.html" target="_blank" rel="noopener">[N1盒子] [2020-10-18]★46+o版， S905x3、N1、贝壳云、我家云等op固件</a></li>
+</ul>
+</li>
+<li>Recovery<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/293943099" target="_blank" rel="noopener">X96MAX+ S905x3 盒子 刷机救砖教程</a></li>
 </ul>
 </li>
 </ul>
@@ -28541,8 +28546,8 @@ net.core.wmem_max = 16777216</code></pre><p>一般来说，<strong>理论上的R
         <category>Linux</category>
         <category>Socket</category>
         <category>Network</category>
-        <category>TCP</category>
         <category>Tools</category>
+        <category>TCP</category>
         <category>Network</category>
       </categories>
       <tags>
@@ -35369,8 +35374,8 @@ rtsp://192.168.128.5/?src=1&amp;fe=1&amp;freq=12720&amp;pol=v&amp;msys=dvbs2&amp
 ]]></content>
       <categories>
         <category>Network</category>
-        <category>TCP</category>
         <category>Tools</category>
+        <category>TCP</category>
         <category>HTTP</category>
         <category>Network</category>
       </categories>
