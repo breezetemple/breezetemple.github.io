@@ -5698,119 +5698,6 @@ $ git commit foo -m &#39;Remaining parts&#39;</code></pre>
       </tags>
   </entry>
   <entry>
-    <title>lyngsat crawler</title>
-    <url>/2016/09/09/lyngsat-crawler/</url>
-    <content><![CDATA[<p>主要用到 <code>requests</code> 和 <code>bs4</code> 这两个包</p>
-<pre><code class="python">
-import requests
-import bs4
-
-proxy = {&quot;http&quot;:&quot;http://127.0.0.1:8787&quot;,&quot;https&quot;:&quot;https://127.0.0.1:8787&quot;}
-
-url = &#39;http://www.lyngsat.com/asia.html&#39;
-
-#results = [[data.get_text() for data in row.find_all(&#39;td&#39;)] for row in allRows]
-
-def get_info_from_table(table):
-    rowspan_count = 0
-    current_tr = 0
-    trs = table.find_all(&#39;tr&#39;)
-
-    for i in range(0, len(trs))[2:-1]:
-        #print i
-        if rowspan_count != 0:
-            td = trs[i].find_all(&#39;td&#39;)
-            if i == current_tr + 1:
-                print &quot;\t&quot; + td[1].getText()
-            else:
-                print &quot;\t&quot; + td[0].getText()
-            rowspan_count = rowspan_count - 1
-            continue
-
-        for td in trs[i].find_all(&#39;td&#39;):
-            if td.has_attr(&quot;rowspan&quot;):
-                rowspan_count = int(td[&quot;rowspan&quot;]) - 1
-                current_tr = i
-                #print &quot;rowspan_count : %d&quot; % (rowspan_count)
-
-        td = trs[i].find_all(&#39;td&#39;)
-        #print td[1].b.getText() + &quot; &quot; + td[6].getText()
-        sym = td[6].getText().split(&quot;-&quot;)[0]
-        print &quot;\n&quot; + td[1].b.getText().strip(&#39; &#39;) + &quot; &quot; + sym
-        print &quot;\t&quot; + td[3].getText()
-
-def get_one_satellite(url):
-    print &quot;Start get data from %s&quot; % (url)
-    response = requests.get(url, proxies = proxy, verify=False)
-    soup = bs4.BeautifulSoup(response.content, &quot;lxml&quot;)
-    #print soup.prettify()
-
-    for table in soup.find_all(&#39;table&#39;, width=720, cellspacing=0, cellpadding=0):
-        for tr in table.find_all(&#39;tr&#39;)[0:len(table.find_all(&#39;tr&#39;))-1]:
-            for td in tr.find_all(&#39;td&#39;,colspan=10, align=&quot;center&quot;):
-                print td.string
-                get_info_from_table(table)
-                print 
-
-    #tables[6].find_all(&#39;tr&#39;)[2].find_all(&#39;td&#39;)[1]
-
-
-def get_urls():
-    response = requests.get(url, proxies = proxy, verify=False)
-    soup = bs4.BeautifulSoup(response.content, &quot;lxml&quot;)
-    #print soup.prettify()
-
-    #links = [a.attrs.get(&#39;href&#39;) for a in soup.select(&#39;tr a[href]&#39;)]
-    #for link in soup.find_all(&#39;a&#39;):
-    #    print(link.get(&#39;href&#39;))
-
-    #tables = soup.find_all(&#39;table&#39;, align=&quot;center&quot;, width=720)
-    #for link in tables[0].find_all(&#39;a&#39;):
-    #    print link.string
-    #    print(link.get(&#39;href&#39;))
-
-    #tables = soup.find_all(&#39;table&#39;, align=&quot;center&quot;, width=720)
-    #tds = tables[0].find_all(&#39;td&#39;, width=70)
-    #for i in range(0, len(tds)):
-    #    link = tds[i].find_all(&#39;a&#39;)
-    #    print(link[0].get(&#39;href&#39;))
-
-    #tables = soup.find_all(&#39;table&#39;, align=&quot;center&quot;, width=720)
-    #tds = tables[0].find_all(&#39;td&#39;, width=70)
-    #for td in tds:
-    #    for link in td.find_all(&#39;a&#39;):
-    #        print link.get(&#39;href&#39;)
-
-    for table in soup.find_all(&#39;table&#39;, align=&quot;center&quot;, width=720):
-        for td in table.find_all(&#39;td&#39;, width=70):
-            for link in td.find_all(&#39;a&#39;):
-                get_one_satellite(link.get(&#39;href&#39;))
-
-
-def main():
-    get_urls()
-
-if __name__ == &quot;__main__&quot;:
-    main()</code></pre>
-<a id="more"></a>
-
-<ol>
-<li><a href="http://wuchong.me/blog/2014/04/24/easy-web-scraping-with-python/" target="_blank" rel="noopener">使用 Python 轻松抓取网页</a></li>
-<li><a href="http://www.zhidaow.com/post/python-requests-install-and-brief-introduction" target="_blank" rel="noopener">python requests的安装与简单运用</a></li>
-<li><a href="https://www.crummy.com/software/BeautifulSoup/bs4/doc.zh/" target="_blank" rel="noopener">Beautiful Soup Documentation</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Python</category>
-      </categories>
-      <tags>
-        <tag>python</tag>
-        <tag>crawler</tag>
-        <tag>bs4</tag>
-        <tag>requests</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Python 使用 Xlrd/xlwt 操作 Excel</title>
     <url>/2016/09/19/python-excel/</url>
     <content><![CDATA[<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><pre><code class="zsh">sudo easy_install xlrd
@@ -6219,6 +6106,119 @@ echo        </code></pre>
         <tag>color</tag>
         <tag>shell</tag>
         <tag>echo</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>lyngsat crawler</title>
+    <url>/2016/09/09/lyngsat-crawler/</url>
+    <content><![CDATA[<p>主要用到 <code>requests</code> 和 <code>bs4</code> 这两个包</p>
+<pre><code class="python">
+import requests
+import bs4
+
+proxy = {&quot;http&quot;:&quot;http://127.0.0.1:8787&quot;,&quot;https&quot;:&quot;https://127.0.0.1:8787&quot;}
+
+url = &#39;http://www.lyngsat.com/asia.html&#39;
+
+#results = [[data.get_text() for data in row.find_all(&#39;td&#39;)] for row in allRows]
+
+def get_info_from_table(table):
+    rowspan_count = 0
+    current_tr = 0
+    trs = table.find_all(&#39;tr&#39;)
+
+    for i in range(0, len(trs))[2:-1]:
+        #print i
+        if rowspan_count != 0:
+            td = trs[i].find_all(&#39;td&#39;)
+            if i == current_tr + 1:
+                print &quot;\t&quot; + td[1].getText()
+            else:
+                print &quot;\t&quot; + td[0].getText()
+            rowspan_count = rowspan_count - 1
+            continue
+
+        for td in trs[i].find_all(&#39;td&#39;):
+            if td.has_attr(&quot;rowspan&quot;):
+                rowspan_count = int(td[&quot;rowspan&quot;]) - 1
+                current_tr = i
+                #print &quot;rowspan_count : %d&quot; % (rowspan_count)
+
+        td = trs[i].find_all(&#39;td&#39;)
+        #print td[1].b.getText() + &quot; &quot; + td[6].getText()
+        sym = td[6].getText().split(&quot;-&quot;)[0]
+        print &quot;\n&quot; + td[1].b.getText().strip(&#39; &#39;) + &quot; &quot; + sym
+        print &quot;\t&quot; + td[3].getText()
+
+def get_one_satellite(url):
+    print &quot;Start get data from %s&quot; % (url)
+    response = requests.get(url, proxies = proxy, verify=False)
+    soup = bs4.BeautifulSoup(response.content, &quot;lxml&quot;)
+    #print soup.prettify()
+
+    for table in soup.find_all(&#39;table&#39;, width=720, cellspacing=0, cellpadding=0):
+        for tr in table.find_all(&#39;tr&#39;)[0:len(table.find_all(&#39;tr&#39;))-1]:
+            for td in tr.find_all(&#39;td&#39;,colspan=10, align=&quot;center&quot;):
+                print td.string
+                get_info_from_table(table)
+                print 
+
+    #tables[6].find_all(&#39;tr&#39;)[2].find_all(&#39;td&#39;)[1]
+
+
+def get_urls():
+    response = requests.get(url, proxies = proxy, verify=False)
+    soup = bs4.BeautifulSoup(response.content, &quot;lxml&quot;)
+    #print soup.prettify()
+
+    #links = [a.attrs.get(&#39;href&#39;) for a in soup.select(&#39;tr a[href]&#39;)]
+    #for link in soup.find_all(&#39;a&#39;):
+    #    print(link.get(&#39;href&#39;))
+
+    #tables = soup.find_all(&#39;table&#39;, align=&quot;center&quot;, width=720)
+    #for link in tables[0].find_all(&#39;a&#39;):
+    #    print link.string
+    #    print(link.get(&#39;href&#39;))
+
+    #tables = soup.find_all(&#39;table&#39;, align=&quot;center&quot;, width=720)
+    #tds = tables[0].find_all(&#39;td&#39;, width=70)
+    #for i in range(0, len(tds)):
+    #    link = tds[i].find_all(&#39;a&#39;)
+    #    print(link[0].get(&#39;href&#39;))
+
+    #tables = soup.find_all(&#39;table&#39;, align=&quot;center&quot;, width=720)
+    #tds = tables[0].find_all(&#39;td&#39;, width=70)
+    #for td in tds:
+    #    for link in td.find_all(&#39;a&#39;):
+    #        print link.get(&#39;href&#39;)
+
+    for table in soup.find_all(&#39;table&#39;, align=&quot;center&quot;, width=720):
+        for td in table.find_all(&#39;td&#39;, width=70):
+            for link in td.find_all(&#39;a&#39;):
+                get_one_satellite(link.get(&#39;href&#39;))
+
+
+def main():
+    get_urls()
+
+if __name__ == &quot;__main__&quot;:
+    main()</code></pre>
+<a id="more"></a>
+
+<ol>
+<li><a href="http://wuchong.me/blog/2014/04/24/easy-web-scraping-with-python/" target="_blank" rel="noopener">使用 Python 轻松抓取网页</a></li>
+<li><a href="http://www.zhidaow.com/post/python-requests-install-and-brief-introduction" target="_blank" rel="noopener">python requests的安装与简单运用</a></li>
+<li><a href="https://www.crummy.com/software/BeautifulSoup/bs4/doc.zh/" target="_blank" rel="noopener">Beautiful Soup Documentation</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Python</category>
+      </categories>
+      <tags>
+        <tag>python</tag>
+        <tag>crawler</tag>
+        <tag>bs4</tag>
+        <tag>requests</tag>
       </tags>
   </entry>
   <entry>
@@ -6737,26 +6737,6 @@ git config --global push.default simple
       </tags>
   </entry>
   <entry>
-    <title>git pull强制覆盖本地文件</title>
-    <url>/2016/12/09/git-pull-force/</url>
-    <content><![CDATA[<pre><code class="bash">git fetch --all  
-git reset --hard origin/master 
-git pull</code></pre>
-<p><code>gitk</code> 工具用来看分支关系</p>
-<p><a href="https://zlargon.gitbooks.io/git-tutorial/content/remote/force_update.html" target="_blank" rel="noopener">強制更新遠端分支</a></p>
-<a id="more"></a>
-
-]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Git</category>
-      </categories>
-      <tags>
-        <tag>github</tag>
-        <tag>git</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>GitHub 一个邮箱管理多个SSH Key</title>
     <url>/2016/12/09/multi-sshkey-with-github/</url>
     <content><![CDATA[<blockquote>
@@ -6864,6 +6844,26 @@ q</code></pre>
       <tags>
         <tag>vim</tag>
         <tag>regexp</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>git pull强制覆盖本地文件</title>
+    <url>/2016/12/09/git-pull-force/</url>
+    <content><![CDATA[<pre><code class="bash">git fetch --all  
+git reset --hard origin/master 
+git pull</code></pre>
+<p><code>gitk</code> 工具用来看分支关系</p>
+<p><a href="https://zlargon.gitbooks.io/git-tutorial/content/remote/force_update.html" target="_blank" rel="noopener">強制更新遠端分支</a></p>
+<a id="more"></a>
+
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Git</category>
+      </categories>
+      <tags>
+        <tag>github</tag>
+        <tag>git</tag>
       </tags>
   </entry>
   <entry>
@@ -7412,27 +7412,6 @@ git branch -vv</code></pre><blockquote>
       <tags>
         <tag>gcc</tag>
         <tag>overflow</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>linux-memory-space</title>
-    <url>/2017/03/17/linux-memory-space/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="http://os.51cto.com/art/201205/333728.htm" target="_blank" rel="noopener">Linux进程地址空间的探究解析</a></li>
-<li><a href="http://blog.csdn.net/yusiguyuan/article/details/45155035" target="_blank" rel="noopener">Linux进程地址空间 &amp;&amp; 进程内存布局</a></li>
-<li><a href="http://www.choudan.net/2013/10/24/Linux%E8%BF%9B%E7%A8%8B%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4%E5%AD%A6%E4%B9%A0(%E4%B8%80).html" target="_blank" rel="noopener">Linux进程地址空间学习</a></li>
-<li><a href="http://www.cnblogs.com/clover-toeic/p/3754433.html" target="_blank" rel="noopener">Linux虚拟地址空间布局</a></li>
-<li><a href="http://ilinuxkernel.com/?p=1013" target="_blank" rel="noopener">Linux内核高端内存</a></li>
-<li><a href="https://www.ibm.com/developerworks/cn/linux/l-kernel-memory-access/" target="_blank" rel="noopener">从 Linux 内核访问用户空间内存</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
       </tags>
   </entry>
   <entry>
@@ -8068,6 +8047,27 @@ Process record: the current architecture doesn&#39;t support record function.</c
 <li><a href="http://blog.csdn.net/yusiguyuan/article/details/28480691" target="_blank" rel="noopener">GDB回溯调试技术</a></li>
 </ol>
 ]]></content>
+  </entry>
+  <entry>
+    <title>linux-memory-space</title>
+    <url>/2017/03/17/linux-memory-space/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://os.51cto.com/art/201205/333728.htm" target="_blank" rel="noopener">Linux进程地址空间的探究解析</a></li>
+<li><a href="http://blog.csdn.net/yusiguyuan/article/details/45155035" target="_blank" rel="noopener">Linux进程地址空间 &amp;&amp; 进程内存布局</a></li>
+<li><a href="http://www.choudan.net/2013/10/24/Linux%E8%BF%9B%E7%A8%8B%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4%E5%AD%A6%E4%B9%A0(%E4%B8%80).html" target="_blank" rel="noopener">Linux进程地址空间学习</a></li>
+<li><a href="http://www.cnblogs.com/clover-toeic/p/3754433.html" target="_blank" rel="noopener">Linux虚拟地址空间布局</a></li>
+<li><a href="http://ilinuxkernel.com/?p=1013" target="_blank" rel="noopener">Linux内核高端内存</a></li>
+<li><a href="https://www.ibm.com/developerworks/cn/linux/l-kernel-memory-access/" target="_blank" rel="noopener">从 Linux 内核访问用户空间内存</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+      </tags>
   </entry>
   <entry>
     <title>GDB多线程调试</title>
@@ -10440,108 +10440,6 @@ void show_registers(struct pt_regs *fp)    </code></pre><h2 id="分析函数show
       <tags>
         <tag>linux</tag>
         <tag>backtrace</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Movian Plugin Development</title>
-    <url>/2018/01/10/movian-plugin-development/</url>
-    <content><![CDATA[<p>Movian Development</p>
-<a id="more"></a>
-
-<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
-<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
-<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
-<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
-<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
-<pre><code class="json">{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;apiversion&quot;: 1,
-  &quot;id&quot;: &quot;headweb&quot;,
-  &quot;file&quot;: &quot;headweb.js&quot;,
-  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
-  &quot;version&quot;: &quot;1.5.3&quot;,
-  &quot;author&quot;: &quot;Andreas Öman&quot;,
-  &quot;title&quot;: &quot;Headweb&quot;,
-  &quot;icon&quot;: &quot;headweb_square.png&quot;,
-  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
-  &quot;category&quot;: &quot;video&quot;,
-  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
-  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
-}</code></pre>
-<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
-<ul>
-<li>ecmascript - loads the plugin using Duktape.</li>
-<li>views - used for user interface (screen keyboard plugin)</li>
-</ul>
-<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
-<ul>
-<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
-<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
-</ul>
-<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
-<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
-<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
-<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
-<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
-<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
-<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
-<ul>
-<li>“tv” - online TV</li>
-<li>“video” - streaming video</li>
-<li>“music” - streaming music</li>
-<li>“glwview” - UI extentions</li>
-<li>“subtitles” - subtitles</li>
-<li>“glwosk” - on screen keyboard</li>
-</ul>
-<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
-<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
-<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
-<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
-<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
-<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
-<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
-<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
-<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
-<pre><code>{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;file&quot;: &quot;testplugin.js&quot;,
-  &quot;id&quot;: &quot;testplugin&quot;
-}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
-<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
-  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
-})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
-<pre><code>(function(plugin) {
-  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
-    showtime.print(&quot;I was called&quot;);
-  })
-})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
-<p><code>somafa</code> 中的 <code>start URI</code></p>
-<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
-...
-}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
-<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
-<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
-<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
-<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
-<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
-<ul>
-<li>Direct URL</li>
-<li>Via a video page</li>
-</ul>
-<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
-<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
-<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
-<p>To use it first do:</p>
-<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
-      <categories>
-        <category>Movian</category>
-      </categories>
-      <tags>
-        <tag>movian</tag>
       </tags>
   </entry>
   <entry>
@@ -13627,16 +13525,61 @@ curl -u guowei:38e2427ac39d5a5f810c83c6fd39ee80 -H &quot;$CRUMB&quot; -X POST &q
   <entry>
     <title>jenkins 权限控制</title>
     <url>/2018/09/05/jenkins-permissions/</url>
-    <content><![CDATA[<p><code>Jenkins</code> 本身权限管理比较粗放，无法实现用户指定显示视图或者视图中指定的 jobs。可以通过插件 <code>Role Strategy Plugin</code> 实现不同用户组显示对应视图 views 中不同的 jobs。</p>
+    <content><![CDATA[<p>Jenkins 授权策略</p>
+<ul>
+<li>任何用户可以做任何事(没有任何限制)</li>
+<li>Role-Based Strategy</li>
+<li>安全矩阵</li>
+<li>登录用户可以做任何事</li>
+<li>项目矩阵授权策略</li>
+</ul>
+<p><code>Jenkins</code> 本身权限管理比较粗放，无法实现用户指定显示视图或者视图中指定的 jobs。可以通过插件 <code>Role Strategy Plugin</code> 实现不同用户组显示对应视图 views 中不同的 jobs。</p>
+<p>其中 <code>安全矩阵</code> 和 <code>项目矩阵授权策略</code> 需要安装插件 <code>Matrix Authorization Strategy Plugin</code></p>
 <a id="more"></a>
 
-<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>插件名 <code>Role Strategy Plugin</code></p>
-<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><h3 id="策略选择"><a href="#策略选择" class="headerlink" title="策略选择"></a>策略选择</h3><p><code>系统管理</code> -&gt; <code>Configure Global Security</code> -&gt; <code>策略授权选择</code> -&gt; <code>Role-Based Strategy</code></p>
-<h3 id="用户管理"><a href="#用户管理" class="headerlink" title="用户管理"></a>用户管理</h3><p><code>系统管理</code> -&gt; <code>Manage and Assign Roles</code></p>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><ul>
+<li><code>Role Strategy Plugin</code></li>
+<li><code>Matrix Authorization Strategy Plugin</code></li>
+</ul>
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><h3 id="策略选择"><a href="#策略选择" class="headerlink" title="策略选择"></a>策略选择</h3><p><code>系统管理</code> -&gt; <code>Configure Global Security</code> -&gt; <code>策略授权选择</code></p>
+<ul>
+<li><code>Role-Based Strategy</code></li>
+<li><code>安全矩阵</code></li>
+<li><code>项目矩阵授权策略</code></li>
+</ul>
+<p>安全矩阵和项目矩阵授权策略的配置是一模一样的，唯一的区别是项目矩阵授权策略支持在Job的配置页面再次配置授权策略</p>
+<h3 id="用户管理"><a href="#用户管理" class="headerlink" title="用户管理"></a>用户管理</h3><ul>
+<li>Global role<br>  跨工程权限，包括 job、源码控制等</li>
+<li>Item role<br>  访问特定的项目</li>
+<li>Slave role<br>  管理节点权限</li>
+</ul>
+<p><code>系统管理</code> -&gt; <code>Manage and Assign Roles</code></p>
+<ul>
+<li>Manage Roles<ul>
+<li>Global roles<ul>
+<li>admin - 管理员角色：包括所有权限</li>
+<li>reader - 只读角色：只包括 overall - Read</li>
+</ul>
+</li>
+<li>Item roles<ul>
+<li>对项目权限进行指定</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Assign Roles<ul>
+<li>将用户与Roles关联</li>
+</ul>
+</li>
+</ul>
 <h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
 <li><a href="http://blog.51cto.com/wzlinux/2160778" target="_blank" rel="noopener">Jenkins 配置基于角色的项目权限管理</a></li>
-<li><a href="https://my.oschina.net/boltwu/blog/404893" target="_blank" rel="noopener">jenkins 权限管理，实现不同用户组显示对应视图 views 中不同的 jobs</a></li>
-<li><a href="https://yq.aliyun.com/articles/611227" target="_blank" rel="noopener">JENKINS 针对不同项目组对用户进行权限分配</a></li>
+<li><a href="https://my.oschina.net/boltwu/blog/404893" target="_blank" rel="noopener">Jenkins 权限管理，实现不同用户组显示对应视图 views 中不同的 jobs</a></li>
+<li><a href="https://yq.aliyun.com/articles/611227" target="_blank" rel="noopener">Jenkins 针对不同项目组对用户进行权限分配</a></li>
+<li><a href="https://www.cnblogs.com/yangxia-test/p/4368778.html" target="_blank" rel="noopener">Jenkins学习七：Jenkins的授权和访问控制</a></li>
+<li><a href="https://blog.csdn.net/weixin_30299709/article/details/96010008" target="_blank" rel="noopener">Jenkins权限管理之Matrix Authorization Strategy</a></li>
+<li><a href="https://computingforgeeks.com/manage-users-and-roles-in-jenkins/" target="_blank" rel="noopener">How to Manage Users and Roles in Jenkins</a></li>
+<li><a href="https://medium.com/@vishwanathdeedat/jenkins-role-based-access-358936f07af" target="_blank" rel="noopener">Jenkins Role-Based Access</a></li>
 </ol>
 ]]></content>
       <categories>
@@ -14329,6 +14272,204 @@ $ pipreqs ./</code></pre>
         <tag>python</tag>
         <tag>pip</tag>
         <tag>requirements.txt</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>proc-pid-intro</title>
+    <url>/2017/12/14/proc-pid-intro/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
+<li><a href="https://github.com/NanXiao/gnu-linux-proc-pid-intro" target="_blank" rel="noopener">GNU/Linux下的/proc/[pid]目录下的文件分析</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>proc</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>vim-highlight-syntax</title>
+    <url>/2017/12/19/vim-highlight-syntax/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
+<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
+<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
+<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
+<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
+<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
+<pre><code>:syntax
+--- 语法项目 ---
+cLabel         xxx default case
+cStructure     xxx union struct typedef enum
+cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
+                   _Thread_local auto
+cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
+cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
+cStatement     xxx return goto asm continue break
+                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
+<p><code>:help group-name</code></p>
+<pre><code>:help group-name
+
+(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
+
+        *Comment        any comment
+
+        *Constant       any constant
+         String         a string constant: &quot;this is a string&quot;
+         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
+         Number         a number constant: 234, 0xff
+         Boolean        a boolean constant: TRUE, false
+         Float          a floating point constant: 2.3e10
+
+        *Identifier     any variable name
+         Function       function name (also: methods for classes)
+        *Statement      any statement
+         Conditional    if, then, else, endif, switch, etc.
+         Repeat         for, do, while, etc.
+         Label          case, default, etc.
+         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
+         Keyword        any other keyword
+         Exception      try, catch, throw
+
+        *PreProc        generic Preprocessor
+         Include        preprocessor #include
+         Define         preprocessor #define
+         Macro          same as Define
+         PreCondit      preprocessor #if, #else, #endif, etc.
+
+        *Type           int, long, char, etc.
+         StorageClass   static, register, volatile, etc.
+         Structure      struct, union, enum, etc.
+         Typedef        A typedef
+
+        *Special        any special symbol
+         SpecialChar    special character in a constant
+         Tag            you can use CTRL-] on this
+         Delimiter      character that needs attention
+         SpecialComment special things inside a comment
+         Debug          debugging statements
+
+        *Underlined     text that stands out, HTML links
+
+        *Ignore         left blank, hidden  hl-Ignore
+
+        *Error          any erroneous construct
+        *Todo           anything that needs extra attention; mostly the
+                        keywords TODO FIXME and XXX</code></pre>]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Editor</category>
+      </categories>
+      <tags>
+        <tag>vim</tag>
+        <tag>highlight</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Movian Plugin Development</title>
+    <url>/2018/01/10/movian-plugin-development/</url>
+    <content><![CDATA[<p>Movian Development</p>
+<a id="more"></a>
+
+<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
+<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
+<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
+<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
+<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
+<pre><code class="json">{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;apiversion&quot;: 1,
+  &quot;id&quot;: &quot;headweb&quot;,
+  &quot;file&quot;: &quot;headweb.js&quot;,
+  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
+  &quot;version&quot;: &quot;1.5.3&quot;,
+  &quot;author&quot;: &quot;Andreas Öman&quot;,
+  &quot;title&quot;: &quot;Headweb&quot;,
+  &quot;icon&quot;: &quot;headweb_square.png&quot;,
+  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
+  &quot;category&quot;: &quot;video&quot;,
+  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
+  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
+}</code></pre>
+<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
+<ul>
+<li>ecmascript - loads the plugin using Duktape.</li>
+<li>views - used for user interface (screen keyboard plugin)</li>
+</ul>
+<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
+<ul>
+<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
+<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
+</ul>
+<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
+<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
+<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
+<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
+<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
+<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
+<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
+<ul>
+<li>“tv” - online TV</li>
+<li>“video” - streaming video</li>
+<li>“music” - streaming music</li>
+<li>“glwview” - UI extentions</li>
+<li>“subtitles” - subtitles</li>
+<li>“glwosk” - on screen keyboard</li>
+</ul>
+<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
+<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
+<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
+<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
+<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
+<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
+<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
+<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
+<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
+<pre><code>{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;file&quot;: &quot;testplugin.js&quot;,
+  &quot;id&quot;: &quot;testplugin&quot;
+}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
+<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
+  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
+})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
+<pre><code>(function(plugin) {
+  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
+    showtime.print(&quot;I was called&quot;);
+  })
+})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
+<p><code>somafa</code> 中的 <code>start URI</code></p>
+<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
+...
+}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
+<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
+<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
+<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
+<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
+<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
+<ul>
+<li>Direct URL</li>
+<li>Via a video page</li>
+</ul>
+<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
+<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
+<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
+<p>To use it first do:</p>
+<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
+      <categories>
+        <category>Movian</category>
+      </categories>
+      <tags>
+        <tag>movian</tag>
       </tags>
   </entry>
   <entry>
@@ -15713,6 +15854,45 @@ networking/nslookup.c:202:     * after getaddrinfo (in server_print). This repor
       </tags>
   </entry>
   <entry>
+    <title>Linux 内核配置支持 MT7601U</title>
+    <url>/2018/11/09/Linux-Kernel-cfg80211-wireless-extensions-compatibility/</url>
+    <content><![CDATA[<p>内核版本 <code>4.9.22</code> 支持 <code>MT7601U</code>，设备发现之后不能扫描 AP，需要 <code>cfg80211 wireless extensions compatibility</code> 支持</p>
+<p>内核描述如下</p>
+<blockquote>
+<p>Enable this option if you need old userspace for wireless extensions with cfg80211-based drivers.</p>
+</blockquote>
+<a id="more"></a>
+
+<p>内核配置如下</p>
+<pre><code class="kconfig">[*] Networking support  ---&gt;
+      -*-   Wireless  ---&gt;
+        &lt;*&gt;   cfg80211 - wireless configuration API
+        [ ]     nl80211 testmode command (NEW)
+        [ ]     enable developer warnings (NEW)
+        [*]     enable powersave by default (NEW)
+        [ ]     cfg80211 DebugFS entries (NEW)
+        [*]     cfg80211 wireless extensions compatibility
+        &lt;*&gt;   Generic IEEE 802.11 Networking Stack (mac80211)
+                Default rate control algorithm (Minstrel)  ---&gt;
+        [ ]   Enable mac80211 mesh networking (pre-802.11s) support (NEW)
+        [ ]   Export mac80211 internals in DebugFS (NEW)
+        [ ]   Trace all mac80211 debug messages (NEW)
+        [ ]   Select mac80211 debugging features (NEW)  ---</code></pre>
+<ol>
+<li><a href="https://github.com/friendlyarm/linux-3.4.y/issues/12" target="_blank" rel="noopener">cfg80211 needs to be enabled for MAC80211</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>kernel</tag>
+        <tag>wext</tag>
+        <tag>cfg80211</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>静态编译使用 getaddrinfo 出现警告及动态静态混合使用</title>
     <url>/2018/11/12/statically-linked-binary-that-uses-getaddrinfo/</url>
     <content><![CDATA[<p>使用 <code>-static</code> 编译出现以下警告</p>
@@ -15801,45 +15981,6 @@ pngset.c.o</code></pre>
         <tag>libnss</tag>
         <tag>static</tag>
         <tag>getaddrinfp</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Linux 内核配置支持 MT7601U</title>
-    <url>/2018/11/09/Linux-Kernel-cfg80211-wireless-extensions-compatibility/</url>
-    <content><![CDATA[<p>内核版本 <code>4.9.22</code> 支持 <code>MT7601U</code>，设备发现之后不能扫描 AP，需要 <code>cfg80211 wireless extensions compatibility</code> 支持</p>
-<p>内核描述如下</p>
-<blockquote>
-<p>Enable this option if you need old userspace for wireless extensions with cfg80211-based drivers.</p>
-</blockquote>
-<a id="more"></a>
-
-<p>内核配置如下</p>
-<pre><code class="kconfig">[*] Networking support  ---&gt;
-      -*-   Wireless  ---&gt;
-        &lt;*&gt;   cfg80211 - wireless configuration API
-        [ ]     nl80211 testmode command (NEW)
-        [ ]     enable developer warnings (NEW)
-        [*]     enable powersave by default (NEW)
-        [ ]     cfg80211 DebugFS entries (NEW)
-        [*]     cfg80211 wireless extensions compatibility
-        &lt;*&gt;   Generic IEEE 802.11 Networking Stack (mac80211)
-                Default rate control algorithm (Minstrel)  ---&gt;
-        [ ]   Enable mac80211 mesh networking (pre-802.11s) support (NEW)
-        [ ]   Export mac80211 internals in DebugFS (NEW)
-        [ ]   Trace all mac80211 debug messages (NEW)
-        [ ]   Select mac80211 debugging features (NEW)  ---</code></pre>
-<ol>
-<li><a href="https://github.com/friendlyarm/linux-3.4.y/issues/12" target="_blank" rel="noopener">cfg80211 needs to be enabled for MAC80211</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>kernel</tag>
-        <tag>wext</tag>
-        <tag>cfg80211</tag>
       </tags>
   </entry>
   <entry>
@@ -17137,102 +17278,6 @@ ENDFUNCTION(ADD_N_LIBRARY name)</code></pre>
         <tag>linux</tag>
         <tag>cpu hotplug</tag>
         <tag>smp</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>vim-highlight-syntax</title>
-    <url>/2017/12/19/vim-highlight-syntax/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
-<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
-<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
-<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
-<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
-<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
-<pre><code>:syntax
---- 语法项目 ---
-cLabel         xxx default case
-cStructure     xxx union struct typedef enum
-cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
-                   _Thread_local auto
-cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
-cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
-cStatement     xxx return goto asm continue break
-                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
-<p><code>:help group-name</code></p>
-<pre><code>:help group-name
-
-(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
-
-        *Comment        any comment
-
-        *Constant       any constant
-         String         a string constant: &quot;this is a string&quot;
-         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
-         Number         a number constant: 234, 0xff
-         Boolean        a boolean constant: TRUE, false
-         Float          a floating point constant: 2.3e10
-
-        *Identifier     any variable name
-         Function       function name (also: methods for classes)
-        *Statement      any statement
-         Conditional    if, then, else, endif, switch, etc.
-         Repeat         for, do, while, etc.
-         Label          case, default, etc.
-         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
-         Keyword        any other keyword
-         Exception      try, catch, throw
-
-        *PreProc        generic Preprocessor
-         Include        preprocessor #include
-         Define         preprocessor #define
-         Macro          same as Define
-         PreCondit      preprocessor #if, #else, #endif, etc.
-
-        *Type           int, long, char, etc.
-         StorageClass   static, register, volatile, etc.
-         Structure      struct, union, enum, etc.
-         Typedef        A typedef
-
-        *Special        any special symbol
-         SpecialChar    special character in a constant
-         Tag            you can use CTRL-] on this
-         Delimiter      character that needs attention
-         SpecialComment special things inside a comment
-         Debug          debugging statements
-
-        *Underlined     text that stands out, HTML links
-
-        *Ignore         left blank, hidden  hl-Ignore
-
-        *Error          any erroneous construct
-        *Todo           anything that needs extra attention; mostly the
-                        keywords TODO FIXME and XXX</code></pre>]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Editor</category>
-      </categories>
-      <tags>
-        <tag>vim</tag>
-        <tag>highlight</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>proc-pid-intro</title>
-    <url>/2017/12/14/proc-pid-intro/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h1 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h1><ol>
-<li><a href="https://github.com/NanXiao/gnu-linux-proc-pid-intro" target="_blank" rel="noopener">GNU/Linux下的/proc/[pid]目录下的文件分析</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>proc</tag>
       </tags>
   </entry>
   <entry>
@@ -20002,7 +20047,7 @@ ArrayList : size()
 @enduml
 ` ` `</code></pre>
 <p>效果：</p>
-<img src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBjb250ZW50U2NyaXB0VHlwZT0iYXBwbGljYXRpb24vZWNtYXNjcmlwdCIgY29udGVudFN0eWxlVHlwZT0idGV4dC9jc3MiIGhlaWdodD0iMjE1cHgiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiIHN0eWxlPSJ3aWR0aDoxNThweDtoZWlnaHQ6MjE1cHg7IiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAxNTggMjE1IiB3aWR0aD0iMTU4cHgiIHpvb21BbmRQYW49Im1hZ25pZnkiPjxkZWZzPjxmaWx0ZXIgaGVpZ2h0PSIzMDAlIiBpZD0iZnh2MG5kZzc3YWtyZyIgd2lkdGg9IjMwMCUiIHg9Ii0xIiB5PSItMSI+PGZlR2F1c3NpYW5CbHVyIHJlc3VsdD0iYmx1ck91dCIgc3RkRGV2aWF0aW9uPSIyLjAiLz48ZmVDb2xvck1hdHJpeCBpbj0iYmx1ck91dCIgcmVzdWx0PSJibHVyT3V0MiIgdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIC40IDAiLz48ZmVPZmZzZXQgZHg9IjQuMCIgZHk9IjQuMCIgaW49ImJsdXJPdXQyIiByZXN1bHQ9ImJsdXJPdXQzIi8+PGZlQmxlbmQgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iYmx1ck91dDMiIG1vZGU9Im5vcm1hbCIvPjwvZmlsdGVyPjwvZGVmcz48Zz48IS0tTUQ1PVthYTdmNTg2NTMyZTE4NzE5ZTZjZWZhNzBmYzY1MDU4M10KY2xhc3MgT2JqZWN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjYwLjgwNDciIGlkPSJPYmplY3QiIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS41OyIgd2lkdGg9IjcyIiB4PSIzOS41IiB5PSI3Ii8+PGVsbGlwc2UgY3g9IjU0LjUiIGN5PSIyMyIgZmlsbD0iI0FERDFCMiIgcng9IjExIiByeT0iMTEiIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS4wOyIvPjxwYXRoIGQ9Ik01Ni44NDM4LDE4LjY3MTkgQzU1LjkwNjMsMTguMjM0NCA1NS4zMTI1LDE4LjA5MzggNTQuNDM3NSwxOC4wOTM4IEM1MS44MTI1LDE4LjA5MzggNDkuODEyNSwyMC4xNzE5IDQ5LjgxMjUsMjIuODkwNiBMNDkuODEyNSwyNC4wMTU2IEM0OS44MTI1LDI2LjU5MzggNTEuOTIxOSwyOC40ODQ0IDU0LjgxMjUsMjguNDg0NCBDNTYuMDMxMywyOC40ODQ0IDU3LjE4NzUsMjguMTg3NSA1Ny45Mzc1LDI3LjY0MDYgQzU4LjUxNTYsMjcuMjM0NCA1OC44NDM4LDI2Ljc4MTMgNTguODQzOCwyNi4zOTA2IEM1OC44NDM4LDI1LjkzNzUgNTguNDUzMSwyNS41NDY5IDU3Ljk4NDQsMjUuNTQ2OSBDNTcuNzY1NiwyNS41NDY5IDU3LjU2MjUsMjUuNjI1IDU3LjM3NSwyNS44MTI1IEM1Ni45MjE5LDI2LjI5NjkgNTYuOTIxOSwyNi4yOTY5IDU2LjczNDQsMjYuMzkwNiBDNTYuMzEyNSwyNi42NTYzIDU1LjYyNSwyNi43ODEzIDU0Ljg1OTQsMjYuNzgxMyBDNTIuODEyNSwyNi43ODEzIDUxLjUxNTYsMjUuNjg3NSA1MS41MTU2LDIzLjk4NDQgTDUxLjUxNTYsMjIuODkwNiBDNTEuNTE1NiwyMS4xMDk0IDUyLjc2NTYsMTkuNzk2OSA1NC41LDE5Ljc5NjkgQzU1LjA3ODEsMTkuNzk2OSA1NS42ODc1LDE5Ljk1MzEgNTYuMTU2MywyMC4yMDMxIEM1Ni42NDA2LDIwLjQ4NDQgNTYuODEyNSwyMC43MDMxIDU2LjkwNjMsMjEuMTA5NCBDNTYuOTY4OCwyMS41MTU2IDU3LDIxLjY0MDYgNTcuMTQwNiwyMS43NjU2IEM1Ny4yODEzLDIxLjkwNjMgNTcuNTE1NiwyMi4wMTU2IDU3LjczNDQsMjIuMDE1NiBDNTgsMjIuMDE1NiA1OC4yNjU2LDIxLjg3NSA1OC40Mzc1LDIxLjY1NjMgQzU4LjU0NjksMjEuNSA1OC41NzgxLDIxLjMxMjUgNTguNTc4MSwyMC44OTA2IEw1OC41NzgxLDE5LjQ2ODggQzU4LjU3ODEsMTkuMDMxMyA1OC41NjI1LDE4LjkwNjMgNTguNDY4OCwxOC43NSBDNTguMzEyNSwxOC40ODQ0IDU4LjAzMTMsMTguMzQzOCA1Ny43MzQ0LDE4LjM0MzggQzU3LjQzNzUsMTguMzQzOCA1Ny4yMzQ0LDE4LjQzNzUgNTcuMDE1NiwxOC43NSBMNTYuODQzOCwxOC42NzE5IFogIiBmaWxsPSIjMDAwMDAwIi8+PHRleHQgZmlsbD0iIzAwMDAwMCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGxlbmd0aEFkanVzdD0ic3BhY2luZyIgdGV4dExlbmd0aD0iNDAiIHg9IjY4LjUiIHk9IjI3LjE1NDMiPk9iamVjdDwvdGV4dD48bGluZSBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuNTsiIHgxPSI0MC41IiB4Mj0iMTEwLjUiIHkxPSIzOSIgeTI9IjM5Ii8+PGxpbmUgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjU7IiB4MT0iNDAuNSIgeDI9IjExMC41IiB5MT0iNDciIHkyPSI0NyIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmciIHRleHRMZW5ndGg9IjQ2IiB4PSI0NS41IiB5PSI2MS4yMTA0Ij5lcXVhbHMoKTwvdGV4dD48IS0tTUQ1PVthYjg4NzFlZDYzN2Y0MDcwN2I4NjZiYTY1OTc3MzRiY10KY2xhc3MgQXJyYXlMaXN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjczLjYwOTQiIGlkPSJBcnJheUxpc3QiIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS41OyIgd2lkdGg9IjEzNyIgeD0iNyIgeT0iMTI4Ii8+PGVsbGlwc2UgY3g9IjQ1Ljg1IiBjeT0iMTQ0IiBmaWxsPSIjQUREMUIyIiByeD0iMTEiIHJ5PSIxMSIgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjA7Ii8+PHBhdGggZD0iTTQ4LjE5MzgsMTM5LjY3MTkgQzQ3LjI1NjMsMTM5LjIzNDQgNDYuNjYyNSwxMzkuMDkzOCA0NS43ODc1LDEzOS4wOTM4IEM0My4xNjI1LDEzOS4wOTM4IDQxLjE2MjUsMTQxLjE3MTkgNDEuMTYyNSwxNDMuODkwNiBMNDEuMTYyNSwxNDUuMDE1NiBDNDEuMTYyNSwxNDcuNTkzOCA0My4yNzE5LDE0OS40ODQ0IDQ2LjE2MjUsMTQ5LjQ4NDQgQzQ3LjM4MTMsMTQ5LjQ4NDQgNDguNTM3NSwxNDkuMTg3NSA0OS4yODc1LDE0OC42NDA2IEM0OS44NjU2LDE0OC4yMzQ0IDUwLjE5MzgsMTQ3Ljc4MTMgNTAuMTkzOCwxNDcuMzkwNiBDNTAuMTkzOCwxNDYuOTM3NSA0OS44MDMxLDE0Ni41NDY5IDQ5LjMzNDQsMTQ2LjU0NjkgQzQ5LjExNTYsMTQ2LjU0NjkgNDguOTEyNSwxNDYuNjI1IDQ4LjcyNSwxNDYuODEyNSBDNDguMjcxOSwxNDcuMjk2OSA0OC4yNzE5LDE0Ny4yOTY5IDQ4LjA4NDQsMTQ3LjM5MDYgQzQ3LjY2MjUsMTQ3LjY1NjMgNDYuOTc1LDE0Ny43ODEzIDQ2LjIwOTQsMTQ3Ljc4MTMgQzQ0LjE2MjUsMTQ3Ljc4MTMgNDIuODY1NiwxNDYuNjg3NSA0Mi44NjU2LDE0NC45ODQ0IEw0Mi44NjU2LDE0My44OTA2IEM0Mi44NjU2LDE0Mi4xMDk0IDQ0LjExNTYsMTQwLjc5NjkgNDUuODUsMTQwLjc5NjkgQzQ2LjQyODEsMTQwLjc5NjkgNDcuMDM3NSwxNDAuOTUzMSA0Ny41MDYzLDE0MS4yMDMxIEM0Ny45OTA2LDE0MS40ODQ0IDQ4LjE2MjUsMTQxLjcwMzEgNDguMjU2MywxNDIuMTA5NCBDNDguMzE4OCwxNDIuNTE1NiA0OC4zNSwxNDIuNjQwNiA0OC40OTA2LDE0Mi43NjU2IEM0OC42MzEzLDE0Mi45MDYzIDQ4Ljg2NTYsMTQzLjAxNTYgNDkuMDg0NCwxNDMuMDE1NiBDNDkuMzUsMTQzLjAxNTYgNDkuNjE1NiwxNDIuODc1IDQ5Ljc4NzUsMTQyLjY1NjMgQzQ5Ljg5NjksMTQyLjUgNDkuOTI4MSwxNDIuMzEyNSA0OS45MjgxLDE0MS44OTA2IEw0OS45MjgxLDE0MC40Njg4IEM0OS45MjgxLDE0MC4wMzEzIDQ5LjkxMjUsMTM5LjkwNjMgNDkuODE4OCwxMzkuNzUgQzQ5LjY2MjUsMTM5LjQ4NDQgNDkuMzgxMywxMzkuMzQzOCA0OS4wODQ0LDEzOS4zNDM4IEM0OC43ODc1LDEzOS4zNDM4IDQ4LjU4NDQsMTM5LjQzNzUgNDguMzY1NiwxMzkuNzUgTDQ4LjE5MzgsMTM5LjY3MTkgWiAiIGZpbGw9IiMwMDAwMDAiLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nIiB0ZXh0TGVuZ3RoPSI1MiIgeD0iNjUuMTUiIHk9IjE0OC4xNTQzIj5BcnJheUxpc3Q8L3RleHQ+PGxpbmUgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjU7IiB4MT0iOCIgeDI9IjE0MyIgeTE9IjE2MCIgeTI9IjE2MCIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmciIHRleHRMZW5ndGg9IjEyNSIgeD0iMTMiIHk9IjE3NC4yMTA0Ij5PYmplY3RbXSBlbGVtZW50RGF0YTwvdGV4dD48bGluZSBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuNTsiIHgxPSI4IiB4Mj0iMTQzIiB5MT0iMTgwLjgwNDciIHkyPSIxODAuODA0NyIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmciIHRleHRMZW5ndGg9IjMyIiB4PSIxMyIgeT0iMTk1LjAxNTEiPnNpemUoKTwvdGV4dD48IS0tTUQ1PVs3OGVkM2Q1NGM2YWQ5NmZiNjQzNGE0ZTQ1YWE0YjVmMF0KcmV2ZXJzZSBsaW5rIE9iamVjdCB0byBBcnJheUxpc3QtLT48cGF0aCBjb2RlTGluZT0iMSIgZD0iTTc1LjUsODguNTA1IEM3NS41LDEwMS42MjEgNzUuNSwxMTUuNTEyOCA3NS41LDEyNy43NTU1ICIgZmlsbD0ibm9uZSIgaWQ9Ik9iamVjdC1iYWNrdG8tQXJyYXlMaXN0IiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuMDsiLz48cG9seWdvbiBmaWxsPSJub25lIiBwb2ludHM9IjY4LjUwMDEsODguMjQyLDc1LjUsNjguMjQyLDgyLjUwMDEsODguMjQyLDY4LjUwMDEsODguMjQyIiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuMDsiLz48IS0tTUQ1PVtiMTI0YmUyZmM0MGVjMTE0NzA0ZTU0MmM4OTM5ODVmYl0KQHN0YXJ0dW1sDQpPYmplY3QgPHwtIC0gQXJyYXlMaXN0DQpPYmplY3QgOiBlcXVhbHMoKQ0KQXJyYXlMaXN0IDogT2JqZWN0W10gZWxlbWVudERhdGENCkFycmF5TGlzdCA6IHNpemUoKQ0KQGVuZHVtbA0KClBsYW50VU1MIHZlcnNpb24gMS4yMDIxLjJiZXRhMihVbmtub3duIGNvbXBpbGUgdGltZSkKKEdQTCBzb3VyY2UgZGlzdHJpYnV0aW9uKQpKYXZhIFJ1bnRpbWU6IEphdmEoVE0pIFNFIFJ1bnRpbWUgRW52aXJvbm1lbnQKSlZNOiBKYXZhIEhvdFNwb3QoVE0pIDY0LUJpdCBTZXJ2ZXIgVk0KRGVmYXVsdCBFbmNvZGluZzogVVRGLTgKTGFuZ3VhZ2U6IGVuCkNvdW50cnk6IFVTCi0tPjwvZz48L3N2Zz4='>
+<img src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBjb250ZW50U2NyaXB0VHlwZT0iYXBwbGljYXRpb24vZWNtYXNjcmlwdCIgY29udGVudFN0eWxlVHlwZT0idGV4dC9jc3MiIGhlaWdodD0iMjE1cHgiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiIHN0eWxlPSJ3aWR0aDoxNThweDtoZWlnaHQ6MjE1cHg7IiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAxNTggMjE1IiB3aWR0aD0iMTU4cHgiIHpvb21BbmRQYW49Im1hZ25pZnkiPjxkZWZzPjxmaWx0ZXIgaGVpZ2h0PSIzMDAlIiBpZD0iZnh2MG5kZzc3YWtyZyIgd2lkdGg9IjMwMCUiIHg9Ii0xIiB5PSItMSI+PGZlR2F1c3NpYW5CbHVyIHJlc3VsdD0iYmx1ck91dCIgc3RkRGV2aWF0aW9uPSIyLjAiLz48ZmVDb2xvck1hdHJpeCBpbj0iYmx1ck91dCIgcmVzdWx0PSJibHVyT3V0MiIgdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIC40IDAiLz48ZmVPZmZzZXQgZHg9IjQuMCIgZHk9IjQuMCIgaW49ImJsdXJPdXQyIiByZXN1bHQ9ImJsdXJPdXQzIi8+PGZlQmxlbmQgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iYmx1ck91dDMiIG1vZGU9Im5vcm1hbCIvPjwvZmlsdGVyPjwvZGVmcz48Zz48IS0tTUQ1PVthYTdmNTg2NTMyZTE4NzE5ZTZjZWZhNzBmYzY1MDU4M10KY2xhc3MgT2JqZWN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjYwLjgwNDciIGlkPSJPYmplY3QiIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS41OyIgd2lkdGg9IjcyIiB4PSIzOS41IiB5PSI3Ii8+PGVsbGlwc2UgY3g9IjU0LjUiIGN5PSIyMyIgZmlsbD0iI0FERDFCMiIgcng9IjExIiByeT0iMTEiIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS4wOyIvPjxwYXRoIGQ9Ik01Ni44NDM4LDE4LjY3MTkgQzU1LjkwNjMsMTguMjM0NCA1NS4zMTI1LDE4LjA5MzggNTQuNDM3NSwxOC4wOTM4IEM1MS44MTI1LDE4LjA5MzggNDkuODEyNSwyMC4xNzE5IDQ5LjgxMjUsMjIuODkwNiBMNDkuODEyNSwyNC4wMTU2IEM0OS44MTI1LDI2LjU5MzggNTEuOTIxOSwyOC40ODQ0IDU0LjgxMjUsMjguNDg0NCBDNTYuMDMxMywyOC40ODQ0IDU3LjE4NzUsMjguMTg3NSA1Ny45Mzc1LDI3LjY0MDYgQzU4LjUxNTYsMjcuMjM0NCA1OC44NDM4LDI2Ljc4MTMgNTguODQzOCwyNi4zOTA2IEM1OC44NDM4LDI1LjkzNzUgNTguNDUzMSwyNS41NDY5IDU3Ljk4NDQsMjUuNTQ2OSBDNTcuNzY1NiwyNS41NDY5IDU3LjU2MjUsMjUuNjI1IDU3LjM3NSwyNS44MTI1IEM1Ni45MjE5LDI2LjI5NjkgNTYuOTIxOSwyNi4yOTY5IDU2LjczNDQsMjYuMzkwNiBDNTYuMzEyNSwyNi42NTYzIDU1LjYyNSwyNi43ODEzIDU0Ljg1OTQsMjYuNzgxMyBDNTIuODEyNSwyNi43ODEzIDUxLjUxNTYsMjUuNjg3NSA1MS41MTU2LDIzLjk4NDQgTDUxLjUxNTYsMjIuODkwNiBDNTEuNTE1NiwyMS4xMDk0IDUyLjc2NTYsMTkuNzk2OSA1NC41LDE5Ljc5NjkgQzU1LjA3ODEsMTkuNzk2OSA1NS42ODc1LDE5Ljk1MzEgNTYuMTU2MywyMC4yMDMxIEM1Ni42NDA2LDIwLjQ4NDQgNTYuODEyNSwyMC43MDMxIDU2LjkwNjMsMjEuMTA5NCBDNTYuOTY4OCwyMS41MTU2IDU3LDIxLjY0MDYgNTcuMTQwNiwyMS43NjU2IEM1Ny4yODEzLDIxLjkwNjMgNTcuNTE1NiwyMi4wMTU2IDU3LjczNDQsMjIuMDE1NiBDNTgsMjIuMDE1NiA1OC4yNjU2LDIxLjg3NSA1OC40Mzc1LDIxLjY1NjMgQzU4LjU0NjksMjEuNSA1OC41NzgxLDIxLjMxMjUgNTguNTc4MSwyMC44OTA2IEw1OC41NzgxLDE5LjQ2ODggQzU4LjU3ODEsMTkuMDMxMyA1OC41NjI1LDE4LjkwNjMgNTguNDY4OCwxOC43NSBDNTguMzEyNSwxOC40ODQ0IDU4LjAzMTMsMTguMzQzOCA1Ny43MzQ0LDE4LjM0MzggQzU3LjQzNzUsMTguMzQzOCA1Ny4yMzQ0LDE4LjQzNzUgNTcuMDE1NiwxOC43NSBMNTYuODQzOCwxOC42NzE5IFogIiBmaWxsPSIjMDAwMDAwIi8+PHRleHQgZmlsbD0iIzAwMDAwMCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGxlbmd0aEFkanVzdD0ic3BhY2luZyIgdGV4dExlbmd0aD0iNDAiIHg9IjY4LjUiIHk9IjI3LjE1NDMiPk9iamVjdDwvdGV4dD48bGluZSBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuNTsiIHgxPSI0MC41IiB4Mj0iMTEwLjUiIHkxPSIzOSIgeTI9IjM5Ii8+PGxpbmUgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjU7IiB4MT0iNDAuNSIgeDI9IjExMC41IiB5MT0iNDciIHkyPSI0NyIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmciIHRleHRMZW5ndGg9IjQ2IiB4PSI0NS41IiB5PSI2MS4yMTA0Ij5lcXVhbHMoKTwvdGV4dD48IS0tTUQ1PVthYjg4NzFlZDYzN2Y0MDcwN2I4NjZiYTY1OTc3MzRiY10KY2xhc3MgQXJyYXlMaXN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjczLjYwOTQiIGlkPSJBcnJheUxpc3QiIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS41OyIgd2lkdGg9IjEzNyIgeD0iNyIgeT0iMTI4Ii8+PGVsbGlwc2UgY3g9IjQ1Ljg1IiBjeT0iMTQ0IiBmaWxsPSIjQUREMUIyIiByeD0iMTEiIHJ5PSIxMSIgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjA7Ii8+PHBhdGggZD0iTTQ4LjE5MzgsMTM5LjY3MTkgQzQ3LjI1NjMsMTM5LjIzNDQgNDYuNjYyNSwxMzkuMDkzOCA0NS43ODc1LDEzOS4wOTM4IEM0My4xNjI1LDEzOS4wOTM4IDQxLjE2MjUsMTQxLjE3MTkgNDEuMTYyNSwxNDMuODkwNiBMNDEuMTYyNSwxNDUuMDE1NiBDNDEuMTYyNSwxNDcuNTkzOCA0My4yNzE5LDE0OS40ODQ0IDQ2LjE2MjUsMTQ5LjQ4NDQgQzQ3LjM4MTMsMTQ5LjQ4NDQgNDguNTM3NSwxNDkuMTg3NSA0OS4yODc1LDE0OC42NDA2IEM0OS44NjU2LDE0OC4yMzQ0IDUwLjE5MzgsMTQ3Ljc4MTMgNTAuMTkzOCwxNDcuMzkwNiBDNTAuMTkzOCwxNDYuOTM3NSA0OS44MDMxLDE0Ni41NDY5IDQ5LjMzNDQsMTQ2LjU0NjkgQzQ5LjExNTYsMTQ2LjU0NjkgNDguOTEyNSwxNDYuNjI1IDQ4LjcyNSwxNDYuODEyNSBDNDguMjcxOSwxNDcuMjk2OSA0OC4yNzE5LDE0Ny4yOTY5IDQ4LjA4NDQsMTQ3LjM5MDYgQzQ3LjY2MjUsMTQ3LjY1NjMgNDYuOTc1LDE0Ny43ODEzIDQ2LjIwOTQsMTQ3Ljc4MTMgQzQ0LjE2MjUsMTQ3Ljc4MTMgNDIuODY1NiwxNDYuNjg3NSA0Mi44NjU2LDE0NC45ODQ0IEw0Mi44NjU2LDE0My44OTA2IEM0Mi44NjU2LDE0Mi4xMDk0IDQ0LjExNTYsMTQwLjc5NjkgNDUuODUsMTQwLjc5NjkgQzQ2LjQyODEsMTQwLjc5NjkgNDcuMDM3NSwxNDAuOTUzMSA0Ny41MDYzLDE0MS4yMDMxIEM0Ny45OTA2LDE0MS40ODQ0IDQ4LjE2MjUsMTQxLjcwMzEgNDguMjU2MywxNDIuMTA5NCBDNDguMzE4OCwxNDIuNTE1NiA0OC4zNSwxNDIuNjQwNiA0OC40OTA2LDE0Mi43NjU2IEM0OC42MzEzLDE0Mi45MDYzIDQ4Ljg2NTYsMTQzLjAxNTYgNDkuMDg0NCwxNDMuMDE1NiBDNDkuMzUsMTQzLjAxNTYgNDkuNjE1NiwxNDIuODc1IDQ5Ljc4NzUsMTQyLjY1NjMgQzQ5Ljg5NjksMTQyLjUgNDkuOTI4MSwxNDIuMzEyNSA0OS45MjgxLDE0MS44OTA2IEw0OS45MjgxLDE0MC40Njg4IEM0OS45MjgxLDE0MC4wMzEzIDQ5LjkxMjUsMTM5LjkwNjMgNDkuODE4OCwxMzkuNzUgQzQ5LjY2MjUsMTM5LjQ4NDQgNDkuMzgxMywxMzkuMzQzOCA0OS4wODQ0LDEzOS4zNDM4IEM0OC43ODc1LDEzOS4zNDM4IDQ4LjU4NDQsMTM5LjQzNzUgNDguMzY1NiwxMzkuNzUgTDQ4LjE5MzgsMTM5LjY3MTkgWiAiIGZpbGw9IiMwMDAwMDAiLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nIiB0ZXh0TGVuZ3RoPSI1MiIgeD0iNjUuMTUiIHk9IjE0OC4xNTQzIj5BcnJheUxpc3Q8L3RleHQ+PGxpbmUgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjU7IiB4MT0iOCIgeDI9IjE0MyIgeTE9IjE2MCIgeTI9IjE2MCIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmciIHRleHRMZW5ndGg9IjEyNSIgeD0iMTMiIHk9IjE3NC4yMTA0Ij5PYmplY3RbXSBlbGVtZW50RGF0YTwvdGV4dD48bGluZSBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuNTsiIHgxPSI4IiB4Mj0iMTQzIiB5MT0iMTgwLjgwNDciIHkyPSIxODAuODA0NyIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmciIHRleHRMZW5ndGg9IjMyIiB4PSIxMyIgeT0iMTk1LjAxNTEiPnNpemUoKTwvdGV4dD48IS0tTUQ1PVs3OGVkM2Q1NGM2YWQ5NmZiNjQzNGE0ZTQ1YWE0YjVmMF0KcmV2ZXJzZSBsaW5rIE9iamVjdCB0byBBcnJheUxpc3QtLT48cGF0aCBjb2RlTGluZT0iMSIgZD0iTTc1LjUsODguNTA1IEM3NS41LDEwMS42MjEgNzUuNSwxMTUuNTEyOCA3NS41LDEyNy43NTU1ICIgZmlsbD0ibm9uZSIgaWQ9Ik9iamVjdC1iYWNrdG8tQXJyYXlMaXN0IiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuMDsiLz48cG9seWdvbiBmaWxsPSJub25lIiBwb2ludHM9IjY4LjUwMDEsODguMjQyLDc1LjUsNjguMjQyLDgyLjUwMDEsODguMjQyLDY4LjUwMDEsODguMjQyIiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuMDsiLz48IS0tTUQ1PVtiYTAxMmRmM2RhN2Q2MzAxOGQ1YWZmZmI1N2Y5YzAzYl0KQHN0YXJ0dW1sDQpPYmplY3QgPHwtIC0gQXJyYXlMaXN0DQpPYmplY3QgOiBlcXVhbHMoKQ0KQXJyYXlMaXN0IDogT2JqZWN0W10gZWxlbWVudERhdGENCkFycmF5TGlzdCA6IHNpemUoKQ0KQGVuZHVtbA0KClBsYW50VU1MIHZlcnNpb24gMS4yMDIxLjIoU3VuIE1hciAwNyAxMToxMDoyNyBVVEMgMjAyMSkKKEdQTCBzb3VyY2UgZGlzdHJpYnV0aW9uKQpKYXZhIFJ1bnRpbWU6IEphdmEoVE0pIFNFIFJ1bnRpbWUgRW52aXJvbm1lbnQKSlZNOiBKYXZhIEhvdFNwb3QoVE0pIDY0LUJpdCBTZXJ2ZXIgVk0KRGVmYXVsdCBFbmNvZGluZzogVVRGLTgKTGFuZ3VhZ2U6IGVuCkNvdW50cnk6IFVTCi0tPjwvZz48L3N2Zz4='>
 
 <h2 id="Markdown-Preview-Enhanced"><a href="#Markdown-Preview-Enhanced" class="headerlink" title="Markdown Preview Enhanced"></a><strong>Markdown Preview Enhanced</strong></h2><p><strong>Markdown Preview Enhanced</strong> 是一款为 <a href="https://atom.io/packages/markdown-preview-enhanced" target="_blank" rel="noopener"><strong>Atom</strong></a> 以及 <a href="https://marketplace.visualstudio.com/items?itemName=shd101wyy.markdown-preview-enhanced" target="_blank" rel="noopener"><strong>Visual Studio Code</strong></a> 编辑器编写的<strong>超级强大的</strong> Markdown 插件。 这款插件意在让你拥有飘逸的 Markdown 写作体验。</p>
 <p><strong>Markdown Preview Enhanced</strong> 内部支持 <code>flow charts</code>, <code>sequence diagrams</code>, <code>mermaid</code>, <code>PlantUML</code>, <code>WaveDrom</code>, <code>GraphViz</code>，<code>Vega &amp; Vega-lite</code>，<code>Ditaa</code> 图像渲染。 你也可以通过使用 <a href="https://shd101wyy.github.io/markdown-preview-enhanced/#/zh-cn/code-chunk" target="_blank" rel="noopener">Code Chunk</a> 来渲染 <code>TikZ</code>, <code>Python Matplotlib</code>, <code>Plotly</code> 等图像。</p>
@@ -32717,6 +32762,204 @@ plugin;</code></pre><h3 id="somafm-js"><a href="#somafm-js" class="headerlink" t
       </tags>
   </entry>
   <entry>
+    <title>clang-format 格式化代码</title>
+    <url>/2018/04/28/clang-format-options/</url>
+    <content><![CDATA[<p>Clang-Format 可用于格式化（排版）多种不同语言的代码，其自带的排版格式主要有：LLVM, Google, Chromium, Mozilla, WebKit。</p>
+<p>但是自带的这几种排版格式可能并不满足个人编码习惯的全部要求，Clang-Format 也提供了使用自定义排版格式的功能。</p>
+<p>如果在 Ubuntu 中安装了 Clang-Format，则可以使用以下命令导出上述 5 种自带的排版格式，并且可以对其中某一个导出的文件进行修改，实现自定义格式化：</p>
+<pre><code>clang-format -style= 格式名 -dump-config &gt; 文件名</code></pre><a id="more"></a>
+
+<h2 id="options"><a href="#options" class="headerlink" title="options"></a>options</h2><pre><code>---
+# 语言：None, Cpp, Java, JavaScript, ObjC, Proto, TableGen, TextProto
+Language:   Cpp
+# BasedOnStyle: LLVM
+# 访问说明符 (public、private 等）的偏移
+AccessModifierOffset:   -4
+# 开括号（开圆括号、开尖括号、开方括号）后的对齐：Align, DontAlign, AlwaysBreak（总是在开括号后换行）
+AlignAfterOpenBracket:  Align
+# 连续赋值时，对齐所有等号
+AlignConsecutiveAssignments:    true
+# 连续声明时，对齐所有声明的变量名
+AlignConsecutiveDeclarations:   true
+# 左对齐逃脱换行（使用反斜杠换行）的反斜杠
+AlignEscapedNewlinesLeft:   true
+# 水平对齐二元和三元表达式的操作数
+AlignOperands:  true
+# 对齐连续的尾随的注释
+AlignTrailingComments:  true
+# 允许函数声明的所有参数在放在下一行
+AllowAllParametersOfDeclarationOnNextLine:  true
+# 允许短的块放在同一行
+AllowShortBlocksOnASingleLine:  false
+# 允许短的 case 标签放在同一行
+AllowShortCaseLabelsOnASingleLine:  false
+# 允许短的函数放在同一行：None, InlineOnly（定义在类中）, Empty（空函数）, Inline（定义在类中，空函数）, All
+AllowShortFunctionsOnASingleLine:   Empty
+# 允许短的 if 语句保持在同一行
+AllowShortIfStatementsOnASingleLine:    false
+# 允许短的循环保持在同一行
+AllowShortLoopsOnASingleLine:   false
+# 总是在定义返回类型后换行 (deprecated)
+AlwaysBreakAfterDefinitionReturnType:   None
+# 总是在返回类型后换行：None, All, TopLevel（顶级函数，不包括在类中的函数）,
+#   AllDefinitions（所有的定义，不包括声明）, TopLevelDefinitions（所有的顶级函数的定义）
+AlwaysBreakAfterReturnType: None
+# 总是在多行 string 字面量前换行
+AlwaysBreakBeforeMultilineStrings:  false
+# 总是在 template 声明后换行
+AlwaysBreakTemplateDeclarations:    false
+# false 表示函数实参要么都在同一行，要么都各自一行
+BinPackArguments:   true
+# false 表示所有形参要么都在同一行，要么都各自一行
+BinPackParameters:  true
+# 大括号换行，只有当 BreakBeforeBraces 设置为 Custom 时才有效
+BraceWrapping:
+  # class 定义后面
+  AfterClass:   false
+  # 控制语句后面
+  AfterControlStatement:    false
+  # enum 定义后面
+  AfterEnum:    false
+  # 函数定义后面
+  AfterFunction:    false
+  # 命名空间定义后面
+  AfterNamespace:   false
+  # ObjC 定义后面
+  AfterObjCDeclaration: false
+  # struct 定义后面
+  AfterStruct:  false
+  # union 定义后面
+  AfterUnion:   false
+  # catch 之前
+  BeforeCatch:  true
+  # else 之前
+  BeforeElse:   true
+  # 缩进大括号
+  IndentBraces: false
+# 在二元运算符前换行：None（在操作符后换行）, NonAssignment（在非赋值的操作符前换行）, All（在操作符前换行）
+BreakBeforeBinaryOperators: NonAssignment
+# 在大括号前换行：Attach（始终将大括号附加到周围的上下文）, Linux（除函数、命名空间和类定义，与 Attach 类似）,
+#   Mozilla（除枚举、函数、记录定义，与 Attach 类似）, Stroustrup（除函数定义、catch、else，与 Attach 类似）,
+#   Allman（总是在大括号前换行）, GNU（总是在大括号前换行，并对于控制语句的大括号增加额外的缩进）, WebKit（在函数前换行）, Custom
+#   注：这里认为语句块也属于函数
+BreakBeforeBraces:  Custom
+# 在三元运算符前换行
+BreakBeforeTernaryOperators:    true
+# 在构造函数的初始化列表的逗号前换行
+BreakConstructorInitializersBeforeComma:    false
+# 每行字符的限制，0 表示没有限制
+ColumnLimit:    200
+# 描述具有特殊意义的注释的正则表达式，它不应该被分割为多行或以其它方式改变
+CommentPragmas: &#39;^ IWYU pragma:&#39;
+# 构造函数的初始化列表要么都在同一行，要么都各自一行
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+# 构造函数的初始化列表的缩进宽度
+ConstructorInitializerIndentWidth:  4
+# 延续的行的缩进宽度
+ContinuationIndentWidth:    4
+# 去除 C++11 的列表初始化的大括号{后和}前的空格
+Cpp11BracedListStyle:   false
+# 继承最常用的指针和引用的对齐方式
+DerivePointerAlignment: false
+# 关闭格式化
+DisableFormat:  false
+# 自动检测函数的调用和定义是否被格式为每行一个参数 (Experimental)
+ExperimentalAutoDetectBinPacking:   false
+# 需要被解读为 foreach 循环而不是函数调用的宏
+ForEachMacros:  [ foreach, Q_FOREACH, BOOST_FOREACH ]
+# 对#include 进行排序，匹配了某正则表达式的#include 拥有对应的优先级，匹配不到的则默认优先级为 INT_MAX（优先级越小排序越靠前），
+#   可以定义负数优先级从而保证某些#include 永远在最前面
+IncludeCategories:
+  - Regex:  &#39;^&quot;(llvm|llvm-c|clang|clang-c)/&#39;
+    Priority:   2
+  - Regex:  &#39;^(&lt;|&quot;(gtest|isl|json)/)&#39;
+    Priority:   3
+  - Regex:  &#39;.*&#39;
+    Priority:   1
+# 缩进 case 标签
+IndentCaseLabels:   false
+# 缩进宽度
+IndentWidth:    4
+# 函数返回类型换行时，缩进函数声明或函数定义的函数名
+IndentWrappedFunctionNames: false
+# 保留在块开始处的空行
+KeepEmptyLinesAtTheStartOfBlocks:   true
+# 开始一个块的宏的正则表达式
+MacroBlockBegin:    &#39;&#39;
+# 结束一个块的宏的正则表达式
+MacroBlockEnd:  &#39;&#39;
+# 连续空行的最大数量
+MaxEmptyLinesToKeep:    1
+# 命名空间的缩进：None, Inner（缩进嵌套的命名空间中的内容）, All
+NamespaceIndentation:   Inner
+# 使用 ObjC 块时缩进宽度
+ObjCBlockIndentWidth:   4
+# 在 ObjC 的 @property 后添加一个空格
+ObjCSpaceAfterProperty: false
+# 在 ObjC 的 protocol 列表前添加一个空格
+ObjCSpaceBeforeProtocolList:    true
+# 在 call（后对函数调用换行的 penalty
+PenaltyBreakBeforeFirstCallParameter:   19
+# 在一个注释中引入换行的 penalty
+PenaltyBreakComment:    300
+# 第一次在&lt;《前换行的 penalty
+PenaltyBreakFirstLessLess:  120
+# 在一个字符串字面量中引入换行的 penalty
+PenaltyBreakString: 1000
+# 对于每个在行字符数限制之外的字符的 penalty
+PenaltyExcessCharacter: 1000000
+# 将函数的返回类型放到它自己的行的 penalty
+PenaltyReturnTypeOnItsOwnLine:  60
+# 指针和引用的对齐：Left, Right, Middle
+PointerAlignment:   Left
+# 允许重新排版注释
+ReflowComments: true
+# 允许排序#include
+SortIncludes:   true
+# 在 C 风格类型转换后添加空格
+SpaceAfterCStyleCast:   false
+# 在赋值运算符之前添加空格
+SpaceBeforeAssignmentOperators: true
+# 开圆括号之前添加一个空格：Never, ControlStatements, Always
+SpaceBeforeParens:  ControlStatements
+# 在空的圆括号中添加空格
+SpaceInEmptyParentheses:    false
+# 在尾随的评论前添加的空格数（只适用于 //)
+SpacesBeforeTrailingComments:   2
+# 在尖括号的《后和》前添加空格
+SpacesInAngles: true
+# 在容器 (ObjC 和 JavaScript 的数组和字典等）字面量中添加空格
+SpacesInContainerLiterals:  true
+# 在 C 风格类型转换的括号中添加空格
+SpacesInCStyleCastParentheses:  true
+# 在圆括号的（后和）前添加空格
+SpacesInParentheses:    true
+# 在方括号的『后和』前添加空格，lamda 表达式和未指明大小的数组的声明不受影响
+SpacesInSquareBrackets: true
+# 标准：Cpp03, Cpp11, Auto
+Standard:   Cpp11
+# tab 宽度
+TabWidth:   4
+# 使用 tab 字符：Never, ForIndentation, ForContinuationAndIndentation, Always
+UseTab: Never
+...</code></pre><h2 id="how-to-use"><a href="#how-to-use" class="headerlink" title="how to use"></a>how to use</h2><pre><code>clang-format -style=file in.c &gt; out.c</code></pre><ol>
+<li><a href="https://blog.csdn.net/softimite_zifeng/article/details/78357898" target="_blank" rel="noopener">Clang-Format 格式化选项介绍</a></li>
+<li><a href="https://github.com/KratosMultiphysics/Kratos/wiki/How-to-configure-clang%E2%80%90format" target="_blank" rel="noopener">How to configure clang‐format</a></li>
+<li><a href="http://clang.llvm.org/docs/ClangFormat.html" target="_blank" rel="noopener">Clang 7 documentation</a></li>
+<li><a href="http://clang.llvm.org/docs/ClangFormatStyleOptions.html" target="_blank" rel="noopener">Clang-Format Style Options</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Editor</category>
+      </categories>
+      <tags>
+        <tag>tools</tag>
+        <tag>style</tag>
+        <tag>clang-format</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Git 拆分子仓库</title>
     <url>/2018/03/13/moving-subdir-from-one-git-repository-to-another-preserving-history/</url>
     <content><![CDATA[<p>使用 <code>git</code> 将一个仓库中的子目录移动到另一个仓库中，同时保留所有的上传历史记录</p>
@@ -32999,204 +33242,6 @@ fi</code></pre>
         <tag>git</tag>
         <tag>linux</tag>
         <tag>repo</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>clang-format 格式化代码</title>
-    <url>/2018/04/28/clang-format-options/</url>
-    <content><![CDATA[<p>Clang-Format 可用于格式化（排版）多种不同语言的代码，其自带的排版格式主要有：LLVM, Google, Chromium, Mozilla, WebKit。</p>
-<p>但是自带的这几种排版格式可能并不满足个人编码习惯的全部要求，Clang-Format 也提供了使用自定义排版格式的功能。</p>
-<p>如果在 Ubuntu 中安装了 Clang-Format，则可以使用以下命令导出上述 5 种自带的排版格式，并且可以对其中某一个导出的文件进行修改，实现自定义格式化：</p>
-<pre><code>clang-format -style= 格式名 -dump-config &gt; 文件名</code></pre><a id="more"></a>
-
-<h2 id="options"><a href="#options" class="headerlink" title="options"></a>options</h2><pre><code>---
-# 语言：None, Cpp, Java, JavaScript, ObjC, Proto, TableGen, TextProto
-Language:   Cpp
-# BasedOnStyle: LLVM
-# 访问说明符 (public、private 等）的偏移
-AccessModifierOffset:   -4
-# 开括号（开圆括号、开尖括号、开方括号）后的对齐：Align, DontAlign, AlwaysBreak（总是在开括号后换行）
-AlignAfterOpenBracket:  Align
-# 连续赋值时，对齐所有等号
-AlignConsecutiveAssignments:    true
-# 连续声明时，对齐所有声明的变量名
-AlignConsecutiveDeclarations:   true
-# 左对齐逃脱换行（使用反斜杠换行）的反斜杠
-AlignEscapedNewlinesLeft:   true
-# 水平对齐二元和三元表达式的操作数
-AlignOperands:  true
-# 对齐连续的尾随的注释
-AlignTrailingComments:  true
-# 允许函数声明的所有参数在放在下一行
-AllowAllParametersOfDeclarationOnNextLine:  true
-# 允许短的块放在同一行
-AllowShortBlocksOnASingleLine:  false
-# 允许短的 case 标签放在同一行
-AllowShortCaseLabelsOnASingleLine:  false
-# 允许短的函数放在同一行：None, InlineOnly（定义在类中）, Empty（空函数）, Inline（定义在类中，空函数）, All
-AllowShortFunctionsOnASingleLine:   Empty
-# 允许短的 if 语句保持在同一行
-AllowShortIfStatementsOnASingleLine:    false
-# 允许短的循环保持在同一行
-AllowShortLoopsOnASingleLine:   false
-# 总是在定义返回类型后换行 (deprecated)
-AlwaysBreakAfterDefinitionReturnType:   None
-# 总是在返回类型后换行：None, All, TopLevel（顶级函数，不包括在类中的函数）,
-#   AllDefinitions（所有的定义，不包括声明）, TopLevelDefinitions（所有的顶级函数的定义）
-AlwaysBreakAfterReturnType: None
-# 总是在多行 string 字面量前换行
-AlwaysBreakBeforeMultilineStrings:  false
-# 总是在 template 声明后换行
-AlwaysBreakTemplateDeclarations:    false
-# false 表示函数实参要么都在同一行，要么都各自一行
-BinPackArguments:   true
-# false 表示所有形参要么都在同一行，要么都各自一行
-BinPackParameters:  true
-# 大括号换行，只有当 BreakBeforeBraces 设置为 Custom 时才有效
-BraceWrapping:
-  # class 定义后面
-  AfterClass:   false
-  # 控制语句后面
-  AfterControlStatement:    false
-  # enum 定义后面
-  AfterEnum:    false
-  # 函数定义后面
-  AfterFunction:    false
-  # 命名空间定义后面
-  AfterNamespace:   false
-  # ObjC 定义后面
-  AfterObjCDeclaration: false
-  # struct 定义后面
-  AfterStruct:  false
-  # union 定义后面
-  AfterUnion:   false
-  # catch 之前
-  BeforeCatch:  true
-  # else 之前
-  BeforeElse:   true
-  # 缩进大括号
-  IndentBraces: false
-# 在二元运算符前换行：None（在操作符后换行）, NonAssignment（在非赋值的操作符前换行）, All（在操作符前换行）
-BreakBeforeBinaryOperators: NonAssignment
-# 在大括号前换行：Attach（始终将大括号附加到周围的上下文）, Linux（除函数、命名空间和类定义，与 Attach 类似）,
-#   Mozilla（除枚举、函数、记录定义，与 Attach 类似）, Stroustrup（除函数定义、catch、else，与 Attach 类似）,
-#   Allman（总是在大括号前换行）, GNU（总是在大括号前换行，并对于控制语句的大括号增加额外的缩进）, WebKit（在函数前换行）, Custom
-#   注：这里认为语句块也属于函数
-BreakBeforeBraces:  Custom
-# 在三元运算符前换行
-BreakBeforeTernaryOperators:    true
-# 在构造函数的初始化列表的逗号前换行
-BreakConstructorInitializersBeforeComma:    false
-# 每行字符的限制，0 表示没有限制
-ColumnLimit:    200
-# 描述具有特殊意义的注释的正则表达式，它不应该被分割为多行或以其它方式改变
-CommentPragmas: &#39;^ IWYU pragma:&#39;
-# 构造函数的初始化列表要么都在同一行，要么都各自一行
-ConstructorInitializerAllOnOneLineOrOnePerLine: false
-# 构造函数的初始化列表的缩进宽度
-ConstructorInitializerIndentWidth:  4
-# 延续的行的缩进宽度
-ContinuationIndentWidth:    4
-# 去除 C++11 的列表初始化的大括号{后和}前的空格
-Cpp11BracedListStyle:   false
-# 继承最常用的指针和引用的对齐方式
-DerivePointerAlignment: false
-# 关闭格式化
-DisableFormat:  false
-# 自动检测函数的调用和定义是否被格式为每行一个参数 (Experimental)
-ExperimentalAutoDetectBinPacking:   false
-# 需要被解读为 foreach 循环而不是函数调用的宏
-ForEachMacros:  [ foreach, Q_FOREACH, BOOST_FOREACH ]
-# 对#include 进行排序，匹配了某正则表达式的#include 拥有对应的优先级，匹配不到的则默认优先级为 INT_MAX（优先级越小排序越靠前），
-#   可以定义负数优先级从而保证某些#include 永远在最前面
-IncludeCategories:
-  - Regex:  &#39;^&quot;(llvm|llvm-c|clang|clang-c)/&#39;
-    Priority:   2
-  - Regex:  &#39;^(&lt;|&quot;(gtest|isl|json)/)&#39;
-    Priority:   3
-  - Regex:  &#39;.*&#39;
-    Priority:   1
-# 缩进 case 标签
-IndentCaseLabels:   false
-# 缩进宽度
-IndentWidth:    4
-# 函数返回类型换行时，缩进函数声明或函数定义的函数名
-IndentWrappedFunctionNames: false
-# 保留在块开始处的空行
-KeepEmptyLinesAtTheStartOfBlocks:   true
-# 开始一个块的宏的正则表达式
-MacroBlockBegin:    &#39;&#39;
-# 结束一个块的宏的正则表达式
-MacroBlockEnd:  &#39;&#39;
-# 连续空行的最大数量
-MaxEmptyLinesToKeep:    1
-# 命名空间的缩进：None, Inner（缩进嵌套的命名空间中的内容）, All
-NamespaceIndentation:   Inner
-# 使用 ObjC 块时缩进宽度
-ObjCBlockIndentWidth:   4
-# 在 ObjC 的 @property 后添加一个空格
-ObjCSpaceAfterProperty: false
-# 在 ObjC 的 protocol 列表前添加一个空格
-ObjCSpaceBeforeProtocolList:    true
-# 在 call（后对函数调用换行的 penalty
-PenaltyBreakBeforeFirstCallParameter:   19
-# 在一个注释中引入换行的 penalty
-PenaltyBreakComment:    300
-# 第一次在&lt;《前换行的 penalty
-PenaltyBreakFirstLessLess:  120
-# 在一个字符串字面量中引入换行的 penalty
-PenaltyBreakString: 1000
-# 对于每个在行字符数限制之外的字符的 penalty
-PenaltyExcessCharacter: 1000000
-# 将函数的返回类型放到它自己的行的 penalty
-PenaltyReturnTypeOnItsOwnLine:  60
-# 指针和引用的对齐：Left, Right, Middle
-PointerAlignment:   Left
-# 允许重新排版注释
-ReflowComments: true
-# 允许排序#include
-SortIncludes:   true
-# 在 C 风格类型转换后添加空格
-SpaceAfterCStyleCast:   false
-# 在赋值运算符之前添加空格
-SpaceBeforeAssignmentOperators: true
-# 开圆括号之前添加一个空格：Never, ControlStatements, Always
-SpaceBeforeParens:  ControlStatements
-# 在空的圆括号中添加空格
-SpaceInEmptyParentheses:    false
-# 在尾随的评论前添加的空格数（只适用于 //)
-SpacesBeforeTrailingComments:   2
-# 在尖括号的《后和》前添加空格
-SpacesInAngles: true
-# 在容器 (ObjC 和 JavaScript 的数组和字典等）字面量中添加空格
-SpacesInContainerLiterals:  true
-# 在 C 风格类型转换的括号中添加空格
-SpacesInCStyleCastParentheses:  true
-# 在圆括号的（后和）前添加空格
-SpacesInParentheses:    true
-# 在方括号的『后和』前添加空格，lamda 表达式和未指明大小的数组的声明不受影响
-SpacesInSquareBrackets: true
-# 标准：Cpp03, Cpp11, Auto
-Standard:   Cpp11
-# tab 宽度
-TabWidth:   4
-# 使用 tab 字符：Never, ForIndentation, ForContinuationAndIndentation, Always
-UseTab: Never
-...</code></pre><h2 id="how-to-use"><a href="#how-to-use" class="headerlink" title="how to use"></a>how to use</h2><pre><code>clang-format -style=file in.c &gt; out.c</code></pre><ol>
-<li><a href="https://blog.csdn.net/softimite_zifeng/article/details/78357898" target="_blank" rel="noopener">Clang-Format 格式化选项介绍</a></li>
-<li><a href="https://github.com/KratosMultiphysics/Kratos/wiki/How-to-configure-clang%E2%80%90format" target="_blank" rel="noopener">How to configure clang‐format</a></li>
-<li><a href="http://clang.llvm.org/docs/ClangFormat.html" target="_blank" rel="noopener">Clang 7 documentation</a></li>
-<li><a href="http://clang.llvm.org/docs/ClangFormatStyleOptions.html" target="_blank" rel="noopener">Clang-Format Style Options</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Editor</category>
-      </categories>
-      <tags>
-        <tag>tools</tag>
-        <tag>style</tag>
-        <tag>clang-format</tag>
       </tags>
   </entry>
   <entry>
