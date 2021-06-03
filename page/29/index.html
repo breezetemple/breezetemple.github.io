@@ -216,6 +216,178 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/11/va-list/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/10/11/va-list/" class="post-title-link" itemprop="url">C语言不定参数的使用</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-10-12 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-12T00:00:00+08:00">2015-10-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index">
+                    <span itemprop="name">C</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.3k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h2 id="变长参数"><a href="#变长参数" class="headerlink" title="变长参数"></a>变长参数</h2><p>在c语言中使用变长参数最常见的就是下面两个函数了：</p>
+<pre><code>int printf(const char *format, ...);
+int scanf(const char *format, ...);</code></pre><p>在使用变长参数的函数（这里假设是func）实现部分其实用到了stdarg.h里面的多个宏来访问那些不确定的参数，它们分别是：</p>
+<pre><code>void va_start(va_list ap, last);
+type va_arg(va_list ap, type);
+void va_end(va_list ap);</code></pre><p>假设lastarg是func的最后一个具名参数，即在func函数定义中…之前的那个参数（在printf中lastarg是format），<br>在func中首先定义一个变量：</p>
+<pre><code>va_list ap</code></pre><p>这个变量以后会依次指向各个可变参数。ap在使用之前必须用宏va_start初始化一次，如下所示：</p>
+<pre><code>va_start(ap, lastarg);</code></pre><p>其中lastarg是func中的最后一个具名参数。然后就可以用va_arg来获得下一个不定参数（前提是知道这个不定参数的类型type）：</p>
+<pre><code>type next = va_arg(ap, type)</code></pre><p>最后就是用宏va_end来清理现场。例子：</p>
+<pre><code>void _printf(char *format, ...)                                                                                               
+{
+    #define BUFFER_LEN  256
+    char Buf[BUFFER_LEN];
+    va_list args;
+    memset(Buf,0, BUFFER_LEN);
+
+    va_start(args, format);
+    vsnprintf(Buf, BUFFER_LEN, format, args);
+    va_end(args);
+
+    printf(&quot;%s&quot;, Buf);
+}</code></pre><p>另一个例子：</p>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdarg.h&gt;
+
+void func(char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+
+    while (*fmt)
+    {
+        switch(*fmt)
+        {
+            case &#39;d&#39;:
+                fprintf(stdout, &quot;%d\n&quot;, (int)va_arg(ap, int));
+                break;
+            case &#39;c&#39;:
+                fprintf(stdout, &quot;%c\n&quot;, (char)va_arg(ap, int));
+                break;
+            case &#39;s&#39;:
+                fprintf(stdout, &quot;%s\n&quot;, (char *)va_arg(ap, char *));
+                break;
+            default:
+                fprintf(stderr, &quot;error fmt\n&quot;);
+
+        }
+        fmt ++;
+    }
+    va_end(ap);
+}
+
+int main ( int argc, char *argv[]  )
+{
+    func(&quot;dcs&quot;, 10, &#39;s&#39;, &quot;hello&quot;);
+        return 0;
+
+}               /* ----------  end of function main  ---------- */</code></pre><h2 id="函数参数的传递原理"><a href="#函数参数的传递原理" class="headerlink" title="函数参数的传递原理"></a>函数参数的传递原理</h2><p>函数参数是以数据结构:栈的形式存取,从右至左入栈。</p>
+<p>首先是参数的内存存放格式：参数存放在内存的堆栈段中，在执行函数的时候，从最后一个开始入栈。<br>因此栈底高地址，栈顶低地址，举个例子如下：</p>
+<pre><code>void func(int x, float y, char z);</code></pre><p>那么，调用函数的时候，实参 char z 先进栈，然后是 float y，最后是 int x，<br>因此在内存中变量的存放次序是 x-&gt;y-&gt;z，<br>因此，从理论上说，我们只要探测到任意一个变量的地址，<br>并且知道其他变量的类型，通过指针移位运算，则总可以顺藤摸瓜找到其他的输入变量。<br>va_list 是一个字符指针，可以理解为指向当前参数的一个指针，取参必须通过这个指针进行。</p>
+<ol>
+<li>在调用参数表之前，定义一个 va_list 类型的变量，(假设va_list 类型变量被定义为ap)；</li>
+<li>然后应该对ap 进行初始化，让它指向可变参数表里面的第一个参数，<br>这是通过 va_start 来实现的，第一个参数是 ap 本身，第二个参数是在变参表前面紧挨着的一个变量,即“…”之前的那个参数；</li>
+<li>然后是获取参数，调用va_arg，它的第一个参数是ap，第二个参数是要获取的参数的指定类型，<br>然后返回这个指定类型的值，并且把 ap 的位置指向变参表的下一个变量位置；</li>
+<li>获取所有的参数之后，我们有必要将这个 ap 指针关掉，以免发生危险，方法是调用 va_end，<br>他是输入的参数 ap 置为 NULL，应该养成获取完参数表之后关闭指针的习惯。<br>通常va_start和va_end是成对出现。</li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/09/27/unused-sourcecode-ld/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +419,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -333,154 +505,6 @@ gcc -Wl,--gc-sections -o main main.c x.o</code></pre><p>可以保证代码量最
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/09/10/attribute-aligned/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/09/10/attribute-aligned/" class="post-title-link" itemprop="url">\#pragma pack(n)和\_\_attribute\_\_((aligned(m)))的区别</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-09-11 00:00:00" itemprop="dateCreated datePublished" datetime="2015-09-11T00:00:00+08:00">2015-09-11</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/C/" itemprop="url" rel="index">
-                    <span itemprop="name">C</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>1.6k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<h2 id="pragma-pack-n-和-attribute-aligned-m-的区别："><a href="#pragma-pack-n-和-attribute-aligned-m-的区别：" class="headerlink" title="#pragma pack(n)和__attribute__((aligned(m)))的区别："></a>#pragma pack(n)和__attribute__((aligned(m)))的区别：</h2><p>前者告诉编译器结构体或类内部的成员变量相对于第一个变量的地址的偏移量的对齐方式，<br>缺省情况下，编译器按照自然边界对齐，当变量所需的自然对齐边界比n大时，按照n对齐，<br>否则按照自然边界对齐；<br>后者告诉编译器一个结构体或者类或者联合或者一个类型的变量(对象)分配地址空间时的地址对齐方式。<br>也就是说，如果将__attribute__((aligned(m)))作用于一个类型，那么该类型的变量在分配地址空间时，<br>其存放的地址一定按照m字节对齐(m必须是2的幂次方)。<br>并且其占用的空间，即大小,也是m的整数倍，以保证在申请连续存储空间的时候，<br>每一个元素的地址也是按照m字节对齐。 __attribute__((aligned(m)))也可以作用于一个单独的变量。举例说明：</p>
-<pre><code>#include&lt;stdio.h&gt;
-#pragma pack(4)
-
-typedef struct{
-    uint32_t f1;
-    uint8_t f2;
-    uint8_t f3;
-    uint32_t f4;
-    uint64_t f5;
-}__attribute__((aligned(1024))) ts;
-
-int main()
-{
-    printf(&quot;Struct size is: %d, aligned on 1024\n&quot;,sizeof(ts));
-    printf(&quot;Allocate f1 on address: 0x%x\n&quot;,&amp;(((ts*)0)-&gt;f1));
-    printf(&quot;Allocate f2 on address: 0x%x\n&quot;,&amp;(((ts*)0)-&gt;f2));
-    printf(&quot;Allocate f3 on address: 0x%x\n&quot;,&amp;(((ts*)0)-&gt;f3));
-    printf(&quot;Allocate f4 on address: 0x%x\n&quot;,&amp;(((ts*)0)-&gt;f4));
-    printf(&quot;Allocate f5 on address: 0x%x\n&quot;,&amp;(((ts*)0)-&gt;f5));
-    return 0;
-}</code></pre><p>输出：</p>
-<font color="#00FF00">
-    Struct size is: 1024, aligned on 1024
-<br/>
-</font>
-    Allocate f1 on address: 0x0
-<br/>
-<font color="#FF0000">
-    Allocate f2 on address: 0x4
-<br/>
-    Allocate f3 on address: 0x5
-<br/>
-</font>
-    Allocate f4 on address: 0x8
-<br/>
-<font color="#FF00FF">
-    Allocate f5 on address: 0xc
-<br/>
-</font>
-
-<p>注意:</p>
-<p>绿色部分表明了__attribute__((aligned(1024))) 的作用<br/><br>红色部分说明#pragma pack(4)只对大小大于4的成员变量的地址偏移起作用<br/><br>紫色部分说明对于大小大于4的成员变量，其地址偏移按照4字节对齐</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/09/10/gcc-attributes/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -512,7 +536,7 @@ int main()
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -793,6 +817,154 @@ int main(void)
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/09/10/attribute-aligned/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/09/10/attribute-aligned/" class="post-title-link" itemprop="url">\#pragma pack(n)和\_\_attribute\_\_((aligned(m)))的区别</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-09-11 00:00:00" itemprop="dateCreated datePublished" datetime="2015-09-11T00:00:00+08:00">2015-09-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index">
+                    <span itemprop="name">C</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>1.6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h2 id="pragma-pack-n-和-attribute-aligned-m-的区别："><a href="#pragma-pack-n-和-attribute-aligned-m-的区别：" class="headerlink" title="#pragma pack(n)和__attribute__((aligned(m)))的区别："></a>#pragma pack(n)和__attribute__((aligned(m)))的区别：</h2><p>前者告诉编译器结构体或类内部的成员变量相对于第一个变量的地址的偏移量的对齐方式，<br>缺省情况下，编译器按照自然边界对齐，当变量所需的自然对齐边界比n大时，按照n对齐，<br>否则按照自然边界对齐；<br>后者告诉编译器一个结构体或者类或者联合或者一个类型的变量(对象)分配地址空间时的地址对齐方式。<br>也就是说，如果将__attribute__((aligned(m)))作用于一个类型，那么该类型的变量在分配地址空间时，<br>其存放的地址一定按照m字节对齐(m必须是2的幂次方)。<br>并且其占用的空间，即大小,也是m的整数倍，以保证在申请连续存储空间的时候，<br>每一个元素的地址也是按照m字节对齐。 __attribute__((aligned(m)))也可以作用于一个单独的变量。举例说明：</p>
+<pre><code>#include&lt;stdio.h&gt;
+#pragma pack(4)
+
+typedef struct{
+    uint32_t f1;
+    uint8_t f2;
+    uint8_t f3;
+    uint32_t f4;
+    uint64_t f5;
+}__attribute__((aligned(1024))) ts;
+
+int main()
+{
+    printf(&quot;Struct size is: %d, aligned on 1024\n&quot;,sizeof(ts));
+    printf(&quot;Allocate f1 on address: 0x%x\n&quot;,&amp;(((ts*)0)-&gt;f1));
+    printf(&quot;Allocate f2 on address: 0x%x\n&quot;,&amp;(((ts*)0)-&gt;f2));
+    printf(&quot;Allocate f3 on address: 0x%x\n&quot;,&amp;(((ts*)0)-&gt;f3));
+    printf(&quot;Allocate f4 on address: 0x%x\n&quot;,&amp;(((ts*)0)-&gt;f4));
+    printf(&quot;Allocate f5 on address: 0x%x\n&quot;,&amp;(((ts*)0)-&gt;f5));
+    return 0;
+}</code></pre><p>输出：</p>
+<font color="#00FF00">
+    Struct size is: 1024, aligned on 1024
+<br/>
+</font>
+    Allocate f1 on address: 0x0
+<br/>
+<font color="#FF0000">
+    Allocate f2 on address: 0x4
+<br/>
+    Allocate f3 on address: 0x5
+<br/>
+</font>
+    Allocate f4 on address: 0x8
+<br/>
+<font color="#FF00FF">
+    Allocate f5 on address: 0xc
+<br/>
+</font>
+
+<p>注意:</p>
+<p>绿色部分表明了__attribute__((aligned(1024))) 的作用<br/><br>红色部分说明#pragma pack(4)只对大小大于4的成员变量的地址偏移起作用<br/><br>紫色部分说明对于大小大于4的成员变量，其地址偏移按照4字节对齐</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/08/19/analysis-tools/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -824,7 +996,7 @@ int main(void)
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1337,146 +1509,6 @@ $ scan-view-3.4 /tmp/scan-build-2016-06-23-125458-27549-1</code></pre>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/06/Linux-OOM-Killer/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/07/06/Linux-OOM-Killer/" class="post-title-link" itemprop="url">Linux下malloc函数和OOM Killer</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-07-07 00:00:00" itemprop="dateCreated datePublished" datetime="2015-07-07T00:00:00+08:00">2015-07-07</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>3.1k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>3 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<h3 id="Malloc函数和OOM-Killer"><a href="#Malloc函数和OOM-Killer" class="headerlink" title="Malloc函数和OOM Killer"></a><strong>Malloc函数和OOM Killer</strong></h3><p>Linux下malloc函数主要用来在用户空间从heap申请内存，申请成功返回指向所分配内存的指针，申请失败返回NULL。<br><strong>默认情况下，Linux内核使用“乐观的”分配内存策略</strong>，首先粗略估计系统可使用的内存数，然后分配内存，<br>但是在使用的时候才真正把这块分配的内存给你。<br>这样一来，即使用malloc申请内存没有返回NULL，你也不一定能完全使用这块内存，<br>特别是在一次或连续多次申请很多内存的时候。</p>
-<p>如果一直连续用malloc申请内存，而不真正使用，所申请的内存总数可以超过真正可以使用的内存数。<br>但是当真正使用这块内存，比如用memset或bzero函数一次性把所申请到的大块内存“使用掉”，<br>Linux系统就会Out Of Memory，这个时候OOM Killer就会kill掉用户空间的其他进程来腾出更多可使用内存。</p>
-<p>OOM Killer根据OOM score来决定kill哪个进程，OOM score可以看/proc/<PID>/oom_score，<br>score由badness函数计算得出，根据进程运行时间长短，进程优先级，进程所使用的内存数等等。<br>可以通过/proc/<PID>/oom_adj来干预计算socre，这个值的取值范围是-17～15，<br>如果是-17该进程就永远不会被kill（这个可能也和内核版本有关，不见得所有内核版本都支持，得实际试试）。</p>
-<p>“默认情况”Linux是这种做的，“默认情况”是指/proc/sys/vm/overcommit_memory为0的时候。<br>这个参数也可以调整，如果为1表示“来着不拒”，只要你malloc过来申请，我啥都不做，立马给你分配内存，<br>这样的话性能就会有大幅度的提高；<br>如果为2表示Linux会精确计算所有可使用的内存和所申请的内存，如果所申请的超过的可使用的内存数就返回NULL。<br>可使用的内存值计算方法，虚拟内存（swap）+ /proc/sys/vm/overcommit_memory（百分比） × 物理内存。<br>/proc/sys/vm/overcommit_memory默认值为50,计算起来就是50%的物理内存数。</p>
-<p>Linux自身内核会占一部分内存，还有buffer/cache所占用的内存，<br>所以实际上能被malloc申请后使用的内存并非物理内存大小，<br>demsg的输出里面包含了相关信息（如果看不到，可能是被别的信息冲掉了，重启系统，在系统起来后马上看）：</p>
-<pre><code>Memory: 2071220k/2097152k available (2122k kernel code, 24584k reserved, 884k data, 228k init, 1179584k highmem)</code></pre><h3 id="关于OOM-Killer的proc文件系统"><a href="#关于OOM-Killer的proc文件系统" class="headerlink" title="关于OOM Killer的proc文件系统"></a><strong>关于OOM Killer的proc文件系统</strong></h3><p>下面开始介绍与OOM Killer相关的proc文件系统。</p>
-<h4 id="proc-PID-oom-adj"><a href="#proc-PID-oom-adj" class="headerlink" title="/proc/PID/oom_adj"></a><strong>/proc/PID/oom_adj</strong></h4><p>为/proc/PID/oom_adj设置值就可以调整得分。<br>调整值的范围为–16~15。正的值容易被OOM Killer选定。负值可能性较低。<br>例如，当指定3时，得分就变为23倍；当指定–5时，得分就变为1/25。</p>
-<p>“–17”是一个特殊的值。如果设置为–17，就会禁止OOM Killer发出的信号（从Linux 2.6.12开始支持设置–17）。</p>
-<p>在OOM Killer运行的情况下，为了实现远程登录而想要将sshd排除在对象外时，可以执行下列命令。</p>
-<pre><code># cat /proc/&#39;cat /var/run/sshd.pid&#39;/oom_score
-15
-# echo -17 &gt;  /proc/&#39;cat /var/run/sshd.pid&#39;/oom_adj
-# tail /proc/&#39;cat /var/run/sshd.pid&#39;/oom_*
-==&gt; /proc/2278/oom_adj &lt;==
--17
-==&gt; /proc/2278/oom_score &lt;==
-0                               /*得分变成0*/</code></pre><p>从Linux 2.6.18开始可以使用/proc/PID/oom_adj。内容记载在Documentation /filesystems/proc.txt中。</p>
-<h4 id="proc-sys-vm-panic-on-oom"><a href="#proc-sys-vm-panic-on-oom" class="headerlink" title="/proc/sys/vm/panic_on_oom"></a><strong>/proc/sys/vm/panic_on_oom</strong></h4><p>将/proc/sys/vm/panic_on_oom设置为1时，在OOM Killer运行时可以不发送进程信号，而是使内核产生重大故障。</p>
-<pre><code># echo 1 &gt; /proc/sys/vm/panic_on_oom</code></pre><h4 id="proc-sys-vm-oom-kill-allocating-task"><a href="#proc-sys-vm-oom-kill-allocating-task" class="headerlink" title="/proc/sys/vm/oom_kill_allocating_task"></a><strong>/proc/sys/vm/oom_kill_allocating_task</strong></h4><p>从Linux 2.6.24开始proc文件系统就有oom_kill_allocating_task。<br>如果对此设置除0以外的值，则促使OOM Killer运行的进程自身将接收信号。此处省略对所有进程的得分计算过程。</p>
-<pre><code># echo 1 &gt; /proc/sys/vm/oom_kill_allocating_task</code></pre><p>这样就不需要参照所有进程，但是也不会考虑进程的优先级和root权限等，只发送信号。</p>
-<h4 id="proc-sys-vm-oom-dump-tasks"><a href="#proc-sys-vm-oom-dump-tasks" class="headerlink" title="/proc/sys/vm/oom_dump_tasks"></a><strong>/proc/sys/vm/oom_dump_tasks</strong></h4><p>从Linux 2.6.25开始，将oom_dump_tasks设置为除0以外的值时，在OOM Killer运行时的输出中会增加进程的列表信息。</p>
-<pre><code># echo 1 &gt; /proc/sys/vm/oom_dump_tasks</code></pre><p>列表信息显示如下，可以使用dmesg或syslog来确认。</p>
-<pre><code>[ pid ]   uid  tgid total_vm      rss cpu oom_adj name
-[    1]     0     1     2580        1   0       0 init
-[  500]     0   500     3231        0   1     -17 udevd
-[ 2736]     0  2736     1470        1   0       0 syslogd
-[ 2741]     0  2741      944        0   0       0 klogd
-[ 2765]    81  2765     5307        0   0       0 dbus-daemon
-[ 2861]     0  2861      944        0   0       0 acpid
-...
-[ 3320]     0  3320   525842   241215   1       0 stress</code></pre><h4 id="proc-PID-oom-score-adj"><a href="#proc-PID-oom-score-adj" class="headerlink" title="/proc/PID/oom_score_adj"></a><strong>/proc/PID/oom_score_adj</strong></h4><p>从Linux 2.6.36开始都安装了/proc/<PID>/oom_score_adj，<br>此后将替换为/proc/PID/oom_adj。<br>即使当前是对/proc/PID/oom_adj进行的设置，在内核内部进行变换后的值也是针对/proc/PID/oom_score_adj设置的。</p>
-<p>可以设置–1000~1000之间的值。设置为–1000时，该进程就被排除在OOM Killer强制终止的对象外。</p>
-<p>在内核2.6.36以后的版本中写入oom_adj，只会输出一次如下的信息。</p>
-<pre><code># dmesg
-.....
-udevd (60): /proc/60/oom_adj is deprecated, please use /proc/60/oom_score_adj instead.</code></pre>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/06/Linux-malloc/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1508,7 +1540,7 @@ udevd (60): /proc/60/oom_adj is deprecated, please use /proc/60/oom_score_adj in
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1627,6 +1659,146 @@ $(document).ready(function(){
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/06/Linux-OOM-Killer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/07/06/Linux-OOM-Killer/" class="post-title-link" itemprop="url">Linux下malloc函数和OOM Killer</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-07-07 00:00:00" itemprop="dateCreated datePublished" datetime="2015-07-07T00:00:00+08:00">2015-07-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.1k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h3 id="Malloc函数和OOM-Killer"><a href="#Malloc函数和OOM-Killer" class="headerlink" title="Malloc函数和OOM Killer"></a><strong>Malloc函数和OOM Killer</strong></h3><p>Linux下malloc函数主要用来在用户空间从heap申请内存，申请成功返回指向所分配内存的指针，申请失败返回NULL。<br><strong>默认情况下，Linux内核使用“乐观的”分配内存策略</strong>，首先粗略估计系统可使用的内存数，然后分配内存，<br>但是在使用的时候才真正把这块分配的内存给你。<br>这样一来，即使用malloc申请内存没有返回NULL，你也不一定能完全使用这块内存，<br>特别是在一次或连续多次申请很多内存的时候。</p>
+<p>如果一直连续用malloc申请内存，而不真正使用，所申请的内存总数可以超过真正可以使用的内存数。<br>但是当真正使用这块内存，比如用memset或bzero函数一次性把所申请到的大块内存“使用掉”，<br>Linux系统就会Out Of Memory，这个时候OOM Killer就会kill掉用户空间的其他进程来腾出更多可使用内存。</p>
+<p>OOM Killer根据OOM score来决定kill哪个进程，OOM score可以看/proc/<PID>/oom_score，<br>score由badness函数计算得出，根据进程运行时间长短，进程优先级，进程所使用的内存数等等。<br>可以通过/proc/<PID>/oom_adj来干预计算socre，这个值的取值范围是-17～15，<br>如果是-17该进程就永远不会被kill（这个可能也和内核版本有关，不见得所有内核版本都支持，得实际试试）。</p>
+<p>“默认情况”Linux是这种做的，“默认情况”是指/proc/sys/vm/overcommit_memory为0的时候。<br>这个参数也可以调整，如果为1表示“来着不拒”，只要你malloc过来申请，我啥都不做，立马给你分配内存，<br>这样的话性能就会有大幅度的提高；<br>如果为2表示Linux会精确计算所有可使用的内存和所申请的内存，如果所申请的超过的可使用的内存数就返回NULL。<br>可使用的内存值计算方法，虚拟内存（swap）+ /proc/sys/vm/overcommit_memory（百分比） × 物理内存。<br>/proc/sys/vm/overcommit_memory默认值为50,计算起来就是50%的物理内存数。</p>
+<p>Linux自身内核会占一部分内存，还有buffer/cache所占用的内存，<br>所以实际上能被malloc申请后使用的内存并非物理内存大小，<br>demsg的输出里面包含了相关信息（如果看不到，可能是被别的信息冲掉了，重启系统，在系统起来后马上看）：</p>
+<pre><code>Memory: 2071220k/2097152k available (2122k kernel code, 24584k reserved, 884k data, 228k init, 1179584k highmem)</code></pre><h3 id="关于OOM-Killer的proc文件系统"><a href="#关于OOM-Killer的proc文件系统" class="headerlink" title="关于OOM Killer的proc文件系统"></a><strong>关于OOM Killer的proc文件系统</strong></h3><p>下面开始介绍与OOM Killer相关的proc文件系统。</p>
+<h4 id="proc-PID-oom-adj"><a href="#proc-PID-oom-adj" class="headerlink" title="/proc/PID/oom_adj"></a><strong>/proc/PID/oom_adj</strong></h4><p>为/proc/PID/oom_adj设置值就可以调整得分。<br>调整值的范围为–16~15。正的值容易被OOM Killer选定。负值可能性较低。<br>例如，当指定3时，得分就变为23倍；当指定–5时，得分就变为1/25。</p>
+<p>“–17”是一个特殊的值。如果设置为–17，就会禁止OOM Killer发出的信号（从Linux 2.6.12开始支持设置–17）。</p>
+<p>在OOM Killer运行的情况下，为了实现远程登录而想要将sshd排除在对象外时，可以执行下列命令。</p>
+<pre><code># cat /proc/&#39;cat /var/run/sshd.pid&#39;/oom_score
+15
+# echo -17 &gt;  /proc/&#39;cat /var/run/sshd.pid&#39;/oom_adj
+# tail /proc/&#39;cat /var/run/sshd.pid&#39;/oom_*
+==&gt; /proc/2278/oom_adj &lt;==
+-17
+==&gt; /proc/2278/oom_score &lt;==
+0                               /*得分变成0*/</code></pre><p>从Linux 2.6.18开始可以使用/proc/PID/oom_adj。内容记载在Documentation /filesystems/proc.txt中。</p>
+<h4 id="proc-sys-vm-panic-on-oom"><a href="#proc-sys-vm-panic-on-oom" class="headerlink" title="/proc/sys/vm/panic_on_oom"></a><strong>/proc/sys/vm/panic_on_oom</strong></h4><p>将/proc/sys/vm/panic_on_oom设置为1时，在OOM Killer运行时可以不发送进程信号，而是使内核产生重大故障。</p>
+<pre><code># echo 1 &gt; /proc/sys/vm/panic_on_oom</code></pre><h4 id="proc-sys-vm-oom-kill-allocating-task"><a href="#proc-sys-vm-oom-kill-allocating-task" class="headerlink" title="/proc/sys/vm/oom_kill_allocating_task"></a><strong>/proc/sys/vm/oom_kill_allocating_task</strong></h4><p>从Linux 2.6.24开始proc文件系统就有oom_kill_allocating_task。<br>如果对此设置除0以外的值，则促使OOM Killer运行的进程自身将接收信号。此处省略对所有进程的得分计算过程。</p>
+<pre><code># echo 1 &gt; /proc/sys/vm/oom_kill_allocating_task</code></pre><p>这样就不需要参照所有进程，但是也不会考虑进程的优先级和root权限等，只发送信号。</p>
+<h4 id="proc-sys-vm-oom-dump-tasks"><a href="#proc-sys-vm-oom-dump-tasks" class="headerlink" title="/proc/sys/vm/oom_dump_tasks"></a><strong>/proc/sys/vm/oom_dump_tasks</strong></h4><p>从Linux 2.6.25开始，将oom_dump_tasks设置为除0以外的值时，在OOM Killer运行时的输出中会增加进程的列表信息。</p>
+<pre><code># echo 1 &gt; /proc/sys/vm/oom_dump_tasks</code></pre><p>列表信息显示如下，可以使用dmesg或syslog来确认。</p>
+<pre><code>[ pid ]   uid  tgid total_vm      rss cpu oom_adj name
+[    1]     0     1     2580        1   0       0 init
+[  500]     0   500     3231        0   1     -17 udevd
+[ 2736]     0  2736     1470        1   0       0 syslogd
+[ 2741]     0  2741      944        0   0       0 klogd
+[ 2765]    81  2765     5307        0   0       0 dbus-daemon
+[ 2861]     0  2861      944        0   0       0 acpid
+...
+[ 3320]     0  3320   525842   241215   1       0 stress</code></pre><h4 id="proc-PID-oom-score-adj"><a href="#proc-PID-oom-score-adj" class="headerlink" title="/proc/PID/oom_score_adj"></a><strong>/proc/PID/oom_score_adj</strong></h4><p>从Linux 2.6.36开始都安装了/proc/<PID>/oom_score_adj，<br>此后将替换为/proc/PID/oom_adj。<br>即使当前是对/proc/PID/oom_adj进行的设置，在内核内部进行变换后的值也是针对/proc/PID/oom_score_adj设置的。</p>
+<p>可以设置–1000~1000之间的值。设置为–1000时，该进程就被排除在OOM Killer强制终止的对象外。</p>
+<p>在内核2.6.36以后的版本中写入oom_adj，只会输出一次如下的信息。</p>
+<pre><code># dmesg
+.....
+udevd (60): /proc/60/oom_adj is deprecated, please use /proc/60/oom_score_adj instead.</code></pre>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/01/grep-special/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1658,7 +1830,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1718,6 +1890,116 @@ grep XXYYZZ * -Rn --include=&#39;*.[ch]&#39;</code></pre>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/01/vim-multifile/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/07/01/vim-multifile/" class="post-title-link" itemprop="url">VIM多文件查找与替换</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-07-02 00:00:00" itemprop="dateCreated datePublished" datetime="2015-07-02T00:00:00+08:00">2015-07-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Editor/" itemprop="url" rel="index">
+                    <span itemprop="name">Editor</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>708</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h3 id="Script"><a href="#Script" class="headerlink" title="Script"></a><strong>Script</strong></h3><pre><code>find . -name &quot;*.c&quot; | xargs sed -i &quot;s/$1/$2/g&quot;</code></pre><h3 id="VIM"><a href="#VIM" class="headerlink" title="VIM"></a><strong>VIM</strong></h3><h4 id="多文件查找"><a href="#多文件查找" class="headerlink" title="多文件查找"></a><strong>多文件查找</strong></h4><h5 id="grep"><a href="#grep" class="headerlink" title="grep"></a><strong>grep</strong></h5><p>直接在vim中输入</p>
+<pre><code>:grep abc * </code></pre><p>这是直接调用unix下的grep命令 </p>
+<h5 id="vimgrep"><a href="#vimgrep" class="headerlink" title="vimgrep"></a><strong>vimgrep</strong></h5><p>基本用法就是</p>
+<pre><code>:vimgrep /匹配模式/[g][j] 要搜索的文件/范围 
+:vim[grep][!] /{pattern}/[g][j] {file} ...</code></pre><p>g 和 j 是两个可选的标志位，g表示是否把每一行的多个匹配结果都加入。j表示是否搜索完后定位到第一个匹配位置。<br>要搜索的文件可以是具体的文件路径，也可以是带通配符的路径比如 <em>.as **/</em>.as ，**表示递归所有子目录。<br>要搜索的文件和或搜索范围都可以写多个，用空格分开。 例子：</p>
+<pre><code>:vimgrep /\/ **/*.as 搜索当前目录以及所有子目录内as文件中的 &quot;flash&quot;
+:vimgrep /an error/ *.c 就是在所有的.c文件中搜索an error。
+:vimgrep/an error/* 意思是查找当前目录下的文件中的an error，不包括子目录</code></pre><h5 id="定位"><a href="#定位" class="headerlink" title="定位"></a><strong>定位</strong></h5><p>输入上述的命令后，可以像输入:make命令，那样定位匹配到的文件位置 </p>
+<pre><code>:cnext (:cn)           下一个匹配位置
+:cprevious (:cp)     上一个匹配位置
+:cwindow (:cw)     quickfix窗口，可以选择匹配的文件位置
+:cl(:clist)                查看所有匹配的位置</code></pre><h4 id="多文件替换-arg"><a href="#多文件替换-arg" class="headerlink" title="多文件替换(arg)"></a><strong>多文件替换(arg)</strong></h4><ol>
+<li>加入要处理的文件  :args *.txt</li>
+<li>输入对上述文件的动作  :argdo %s/hate/love/gc | update  （这里将hate替换成love，update表示要写入到文件中，否则只作替换而不写入）</li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/01/doxygen-graphviz/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1749,7 +2031,7 @@ grep XXYYZZ * -Rn --include=&#39;*.[ch]&#39;</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1834,116 +2116,6 @@ doxygen -g</code></pre><h3 id="生成函数调用图"><a href="#生成函数调�
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/07/01/vim-multifile/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/07/01/vim-multifile/" class="post-title-link" itemprop="url">VIM多文件查找与替换</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-07-02 00:00:00" itemprop="dateCreated datePublished" datetime="2015-07-02T00:00:00+08:00">2015-07-02</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/" itemprop="url" rel="index">
-                    <span itemprop="name">Tools</span>
-                  </a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tools/Editor/" itemprop="url" rel="index">
-                    <span itemprop="name">Editor</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>708</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="Script"><a href="#Script" class="headerlink" title="Script"></a><strong>Script</strong></h3><pre><code>find . -name &quot;*.c&quot; | xargs sed -i &quot;s/$1/$2/g&quot;</code></pre><h3 id="VIM"><a href="#VIM" class="headerlink" title="VIM"></a><strong>VIM</strong></h3><h4 id="多文件查找"><a href="#多文件查找" class="headerlink" title="多文件查找"></a><strong>多文件查找</strong></h4><h5 id="grep"><a href="#grep" class="headerlink" title="grep"></a><strong>grep</strong></h5><p>直接在vim中输入</p>
-<pre><code>:grep abc * </code></pre><p>这是直接调用unix下的grep命令 </p>
-<h5 id="vimgrep"><a href="#vimgrep" class="headerlink" title="vimgrep"></a><strong>vimgrep</strong></h5><p>基本用法就是</p>
-<pre><code>:vimgrep /匹配模式/[g][j] 要搜索的文件/范围 
-:vim[grep][!] /{pattern}/[g][j] {file} ...</code></pre><p>g 和 j 是两个可选的标志位，g表示是否把每一行的多个匹配结果都加入。j表示是否搜索完后定位到第一个匹配位置。<br>要搜索的文件可以是具体的文件路径，也可以是带通配符的路径比如 <em>.as **/</em>.as ，**表示递归所有子目录。<br>要搜索的文件和或搜索范围都可以写多个，用空格分开。 例子：</p>
-<pre><code>:vimgrep /\/ **/*.as 搜索当前目录以及所有子目录内as文件中的 &quot;flash&quot;
-:vimgrep /an error/ *.c 就是在所有的.c文件中搜索an error。
-:vimgrep/an error/* 意思是查找当前目录下的文件中的an error，不包括子目录</code></pre><h5 id="定位"><a href="#定位" class="headerlink" title="定位"></a><strong>定位</strong></h5><p>输入上述的命令后，可以像输入:make命令，那样定位匹配到的文件位置 </p>
-<pre><code>:cnext (:cn)           下一个匹配位置
-:cprevious (:cp)     上一个匹配位置
-:cwindow (:cw)     quickfix窗口，可以选择匹配的文件位置
-:cl(:clist)                查看所有匹配的位置</code></pre><h4 id="多文件替换-arg"><a href="#多文件替换-arg" class="headerlink" title="多文件替换(arg)"></a><strong>多文件替换(arg)</strong></h4><ol>
-<li>加入要处理的文件  :args *.txt</li>
-<li>输入对上述文件的动作  :argdo %s/hate/love/gc | update  （这里将hate替换成love，update表示要写入到文件中，否则只作替换而不写入）</li>
-</ol>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/05/07/lib32-for-ubuntu64/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1975,7 +2147,7 @@ doxygen -g</code></pre><h3 id="生成函数调用图"><a href="#生成函数调�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2078,7 +2250,7 @@ libelf-freebsd-dev - Development files for libelf (FreeBSD version)
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2150,6 +2322,141 @@ libelf-freebsd-dev - Development files for libelf (FreeBSD version)
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/04/04/ecos-cpu-load/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/04/04/ecos-cpu-load/" class="post-title-link" itemprop="url">eCos Cpu Load[转]</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-04-05 00:00:00" itemprop="dateCreated datePublished" datetime="2015-04-05T00:00:00+08:00">2015-04-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/eCos/" itemprop="url" rel="index">
+                    <span itemprop="name">eCos</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.7k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p>cpuload组件包提供了一种估算CPU负载的方式。它可以估算最近0.1秒、1秒和10秒内的CPU负载百分比。</p>
+<h3 id="负载测量API"><a href="#负载测量API" class="headerlink" title="负载测量API"></a><strong>负载测量API</strong></h3><p>首先，必须在被测目标机上对测量算法进行校准，一旦校准完成后就可以开始测量。<br>测量是一个连续过程，因此总是提供最近的测量数据，测量过程可以根据需要随时停止。<br>一旦开始测量过程，就可以获取测量结果。</p>
+<p>需要注意的是：如果目标机或CPU执行任何节能措施，例如降低时钟频率或者挂起CPU等，<br>这些节能措施将干扰CPU负载测量，在这种情况下，测量结果是未定义的。<br>Synthetic Target就是这样的情况之一。阅读本文后续实现细节章节可以了解更多。</p>
+<p>『译注』Cortex-M架构的默认实现会在执行空闲任务时挂起CPU，<br>因此默认情况下，测量结果并非是实际的CPU负载，<br>需要重定义HAL_IDLE_THREAD_ACTION宏取消空闲时挂起，<br>HAL_IDLE_THREAD_ACTION宏的默认实现位于hal/cortexm/arch/<version>/include/hal_arch.h:336。</p>
+<p>负载测量不支持SMP系统，仅支持单CPU系统。</p>
+<p>负载测量API可以在cyg/cpuload/cpuload.h中找到。</p>
+<p>『译注』源代码位于services/cpuload</p>
+<h4 id="cyg-cpuload-calibrate"><a href="#cyg-cpuload-calibrate" class="headerlink" title="cyg_cpuload_calibrate"></a><strong>cyg_cpuload_calibrate</strong></h4><p>这个函数用来校准CPU负载测量算法。它执行一次特别的测量过程确定空闲时的CPU性能。</p>
+<pre><code>void cyg_cpuload_calibrate(cyg_uint32* calibration);  </code></pre><p>该函数通过calibration指针返回校准值。<br>这个函数是非常特别的，为了获得正确的校准结果需要满足若干条件。<br>该函数使用了2个最高线程优先级，当该函数被使用时，其它线程不能使用这两个优先级。<br>调用该函数时，内核调度器必须已经启动而且调度器未加锁。<br>该函数将花费0.1秒的时间完成校准操作，在这0.1秒校准期间不能有任何其它线程执行。</p>
+<p>『译注』这个函数使用了线程优先级1和2，为了获得正确的测量结果，<br>其它线程不能使用优先级1和2。eCos的最高线程优先级是0，如果有优先级为0的线程，<br>必须保证在校准过程该线程处于挂起状态，<br>否则校准过程可能被优先级为0的线程抢占而导致错误的校准结果。</p>
+<p>『译注』该函数将会创建一个线程，线程堆栈大小为CYGNUM_HAL_STACK_SIZE_MINIMUM，<br>在Cortex-M架构下约1.5KB，该线程仅在校准过程执行一次，<br>随后被删除永远都不会再执行，如果目标机内存非常有限，<br>应当知晓CPU负载测量校准时使用了1.5KB的堆栈空间。</p>
+<h4 id="cyg-cpuload-create"><a href="#cyg-cpuload-create" class="headerlink" title="cyg_cpuload_create"></a><strong>cyg_cpuload_create</strong></h4><p>这个函数启动CPU负载测量。</p>
+<pre><code>void cyg_cpuload_create(cyg_cpuload_t* cpuload,  
+        cyg_uint32 calibrate,  
+        cyg_handle_t* handle);  </code></pre><p>调用该函数启动测量过程，handle返回操作句柄，通过该句柄可以读取测量结果以及停止测量过程。</p>
+<h4 id="cyg-cpuload-delete"><a href="#cyg-cpuload-delete" class="headerlink" title="cyg_cpuload_delete"></a><strong>cyg_cpuload_delete</strong></h4><p>这个函数停止CPU负载测量。</p>
+<pre><code>void cyg_cpuload_delete(cyg_handle_t handle);  </code></pre><p>handle必须是cyg_cpuload_create函数返回的操作句柄。</p>
+<h4 id="cyg-cpuload-get"><a href="#cyg-cpuload-get" class="headerlink" title="cyg_cpuload_get"></a><strong>cyg_cpuload_get</strong></h4><p>这个函数返回最近的测量结果。</p>
+<pre><code>void cyg_cpuload_get(cyg_handle_t handle,  
+        cyg_uint32* average_point1s,  
+        cyg_uint32* average_1s,  
+        cyg_uint32* average_10s);  </code></pre><p>handle必须是cyg_cpuload_create函数返回的操作句柄。<br>最近0.1秒、1秒和10秒的负载测量结果通过average_point1s、average_1s和average_10s返回。</p>
+<h3 id="实现细节"><a href="#实现细节" class="headerlink" title="实现细节"></a><strong>实现细节</strong></h3><p>这一节给出一些测量过程的实现细节，这些细节可以帮助我们理解测量结果的意义。<br>当没有其它线程可以执行时，eCos将执行空闲线程，空闲线程总是可执行的而且使用最低线程优先级。<br>空闲线程只做一点点事情，它有一个永远都不会退出的循环，每次循环将idle_thread_loops变量加1，<br>然后调用HAL_IDLE_THREAD_ACTION宏。<br>CPU负载测量算法就是使用了idle_thread_loops变量，<br>测量算法周期性地检查idle_thread_loops变量，并记录前后两次检查的差值，<br>系统越空这个差值就越大，通过这个简单的手段就可以确定系统的负载。</p>
+<p>cyg_cpuload_calibrate函数执行空闲任务0.1秒，<br>从而确定系统空闲0.1秒的时间内idle_thread_loops会被累加多少次。<br>cyg_cpuload_create函数启动一个闹钟，这个闹钟每隔0.1秒调用回调函数，<br>回调函数计算idle_thread_loops从上次检查到本次检查的差值，然后根据这个差值以及校准值计算出CPU负载。<br>回调函数用新的计算结果更新cyg_cpuload结构，<br>0.1秒负载只是简单地复制最近的测量结果，然后通过一个简单的滤波计算1秒和10秒负载。<br>由于舍入误差的存在，即使系统满负载，1秒和10秒测量值也永远都不会达到100%，通常看到的是99%。</p>
+<p>如前所述，电源管理代码将干扰上述测量结果。<br>CPU负载测量的基本假设是：空闲线程可以无障碍地运行，而且运行条件与校准时的运行条件保持一致。<br>如果降低CPU时钟频率，那么空闲线程的计数器累加速率将变慢，<br>因此CPU负载测量结果值将偏高，如果CPU被完全挂起，那么CPU负载测量结果将是100%。</p>
+<h3 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a><strong>Ref</strong></h3><ol>
+<li><a href="http://ecos.sourceware.org/docs-3.0/ref/cpuload-functions.html" target="_blank" rel="noopener">Chapter 68. CPU Load Measurements</a></li>
+<li><a href="http://ecos.sourceware.org/docs-3.0/ref/ecos-ref.html" target="_blank" rel="noopener">eCos Reference Manual</a></li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/04/04/ecos-mem-info/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2181,7 +2488,7 @@ libelf-freebsd-dev - Development files for libelf (FreeBSD version)
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2333,141 +2640,6 @@ text    data     bss     dec     hex filename
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/04/04/ecos-cpu-load/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/04/04/ecos-cpu-load/" class="post-title-link" itemprop="url">eCos Cpu Load[转]</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-04-05 00:00:00" itemprop="dateCreated datePublished" datetime="2015-04-05T00:00:00+08:00">2015-04-05</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/eCos/" itemprop="url" rel="index">
-                    <span itemprop="name">eCos</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>2.7k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p>cpuload组件包提供了一种估算CPU负载的方式。它可以估算最近0.1秒、1秒和10秒内的CPU负载百分比。</p>
-<h3 id="负载测量API"><a href="#负载测量API" class="headerlink" title="负载测量API"></a><strong>负载测量API</strong></h3><p>首先，必须在被测目标机上对测量算法进行校准，一旦校准完成后就可以开始测量。<br>测量是一个连续过程，因此总是提供最近的测量数据，测量过程可以根据需要随时停止。<br>一旦开始测量过程，就可以获取测量结果。</p>
-<p>需要注意的是：如果目标机或CPU执行任何节能措施，例如降低时钟频率或者挂起CPU等，<br>这些节能措施将干扰CPU负载测量，在这种情况下，测量结果是未定义的。<br>Synthetic Target就是这样的情况之一。阅读本文后续实现细节章节可以了解更多。</p>
-<p>『译注』Cortex-M架构的默认实现会在执行空闲任务时挂起CPU，<br>因此默认情况下，测量结果并非是实际的CPU负载，<br>需要重定义HAL_IDLE_THREAD_ACTION宏取消空闲时挂起，<br>HAL_IDLE_THREAD_ACTION宏的默认实现位于hal/cortexm/arch/<version>/include/hal_arch.h:336。</p>
-<p>负载测量不支持SMP系统，仅支持单CPU系统。</p>
-<p>负载测量API可以在cyg/cpuload/cpuload.h中找到。</p>
-<p>『译注』源代码位于services/cpuload</p>
-<h4 id="cyg-cpuload-calibrate"><a href="#cyg-cpuload-calibrate" class="headerlink" title="cyg_cpuload_calibrate"></a><strong>cyg_cpuload_calibrate</strong></h4><p>这个函数用来校准CPU负载测量算法。它执行一次特别的测量过程确定空闲时的CPU性能。</p>
-<pre><code>void cyg_cpuload_calibrate(cyg_uint32* calibration);  </code></pre><p>该函数通过calibration指针返回校准值。<br>这个函数是非常特别的，为了获得正确的校准结果需要满足若干条件。<br>该函数使用了2个最高线程优先级，当该函数被使用时，其它线程不能使用这两个优先级。<br>调用该函数时，内核调度器必须已经启动而且调度器未加锁。<br>该函数将花费0.1秒的时间完成校准操作，在这0.1秒校准期间不能有任何其它线程执行。</p>
-<p>『译注』这个函数使用了线程优先级1和2，为了获得正确的测量结果，<br>其它线程不能使用优先级1和2。eCos的最高线程优先级是0，如果有优先级为0的线程，<br>必须保证在校准过程该线程处于挂起状态，<br>否则校准过程可能被优先级为0的线程抢占而导致错误的校准结果。</p>
-<p>『译注』该函数将会创建一个线程，线程堆栈大小为CYGNUM_HAL_STACK_SIZE_MINIMUM，<br>在Cortex-M架构下约1.5KB，该线程仅在校准过程执行一次，<br>随后被删除永远都不会再执行，如果目标机内存非常有限，<br>应当知晓CPU负载测量校准时使用了1.5KB的堆栈空间。</p>
-<h4 id="cyg-cpuload-create"><a href="#cyg-cpuload-create" class="headerlink" title="cyg_cpuload_create"></a><strong>cyg_cpuload_create</strong></h4><p>这个函数启动CPU负载测量。</p>
-<pre><code>void cyg_cpuload_create(cyg_cpuload_t* cpuload,  
-        cyg_uint32 calibrate,  
-        cyg_handle_t* handle);  </code></pre><p>调用该函数启动测量过程，handle返回操作句柄，通过该句柄可以读取测量结果以及停止测量过程。</p>
-<h4 id="cyg-cpuload-delete"><a href="#cyg-cpuload-delete" class="headerlink" title="cyg_cpuload_delete"></a><strong>cyg_cpuload_delete</strong></h4><p>这个函数停止CPU负载测量。</p>
-<pre><code>void cyg_cpuload_delete(cyg_handle_t handle);  </code></pre><p>handle必须是cyg_cpuload_create函数返回的操作句柄。</p>
-<h4 id="cyg-cpuload-get"><a href="#cyg-cpuload-get" class="headerlink" title="cyg_cpuload_get"></a><strong>cyg_cpuload_get</strong></h4><p>这个函数返回最近的测量结果。</p>
-<pre><code>void cyg_cpuload_get(cyg_handle_t handle,  
-        cyg_uint32* average_point1s,  
-        cyg_uint32* average_1s,  
-        cyg_uint32* average_10s);  </code></pre><p>handle必须是cyg_cpuload_create函数返回的操作句柄。<br>最近0.1秒、1秒和10秒的负载测量结果通过average_point1s、average_1s和average_10s返回。</p>
-<h3 id="实现细节"><a href="#实现细节" class="headerlink" title="实现细节"></a><strong>实现细节</strong></h3><p>这一节给出一些测量过程的实现细节，这些细节可以帮助我们理解测量结果的意义。<br>当没有其它线程可以执行时，eCos将执行空闲线程，空闲线程总是可执行的而且使用最低线程优先级。<br>空闲线程只做一点点事情，它有一个永远都不会退出的循环，每次循环将idle_thread_loops变量加1，<br>然后调用HAL_IDLE_THREAD_ACTION宏。<br>CPU负载测量算法就是使用了idle_thread_loops变量，<br>测量算法周期性地检查idle_thread_loops变量，并记录前后两次检查的差值，<br>系统越空这个差值就越大，通过这个简单的手段就可以确定系统的负载。</p>
-<p>cyg_cpuload_calibrate函数执行空闲任务0.1秒，<br>从而确定系统空闲0.1秒的时间内idle_thread_loops会被累加多少次。<br>cyg_cpuload_create函数启动一个闹钟，这个闹钟每隔0.1秒调用回调函数，<br>回调函数计算idle_thread_loops从上次检查到本次检查的差值，然后根据这个差值以及校准值计算出CPU负载。<br>回调函数用新的计算结果更新cyg_cpuload结构，<br>0.1秒负载只是简单地复制最近的测量结果，然后通过一个简单的滤波计算1秒和10秒负载。<br>由于舍入误差的存在，即使系统满负载，1秒和10秒测量值也永远都不会达到100%，通常看到的是99%。</p>
-<p>如前所述，电源管理代码将干扰上述测量结果。<br>CPU负载测量的基本假设是：空闲线程可以无障碍地运行，而且运行条件与校准时的运行条件保持一致。<br>如果降低CPU时钟频率，那么空闲线程的计数器累加速率将变慢，<br>因此CPU负载测量结果值将偏高，如果CPU被完全挂起，那么CPU负载测量结果将是100%。</p>
-<h3 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a><strong>Ref</strong></h3><ol>
-<li><a href="http://ecos.sourceware.org/docs-3.0/ref/cpuload-functions.html" target="_blank" rel="noopener">Chapter 68. CPU Load Measurements</a></li>
-<li><a href="http://ecos.sourceware.org/docs-3.0/ref/ecos-ref.html" target="_blank" rel="noopener">eCos Reference Manual</a></li>
-</ol>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/04/04/ecos-stack-info/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2499,7 +2671,7 @@ $(document).ready(function(){
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2747,118 +2919,6 @@ while(cyg_thread_get_next(&amp;thread, &amp;id))
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/03/10/lua-run/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/03/10/lua-run/" class="post-title-link" itemprop="url">Linux lua及依赖库安装</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-03-11 00:00:00" itemprop="dateCreated datePublished" datetime="2015-03-11T00:00:00+08:00">2015-03-11</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>655</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>lua5.2暂时不使用，使用lua5.1+luarocks</p>
-<ol>
-<li>看readline软件包是否安装（dpkg -l | grep -i 软件名）</li>
-<li>是否安装ncurses安装包（ncurses安装包 ）</li>
-<li>是否安装libncurses5-dev 或libncursesw5-dev软件包（apt-get install libncurses5-dev）</li>
-</ol>
-<h2 id="ncurses-5-9-tar-gz"><a href="#ncurses-5-9-tar-gz" class="headerlink" title="ncurses-5.9.tar.gz"></a>ncurses-5.9.tar.gz</h2><pre><code>$ ./configure
-$ make
-$ sudo make install</code></pre><h2 id="readline-6-3-tar-gz"><a href="#readline-6-3-tar-gz" class="headerlink" title="readline-6.3.tar.gz"></a>readline-6.3.tar.gz</h2><pre><code>$ ./configure
-$ make
-$ sudo make install
-$ sudo ldconfig</code></pre><h2 id="lua-5-2-3-tar-gz"><a href="#lua-5-2-3-tar-gz" class="headerlink" title="lua-5.2.3.tar.gz"></a>lua-5.2.3.tar.gz</h2><pre><code>$ sudo apt-get install libreadline6-dev
-$ sudo apt-get install libreadline6-dbg
-$ make linux
-$ OK</code></pre><h2 id="lua-cjson"><a href="#lua-cjson" class="headerlink" title="lua-cjson"></a>lua-cjson</h2><pre><code>$ vim Makefile
-LUA_VERSION = 5.2    
-$ make
-$ sudo make install</code></pre><h2 id="lua-rocks"><a href="#lua-rocks" class="headerlink" title="lua rocks"></a>lua rocks</h2><p>luarocks会自动安装lua版本，现在版本为5.1，如果版本不一致，会导致找不到安装包，建议使用手动方式安装需要的包；</p>
-<p>如果使用luarocks管理包，不要单独安装lua，或者必须保证版本一致为5.1</p>
-<pre><code>$ sudo apt-get install luarocks
-$ sudo luarocks install luasocket
-$ luarocks list
-$ sudo luarocks install lua-cjson
-$ luarocks search **</code></pre>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -2909,7 +2969,7 @@ $ luarocks search **</code></pre>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">470</span>
+          <span class="site-state-item-count">471</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -2922,7 +2982,7 @@ $ luarocks search **</code></pre>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">506</span>
+        <span class="site-state-item-count">508</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -2982,7 +3042,7 @@ $ luarocks search **</code></pre>
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:43</span>
+    <span title="Reading time total">18:45</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
   </div>

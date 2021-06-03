@@ -216,6 +216,262 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/11/09/udp-packet-loss/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/11/09/udp-packet-loss/" class="post-title-link" itemprop="url">网络性能调优（TCP/UDP）</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-11-10 00:00:00" itemprop="dateCreated datePublished" datetime="2015-11-10T00:00:00+08:00">2015-11-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/Socket/" itemprop="url" rel="index">
+                    <span itemprop="name">Socket</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/TCP/" itemprop="url" rel="index">
+                    <span itemprop="name">TCP</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>6.6k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>6 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<h2 id="检查协议栈buffer"><a href="#检查协议栈buffer" class="headerlink" title="检查协议栈buffer"></a><strong>检查协议栈buffer</strong></h2><p>检查buffer大小，修改之后重启网络服务：</p>
+<pre><code>sysctl -a |grep net.core
+net.core.rmem_default = 212992
+net.core.rmem_max = 212992</code></pre><p>检查网卡收包情况：</p>
+<pre><code>2015 git:(master)✗ &gt; netstat -su
+IcmpMsg:
+    InType3: 366
+    OutType3: 325
+Udp:
+    88110 packets received
+    325 packets to unknown port received.
+    0 packet receive errors
+    6219 packets sent
+    IgnoredMulti: 2208
+UdpLite:
+IpExt:
+    InMcastPkts: 1945
+    OutMcastPkts: 35
+    InBcastPkts: 42730
+    OutBcastPkts: 261
+    InOctets: 192296247659
+    OutOctets: 192200794856
+    InMcastOctets: 220327
+    OutMcastOctets: 5370
+    InBcastOctets: 4953400
+    OutBcastOctets: 30722
+    InNoECTPkts: 6131438
+    InECT0Pkts: 127</code></pre><h2 id="检查socket收发缓冲区"><a href="#检查socket收发缓冲区" class="headerlink" title="检查socket收发缓冲区"></a><strong>检查socket收发缓冲区</strong></h2><p>TCP 的性能取决于几个方面的因素。两个最重要的因素是：</p>
+<ol>
+<li>链接带宽（link bandwidth）（报文在网络上传输的速率）</li>
+<li>往返时间（round-trip time） 或 RTT（发送报文与接收到另一端的响应之间的延时）</li>
+</ol>
+<p><strong>这两个值确定了称为 Bandwidth Delay Product（BDP）的内容</strong>。<br>给定链接带宽和 RTT 之后，您就可以计算出 BDP 的值了，<br><strong>BDP 给出了一种简单的方法来计算理论上最优的 TCP socket 缓冲区大小</strong>（其中保存了排队等待传输和等待应用程序接收的数据）。</p>
+<p>如果缓冲区太小，那么 TCP 窗口就不能完全打开，这会对性能造成限制。<br>如果缓冲区太大，那么宝贵的内存资源就会造成浪费。<br>如果您设置的缓冲区大小正好合适，那么就可以完全利用可用的带宽。下面我们来看一个例子：</p>
+<p>如果应用程序是通过一个 100Mbps 的局域网进行通信，其 RRT 为 50 ms，那么 BDP 就是：</p>
+<pre><code>BDP = link_bandwidth * RTT
+100MBps * 0.050 sec / 8 = 0.625MB = 625KB</code></pre><p>注意：此处除以 8 是将位转换成通信使用的字节。</p>
+<p>因此，我们可以将 TCP 窗口设置为 BDP 或 1.25MB。<br>但是在 <strong>Linux 2.6 上默认的 TCP 窗口大小是 110KB</strong>，这会将连接的带宽限制为 2.2MBps，计算方法如下：</p>
+<pre><code>throughput = window_size / RTT
+110KB / 0.050 = 2.2MBps</code></pre><p>如果使用上面计算的窗口大小，我们得到的带宽就是 12.5MBps，计算方法如下：</p>
+<pre><code>625KB / 0.050 = 12.5MBps</code></pre><p>差别的确很大，并且可以为 socket 提供更大的吞吐量。<br>Sockets API 提供了几个 socket 选项，其中两个可以用于修改 socket 的发送和接收缓冲区的大小。<br><strong>使用 SO_SNDBUF 和 SO_RCVBUF 选项来调整发送和接收缓冲区的大小</strong>。<br>注意：尽管 socket 缓冲区的大小确定了通告 TCP 窗口的大小，但是 TCP 还在通告窗口内维护了一个拥塞窗口。<br>因此，由于这个拥塞窗口的存在，给定的 socket 可能永远都不会利用最大的通告窗口。</p>
+<p>修改默认socket收发缓冲区大小：</p>
+<pre><code>int ret, sock, sock_buf_size;
+sock = socket( AF_INET, SOCK_STREAM, 0  );
+sock_buf_size = 64*1024;
+ret = setsockopt( sock, SOL_SOCKET, SO_SNDBUF,
+        (char *)&amp;sock_buf_size, sizeof(sock_buf_size) );
+ret = setsockopt( sock, SOL_SOCKET, SO_RCVBUF,
+        (char *)&amp;sock_buf_size, sizeof(sock_buf_size) );</code></pre><h2 id="禁用-Nagle-算法"><a href="#禁用-Nagle-算法" class="headerlink" title="禁用 Nagle 算法"></a>禁用 Nagle 算法</h2><p>在通过 TCP socket 进行通信时，数据都拆分成了数据块，<br>这样它们就可以封装到给定连接的 TCP payload（指 TCP 数据包中的有效负荷）中了。<br>TCP payload 的大小取决于几个因素（例如最大报文长度和路径），<br>但是这些因素在连接发起时都是已知的。<br>为了达到最好的性能，我们的目标是使用尽可能多的可用数据来填充每个报文。<br><strong>当没有足够的数据来填充 payload 时（也称为最大报文段长度（maximum segment size） 或 MSS），<br>TCP 就会采用 Nagle 算法自动将一些小的缓冲区连接到一个报文段中。</strong><br>这样可以通过最小化所发送的报文的数量来提高应用程序的效率，并减轻整体的网络拥塞问题。</p>
+<p>尽管 John Nagle 的算法可以通过将这些数据连接成更大的报文来最小化所发送的报文的数量，<br>但是有时您可能希望只发送一些较小的报文。<br>一个简单的例子是 telnet 程序，它让用户可以与远程系统进行交互，这通常都是通过一个 shell 来进行的。<br>如果用户被要求用发送报文之前输入的字符来填充某个报文段，那么这种方法就绝对不能满足我们的需要。<br>另外一个例子是 HTTP 协议。通常，客户机浏览器会产生一个小请求（一条 HTTP 请求消息），<br>然后 Web 服务器就会返回一个更大的响应（Web 页面）。</p>
+<p>您应该考虑的第一件事情是 Nagle 算法满足一种需求。<br><strong>由于这种算法对数据进行合并，试图构成一个完整的 TCP 报文段，因此它会引入一些延时。</strong><br>但是这种算法可以最小化在线路上发送的报文的数量，因此可以最小化网络拥塞的问题。<br>但是在需要最小化传输延时的情况中，Sockets API 可以提供一种解决方案。<br>要<strong>禁用 Nagle 算法，您可以设置 TCP_NODELAY socket 选项。</strong></p>
+<p>为TCP socket 禁用 Nagle 算法</p>
+<pre><code>int sock, flag, ret;
+/* Create new stream socket */
+sock = socket( AF_INET, SOCK_STREAM, 0  );
+/* Disable the Nagle (TCP No Delay) algorithm */
+flag = 1;
+ret = setsockopt( sock, IPPROTO_TCP, TCP_NODELAY, (char *)&amp;flag, sizeof(flag)  );
+if (ret == -1) {
+printf(&quot;Couldn&#39;t setsockopt(TCP_NODELAY)\n&quot;);
+    exit(-1);
+}</code></pre><p>使用 Samba 的实验表明，在从 Microsoft® Windows® 服务器上的 Samba 驱动器上读取数据时，禁用 Nagle 算法几乎可以加倍提高读性能。</p>
+<h2 id="tcp"><a href="#tcp" class="headerlink" title="tcp"></a>tcp</h2><p>我们知道TCP链接是有很多开销的，<strong>一个是会占用文件描述符，另一个是会开缓存</strong>，<br>一般来说一个系统可以支持的TCP链接数是有限的，我们需要清楚地认识到<strong>TCP链接对系统的开销是很大的</strong>。<br>正是因为TCP是耗资源的，所以，很多攻击都是让你系统上出现大量的TCP链接，把你的系统资源耗尽。比如著名的SYNC Flood攻击。</p>
+<p>所以，我们要<strong>注意配置KeepAlive参数</strong>，这个参数的意思是定义一个时间，<br>如果链接上没有数据传输，系统会在这个时间发一个包，如果没有收到回应，<br>那么TCP就认为链接断了，然后就会把链接关闭，这样可以回收系统资源开销。<br>（注：HTTP层上也有KeepAlive参数）对于像HTTP这样的短链接，设置一个1-2分钟的keepalive非常重要。<br>这可以在一定程度上防止DoS攻击。有下面几个参数（下面这些参数的值仅供参考）：</p>
+<pre><code>net.ipv4.tcp_keepalive_probes = 5
+net.ipv4.tcp_keepalive_intvl = 20
+net.ipv4.tcp_fin_timeout = 30</code></pre><p>对于TCP的TIME_WAIT这个状态，主动关闭的一方进入TIME_WAIT状态，<br>TIME_WAIT状态将持续2个MSL(Max Segment Lifetime)，默认为4分钟，TIME_WAIT状态下的资源不能回收。<br>有大量的TIME_WAIT链接的情况一般是在HTTP服务器上。对此，有两个参数需要注意，</p>
+<pre><code>net.ipv4.tcp_tw_reuse=1
+net.ipv4.tcp_tw_recycle=1</code></pre><p>前者表示重用TIME_WAIT，后者表示回收TIME_WAIT的资源。</p>
+<p><strong>TCP还有一个重要的概念叫RWIN（TCP Receive Window Size），<br>这个东西的意思是，我一个TCP链接在没有向Sender发出ack时可以接收到的最大的数据包。<br>为什么这个很重要？因为如果Sender没有收到Receiver发过来ack，<br>Sender就会停止发送数据并会等一段时间，如果超时，那么就会重传。<br>这就是为什么TCP链接是可靠链接的原因。<br>重传还不是最严重的，如果有丢包发生的话，TCP的带宽使用率会马上受到影响（会盲目减半），<br>再丢包，再减半，然后如果不丢包了，就逐步恢复。</strong>相关参数如下：</p>
+<pre><code>net.core.wmem_default = 8388608
+net.core.rmem_default = 8388608
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216</code></pre><p>一般来说，<strong>理论上的RWIN应该设置成：吞吐量 * 回路时间</strong>。<br><strong>Sender端的buffer应该和RWIN有一样的大小</strong>，<br>因为Sender端发送完数据后要等Receiver端确认，如果网络延时很大，<br>buffer过小了，确认的次数就会多，于是性能就不高，对网络的利用率也就不高了。<br>也就是说，<strong>对于延迟大的网络，我们需要大的buffer，这样可以少一点ack，多一些数据，对于响应快一点的网络，可以少一些buffer</strong>。<br>因为，如果有丢包（没有收到ack），buffer过大可能会有问题，因为这会让TCP重传所有的数据，反而影响网络性能。<br>（当然，网络差的情况下，就别玩什么高性能了） 所以，<br>高性能的网络重要的是要让网络丢包率非常非常地小（基本上是用在LAN里），<br>如果网络基本是可信的，这样用大一点的buffer会有更好的网络传输性能（来来回回太多太影响性能了）。</p>
+<h2 id="udp"><a href="#udp" class="headerlink" title="udp"></a>udp</h2><p>说到UDP的调优，有一些事我想重点说一样，那就是<strong>MTU——最大传输单元（其实这对TCP也一样，因为这是链路层上的东西）</strong>。<br>对于一个UDP的包，我们要尽量地让他大到MTU的最大尺寸再往网络上传，这样可以最大化带宽利用率。<br>对于这个MTU，以太网是1500字节，光纤是4352字节，802.11无线网是7981。<br>但是，当我们用TCP/UDP发包的时候，<br>我们的有效负载Payload要低于这个值，因为<strong>IP协议会加上20个字节，UDP会加上8个字节（TCP加的更多）</strong>，<br>所以，一般来说，你的一个UDP包的最大应该是1500-8-20=1472，这是你的数据的大小。<br>当然，如果你用光纤的话， 这个值就可以更大一些。</p>
+<p>再多说一下，使用Socket编程的时候，你可以<strong>使用setsockopt() 设置 SO_SNDBUF/SO_RCVBUF 的大小，TTL和KeepAlive这些关键的设置</strong></p>
+<h2 id="多路复用"><a href="#多路复用" class="headerlink" title="多路复用"></a>多路复用</h2><p>关于多路复用技术，也就是用一个线程来管理所有的TCP链接，有三个系统调用要重点注意：</p>
+<ol>
+<li>一个是select，这个系统调用只支持上限1024个链接</li>
+<li>第二个是poll，其可以突破1024的限制，但是select和poll本质上是使用的轮询机制，<br>轮询机制在链接多的时候性能很差，因主是O(n)的算法</li>
+<li>所以，epoll出现了，epoll是操作系统内核支持的，仅当在链接活跃时，操作系统才会callback，<br>这是由操作系统通知触发的，但其只有Linux Kernel 2.6以后才支持（准确说是2.5.44中引入的），<br>当然，如果所有的链接都是活跃的，过多的使用epoll_ctl可能会比轮询的方式还影响性能，不过影响的不大。</li>
+</ol>
+<p>另外，<strong>关于一些和DNS Lookup的系统调用要小心，比如：gethostbyaddr/gethostbyname，<br>这个函数可能会相当的费时，因为其要到网络上去找域名，因为DNS的递归查询，会导致严重超时，<br>而又不能通过设置什么参数来设置time out</strong>，<br>对此你可以通过配置hosts文件来加快速度，或是自己在内存中管理对应表，在程序启动时查好，<br>而不要在运行时每次都查。</p>
+<p>另外，<strong>在多线程下面，gethostbyname会一个更严重的问题，<br>就是如果有一个线程的gethostbyname发生阻塞，<br>其它线程都会在gethostbyname处发生阻塞</strong>，这个比较变态，要小心。<br>（你可以试试GNU的gethostbyname_r()，这个的性能要好一些） 这种到网上找信息的东西很多，<br>比如，如果你的Linux使用了NIS，或是NFS，某些用户或文件相关的系统调用就很慢，所以要小心。</p>
+<h2 id="检查防火墙"><a href="#检查防火墙" class="headerlink" title="检查防火墙"></a>检查防火墙</h2><pre><code>iptables -L</code></pre><p>如果iptables工作，需要关闭：</p>
+<pre><code>service iptables stop</code></pre><h2 id="Linux内核参数优化"><a href="#Linux内核参数优化" class="headerlink" title="Linux内核参数优化"></a>Linux内核参数优化</h2><ol>
+<li>/proc/sys/net/core/rmem_max — 最大的TCP数据接收缓冲。</li>
+<li>/proc/sys/net/core/wmem_max — 最大的TCP数据发送缓冲。</li>
+<li>/proc/sys/net/ipv4/tcp_timestamps — 时间戳在(请参考RFC 1323)TCP的包头增加12个字节。</li>
+<li>/proc/sys/net/ipv4/tcp_sack — 有选择的应答。</li>
+<li>/proc/sys/net/ipv4/tcp_window_scaling — 支持更大的TCP窗口. 如果TCP窗口最大超过65535(64KB), 必须设置该数值为1。</li>
+<li>rmem_default — 默认的接收窗口大小。</li>
+<li>rmem_max — 接收窗口的最大大小。</li>
+<li>wmem_default — 默认的发送窗口大小。</li>
+<li>wmem_max — 发送窗口的最大大小。</li>
+</ol>
+<p>/proc目录下的所有内容都是临时性的, 所以重启动系统后任何修改都会丢失。<br>建议在系统启动时自动修改TCP/IP参数，两种方式：</p>
+<ol>
+<li>修改/etc/rc.local</li>
+<li>修改/etc/sysctl.conf </li>
+</ol>
+<h2 id="GUN-Linux网络工具"><a href="#GUN-Linux网络工具" class="headerlink" title="GUN/Linux网络工具"></a>GUN/Linux网络工具</h2><p>GNU/Linux 提供了几个工具 —— 有些是 GNU/Linux 自己提供的，<br>有些是开放源码软件 —— 用于调试网络应用程序，测量带宽/吞吐量，以及检查链接的使用情况。</p>
+<p><strong>任何 GNU/Linux 发行版中都可以找到的工具：</strong></p>
+<ol>
+<li><strong>ping</strong>这是用于检查主机的可用性的最常用的工具，但是也可以用于识别带宽延时产品计算的 RTT。</li>
+<li><strong>traceroute</strong>打印某个连接到网络主机所经过的包括一系列路由器和网关的路径（路由），从而确定每个 hop 之间的延时。</li>
+<li><strong>netstat</strong>确定有关网络子系统、协议和连接的各种统计信息。</li>
+<li><strong>tcpdump</strong>显示一个或多个连接的协议级的报文跟踪信息；其中还包括时间信息，您可以使用这些信息来研究不同协议服务的报文时间。</li>
+</ol>
+<p><strong>GNU/Linux 发行版中没有提供的有用性能工具：</strong></p>
+<ol>
+<li><strong>netlog</strong>为应用程序提供一些有关网络性能方面的信息。</li>
+<li><strong>nettimer</strong>为瓶颈链接带宽生成一个度量标准；可以用于协议的自动优化。</li>
+<li><strong>Ethereal</strong>以一个易于使用的图形化界面提供了 tcpump（报文跟踪）的特性。</li>
+<li><strong>iperf</strong>测量 TCP 和 UDP 的网络性能；测量最大带宽，并汇报延时和数据报的丢失情况。</li>
+</ol>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="http://www.ibm.com/developerworks/cn/linux/l-hisock.html" target="_blank" rel="noopener">提高 Linux 上 socket 性能</a></li>
+<li><a href="http://my.oschina.net/sharelinux/blog/146282" target="_blank" rel="noopener">浅谈linux性能调优之十四:调节socket缓冲区</a></li>
+<li><a href="http://coolshell.cn/articles/7490.html" target="_blank" rel="noopener">性能调优攻略</a></li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/11/08/tcp-udp-send-sendto/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -247,7 +503,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -623,7 +879,7 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb, int clone_it,
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -738,108 +994,6 @@ PRI  </code></pre><p>解析如下：</p>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/31/python-Tkinter/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/10/31/python-Tkinter/" class="post-title-link" itemprop="url">python Tkinter编程</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-11-01 00:00:00" itemprop="dateCreated datePublished" datetime="2015-11-01T00:00:00+08:00">2015-11-01</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Python/" itemprop="url" rel="index">
-                    <span itemprop="name">Python</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>2.1k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>python提供了多个图形开发界面的库，几个常用Python GUI库如下：</p>
-<ul>
-<li>Tkinter： Tkinter模块(“Tk 接口”)是Python的标准Tk GUI工具包的接口.<br>Tk和Tkinter可以在大多数的Unix平台下使用,同样可以应用在Windows和Macintosh系统里.<br>Tk8.0的后续版本可以实现本地窗口风格,并良好地运行在绝大多数平台中。</li>
-<li>wxPython：wxPython 是一款开源软件，是 Python 语言的一套优秀的 GUI 图形库，<br>允许 Python 程序员很方便的创建完整的、功能键全的 GUI 用户界面。</li>
-<li>Jython：Jython程序可以和Java无缝集成。除了一些标准模块，Jython使用Java的模块。<br>Jython几乎拥有标准的Python中不依赖于C语言的全部模块。<br>比如，Jython的用户界面将使用Swing，AWT或者SWT。Jython可以被动态或静态地编译成Java字节码。</li>
-</ul>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2015/10/31/python-Tkinter/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/31/python-pyinstaller/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -871,7 +1025,7 @@ PRI  </code></pre><p>解析如下：</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1034,7 +1188,7 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/29/python-ImageTK/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/31/python-Tkinter/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -1048,7 +1202,7 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/2015/10/29/python-ImageTK/" class="post-title-link" itemprop="url">python ImageTk加载错误</a>
+            <a href="/2015/10/31/python-Tkinter/" class="post-title-link" itemprop="url">python Tkinter编程</a>
         </h1>
 
         <div class="post-meta">
@@ -1058,14 +1212,14 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
               </span>
               <span class="post-meta-item-text">Posted on</span>
 
-              <time title="Created: 2015-10-30 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-30T00:00:00+08:00">2015-10-30</time>
+              <time title="Created: 2015-11-01 00:00:00" itemprop="dateCreated datePublished" datetime="2015-11-01T00:00:00+08:00">2015-11-01</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1085,14 +1239,14 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
                 <i class="fa fa-file-word-o"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>510</span>
+              <span>2.1k</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="fa fa-clock-o"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
+              <span>2 mins.</span>
             </span>
 
         </div>
@@ -1104,18 +1258,20 @@ root.mainloop()                         </code></pre><p>执行打包命令：</p
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>python中使用PIL ImageTK出现以下问题：</p>
-<pre><code>Traceback (most recent call last):
-    File &quot;./ExportXiamiList.py&quot;, line 4, in &lt;module&gt;
-        from tkinter import *
-ImportError: No module named tkinter</code></pre><p>Ubuntu下环境：</p>
-<pre><code>ExportXiamiList-master &gt; python
-python            python2.7         python2-config    python3.3         python3.4         python3m                          
-python2           python2.7-config  python3           python3.3m        python3.4m        python-config            </code></pre><p>安装如下包，不起作用：</p>
-<pre><code>sudo apt-get install python-pil python-pil.imagetk --reinstall</code></pre><p>继续安装如下包解决问题：</p>
-<pre><code>sudo apt-get install python3-pil python3-pil.imagetk</code></pre><p>python中ImageTK用法如下：</p>
-<pre><code>from PIL import Image
-from PIL import ImageTk</code></pre>
+          <p>python提供了多个图形开发界面的库，几个常用Python GUI库如下：</p>
+<ul>
+<li>Tkinter： Tkinter模块(“Tk 接口”)是Python的标准Tk GUI工具包的接口.<br>Tk和Tkinter可以在大多数的Unix平台下使用,同样可以应用在Windows和Macintosh系统里.<br>Tk8.0的后续版本可以实现本地窗口风格,并良好地运行在绝大多数平台中。</li>
+<li>wxPython：wxPython 是一款开源软件，是 Python 语言的一套优秀的 GUI 图形库，<br>允许 Python 程序员很方便的创建完整的、功能键全的 GUI 用户界面。</li>
+<li>Jython：Jython程序可以和Java无缝集成。除了一些标准模块，Jython使用Java的模块。<br>Jython几乎拥有标准的Python中不依赖于C语言的全部模块。<br>比如，Jython的用户界面将使用Swing，AWT或者SWT。Jython可以被动态或静态地编译成Java字节码。</li>
+</ul>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2015/10/31/python-Tkinter/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -1165,7 +1321,7 @@ from PIL import ImageTk</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1255,6 +1411,273 @@ pip install pyinstaller</code></pre><p>均正确，解决此问题</p>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/29/python-ImageTK/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/10/29/python-ImageTK/" class="post-title-link" itemprop="url">python ImageTk加载错误</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-10-30 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-30T00:00:00+08:00">2015-10-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Python/" itemprop="url" rel="index">
+                    <span itemprop="name">Python</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>510</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>python中使用PIL ImageTK出现以下问题：</p>
+<pre><code>Traceback (most recent call last):
+    File &quot;./ExportXiamiList.py&quot;, line 4, in &lt;module&gt;
+        from tkinter import *
+ImportError: No module named tkinter</code></pre><p>Ubuntu下环境：</p>
+<pre><code>ExportXiamiList-master &gt; python
+python            python2.7         python2-config    python3.3         python3.4         python3m                          
+python2           python2.7-config  python3           python3.3m        python3.4m        python-config            </code></pre><p>安装如下包，不起作用：</p>
+<pre><code>sudo apt-get install python-pil python-pil.imagetk --reinstall</code></pre><p>继续安装如下包解决问题：</p>
+<pre><code>sudo apt-get install python3-pil python3-pil.imagetk</code></pre><p>python中ImageTK用法如下：</p>
+<pre><code>from PIL import Image
+from PIL import ImageTk</code></pre>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/27/shell-name-suffix/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IT日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/10/27/shell-name-suffix/" class="post-title-link" itemprop="url">shell提取文件扩展名或文件名</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-10-28 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-28T00:00:00+08:00">2015-10-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Shell/" itemprop="url" rel="index">
+                    <span itemprop="name">Shell</span>
+                  </a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>1.4k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>1 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p>在shell中用于提取文件名或后缀，需要用到以下几个操作符： <strong>%、%%、#、##</strong></p>
+<h2 id="和-操作符"><a href="#和-操作符" class="headerlink" title="% 和 %% 操作符"></a><strong>% 和 %% 操作符</strong></h2><p>用法：</p>
+<pre><code>${VAR%.*}
+${VAR%%.*}</code></pre><p><strong>${VAR%.*}</strong>含义：从<strong>$VAR</strong>中<strong>删除</strong>位于 <strong>%</strong> 右侧的通配符左右匹配的字符串，<strong>通配符从右向左进行匹配</strong>。</p>
+<ul>
+<li><strong>% 属于非贪婪操作符</strong>，从右向左匹配最短结果</li>
+<li><strong>%% 属于贪婪操作符</strong>，从右向左匹配符合条件的最长字符串</li>
+</ul>
+<p>示例如下：</p>
+<pre><code>file=&quot;abc.c&quot;
+name=${file%.*}
+echo file name is: $name
+
+输出结果：
+file name is: abc</code></pre><p>变量 name 赋值abc.c，那么通配符从右向左就会匹配到 .c，所有从 $VAR 中删除匹配结果。</p>
+<pre><code>file=&quot;text.gif.bak.2012&quot;
+name=${file%.*}
+name2=${file%%.*}
+echo file name is: $name
+echo file name is: $name2
+
+输出结果：
+file name is: text.gif.bak    //使用 %
+file name is: text            //使用 %%</code></pre><p>操作符 %% 使用 .* 从右向左贪婪匹配到 .gif.bak.2012</p>
+<h2 id="和-操作符-1"><a href="#和-操作符-1" class="headerlink" title="# 和 ## 操作符"></a><strong># 和 ## 操作符</strong></h2><p>用法：</p>
+<pre><code>${VAR#*.}
+${VAR##*.}</code></pre><p><strong>${VAR#*.}</strong> 含义：从 <strong>$VAR</strong> 中<strong>删除</strong>位于 <strong>#</strong> 右侧的通配符所匹配的字符串，<strong>通配符是左向右进行匹配</strong>。</p>
+<ul>
+<li><strong># 属于非贪婪操作符</strong>，从左向右匹配最短结果</li>
+<li><strong>## 属于贪婪操作符</strong>，从左向右匹配符合条件的最长字符串</li>
+</ul>
+<p>符示例：</p>
+<pre><code>file=&quot;text.gif&quot;
+suffix=${file#*.}
+echo suffix is: $suffix
+
+输出结果：
+suffix is: gif
+
+
+file=&quot;text.gif.bak.2012.txt&quot;
+suffix=${file#*.}
+suffix2=${file##*.}
+echo suffix is: $suffix
+echo suffix is: $suffix2
+
+输出结果：
+suffix is: text.gif.bak.2012     //使用 #
+suffix2 is: txt                  //使用 ##</code></pre><p>操作符 ## 使用 *. 从左向右贪婪匹配到 text.gif.bak.2012</p>
+<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><pre><code>url=&quot;www.baidu.com&quot;
+
+echo ${url%.*}      #移除 .* 所匹配的最右边的内容。
+www.baidu
+
+echo ${url%%.*}     #将从右边开始一直匹配到最左边的 *. 移除，贪婪操作符。
+www
+
+echo ${url#*.}      #移除 *. 所有匹配的最左边的内容。
+baidu.com
+
+echo ${url##*.}     #将从左边开始一直匹配到最右边的 *. 移除，贪婪操作符。
+com</code></pre>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/27/shell-getopts/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1286,7 +1709,7 @@ pip install pyinstaller</code></pre><p>均正确，解决此问题</p>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1461,173 +1884,6 @@ test3</code></pre>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/27/shell-name-suffix/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/10/27/shell-name-suffix/" class="post-title-link" itemprop="url">shell提取文件扩展名或文件名</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-10-28 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-28T00:00:00+08:00">2015-10-28</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Shell/" itemprop="url" rel="index">
-                    <span itemprop="name">Shell</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>1.4k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p>在shell中用于提取文件名或后缀，需要用到以下几个操作符： <strong>%、%%、#、##</strong></p>
-<h2 id="和-操作符"><a href="#和-操作符" class="headerlink" title="% 和 %% 操作符"></a><strong>% 和 %% 操作符</strong></h2><p>用法：</p>
-<pre><code>${VAR%.*}
-${VAR%%.*}</code></pre><p><strong>${VAR%.*}</strong>含义：从<strong>$VAR</strong>中<strong>删除</strong>位于 <strong>%</strong> 右侧的通配符左右匹配的字符串，<strong>通配符从右向左进行匹配</strong>。</p>
-<ul>
-<li><strong>% 属于非贪婪操作符</strong>，从右向左匹配最短结果</li>
-<li><strong>%% 属于贪婪操作符</strong>，从右向左匹配符合条件的最长字符串</li>
-</ul>
-<p>示例如下：</p>
-<pre><code>file=&quot;abc.c&quot;
-name=${file%.*}
-echo file name is: $name
-
-输出结果：
-file name is: abc</code></pre><p>变量 name 赋值abc.c，那么通配符从右向左就会匹配到 .c，所有从 $VAR 中删除匹配结果。</p>
-<pre><code>file=&quot;text.gif.bak.2012&quot;
-name=${file%.*}
-name2=${file%%.*}
-echo file name is: $name
-echo file name is: $name2
-
-输出结果：
-file name is: text.gif.bak    //使用 %
-file name is: text            //使用 %%</code></pre><p>操作符 %% 使用 .* 从右向左贪婪匹配到 .gif.bak.2012</p>
-<h2 id="和-操作符-1"><a href="#和-操作符-1" class="headerlink" title="# 和 ## 操作符"></a><strong># 和 ## 操作符</strong></h2><p>用法：</p>
-<pre><code>${VAR#*.}
-${VAR##*.}</code></pre><p><strong>${VAR#*.}</strong> 含义：从 <strong>$VAR</strong> 中<strong>删除</strong>位于 <strong>#</strong> 右侧的通配符所匹配的字符串，<strong>通配符是左向右进行匹配</strong>。</p>
-<ul>
-<li><strong># 属于非贪婪操作符</strong>，从左向右匹配最短结果</li>
-<li><strong>## 属于贪婪操作符</strong>，从左向右匹配符合条件的最长字符串</li>
-</ul>
-<p>符示例：</p>
-<pre><code>file=&quot;text.gif&quot;
-suffix=${file#*.}
-echo suffix is: $suffix
-
-输出结果：
-suffix is: gif
-
-
-file=&quot;text.gif.bak.2012.txt&quot;
-suffix=${file#*.}
-suffix2=${file##*.}
-echo suffix is: $suffix
-echo suffix is: $suffix2
-
-输出结果：
-suffix is: text.gif.bak.2012     //使用 #
-suffix2 is: txt                  //使用 ##</code></pre><p>操作符 ## 使用 *. 从左向右贪婪匹配到 text.gif.bak.2012</p>
-<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><pre><code>url=&quot;www.baidu.com&quot;
-
-echo ${url%.*}      #移除 .* 所匹配的最右边的内容。
-www.baidu
-
-echo ${url%%.*}     #将从右边开始一直匹配到最左边的 *. 移除，贪婪操作符。
-www
-
-echo ${url#*.}      #移除 *. 所有匹配的最左边的内容。
-baidu.com
-
-echo ${url##*.}     #将从左边开始一直匹配到最右边的 *. 移除，贪婪操作符。
-com</code></pre>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/25/makefile-and-shell/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1659,7 +1915,7 @@ com</code></pre>
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1981,7 +2237,7 @@ files := $(shell echo *.c)</code></pre><p>注意，这个函数会新生成一�
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2104,7 +2360,7 @@ module/cascam/adapter/cascam_osd_adapter.c:295:5: warning: (near initialization 
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2294,7 +2550,7 @@ in xx.c
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2515,7 +2771,7 @@ endfunc </code></pre><p>CTRL-L 插入下一个数值，CTRL-R 复位计数且返
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2721,7 +2977,7 @@ cp $WORK/github.com/golang/lint/golint/_obj/exe/a.out golint</code></pre><h2 id=
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
+                <time title="Modified: 2021-06-03 14:55:04" itemprop="dateModified" datetime="2021-06-03T14:55:04+08:00">2021-06-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -2855,178 +3111,6 @@ lib/cp936ext.h</code></pre><ol>
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/10/11/va-list/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Breeze.Temple">
-      <meta itemprop="description" content="Breeze.Temple">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="IT日记">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/10/11/va-list/" class="post-title-link" itemprop="url">C语言不定参数的使用</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2015-10-12 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-12T00:00:00+08:00">2015-10-12</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-04-19 10:29:25" itemprop="dateModified" datetime="2021-04-19T10:29:25+08:00">2021-04-19</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/C/" itemprop="url" rel="index">
-                    <span itemprop="name">C</span>
-                  </a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="Symbols count in article">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-file-word-o"></i>
-              </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>2.3k</span>
-            </span>
-            <span class="post-meta-item" title="Reading time">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-clock-o"></i>
-              </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<h2 id="变长参数"><a href="#变长参数" class="headerlink" title="变长参数"></a>变长参数</h2><p>在c语言中使用变长参数最常见的就是下面两个函数了：</p>
-<pre><code>int printf(const char *format, ...);
-int scanf(const char *format, ...);</code></pre><p>在使用变长参数的函数（这里假设是func）实现部分其实用到了stdarg.h里面的多个宏来访问那些不确定的参数，它们分别是：</p>
-<pre><code>void va_start(va_list ap, last);
-type va_arg(va_list ap, type);
-void va_end(va_list ap);</code></pre><p>假设lastarg是func的最后一个具名参数，即在func函数定义中…之前的那个参数（在printf中lastarg是format），<br>在func中首先定义一个变量：</p>
-<pre><code>va_list ap</code></pre><p>这个变量以后会依次指向各个可变参数。ap在使用之前必须用宏va_start初始化一次，如下所示：</p>
-<pre><code>va_start(ap, lastarg);</code></pre><p>其中lastarg是func中的最后一个具名参数。然后就可以用va_arg来获得下一个不定参数（前提是知道这个不定参数的类型type）：</p>
-<pre><code>type next = va_arg(ap, type)</code></pre><p>最后就是用宏va_end来清理现场。例子：</p>
-<pre><code>void _printf(char *format, ...)                                                                                               
-{
-    #define BUFFER_LEN  256
-    char Buf[BUFFER_LEN];
-    va_list args;
-    memset(Buf,0, BUFFER_LEN);
-
-    va_start(args, format);
-    vsnprintf(Buf, BUFFER_LEN, format, args);
-    va_end(args);
-
-    printf(&quot;%s&quot;, Buf);
-}</code></pre><p>另一个例子：</p>
-<pre><code>#include &lt;stdio.h&gt;
-#include &lt;stdarg.h&gt;
-
-void func(char *fmt, ...)
-{
-    va_list ap;
-
-    va_start(ap, fmt);
-
-    while (*fmt)
-    {
-        switch(*fmt)
-        {
-            case &#39;d&#39;:
-                fprintf(stdout, &quot;%d\n&quot;, (int)va_arg(ap, int));
-                break;
-            case &#39;c&#39;:
-                fprintf(stdout, &quot;%c\n&quot;, (char)va_arg(ap, int));
-                break;
-            case &#39;s&#39;:
-                fprintf(stdout, &quot;%s\n&quot;, (char *)va_arg(ap, char *));
-                break;
-            default:
-                fprintf(stderr, &quot;error fmt\n&quot;);
-
-        }
-        fmt ++;
-    }
-    va_end(ap);
-}
-
-int main ( int argc, char *argv[]  )
-{
-    func(&quot;dcs&quot;, 10, &#39;s&#39;, &quot;hello&quot;);
-        return 0;
-
-}               /* ----------  end of function main  ---------- */</code></pre><h2 id="函数参数的传递原理"><a href="#函数参数的传递原理" class="headerlink" title="函数参数的传递原理"></a>函数参数的传递原理</h2><p>函数参数是以数据结构:栈的形式存取,从右至左入栈。</p>
-<p>首先是参数的内存存放格式：参数存放在内存的堆栈段中，在执行函数的时候，从最后一个开始入栈。<br>因此栈底高地址，栈顶低地址，举个例子如下：</p>
-<pre><code>void func(int x, float y, char z);</code></pre><p>那么，调用函数的时候，实参 char z 先进栈，然后是 float y，最后是 int x，<br>因此在内存中变量的存放次序是 x-&gt;y-&gt;z，<br>因此，从理论上说，我们只要探测到任意一个变量的地址，<br>并且知道其他变量的类型，通过指针移位运算，则总可以顺藤摸瓜找到其他的输入变量。<br>va_list 是一个字符指针，可以理解为指向当前参数的一个指针，取参必须通过这个指针进行。</p>
-<ol>
-<li>在调用参数表之前，定义一个 va_list 类型的变量，(假设va_list 类型变量被定义为ap)；</li>
-<li>然后应该对ap 进行初始化，让它指向可变参数表里面的第一个参数，<br>这是通过 va_start 来实现的，第一个参数是 ap 本身，第二个参数是在变参表前面紧挨着的一个变量,即“…”之前的那个参数；</li>
-<li>然后是获取参数，调用va_arg，它的第一个参数是ap，第二个参数是要获取的参数的指定类型，<br>然后返回这个指定类型的值，并且把 ap 的位置指向变参表的下一个变量位置；</li>
-<li>获取所有的参数之后，我们有必要将这个 ap 指针关掉，以免发生危险，方法是调用 va_end，<br>他是输入的参数 ap 置为 NULL，应该养成获取完参数表之后关闭指针的习惯。<br>通常va_start和va_end是成对出现。</li>
-</ol>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -3077,7 +3161,7 @@ int main ( int argc, char *argv[]  )
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">470</span>
+          <span class="site-state-item-count">471</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -3090,7 +3174,7 @@ int main ( int argc, char *argv[]  )
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">506</span>
+        <span class="site-state-item-count">508</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -3150,7 +3234,7 @@ int main ( int argc, char *argv[]  )
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">Reading time total &asymp;</span>
-    <span title="Reading time total">18:43</span>
+    <span title="Reading time total">18:45</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
   </div>

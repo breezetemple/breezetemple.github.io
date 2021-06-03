@@ -907,96 +907,6 @@ int shutdown(int sockfd, int how);</code></pre><p>bind函数使用通用地址�
       </tags>
   </entry>
   <entry>
-    <title>异步非阻塞I/O</title>
-    <url>/2014/12/15/aio/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<hr>
-<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
-<p>对I/O操作的分类主要基于时间和占有两个角度进行划分：<br>从时间角度可分为同步操作和异步操作；<br>从资源占有角度可分为阻塞操作和非阻塞操作。<br>从而UNXI可以构造出4种不同的I/O操作模型：</p>
-<ul>
-<li><strong>同步阻塞I/O</strong></li>
-<li><strong>同步非阻塞I/O</strong></li>
-<li><strong>异步阻塞I/O</strong></li>
-<li><strong>异步非阻塞I/O</strong>，AIO</li>
-</ul>
-<p>AIO是将I/O操作与应用程序的计算操作重叠执行的一种模型，即实现I/O操作与计算操作的有效分离。<br>AIO背后的基本思想是允许进程发起很多I/O操作，而不用阻塞或等待任何操作完成。<br>异步非阻塞I/O模型是一种处理与I/O重叠进行的模型。<br>读请求会立即返回，说明read请求已经成功发起了。<br>在后台完成读操作时，应用程序然后会执行其他处理操作。<br>当read的响应到达时，就会产生一个信号或执行一个基于线程的回调函数来完成这次 I/O 处理过程。</p>
-<p><img src="http://www.myexception.cn/img/2013/08/08/103815107.gif" alt=""></p>
-<p>在一个进程中为了执行多个I/O请求而对计算操作和I/O处理进行重叠处理的能力利用了处理速度与 I/O 速度之间的差异。<br>当一个或多个I/O请求挂起时，CPU可以执行其他任务；<br>或者更为常见的是，在发起其他I/O的同时对已经完成的I/O进行操作。</p>
-<p>AIO在当前Linux下主要有两种AIO实现技术：一种是glibc库函数实现，另一种是Linux内核实现，并由libaio库进行封装</p>
-<p>glibc库中的AIO实现，需要在编译时<code>-lrt</code>：</p>
-<pre><code>#include &lt;aio.h&gt;
-
-//请求异步读操作
-int aio_read(struct aiocb *aiocbp);
-//检查异步请求的状态
-int aio_error(const struct aiocb *aiocbp);
-//获得完成的异步请求的返回状态
-ssize_t aio_return(struct aiocb *aiocbp);
-//请求异步写操作
-int aio_write(struct aiocb *aiocbp);
-//挂起调用进程，直到一个或多个异步请求已经完成（或失败）
-int aio_suspend(const struct aiocb * const aiocb_list[],
-                int nitems, const struct timespec *timeout);
-//取消异步 I/O 请求
-int aio_cancel(int fd, struct aiocb *aiocbp);
-//发起一系列 I/O 操作
-int lio_listio(int mode, struct aiocb *const aiocb_list[],
-                int nitems, struct sigevent *sevp);</code></pre><p>在异步非阻塞I/O中，我们可以同时发起多个传输操作。<br>这需要每个传输操作都有惟一的上下文，<br>这样我们才能在它们完成时区分到底是哪个传输操作完成了。<br>在 AIO 中，这是一个 aiocb（AIO I/O Control Block）结构。<br>这个结构包含了有关传输的所有信息，包括为数据准备的用户缓冲区。<br>在产生 I/O （称为完成）通知时，aiocb 结构就被用来惟一标识所完成的 I/O 操作。<br>定义如下：</p>
-<pre><code>#include &lt;aiocb.h&gt;
-
-struct aiocb {
-    /* The order of these fields is implementation-dependent */
-
-    int             aio_fildes;     /* File descriptor */
-    off_t           aio_offset;     /* File offset */
-    volatile void  *aio_buf;        /* Location of buffer */
-    size_t          aio_nbytes;     /* Length of transfer */
-    int             aio_reqprio;    /* Request priority */
-    struct sigevent aio_sigevent;   /* Notification method */
-    int             aio_lio_opcode; /* Operation to be performed;
-                                    lio_listio() only */
-
-    /* Various implementation-internal fields not shown */
-};</code></pre><p>sigevent 结构告诉 AIO 在 I/O 操作完成时应该执行什么操作。<br>我们将在 AIO 的展示中对这个结构进行探索。<br>现在我们将展示各个 AIO 的 API 函数是如何工作的，以及我们应该如何使用它们。</p>
-<p>AIO通知：通过信号实现异步通知和通过函数回调来实现</p>
-<ol>
-<li><a href="http://blog.csdn.net/yfkiss/article/details/7516589" target="_blank" rel="noopener">网络编程–IO模型示例</a></li>
-<li><a href="http://www.ibm.com/developerworks/cn/linux/l-async/" target="_blank" rel="noopener">使用异步 I/O 大大提高应用程序的性能</a></li>
-<li><a href="http://www.wzxue.com/linux-kernel-aio%E8%BF%99%E4%B8%AA%E5%A5%87%E8%91%A9/" target="_blank" rel="noopener">Linux kernel AIO这个奇葩</a></li>
-<li><a href="http://nicedayyep.iteye.com/blog/89773" target="_blank" rel="noopener">Linux下的服务器开发模型 Epoll和AIO的讨论</a></li>
-<li><a href="http://blog.csdn.net/sparkliang/article/details/4836536" target="_blank" rel="noopener">Epoll vs. IOCP</a></li>
-<li><a href="http://bbs.chinaunix.net/thread-1942420-1-1.html" target="_blank" rel="noopener">异步,epoll和aio</a></li>
-</ol>
-<p>转载：</p>
-<p><strong>异步IO</strong>就是把IO提交给系统，让系统替你做，做完了再用某种方式通知你(通过信号，或者其他异步方式<br>通知，这时候，操作系统已经帮你完成IO操作，具体来说就是你那个作为传入参数的的buffer的指针所指向<br>的空间已经读到了数据或者你的buffer的数据已经写出去了）；</p>
-<p><strong>非阻塞IO</strong>就是你要通过某种方式不定时地向系统询问你是否可以开始做某个IO( 轮询啊 )，当可以开始<br>后，是要自己来完成IO(也就是说还要自己调用一次read来填充buffer或者write来不buffer的数据写出去)；</p>
-<p><strong>epoll和aio（这里的aio是指linux 2.6内核后提供的aio api）区别：</strong></p>
-<p>aio是异步非阻塞的。其实是aio是用线程池实现了异步IO。</p>
-<p>epoll在这方面的定义上有点复杂，首先epoll的fd集里面每一个fd都是非阻塞的，但是epoll（还<br>select poll ）在调用时阻塞等待fd可用，然后epoll只是一个异步通知机制，只是在fd可用时通知你，并<br>没有做任何IO操作，所以不是传统的异步。</p>
-]]></content>
-      <categories>
-        <category>Linux System Programming</category>
-      </categories>
-      <tags>
-        <tag>I/O</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>并行计算初识</title>
     <url>/2014/12/15/parallel-computing/</url>
     <content><![CDATA[<ul>
@@ -1430,31 +1340,6 @@ FIND_PROGRAM</code></pre><p>注意 CMAKE_MODULE_PATH</p>
       </categories>
       <tags>
         <tag>cmake</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>github push避免输入用户名和密码</title>
-    <url>/2015/03/04/git-push/</url>
-    <content><![CDATA[<p>github上传代码时，每次都需要输入用户名和密码，原因是使用了https方式进行push：</p>
-<pre><code>$ git clone https://github.com/breezetemple/breezetemple.github.com.git</code></pre><p>使用以下命令更换为使用ssh方式：</p>
-<pre><code>$ git remote -v
-origin  https://github.com/breezetemple/breezetemple.github.com.git (fetch)
-origin  https://github.com/breezetemple/breezetemple.github.com.git (push)
-$ git remote rm origin
-$ git remote add origin git@github.com:breezetemple/breezetemple.github.com.git
-$ git push origin master 
-Everything up-to-date</code></pre><p>或者使用如下命令初始化：</p>
-<pre><code>git clone git@github.com:breezetemple/breezetemple.github.com.git</code></pre><p>另外，需要将ssh pub key上传到github：</p>
-<pre><code>$ ls ~/.ssh/id_rsa.pub                
-/home/yanwzh/.ssh/id_rsa.pub
-$ xclip -sel clip &lt; ~/.ssh/id_rsa.pub</code></pre>]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>GitHub</category>
-      </categories>
-      <tags>
-        <tag>github</tag>
-        <tag>git</tag>
       </tags>
   </entry>
   <entry>
@@ -5157,8 +5042,8 @@ http://127.0.0.1:16823/proxy_on.pac</code></pre>
         <category>Git</category>
       </categories>
       <tags>
-        <tag>github</tag>
         <tag>git</tag>
+        <tag>github</tag>
         <tag>lantern</tag>
         <tag>proxy</tag>
       </tags>
@@ -6289,8 +6174,8 @@ upstream    https://github.com/CCExtractor/ccextractor.git (push)</code></pre><h
         <category>GitHub</category>
       </categories>
       <tags>
-        <tag>github</tag>
         <tag>git</tag>
+        <tag>github</tag>
       </tags>
   </entry>
   <entry>
@@ -6732,8 +6617,8 @@ git config --global push.default simple
         <category>Git</category>
       </categories>
       <tags>
-        <tag>github</tag>
         <tag>git</tag>
+        <tag>github</tag>
       </tags>
   </entry>
   <entry>
@@ -6752,8 +6637,8 @@ git pull</code></pre>
         <category>Git</category>
       </categories>
       <tags>
-        <tag>github</tag>
         <tag>git</tag>
+        <tag>github</tag>
       </tags>
   </entry>
   <entry>
@@ -6808,8 +6693,8 @@ url = BreezeTempleIO.com:breezetemple/breezetemple.github.com.git</code></pre><p
         <category>GitHub</category>
       </categories>
       <tags>
-        <tag>github</tag>
         <tag>git</tag>
+        <tag>github</tag>
         <tag>sshkey</tag>
       </tags>
   </entry>
@@ -11742,8 +11627,8 @@ Server listening on 5201
         <category>Linux</category>
         <category>Socket</category>
         <category>Network</category>
-        <category>Tools</category>
         <category>TCP</category>
+        <category>Tools</category>
         <category>Network</category>
       </categories>
       <tags>
@@ -13590,43 +13475,6 @@ Program terminated with signal 11, Segmentation fault.
       </tags>
   </entry>
   <entry>
-    <title>how-to-handle-sigsegv-and-generate-coredump</title>
-    <url>/2018/09/07/how-to-handle-sigsegv-and-generate-coredump/</url>
-    <content><![CDATA[<p>捕捉信号 <code>SIGSEGV</code> 的同时也可以生成 <code>coredump</code> 文件</p>
-<a id="more"></a>
-
-<p>当完成 <code>Linux Kernel</code> 设置之后，捕捉到 <code>SIGSEGV</code> 之后会在相应目录生成 <code>coredump</code> 文件</p>
-<p>如果对 <code>SIGSEGV</code> 注册了信号函数，有可能导致 <code>coredump</code> 不能生成，需要修改函数如下</p>
-<pre><code class="c">#include &lt;stdio.h&gt;
-#include &lt;sys/types.h&gt;
-#include &lt;unistd.h&gt;
-#include &lt;signal.h&gt;
-
-void sighandler(int signum)
-{
-    printf(&quot;Process %d got signal %d\n&quot;, getpid(), signum);
-    signal(signum, SIG_DFL);
-    kill(getpid(), signum);
-}
-
-int main()
-{
-    signal(SIGSEGV, sighandler);
-    printf(&quot;Process %d waits for someone to send it SIGSEGV\n&quot;, getpid());
-    sleep(1000);
-    return 0;
-}</code></pre>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>coredump</tag>
-        <tag>signal</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>iwpriv 命令</title>
     <url>/2018/09/19/iwpriv/</url>
     <content><![CDATA[<p><code>iwpriv</code> 工具通过 <code>ioctl</code> 动态获取相应无线网卡驱动的 <code>private_args</code> 所有扩展参数</p>
@@ -13811,6 +13659,43 @@ int main()
         <tag>device tree, DT</tag>
         <tag>device tree source, DTS</tag>
         <tag>device tree compiler, DTC</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>how-to-handle-sigsegv-and-generate-coredump</title>
+    <url>/2018/09/07/how-to-handle-sigsegv-and-generate-coredump/</url>
+    <content><![CDATA[<p>捕捉信号 <code>SIGSEGV</code> 的同时也可以生成 <code>coredump</code> 文件</p>
+<a id="more"></a>
+
+<p>当完成 <code>Linux Kernel</code> 设置之后，捕捉到 <code>SIGSEGV</code> 之后会在相应目录生成 <code>coredump</code> 文件</p>
+<p>如果对 <code>SIGSEGV</code> 注册了信号函数，有可能导致 <code>coredump</code> 不能生成，需要修改函数如下</p>
+<pre><code class="c">#include &lt;stdio.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;signal.h&gt;
+
+void sighandler(int signum)
+{
+    printf(&quot;Process %d got signal %d\n&quot;, getpid(), signum);
+    signal(signum, SIG_DFL);
+    kill(getpid(), signum);
+}
+
+int main()
+{
+    signal(SIGSEGV, sighandler);
+    printf(&quot;Process %d waits for someone to send it SIGSEGV\n&quot;, getpid());
+    sleep(1000);
+    return 0;
+}</code></pre>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>coredump</tag>
+        <tag>signal</tag>
       </tags>
   </entry>
   <entry>
@@ -14643,30 +14528,6 @@ $ ./configure --enable-opensslextra --enable-des3 --enable-dh --enable-ecc --ena
       </tags>
   </entry>
   <entry>
-    <title>线程条件变量</title>
-    <url>/2018/10/26/pthread-cond/</url>
-    <content><![CDATA[<p><strong>线程条件变量与互斥锁不同，条件变量是用来等待而不是用来上锁的。</strong><br><strong>条件变量用来自动阻塞一个线程，直到某特殊情况发生为止。通常条件变量和互斥锁同时使用。</strong></p>
-<a id="more"></a>
-
-<a href="/2014/11/11/Linux-system-programming-pthread_cont/" title="Linux系统编程-多线程同步条件变量">Linux系统编程-多线程同步条件变量</a>
-
-<h2 id="pthread-cond-wait"><a href="#pthread-cond-wait" class="headerlink" title="pthread_cond_wait"></a>pthread_cond_wait</h2><p><code>pthread_cond_wait</code> 用于阻塞当前线程，等待别的线程使用 <code>pthread_cond_signal</code> 或 <code>pthread_cond_broadcast</code> 来唤醒它。 <code>pthread_cond_wait</code> 必须与 <code>pthread_mutex</code> 配套使用。<br><code>pthread_cond_wait</code> 一进入 <code>wait 状态</code> 就会 <code>自动 release mutex</code>。当其他线程通过 <code>pthread_cond_signal</code> 或 <code>pthread_cond_broadcast</code>，把该线程唤醒，使 <code>pthread_cond_wait</code> 返回时，该线程又 <code>自动获得该 mutex</code>。</p>
-<h2 id="pthread-cond-signal"><a href="#pthread-cond-signal" class="headerlink" title="pthread_cond_signal"></a>pthread_cond_signal</h2><p><code>pthread_cond_signal</code> 函数的作用是发送一个信号给另外一个正在处于阻塞等待状态的线程，使其脱离阻塞状态，继续执行. 如果没有线程处在阻塞等待状态， <code>pthread_cond_signal</code> 也会成功返回。<br>假如有多个线程正在阻塞等待着这个条件变量的话，那么是根据各等待线程优先级的高低确定哪个线程接收到信号开始继续执行。如果各线程优先级相同，则根据等待时间的长短来确定哪个线程获得信号。但无论如何一个 <code>pthread_cond_signal</code> 最多发信一次。</p>
-<h2 id="pthread-cond-broadcast"><a href="#pthread-cond-broadcast" class="headerlink" title="pthread_cond_broadcast"></a>pthread_cond_broadcast</h2><p><code>pthread_cond_broadcast</code> 唤醒全部线程</p>
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="https://www.ibm.com/developerworks/cn/linux/thread/posix_thread3/index.html" target="_blank" rel="noopener">通用线程：POSIX 线程详解，第 3 部分</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>pthread</tag>
-        <tag>cond</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>vim 搜索插件 fzf.vim</title>
     <url>/2018/10/26/vim-plugin-fzf/</url>
     <content><![CDATA[<p>文件搜索可以使用 <code>ctrlp.vim</code>、 <code>ctrlsf.vim</code> 等插件<br>搜索 <code>tags</code> 发现两个插件 <code>fzf.vim</code> 和 <code>LeaderF</code>，选择使用 <code>fzf.vim</code></p>
@@ -14923,6 +14784,30 @@ Transmission Control Protocol, Src Port: 35720, Dst Port: 443, Seq: 1, Ack: 5402
       </categories>
       <tags>
         <tag>wireshark</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>线程条件变量</title>
+    <url>/2018/10/26/pthread-cond/</url>
+    <content><![CDATA[<p><strong>线程条件变量与互斥锁不同，条件变量是用来等待而不是用来上锁的。</strong><br><strong>条件变量用来自动阻塞一个线程，直到某特殊情况发生为止。通常条件变量和互斥锁同时使用。</strong></p>
+<a id="more"></a>
+
+<a href="/2014/11/11/Linux-system-programming-pthread_cont/" title="Linux系统编程-多线程同步条件变量">Linux系统编程-多线程同步条件变量</a>
+
+<h2 id="pthread-cond-wait"><a href="#pthread-cond-wait" class="headerlink" title="pthread_cond_wait"></a>pthread_cond_wait</h2><p><code>pthread_cond_wait</code> 用于阻塞当前线程，等待别的线程使用 <code>pthread_cond_signal</code> 或 <code>pthread_cond_broadcast</code> 来唤醒它。 <code>pthread_cond_wait</code> 必须与 <code>pthread_mutex</code> 配套使用。<br><code>pthread_cond_wait</code> 一进入 <code>wait 状态</code> 就会 <code>自动 release mutex</code>。当其他线程通过 <code>pthread_cond_signal</code> 或 <code>pthread_cond_broadcast</code>，把该线程唤醒，使 <code>pthread_cond_wait</code> 返回时，该线程又 <code>自动获得该 mutex</code>。</p>
+<h2 id="pthread-cond-signal"><a href="#pthread-cond-signal" class="headerlink" title="pthread_cond_signal"></a>pthread_cond_signal</h2><p><code>pthread_cond_signal</code> 函数的作用是发送一个信号给另外一个正在处于阻塞等待状态的线程，使其脱离阻塞状态，继续执行. 如果没有线程处在阻塞等待状态， <code>pthread_cond_signal</code> 也会成功返回。<br>假如有多个线程正在阻塞等待着这个条件变量的话，那么是根据各等待线程优先级的高低确定哪个线程接收到信号开始继续执行。如果各线程优先级相同，则根据等待时间的长短来确定哪个线程获得信号。但无论如何一个 <code>pthread_cond_signal</code> 最多发信一次。</p>
+<h2 id="pthread-cond-broadcast"><a href="#pthread-cond-broadcast" class="headerlink" title="pthread_cond_broadcast"></a>pthread_cond_broadcast</h2><p><code>pthread_cond_broadcast</code> 唤醒全部线程</p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://www.ibm.com/developerworks/cn/linux/thread/posix_thread3/index.html" target="_blank" rel="noopener">通用线程：POSIX 线程详解，第 3 部分</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>pthread</tag>
+        <tag>cond</tag>
       </tags>
   </entry>
   <entry>
@@ -15201,143 +15086,6 @@ uapi/linux/string.h</code></pre>
       </tags>
   </entry>
   <entry>
-    <title>Movian 插件加载分析</title>
-    <url>/2018/01/10/movian-plugin-load/</url>
-    <content><![CDATA[<p>分析源文件 <code>src/plugins.c</code></p>
-<a id="more"></a>
-
-<h2 id="install"><a href="#install" class="headerlink" title="install"></a>install</h2><p><code>plugin_install</code> -&gt; <code>plugin_load</code> -&gt; <code>ecmascript_plugin_load</code></p>
-<h3 id="plugin-load"><a href="#plugin-load" class="headerlink" title="plugin_load"></a>plugin_load</h3><p>解析 <code>plugin.json</code> 文件</p>
-<pre><code>//plugin.json 路径
-snprintf(ctrlfile, sizeof(ctrlfile), &quot;%s/plugin.json&quot;, url);
-
-// 读取文件内容
-if((b = fa_load(ctrlfile,
-                FA_LOAD_ERRBUF(errbuf2, sizeof(errbuf2)),
-                NULL)) == NULL) {
-  snprintf(errbuf, errlen, &quot;Unable to load %s -- %s&quot;, ctrlfile, errbuf2);
-  return -1;
-}
-
-// 解析 json 文件
-ctrl = htsmsg_json_deserialize2(buf_cstr(b), errbuf, errlen);
-
-// 获取数据
-const char *type = htsmsg_get_str(ctrl, &quot;type&quot;);
-const char *id   = htsmsg_get_str(ctrl, &quot;id&quot;);
-const char *version = htsmsg_get_str(ctrl, &quot;version&quot;);
-const char *file = htsmsg_get_str(ctrl, &quot;file&quot;);
-
-//js 文件路径
-snprintf(fullpath, sizeof(fullpath), &quot;%s/%s&quot;, url, file);
-
-int version = htsmsg_get_u32_or_default(ctrl, &quot;apiversion&quot;, 1);
-
-// 打开 js 文件
-hts_mutex_unlock(&amp;plugin_mutex);
-r = ecmascript_plugin_load(id, fullpath, errbuf, errlen, version,
-                           buf_cstr(b), pflags);
-hts_mutex_lock(&amp;plugin_mutex);</code></pre><h3 id="scmascript-plugin-load"><a href="#scmascript-plugin-load" class="headerlink" title="scmascript_plugin_load"></a>scmascript_plugin_load</h3><pre><code>int
-ecmascript_plugin_load(const char *id, const char *url,
-                       char *errbuf, size_t errlen,
-                       int version, const char *manifest,
-                       int flags)
-{
-  char storage[PATH_MAX];
-
-  snprintf(storage, sizeof(storage),
-           &quot;%s/plugins/%s&quot;, gconf.persistent_path, id);
-
-  es_context_t *ec = es_context_create(id, flags | ECMASCRIPT_PLUGIN,
-                                       url, storage);
-
-  duk_context *ctx = es_context_begin(ec);
-
-  duk_push_global_object(ctx);
-
-  int plugin_obj_idx = duk_push_object(ctx);
-
-  duk_push_string(ctx, id);
-  duk_put_prop_string(ctx, plugin_obj_idx, &quot;id&quot;);
-
-  duk_push_string(ctx, url);
-  duk_put_prop_string(ctx, plugin_obj_idx, &quot;url&quot;);
-
-  duk_push_string(ctx, manifest);
-  duk_put_prop_string(ctx, plugin_obj_idx, &quot;manifest&quot;);
-
-  duk_push_int(ctx, version);
-  duk_put_prop_string(ctx, plugin_obj_idx, &quot;apiversion&quot;);
-  if(ec-&gt;ec_path) {
-    duk_push_string(ctx, ec-&gt;ec_path);
-    duk_put_prop_string(ctx, plugin_obj_idx, &quot;path&quot;);
-  }
-
-  //Plugin object {&quot;id&quot;: , &quot;url&quot;: , &quot;manifest&quot;: , &quot;apiversion&quot;: , &quot;path&quot;: }
-  duk_put_prop_string(ctx, -2, &quot;Plugin&quot;);
-  duk_pop(ctx);
-
-  if(version == 1) {
-
-    int64_t ts0 = arch_get_ts();
-
-    // 根据文件及路径编译为函数
-    if(es_load_and_compile(ec, &quot;dataroot://res/ecmascript/legacy/api-v1.js&quot;,
-                           ctx))
-      goto bad;
-
-    int64_t ts1 = arch_get_ts();
-
-    // 执行函数
-    if(duk_pcall(ctx, 0)) {
-      es_dump_err(ctx);
-      goto bad;
-    }
-
-    int64_t ts2 = arch_get_ts();
-
-    //xx.js 编译
-    if(es_load_and_compile(ec, url, ctx)) {
-      duk_pop(ctx);
-      goto bad;
-    }
-
-    int64_t ts3 = arch_get_ts();
-
-    duk_swap_top(ctx, 0);
-    // 执行
-    if(duk_pcall_method(ctx, 0))
-      es_dump_err(ctx);
-
-    int64_t ts4 = arch_get_ts();
-
-    es_debug(ec, &quot;API v1 emulation: Compile:%dms Exec:%dms&quot;,
-             ((int)(ts1 - ts0)) / 1000,
-             ((int)(ts2 - ts1)) / 1000);
-
-    es_debug(ec, &quot;Plugin main:      Compile:%dms Exec:%dms&quot;,
-             ((int)(ts3 - ts2)) / 1000,
-             ((int)(ts4 - ts3)) / 1000);
-
-  } else {
-    es_exec(ec, url, ctx);
-  }
-
- bad:
-  es_context_end(ec, 1, ctx);
-
-  es_context_release(ec);
-
-  return 0;
-}</code></pre>]]></content>
-      <categories>
-        <category>Movian</category>
-      </categories>
-      <tags>
-        <tag>movian</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Busybox udhcpc 不能正常工作</title>
     <url>/2018/11/08/Linux-udhcpc-client-not-recieving-dchp-offer/</url>
     <content><![CDATA[<p><code>udhcpc client</code> 不能正常工作，需要内核打开 <code>packet socket</code> 支持</p>
@@ -15363,187 +15111,6 @@ ecmascript_plugin_load(const char *id, const char *url,
         <tag>linux</tag>
         <tag>dhcp</tag>
         <tag>busybox</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Movian Plugin Development</title>
-    <url>/2018/01/10/movian-plugin-development/</url>
-    <content><![CDATA[<p>Movian Development</p>
-<a id="more"></a>
-
-<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
-<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
-<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
-<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
-<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
-<pre><code class="json">{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;apiversion&quot;: 1,
-  &quot;id&quot;: &quot;headweb&quot;,
-  &quot;file&quot;: &quot;headweb.js&quot;,
-  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
-  &quot;version&quot;: &quot;1.5.3&quot;,
-  &quot;author&quot;: &quot;Andreas Öman&quot;,
-  &quot;title&quot;: &quot;Headweb&quot;,
-  &quot;icon&quot;: &quot;headweb_square.png&quot;,
-  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
-  &quot;category&quot;: &quot;video&quot;,
-  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
-  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
-}</code></pre>
-<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
-<ul>
-<li>ecmascript - loads the plugin using Duktape.</li>
-<li>views - used for user interface (screen keyboard plugin)</li>
-</ul>
-<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
-<ul>
-<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
-<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
-</ul>
-<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
-<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
-<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
-<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
-<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
-<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
-<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
-<ul>
-<li>“tv” - online TV</li>
-<li>“video” - streaming video</li>
-<li>“music” - streaming music</li>
-<li>“glwview” - UI extentions</li>
-<li>“subtitles” - subtitles</li>
-<li>“glwosk” - on screen keyboard</li>
-</ul>
-<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
-<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
-<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
-<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
-<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
-<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
-<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
-<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
-<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
-<pre><code>{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;file&quot;: &quot;testplugin.js&quot;,
-  &quot;id&quot;: &quot;testplugin&quot;
-}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
-<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
-  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
-})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
-<pre><code>(function(plugin) {
-  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
-    showtime.print(&quot;I was called&quot;);
-  })
-})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
-<p><code>somafa</code> 中的 <code>start URI</code></p>
-<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
-...
-}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
-<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
-<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
-<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
-<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
-<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
-<ul>
-<li>Direct URL</li>
-<li>Via a video page</li>
-</ul>
-<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
-<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
-<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
-<p>To use it first do:</p>
-<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
-      <categories>
-        <category>Movian</category>
-      </categories>
-      <tags>
-        <tag>movian</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>vim-highlight-syntax</title>
-    <url>/2017/12/19/vim-highlight-syntax/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
-<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
-<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
-<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
-<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
-<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
-<pre><code>:syntax
---- 语法项目 ---
-cLabel         xxx default case
-cStructure     xxx union struct typedef enum
-cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
-                   _Thread_local auto
-cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
-cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
-cStatement     xxx return goto asm continue break
-                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
-<p><code>:help group-name</code></p>
-<pre><code>:help group-name
-
-(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
-
-        *Comment        any comment
-
-        *Constant       any constant
-         String         a string constant: &quot;this is a string&quot;
-         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
-         Number         a number constant: 234, 0xff
-         Boolean        a boolean constant: TRUE, false
-         Float          a floating point constant: 2.3e10
-
-        *Identifier     any variable name
-         Function       function name (also: methods for classes)
-        *Statement      any statement
-         Conditional    if, then, else, endif, switch, etc.
-         Repeat         for, do, while, etc.
-         Label          case, default, etc.
-         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
-         Keyword        any other keyword
-         Exception      try, catch, throw
-
-        *PreProc        generic Preprocessor
-         Include        preprocessor #include
-         Define         preprocessor #define
-         Macro          same as Define
-         PreCondit      preprocessor #if, #else, #endif, etc.
-
-        *Type           int, long, char, etc.
-         StorageClass   static, register, volatile, etc.
-         Structure      struct, union, enum, etc.
-         Typedef        A typedef
-
-        *Special        any special symbol
-         SpecialChar    special character in a constant
-         Tag            you can use CTRL-] on this
-         Delimiter      character that needs attention
-         SpecialComment special things inside a comment
-         Debug          debugging statements
-
-        *Underlined     text that stands out, HTML links
-
-        *Ignore         left blank, hidden  hl-Ignore
-
-        *Error          any erroneous construct
-        *Todo           anything that needs extra attention; mostly the
-                        keywords TODO FIXME and XXX</code></pre>]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Editor</category>
-      </categories>
-      <tags>
-        <tag>vim</tag>
-        <tag>highlight</tag>
       </tags>
   </entry>
   <entry>
@@ -15893,6 +15460,143 @@ networking/nslookup.c:202:     * after getaddrinfo (in server_print). This repor
       </tags>
   </entry>
   <entry>
+    <title>Movian 插件加载分析</title>
+    <url>/2018/01/10/movian-plugin-load/</url>
+    <content><![CDATA[<p>分析源文件 <code>src/plugins.c</code></p>
+<a id="more"></a>
+
+<h2 id="install"><a href="#install" class="headerlink" title="install"></a>install</h2><p><code>plugin_install</code> -&gt; <code>plugin_load</code> -&gt; <code>ecmascript_plugin_load</code></p>
+<h3 id="plugin-load"><a href="#plugin-load" class="headerlink" title="plugin_load"></a>plugin_load</h3><p>解析 <code>plugin.json</code> 文件</p>
+<pre><code>//plugin.json 路径
+snprintf(ctrlfile, sizeof(ctrlfile), &quot;%s/plugin.json&quot;, url);
+
+// 读取文件内容
+if((b = fa_load(ctrlfile,
+                FA_LOAD_ERRBUF(errbuf2, sizeof(errbuf2)),
+                NULL)) == NULL) {
+  snprintf(errbuf, errlen, &quot;Unable to load %s -- %s&quot;, ctrlfile, errbuf2);
+  return -1;
+}
+
+// 解析 json 文件
+ctrl = htsmsg_json_deserialize2(buf_cstr(b), errbuf, errlen);
+
+// 获取数据
+const char *type = htsmsg_get_str(ctrl, &quot;type&quot;);
+const char *id   = htsmsg_get_str(ctrl, &quot;id&quot;);
+const char *version = htsmsg_get_str(ctrl, &quot;version&quot;);
+const char *file = htsmsg_get_str(ctrl, &quot;file&quot;);
+
+//js 文件路径
+snprintf(fullpath, sizeof(fullpath), &quot;%s/%s&quot;, url, file);
+
+int version = htsmsg_get_u32_or_default(ctrl, &quot;apiversion&quot;, 1);
+
+// 打开 js 文件
+hts_mutex_unlock(&amp;plugin_mutex);
+r = ecmascript_plugin_load(id, fullpath, errbuf, errlen, version,
+                           buf_cstr(b), pflags);
+hts_mutex_lock(&amp;plugin_mutex);</code></pre><h3 id="scmascript-plugin-load"><a href="#scmascript-plugin-load" class="headerlink" title="scmascript_plugin_load"></a>scmascript_plugin_load</h3><pre><code>int
+ecmascript_plugin_load(const char *id, const char *url,
+                       char *errbuf, size_t errlen,
+                       int version, const char *manifest,
+                       int flags)
+{
+  char storage[PATH_MAX];
+
+  snprintf(storage, sizeof(storage),
+           &quot;%s/plugins/%s&quot;, gconf.persistent_path, id);
+
+  es_context_t *ec = es_context_create(id, flags | ECMASCRIPT_PLUGIN,
+                                       url, storage);
+
+  duk_context *ctx = es_context_begin(ec);
+
+  duk_push_global_object(ctx);
+
+  int plugin_obj_idx = duk_push_object(ctx);
+
+  duk_push_string(ctx, id);
+  duk_put_prop_string(ctx, plugin_obj_idx, &quot;id&quot;);
+
+  duk_push_string(ctx, url);
+  duk_put_prop_string(ctx, plugin_obj_idx, &quot;url&quot;);
+
+  duk_push_string(ctx, manifest);
+  duk_put_prop_string(ctx, plugin_obj_idx, &quot;manifest&quot;);
+
+  duk_push_int(ctx, version);
+  duk_put_prop_string(ctx, plugin_obj_idx, &quot;apiversion&quot;);
+  if(ec-&gt;ec_path) {
+    duk_push_string(ctx, ec-&gt;ec_path);
+    duk_put_prop_string(ctx, plugin_obj_idx, &quot;path&quot;);
+  }
+
+  //Plugin object {&quot;id&quot;: , &quot;url&quot;: , &quot;manifest&quot;: , &quot;apiversion&quot;: , &quot;path&quot;: }
+  duk_put_prop_string(ctx, -2, &quot;Plugin&quot;);
+  duk_pop(ctx);
+
+  if(version == 1) {
+
+    int64_t ts0 = arch_get_ts();
+
+    // 根据文件及路径编译为函数
+    if(es_load_and_compile(ec, &quot;dataroot://res/ecmascript/legacy/api-v1.js&quot;,
+                           ctx))
+      goto bad;
+
+    int64_t ts1 = arch_get_ts();
+
+    // 执行函数
+    if(duk_pcall(ctx, 0)) {
+      es_dump_err(ctx);
+      goto bad;
+    }
+
+    int64_t ts2 = arch_get_ts();
+
+    //xx.js 编译
+    if(es_load_and_compile(ec, url, ctx)) {
+      duk_pop(ctx);
+      goto bad;
+    }
+
+    int64_t ts3 = arch_get_ts();
+
+    duk_swap_top(ctx, 0);
+    // 执行
+    if(duk_pcall_method(ctx, 0))
+      es_dump_err(ctx);
+
+    int64_t ts4 = arch_get_ts();
+
+    es_debug(ec, &quot;API v1 emulation: Compile:%dms Exec:%dms&quot;,
+             ((int)(ts1 - ts0)) / 1000,
+             ((int)(ts2 - ts1)) / 1000);
+
+    es_debug(ec, &quot;Plugin main:      Compile:%dms Exec:%dms&quot;,
+             ((int)(ts3 - ts2)) / 1000,
+             ((int)(ts4 - ts3)) / 1000);
+
+  } else {
+    es_exec(ec, url, ctx);
+  }
+
+ bad:
+  es_context_end(ec, 1, ctx);
+
+  es_context_release(ec);
+
+  return 0;
+}</code></pre>]]></content>
+      <categories>
+        <category>Movian</category>
+      </categories>
+      <tags>
+        <tag>movian</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>静态编译使用 getaddrinfo 出现警告及动态静态混合使用</title>
     <url>/2018/11/12/statically-linked-binary-that-uses-getaddrinfo/</url>
     <content><![CDATA[<p>使用 <code>-static</code> 编译出现以下警告</p>
@@ -15981,6 +15685,187 @@ pngset.c.o</code></pre>
         <tag>libnss</tag>
         <tag>static</tag>
         <tag>getaddrinfp</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Movian Plugin Development</title>
+    <url>/2018/01/10/movian-plugin-development/</url>
+    <content><![CDATA[<p>Movian Development</p>
+<a id="more"></a>
+
+<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
+<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
+<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
+<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
+<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
+<pre><code class="json">{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;apiversion&quot;: 1,
+  &quot;id&quot;: &quot;headweb&quot;,
+  &quot;file&quot;: &quot;headweb.js&quot;,
+  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
+  &quot;version&quot;: &quot;1.5.3&quot;,
+  &quot;author&quot;: &quot;Andreas Öman&quot;,
+  &quot;title&quot;: &quot;Headweb&quot;,
+  &quot;icon&quot;: &quot;headweb_square.png&quot;,
+  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
+  &quot;category&quot;: &quot;video&quot;,
+  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
+  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
+}</code></pre>
+<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
+<ul>
+<li>ecmascript - loads the plugin using Duktape.</li>
+<li>views - used for user interface (screen keyboard plugin)</li>
+</ul>
+<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
+<ul>
+<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
+<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
+</ul>
+<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
+<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
+<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
+<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
+<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
+<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
+<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
+<ul>
+<li>“tv” - online TV</li>
+<li>“video” - streaming video</li>
+<li>“music” - streaming music</li>
+<li>“glwview” - UI extentions</li>
+<li>“subtitles” - subtitles</li>
+<li>“glwosk” - on screen keyboard</li>
+</ul>
+<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
+<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
+<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
+<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
+<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
+<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
+<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
+<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
+<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
+<pre><code>{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;file&quot;: &quot;testplugin.js&quot;,
+  &quot;id&quot;: &quot;testplugin&quot;
+}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
+<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
+  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
+})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
+<pre><code>(function(plugin) {
+  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
+    showtime.print(&quot;I was called&quot;);
+  })
+})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
+<p><code>somafa</code> 中的 <code>start URI</code></p>
+<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
+...
+}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
+<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
+<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
+<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
+<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
+<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
+<ul>
+<li>Direct URL</li>
+<li>Via a video page</li>
+</ul>
+<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
+<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
+<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
+<p>To use it first do:</p>
+<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
+      <categories>
+        <category>Movian</category>
+      </categories>
+      <tags>
+        <tag>movian</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>vim-highlight-syntax</title>
+    <url>/2017/12/19/vim-highlight-syntax/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
+<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
+<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
+<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
+<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
+<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
+<pre><code>:syntax
+--- 语法项目 ---
+cLabel         xxx default case
+cStructure     xxx union struct typedef enum
+cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
+                   _Thread_local auto
+cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
+cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
+cStatement     xxx return goto asm continue break
+                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
+<p><code>:help group-name</code></p>
+<pre><code>:help group-name
+
+(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
+
+        *Comment        any comment
+
+        *Constant       any constant
+         String         a string constant: &quot;this is a string&quot;
+         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
+         Number         a number constant: 234, 0xff
+         Boolean        a boolean constant: TRUE, false
+         Float          a floating point constant: 2.3e10
+
+        *Identifier     any variable name
+         Function       function name (also: methods for classes)
+        *Statement      any statement
+         Conditional    if, then, else, endif, switch, etc.
+         Repeat         for, do, while, etc.
+         Label          case, default, etc.
+         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
+         Keyword        any other keyword
+         Exception      try, catch, throw
+
+        *PreProc        generic Preprocessor
+         Include        preprocessor #include
+         Define         preprocessor #define
+         Macro          same as Define
+         PreCondit      preprocessor #if, #else, #endif, etc.
+
+        *Type           int, long, char, etc.
+         StorageClass   static, register, volatile, etc.
+         Structure      struct, union, enum, etc.
+         Typedef        A typedef
+
+        *Special        any special symbol
+         SpecialChar    special character in a constant
+         Tag            you can use CTRL-] on this
+         Delimiter      character that needs attention
+         SpecialComment special things inside a comment
+         Debug          debugging statements
+
+        *Underlined     text that stands out, HTML links
+
+        *Ignore         left blank, hidden  hl-Ignore
+
+        *Error          any erroneous construct
+        *Todo           anything that needs extra attention; mostly the
+                        keywords TODO FIXME and XXX</code></pre>]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Editor</category>
+      </categories>
+      <tags>
+        <tag>vim</tag>
+        <tag>highlight</tag>
       </tags>
   </entry>
   <entry>
@@ -18168,8 +18053,8 @@ network={
 ]]></content>
       <categories>
         <category>Network</category>
-        <category>Tools</category>
         <category>TCP</category>
+        <category>Tools</category>
         <category>Network</category>
       </categories>
       <tags>
@@ -19045,12 +18930,12 @@ git config --global credential.helper /usr/share/doc/git/contrib/credential/libs
 ]]></content>
       <categories>
         <category>Tools</category>
-        <category>GitHub</category>
         <category>Git</category>
+        <category>GitHub</category>
       </categories>
       <tags>
-        <tag>github</tag>
         <tag>git</tag>
+        <tag>github</tag>
         <tag>ssh</tag>
       </tags>
   </entry>
@@ -19136,8 +19021,8 @@ objdump -h test,so</code></pre>
 ]]></content>
       <categories>
         <category>C</category>
-        <category>Tools</category>
         <category>Linker</category>
+        <category>Tools</category>
         <category>GCC</category>
         <category>ELF</category>
       </categories>
@@ -20047,7 +19932,7 @@ ArrayList : size()
 @enduml
 ` ` `</code></pre>
 <p>效果：</p>
-<img src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBjb250ZW50U2NyaXB0VHlwZT0iYXBwbGljYXRpb24vZWNtYXNjcmlwdCIgY29udGVudFN0eWxlVHlwZT0idGV4dC9jc3MiIGhlaWdodD0iMjE1cHgiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiIHN0eWxlPSJ3aWR0aDoxNThweDtoZWlnaHQ6MjE1cHg7IiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAxNTggMjE1IiB3aWR0aD0iMTU4cHgiIHpvb21BbmRQYW49Im1hZ25pZnkiPjxkZWZzPjxmaWx0ZXIgaGVpZ2h0PSIzMDAlIiBpZD0iZnh2MG5kZzc3YWtyZyIgd2lkdGg9IjMwMCUiIHg9Ii0xIiB5PSItMSI+PGZlR2F1c3NpYW5CbHVyIHJlc3VsdD0iYmx1ck91dCIgc3RkRGV2aWF0aW9uPSIyLjAiLz48ZmVDb2xvck1hdHJpeCBpbj0iYmx1ck91dCIgcmVzdWx0PSJibHVyT3V0MiIgdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIC40IDAiLz48ZmVPZmZzZXQgZHg9IjQuMCIgZHk9IjQuMCIgaW49ImJsdXJPdXQyIiByZXN1bHQ9ImJsdXJPdXQzIi8+PGZlQmxlbmQgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iYmx1ck91dDMiIG1vZGU9Im5vcm1hbCIvPjwvZmlsdGVyPjwvZGVmcz48Zz48IS0tTUQ1PVthYTdmNTg2NTMyZTE4NzE5ZTZjZWZhNzBmYzY1MDU4M10KY2xhc3MgT2JqZWN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjYwLjgwNDciIGlkPSJPYmplY3QiIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS41OyIgd2lkdGg9IjcyIiB4PSIzOS41IiB5PSI3Ii8+PGVsbGlwc2UgY3g9IjU0LjUiIGN5PSIyMyIgZmlsbD0iI0FERDFCMiIgcng9IjExIiByeT0iMTEiIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS4wOyIvPjxwYXRoIGQ9Ik01Ni44NDM4LDE4LjY3MTkgQzU1LjkwNjMsMTguMjM0NCA1NS4zMTI1LDE4LjA5MzggNTQuNDM3NSwxOC4wOTM4IEM1MS44MTI1LDE4LjA5MzggNDkuODEyNSwyMC4xNzE5IDQ5LjgxMjUsMjIuODkwNiBMNDkuODEyNSwyNC4wMTU2IEM0OS44MTI1LDI2LjU5MzggNTEuOTIxOSwyOC40ODQ0IDU0LjgxMjUsMjguNDg0NCBDNTYuMDMxMywyOC40ODQ0IDU3LjE4NzUsMjguMTg3NSA1Ny45Mzc1LDI3LjY0MDYgQzU4LjUxNTYsMjcuMjM0NCA1OC44NDM4LDI2Ljc4MTMgNTguODQzOCwyNi4zOTA2IEM1OC44NDM4LDI1LjkzNzUgNTguNDUzMSwyNS41NDY5IDU3Ljk4NDQsMjUuNTQ2OSBDNTcuNzY1NiwyNS41NDY5IDU3LjU2MjUsMjUuNjI1IDU3LjM3NSwyNS44MTI1IEM1Ni45MjE5LDI2LjI5NjkgNTYuOTIxOSwyNi4yOTY5IDU2LjczNDQsMjYuMzkwNiBDNTYuMzEyNSwyNi42NTYzIDU1LjYyNSwyNi43ODEzIDU0Ljg1OTQsMjYuNzgxMyBDNTIuODEyNSwyNi43ODEzIDUxLjUxNTYsMjUuNjg3NSA1MS41MTU2LDIzLjk4NDQgTDUxLjUxNTYsMjIuODkwNiBDNTEuNTE1NiwyMS4xMDk0IDUyLjc2NTYsMTkuNzk2OSA1NC41LDE5Ljc5NjkgQzU1LjA3ODEsMTkuNzk2OSA1NS42ODc1LDE5Ljk1MzEgNTYuMTU2MywyMC4yMDMxIEM1Ni42NDA2LDIwLjQ4NDQgNTYuODEyNSwyMC43MDMxIDU2LjkwNjMsMjEuMTA5NCBDNTYuOTY4OCwyMS41MTU2IDU3LDIxLjY0MDYgNTcuMTQwNiwyMS43NjU2IEM1Ny4yODEzLDIxLjkwNjMgNTcuNTE1NiwyMi4wMTU2IDU3LjczNDQsMjIuMDE1NiBDNTgsMjIuMDE1NiA1OC4yNjU2LDIxLjg3NSA1OC40Mzc1LDIxLjY1NjMgQzU4LjU0NjksMjEuNSA1OC41NzgxLDIxLjMxMjUgNTguNTc4MSwyMC44OTA2IEw1OC41NzgxLDE5LjQ2ODggQzU4LjU3ODEsMTkuMDMxMyA1OC41NjI1LDE4LjkwNjMgNTguNDY4OCwxOC43NSBDNTguMzEyNSwxOC40ODQ0IDU4LjAzMTMsMTguMzQzOCA1Ny43MzQ0LDE4LjM0MzggQzU3LjQzNzUsMTguMzQzOCA1Ny4yMzQ0LDE4LjQzNzUgNTcuMDE1NiwxOC43NSBMNTYuODQzOCwxOC42NzE5IFogIiBmaWxsPSIjMDAwMDAwIi8+PHRleHQgZmlsbD0iIzAwMDAwMCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGxlbmd0aEFkanVzdD0ic3BhY2luZyIgdGV4dExlbmd0aD0iNDAiIHg9IjY4LjUiIHk9IjI3LjE1NDMiPk9iamVjdDwvdGV4dD48bGluZSBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuNTsiIHgxPSI0MC41IiB4Mj0iMTEwLjUiIHkxPSIzOSIgeTI9IjM5Ii8+PGxpbmUgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjU7IiB4MT0iNDAuNSIgeDI9IjExMC41IiB5MT0iNDciIHkyPSI0NyIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmciIHRleHRMZW5ndGg9IjQ2IiB4PSI0NS41IiB5PSI2MS4yMTA0Ij5lcXVhbHMoKTwvdGV4dD48IS0tTUQ1PVthYjg4NzFlZDYzN2Y0MDcwN2I4NjZiYTY1OTc3MzRiY10KY2xhc3MgQXJyYXlMaXN0LS0+PHJlY3QgZmlsbD0iI0ZFRkVDRSIgZmlsdGVyPSJ1cmwoI2Z4djBuZGc3N2FrcmcpIiBoZWlnaHQ9IjczLjYwOTQiIGlkPSJBcnJheUxpc3QiIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS41OyIgd2lkdGg9IjEzNyIgeD0iNyIgeT0iMTI4Ii8+PGVsbGlwc2UgY3g9IjQ1Ljg1IiBjeT0iMTQ0IiBmaWxsPSIjQUREMUIyIiByeD0iMTEiIHJ5PSIxMSIgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjA7Ii8+PHBhdGggZD0iTTQ4LjE5MzgsMTM5LjY3MTkgQzQ3LjI1NjMsMTM5LjIzNDQgNDYuNjYyNSwxMzkuMDkzOCA0NS43ODc1LDEzOS4wOTM4IEM0My4xNjI1LDEzOS4wOTM4IDQxLjE2MjUsMTQxLjE3MTkgNDEuMTYyNSwxNDMuODkwNiBMNDEuMTYyNSwxNDUuMDE1NiBDNDEuMTYyNSwxNDcuNTkzOCA0My4yNzE5LDE0OS40ODQ0IDQ2LjE2MjUsMTQ5LjQ4NDQgQzQ3LjM4MTMsMTQ5LjQ4NDQgNDguNTM3NSwxNDkuMTg3NSA0OS4yODc1LDE0OC42NDA2IEM0OS44NjU2LDE0OC4yMzQ0IDUwLjE5MzgsMTQ3Ljc4MTMgNTAuMTkzOCwxNDcuMzkwNiBDNTAuMTkzOCwxNDYuOTM3NSA0OS44MDMxLDE0Ni41NDY5IDQ5LjMzNDQsMTQ2LjU0NjkgQzQ5LjExNTYsMTQ2LjU0NjkgNDguOTEyNSwxNDYuNjI1IDQ4LjcyNSwxNDYuODEyNSBDNDguMjcxOSwxNDcuMjk2OSA0OC4yNzE5LDE0Ny4yOTY5IDQ4LjA4NDQsMTQ3LjM5MDYgQzQ3LjY2MjUsMTQ3LjY1NjMgNDYuOTc1LDE0Ny43ODEzIDQ2LjIwOTQsMTQ3Ljc4MTMgQzQ0LjE2MjUsMTQ3Ljc4MTMgNDIuODY1NiwxNDYuNjg3NSA0Mi44NjU2LDE0NC45ODQ0IEw0Mi44NjU2LDE0My44OTA2IEM0Mi44NjU2LDE0Mi4xMDk0IDQ0LjExNTYsMTQwLjc5NjkgNDUuODUsMTQwLjc5NjkgQzQ2LjQyODEsMTQwLjc5NjkgNDcuMDM3NSwxNDAuOTUzMSA0Ny41MDYzLDE0MS4yMDMxIEM0Ny45OTA2LDE0MS40ODQ0IDQ4LjE2MjUsMTQxLjcwMzEgNDguMjU2MywxNDIuMTA5NCBDNDguMzE4OCwxNDIuNTE1NiA0OC4zNSwxNDIuNjQwNiA0OC40OTA2LDE0Mi43NjU2IEM0OC42MzEzLDE0Mi45MDYzIDQ4Ljg2NTYsMTQzLjAxNTYgNDkuMDg0NCwxNDMuMDE1NiBDNDkuMzUsMTQzLjAxNTYgNDkuNjE1NiwxNDIuODc1IDQ5Ljc4NzUsMTQyLjY1NjMgQzQ5Ljg5NjksMTQyLjUgNDkuOTI4MSwxNDIuMzEyNSA0OS45MjgxLDE0MS44OTA2IEw0OS45MjgxLDE0MC40Njg4IEM0OS45MjgxLDE0MC4wMzEzIDQ5LjkxMjUsMTM5LjkwNjMgNDkuODE4OCwxMzkuNzUgQzQ5LjY2MjUsMTM5LjQ4NDQgNDkuMzgxMywxMzkuMzQzOCA0OS4wODQ0LDEzOS4zNDM4IEM0OC43ODc1LDEzOS4zNDM4IDQ4LjU4NDQsMTM5LjQzNzUgNDguMzY1NiwxMzkuNzUgTDQ4LjE5MzgsMTM5LjY3MTkgWiAiIGZpbGw9IiMwMDAwMDAiLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nIiB0ZXh0TGVuZ3RoPSI1MiIgeD0iNjUuMTUiIHk9IjE0OC4xNTQzIj5BcnJheUxpc3Q8L3RleHQ+PGxpbmUgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjU7IiB4MT0iOCIgeDI9IjE0MyIgeTE9IjE2MCIgeTI9IjE2MCIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmciIHRleHRMZW5ndGg9IjEyNSIgeD0iMTMiIHk9IjE3NC4yMTA0Ij5PYmplY3RbXSBlbGVtZW50RGF0YTwvdGV4dD48bGluZSBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuNTsiIHgxPSI4IiB4Mj0iMTQzIiB5MT0iMTgwLjgwNDciIHkyPSIxODAuODA0NyIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmciIHRleHRMZW5ndGg9IjMyIiB4PSIxMyIgeT0iMTk1LjAxNTEiPnNpemUoKTwvdGV4dD48IS0tTUQ1PVs3OGVkM2Q1NGM2YWQ5NmZiNjQzNGE0ZTQ1YWE0YjVmMF0KcmV2ZXJzZSBsaW5rIE9iamVjdCB0byBBcnJheUxpc3QtLT48cGF0aCBjb2RlTGluZT0iMSIgZD0iTTc1LjUsODguNTA1IEM3NS41LDEwMS42MjEgNzUuNSwxMTUuNTEyOCA3NS41LDEyNy43NTU1ICIgZmlsbD0ibm9uZSIgaWQ9Ik9iamVjdC1iYWNrdG8tQXJyYXlMaXN0IiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuMDsiLz48cG9seWdvbiBmaWxsPSJub25lIiBwb2ludHM9IjY4LjUwMDEsODguMjQyLDc1LjUsNjguMjQyLDgyLjUwMDEsODguMjQyLDY4LjUwMDEsODguMjQyIiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuMDsiLz48IS0tTUQ1PVszZDlkMjFhN2UyYThkZTgwNDQ4MWVlZmEzZmYzNjA4OF0KQHN0YXJ0dW1sDQpPYmplY3QgPHwtIC0gQXJyYXlMaXN0DQpPYmplY3QgOiBlcXVhbHMoKQ0KQXJyYXlMaXN0IDogT2JqZWN0W10gZWxlbWVudERhdGENCkFycmF5TGlzdCA6IHNpemUoKQ0KQGVuZHVtbA0KClBsYW50VU1MIHZlcnNpb24gMS4yMDIxLjViZXRhMyhVbmtub3duIGNvbXBpbGUgdGltZSkKKEdQTCBzb3VyY2UgZGlzdHJpYnV0aW9uKQpKYXZhIFJ1bnRpbWU6IEphdmEoVE0pIFNFIFJ1bnRpbWUgRW52aXJvbm1lbnQKSlZNOiBKYXZhIEhvdFNwb3QoVE0pIDY0LUJpdCBTZXJ2ZXIgVk0KRGVmYXVsdCBFbmNvZGluZzogVVRGLTgKTGFuZ3VhZ2U6IGVuCkNvdW50cnk6IFVTCi0tPjwvZz48L3N2Zz4='>
+<img src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBjb250ZW50U2NyaXB0VHlwZT0iYXBwbGljYXRpb24vZWNtYXNjcmlwdCIgY29udGVudFN0eWxlVHlwZT0idGV4dC9jc3MiIGhlaWdodD0iMjE1cHgiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiIHN0eWxlPSJ3aWR0aDoxNThweDtoZWlnaHQ6MjE1cHg7YmFja2dyb3VuZDojRkZGRkZGOyIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIwIDAgMTU4IDIxNSIgd2lkdGg9IjE1OHB4IiB6b29tQW5kUGFuPSJtYWduaWZ5Ij48ZGVmcz48ZmlsdGVyIGhlaWdodD0iMzAwJSIgaWQ9ImZ4djBuZGc3N2FrcmciIHdpZHRoPSIzMDAlIiB4PSItMSIgeT0iLTEiPjxmZUdhdXNzaWFuQmx1ciByZXN1bHQ9ImJsdXJPdXQiIHN0ZERldmlhdGlvbj0iMi4wIi8+PGZlQ29sb3JNYXRyaXggaW49ImJsdXJPdXQiIHJlc3VsdD0iYmx1ck91dDIiIHR5cGU9Im1hdHJpeCIgdmFsdWVzPSIwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAuNCAwIi8+PGZlT2Zmc2V0IGR4PSI0LjAiIGR5PSI0LjAiIGluPSJibHVyT3V0MiIgcmVzdWx0PSJibHVyT3V0MyIvPjxmZUJsZW5kIGluPSJTb3VyY2VHcmFwaGljIiBpbjI9ImJsdXJPdXQzIiBtb2RlPSJub3JtYWwiLz48L2ZpbHRlcj48L2RlZnM+PGc+PCEtLU1ENT1bYWE3ZjU4NjUzMmUxODcxOWU2Y2VmYTcwZmM2NTA1ODNdCmNsYXNzIE9iamVjdC0tPjxyZWN0IGZpbGw9IiNGRUZFQ0UiIGZpbHRlcj0idXJsKCNmeHYwbmRnNzdha3JnKSIgaGVpZ2h0PSI2MC44MDQ3IiBpZD0iT2JqZWN0IiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuNTsiIHdpZHRoPSI3MiIgeD0iMzkuNSIgeT0iNyIvPjxlbGxpcHNlIGN4PSI1NC41IiBjeT0iMjMiIGZpbGw9IiNBREQxQjIiIHJ4PSIxMSIgcnk9IjExIiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuMDsiLz48cGF0aCBkPSJNNTYuODQzOCwxOC42NzE5IEM1NS45MDYzLDE4LjIzNDQgNTUuMzEyNSwxOC4wOTM4IDU0LjQzNzUsMTguMDkzOCBDNTEuODEyNSwxOC4wOTM4IDQ5LjgxMjUsMjAuMTcxOSA0OS44MTI1LDIyLjg5MDYgTDQ5LjgxMjUsMjQuMDE1NiBDNDkuODEyNSwyNi41OTM4IDUxLjkyMTksMjguNDg0NCA1NC44MTI1LDI4LjQ4NDQgQzU2LjAzMTMsMjguNDg0NCA1Ny4xODc1LDI4LjE4NzUgNTcuOTM3NSwyNy42NDA2IEM1OC41MTU2LDI3LjIzNDQgNTguODQzOCwyNi43ODEzIDU4Ljg0MzgsMjYuMzkwNiBDNTguODQzOCwyNS45Mzc1IDU4LjQ1MzEsMjUuNTQ2OSA1Ny45ODQ0LDI1LjU0NjkgQzU3Ljc2NTYsMjUuNTQ2OSA1Ny41NjI1LDI1LjYyNSA1Ny4zNzUsMjUuODEyNSBDNTYuOTIxOSwyNi4yOTY5IDU2LjkyMTksMjYuMjk2OSA1Ni43MzQ0LDI2LjM5MDYgQzU2LjMxMjUsMjYuNjU2MyA1NS42MjUsMjYuNzgxMyA1NC44NTk0LDI2Ljc4MTMgQzUyLjgxMjUsMjYuNzgxMyA1MS41MTU2LDI1LjY4NzUgNTEuNTE1NiwyMy45ODQ0IEw1MS41MTU2LDIyLjg5MDYgQzUxLjUxNTYsMjEuMTA5NCA1Mi43NjU2LDE5Ljc5NjkgNTQuNSwxOS43OTY5IEM1NS4wNzgxLDE5Ljc5NjkgNTUuNjg3NSwxOS45NTMxIDU2LjE1NjMsMjAuMjAzMSBDNTYuNjQwNiwyMC40ODQ0IDU2LjgxMjUsMjAuNzAzMSA1Ni45MDYzLDIxLjEwOTQgQzU2Ljk2ODgsMjEuNTE1NiA1NywyMS42NDA2IDU3LjE0MDYsMjEuNzY1NiBDNTcuMjgxMywyMS45MDYzIDU3LjUxNTYsMjIuMDE1NiA1Ny43MzQ0LDIyLjAxNTYgQzU4LDIyLjAxNTYgNTguMjY1NiwyMS44NzUgNTguNDM3NSwyMS42NTYzIEM1OC41NDY5LDIxLjUgNTguNTc4MSwyMS4zMTI1IDU4LjU3ODEsMjAuODkwNiBMNTguNTc4MSwxOS40Njg4IEM1OC41NzgxLDE5LjAzMTMgNTguNTYyNSwxOC45MDYzIDU4LjQ2ODgsMTguNzUgQzU4LjMxMjUsMTguNDg0NCA1OC4wMzEzLDE4LjM0MzggNTcuNzM0NCwxOC4zNDM4IEM1Ny40Mzc1LDE4LjM0MzggNTcuMjM0NCwxOC40Mzc1IDU3LjAxNTYsMTguNzUgTDU2Ljg0MzgsMTguNjcxOSBaICIgZmlsbD0iIzAwMDAwMCIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmciIHRleHRMZW5ndGg9IjQwIiB4PSI2OC41IiB5PSIyNy4xNTQzIj5PYmplY3Q8L3RleHQ+PGxpbmUgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjU7IiB4MT0iNDAuNSIgeDI9IjExMC41IiB5MT0iMzkiIHkyPSIzOSIvPjxsaW5lIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS41OyIgeDE9IjQwLjUiIHgyPSIxMTAuNSIgeTE9IjQ3IiB5Mj0iNDciLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nIiB0ZXh0TGVuZ3RoPSI0NiIgeD0iNDUuNSIgeT0iNjEuMjEwNCI+ZXF1YWxzKCk8L3RleHQ+PCEtLU1ENT1bYWI4ODcxZWQ2MzdmNDA3MDdiODY2YmE2NTk3NzM0YmNdCmNsYXNzIEFycmF5TGlzdC0tPjxyZWN0IGZpbGw9IiNGRUZFQ0UiIGZpbHRlcj0idXJsKCNmeHYwbmRnNzdha3JnKSIgaGVpZ2h0PSI3My42MDk0IiBpZD0iQXJyYXlMaXN0IiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuNTsiIHdpZHRoPSIxMzciIHg9IjciIHk9IjEyOCIvPjxlbGxpcHNlIGN4PSI0NS44NSIgY3k9IjE0NCIgZmlsbD0iI0FERDFCMiIgcng9IjExIiByeT0iMTEiIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS4wOyIvPjxwYXRoIGQ9Ik00OC4xOTM4LDEzOS42NzE5IEM0Ny4yNTYzLDEzOS4yMzQ0IDQ2LjY2MjUsMTM5LjA5MzggNDUuNzg3NSwxMzkuMDkzOCBDNDMuMTYyNSwxMzkuMDkzOCA0MS4xNjI1LDE0MS4xNzE5IDQxLjE2MjUsMTQzLjg5MDYgTDQxLjE2MjUsMTQ1LjAxNTYgQzQxLjE2MjUsMTQ3LjU5MzggNDMuMjcxOSwxNDkuNDg0NCA0Ni4xNjI1LDE0OS40ODQ0IEM0Ny4zODEzLDE0OS40ODQ0IDQ4LjUzNzUsMTQ5LjE4NzUgNDkuMjg3NSwxNDguNjQwNiBDNDkuODY1NiwxNDguMjM0NCA1MC4xOTM4LDE0Ny43ODEzIDUwLjE5MzgsMTQ3LjM5MDYgQzUwLjE5MzgsMTQ2LjkzNzUgNDkuODAzMSwxNDYuNTQ2OSA0OS4zMzQ0LDE0Ni41NDY5IEM0OS4xMTU2LDE0Ni41NDY5IDQ4LjkxMjUsMTQ2LjYyNSA0OC43MjUsMTQ2LjgxMjUgQzQ4LjI3MTksMTQ3LjI5NjkgNDguMjcxOSwxNDcuMjk2OSA0OC4wODQ0LDE0Ny4zOTA2IEM0Ny42NjI1LDE0Ny42NTYzIDQ2Ljk3NSwxNDcuNzgxMyA0Ni4yMDk0LDE0Ny43ODEzIEM0NC4xNjI1LDE0Ny43ODEzIDQyLjg2NTYsMTQ2LjY4NzUgNDIuODY1NiwxNDQuOTg0NCBMNDIuODY1NiwxNDMuODkwNiBDNDIuODY1NiwxNDIuMTA5NCA0NC4xMTU2LDE0MC43OTY5IDQ1Ljg1LDE0MC43OTY5IEM0Ni40MjgxLDE0MC43OTY5IDQ3LjAzNzUsMTQwLjk1MzEgNDcuNTA2MywxNDEuMjAzMSBDNDcuOTkwNiwxNDEuNDg0NCA0OC4xNjI1LDE0MS43MDMxIDQ4LjI1NjMsMTQyLjEwOTQgQzQ4LjMxODgsMTQyLjUxNTYgNDguMzUsMTQyLjY0MDYgNDguNDkwNiwxNDIuNzY1NiBDNDguNjMxMywxNDIuOTA2MyA0OC44NjU2LDE0My4wMTU2IDQ5LjA4NDQsMTQzLjAxNTYgQzQ5LjM1LDE0My4wMTU2IDQ5LjYxNTYsMTQyLjg3NSA0OS43ODc1LDE0Mi42NTYzIEM0OS44OTY5LDE0Mi41IDQ5LjkyODEsMTQyLjMxMjUgNDkuOTI4MSwxNDEuODkwNiBMNDkuOTI4MSwxNDAuNDY4OCBDNDkuOTI4MSwxNDAuMDMxMyA0OS45MTI1LDEzOS45MDYzIDQ5LjgxODgsMTM5Ljc1IEM0OS42NjI1LDEzOS40ODQ0IDQ5LjM4MTMsMTM5LjM0MzggNDkuMDg0NCwxMzkuMzQzOCBDNDguNzg3NSwxMzkuMzQzOCA0OC41ODQ0LDEzOS40Mzc1IDQ4LjM2NTYsMTM5Ljc1IEw0OC4xOTM4LDEzOS42NzE5IFogIiBmaWxsPSIjMDAwMDAwIi8+PHRleHQgZmlsbD0iIzAwMDAwMCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGxlbmd0aEFkanVzdD0ic3BhY2luZyIgdGV4dExlbmd0aD0iNTIiIHg9IjY1LjE1IiB5PSIxNDguMTU0MyI+QXJyYXlMaXN0PC90ZXh0PjxsaW5lIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS41OyIgeDE9IjgiIHgyPSIxNDMiIHkxPSIxNjAiIHkyPSIxNjAiLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nIiB0ZXh0TGVuZ3RoPSIxMjUiIHg9IjEzIiB5PSIxNzQuMjEwNCI+T2JqZWN0W10gZWxlbWVudERhdGE8L3RleHQ+PGxpbmUgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjU7IiB4MT0iOCIgeDI9IjE0MyIgeTE9IjE4MC44MDQ3IiB5Mj0iMTgwLjgwNDciLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nIiB0ZXh0TGVuZ3RoPSIzMiIgeD0iMTMiIHk9IjE5NS4wMTUxIj5zaXplKCk8L3RleHQ+PCEtLU1ENT1bNzhlZDNkNTRjNmFkOTZmYjY0MzRhNGU0NWFhNGI1ZjBdCnJldmVyc2UgbGluayBPYmplY3QgdG8gQXJyYXlMaXN0LS0+PHBhdGggY29kZUxpbmU9IjEiIGQ9Ik03NS41LDg4LjUwNSBDNzUuNSwxMDEuNjIxIDc1LjUsMTE1LjUxMjggNzUuNSwxMjcuNzU1NSAiIGZpbGw9Im5vbmUiIGlkPSJPYmplY3QtYmFja3RvLUFycmF5TGlzdCIgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjA7Ii8+PHBvbHlnb24gZmlsbD0ibm9uZSIgcG9pbnRzPSI2OC41MDAxLDg4LjI0Miw3NS41LDY4LjI0Miw4Mi41MDAxLDg4LjI0Miw2OC41MDAxLDg4LjI0MiIgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjA7Ii8+PCEtLU1ENT1bMGJhZDFjNDJjYzliZTBmYTg2YTQ3NjhhZTYxMTgwMjldCkBzdGFydHVtbA0KT2JqZWN0IDx8LSAtIEFycmF5TGlzdA0KT2JqZWN0IDogZXF1YWxzKCkNCkFycmF5TGlzdCA6IE9iamVjdFtdIGVsZW1lbnREYXRhDQpBcnJheUxpc3QgOiBzaXplKCkNCkBlbmR1bWwNCgpQbGFudFVNTCB2ZXJzaW9uIDEuMjAyMS43KFN1biBNYXkgMjMgMTI6NDA6MDcgVVRDIDIwMjEpCihHUEwgc291cmNlIGRpc3RyaWJ1dGlvbikKSmF2YSBSdW50aW1lOiBKYXZhKFRNKSBTRSBSdW50aW1lIEVudmlyb25tZW50CkpWTTogSmF2YSBIb3RTcG90KFRNKSA2NC1CaXQgU2VydmVyIFZNCkRlZmF1bHQgRW5jb2Rpbmc6IFVURi04Ckxhbmd1YWdlOiBlbgpDb3VudHJ5OiBVUwotLT48L2c+PC9zdmc+'>
 
 <h2 id="Markdown-Preview-Enhanced"><a href="#Markdown-Preview-Enhanced" class="headerlink" title="Markdown Preview Enhanced"></a><strong>Markdown Preview Enhanced</strong></h2><p><strong>Markdown Preview Enhanced</strong> 是一款为 <a href="https://atom.io/packages/markdown-preview-enhanced" target="_blank" rel="noopener"><strong>Atom</strong></a> 以及 <a href="https://marketplace.visualstudio.com/items?itemName=shd101wyy.markdown-preview-enhanced" target="_blank" rel="noopener"><strong>Visual Studio Code</strong></a> 编辑器编写的<strong>超级强大的</strong> Markdown 插件。 这款插件意在让你拥有飘逸的 Markdown 写作体验。</p>
 <p><strong>Markdown Preview Enhanced</strong> 内部支持 <code>flow charts</code>, <code>sequence diagrams</code>, <code>mermaid</code>, <code>PlantUML</code>, <code>WaveDrom</code>, <code>GraphViz</code>，<code>Vega &amp; Vega-lite</code>，<code>Ditaa</code> 图像渲染。 你也可以通过使用 <a href="https://shd101wyy.github.io/markdown-preview-enhanced/#/zh-cn/code-chunk" target="_blank" rel="noopener">Code Chunk</a> 来渲染 <code>TikZ</code>, <code>Python Matplotlib</code>, <code>Plotly</code> 等图像。</p>
@@ -20526,8 +20411,8 @@ $ git push -u origin gh-pages</code></pre>
         <category>GitHub</category>
       </categories>
       <tags>
-        <tag>github</tag>
         <tag>markdown</tag>
+        <tag>github</tag>
         <tag>gitbook</tag>
       </tags>
   </entry>
@@ -22993,6 +22878,163 @@ UNUSUAL_DEV(  0x12d1, 0x1003, 0x0000, 0x0000,
       </tags>
   </entry>
   <entry>
+    <title>ARM stack backtrace的实现</title>
+    <url>/2020/03/17/arm-stack-backtrace/</url>
+    <content><![CDATA[<p>介绍 arm 体系下如何实现 stack backtrace</p>
+<a id="more"></a>
+
+<h2 id="APCS"><a href="#APCS" class="headerlink" title="APCS"></a>APCS</h2><p>APCS (ARM Procedure Call Standard)，ARM 过程调用标准规范了 arm 寄存器的使用、过程调用时出栈和入栈的约定。如下图示意：</p>
+<p><img src="/images/linux/apcs_t.png" alt=""></p>
+<p>函数的栈帧由 <code>fp</code> 和 <code>sp</code> 标记边界。如果编译器遵循APCS，形成结构化的函数调用栈，就可以解析当前栈(callee)结构，从而得到调用栈(caller)的结构，这样就输出了整个回溯栈。</p>
+<p>编译器选项 <code>-g</code> 生成栈帧信息 <code>.debug_frame</code></p>
+<pre><code class="shell">$ readelf -S output/out.elf
+There are 18 section headers, starting at offset 0x1bb0fd0:
+
+节头：
+  [Nr] Name              Type            Addr     Off    Size   ES Flg Lk Inf Al
+  [ 0]                   NULL            00000000 000000 000000 00      0   0  0
+  [ 1] .text             PROGBITS        90000000 001000 6c132c 04  AX  0   0 1024
+  [ 2] .devtab           PROGBITS        906c132c 6c232c 000c8c 00  WA  0   0  8
+  [ 3] .bss              NOBITS          906c1fb8 6c2fb8 16a568 00  WA  0   0  8
+  [ 4] .debug_abbrev     PROGBITS        00000000 6c2fb8 0b82a7 00      0   0  1
+  [ 5] .debug_info       PROGBITS        00000000 77b25f a37035 00      0   0  1
+  [ 6] .debug_line       PROGBITS        00000000 11b2294 3bb5fc 00      0   0  1
+  [ 7] .debug_pubnames   PROGBITS        00000000 156d890 04911e 00      0   0  1
+  [ 8] .debug_pubtypes   PROGBITS        00000000 15b69ae 166807 00      0   0  1
+  [ 9] .debug_aranges    PROGBITS        00000000 171d1b5 018900 00      0   0  1
+  [10] .debug_str        PROGBITS        00000000 1735ab5 0c4732 01  MS  0   0  1
+  [11] .comment          PROGBITS        00000000 17fa1e7 0000cf 01  MS  0   0  1
+  [12] .debug_frame      PROGBITS        00000000 17fa2b8 08c8b0 00      0   0  4
+  [13] .debug_ranges     PROGBITS        00000000 1886b68 056380 00      0   0  1
+  [14] .debug_loc        PROGBITS        00000000 18dcee8 2d402b 00      0   0  1
+  [15] .shstrtab         STRTAB          00000000 1bb0f13 0000bd 00      0   0  1
+  [16] .symtab           SYMTAB          00000000 1bb12a0 071130 10     17 14593  4
+  [17] .strtab           STRTAB          00000000 1c223d0 086411 00      0   0  1</code></pre>
+<p>内核编译选项</p>
+<pre><code class="makefile">ifeq ($(CONFIG_FRAME_POINTER),y)
+KBUILD_CFLAGS   +=-fno-omit-frame-pointer -mapcs -mno-sched-prolog
+endif</code></pre>
+<h2 id="unwind"><a href="#unwind" class="headerlink" title="unwind"></a>unwind</h2><p>APCS的缺陷是，维护栈框的指令过多，栈消耗大，占用的寄存器也过多，比如每次调用都必须将 <code>r11,r12,lr,pc</code> 入栈。使用unwind就能避免这些问题，生产指令的效率要有用的多。它的原理是记录每个函数的入栈指令(一般比APCS的入栈要少的多)到特殊的段 <code>.ARM.unwind_idx</code> <code>.ARM.unwind_tab</code>。</p>
+<pre><code class="shell">$ readelf -S vmlinux
+There are 33 section headers, starting at offset 0xa33ba8:
+
+节头：
+  [Nr] Name              Type            Addr     Off    Size   ES Flg Lk Inf Al
+  [ 0]                   NULL            00000000 000000 000000 00      0   0  0
+  [ 1] .head.text        PROGBITS        c0008000 008000 00026c 00  AX  0   0  4
+  [ 2] .text             PROGBITS        c0100000 010000 55e3dc 00  AX  0   0 64
+  [ 3] .fixup            PROGBITS        c065e3dc 56e3dc 00001c 00  AX  0   0  4
+  [ 4] .rodata           PROGBITS        c0700000 570000 105fc8 00  WA  0   0 4096
+  [ 5] __bug_table       PROGBITS        c0805fc8 675fc8 0057a8 00   A  0   0  4
+  [ 6] __ksymtab         PROGBITS        c080b770 67b770 006e28 00   A  0   0  4
+  [ 7] __ksymtab_gpl     PROGBITS        c0812598 682598 005d10 00   A  0   0  4
+  [ 8] __ksymtab_strings PROGBITS        c08182a8 6882a8 01e235 00   A  0   0  1
+  [ 9] __param           PROGBITS        c08364e0 6a64e0 000d34 00   A  0   0  4
+  [10] __modver          PROGBITS        c0837214 6a7214 000dec 00   A  0   0  4
+  [11] __ex_table        PROGBITS        c0838000 6a8000 001038 00   A  0   0  8
+  [12] .ARM.unwind_idx   ARM_EXIDX       c0839038 6a9038 0273d8 00  AL 17   0  4
+  [13] .ARM.unwind_tab   PROGBITS        c0860410 6d0410 003630 00   A  0   0  4
+  [14] .notes            NOTE            c0863a40 6d3a40 000024 00  AX  0   0  4
+  [15] .vectors          PROGBITS        ffff0000 6e0000 000020 00  AX  0   0  4
+  [16] .stubs            PROGBITS        ffff1000 6e1000 0002ac 00  AX  0   0 32
+  [17] .init.text        PROGBITS        c09002e0 6f02e0 0440d0 00  AX  0   0 32
+  [18] .exit.text        PROGBITS        c09443b0 7343b0 000ee4 00  AX  0   0  4
+  [19] .init.arch.info   PROGBITS        c0945294 735294 0000d0 00   A  0   0  4
+  [20] .init.tagtable    PROGBITS        c0945364 735364 000048 00   A  0   0  4
+  [21] .init.smpalt      PROGBITS        c09453ac 7353ac 00bd10 00   A  0   0  4
+  [22] .init.pv_table    PROGBITS        c09510bc 7410bc 00064c 00   A  0   0  1
+  [23] .init.data        PROGBITS        c0952000 742000 00a194 00  WA  0   0 4096
+  [24] .data..percpu     PROGBITS        c095d000 74d000 0067cc 00  WA  0   0 64
+  [25] .data             PROGBITS        c0a00000 760000 0609ac 00  WA  0   0 64
+  [26] .data..page_align PROGBITS        c0a61000 7c1000 001000 00  WA  0   0 4096
+  [27] .bss              NOBITS          c0a62000 7c2000 03260c 00  WA  0   0 64
+  [28] .comment          PROGBITS        00000000 7c2000 00004e 01  MS  0   0  1
+  [29] .ARM.attributes   ARM_ATTRIBUTES  00000000 7c204e 00002f 00      0   0  1
+  [30] .symtab           SYMTAB          00000000 7c2080 167560 10     31 77680  4
+  [31] .strtab           STRTAB          00000000 9295e0 10a46c 00      0   0  1
+  [32] .shstrtab         STRTAB          00000000 a33a4c 00015a 00      0   0  1
+
+$ objdump -D vmlinu
+c04ee72c &lt;__skb_recv_datagram&gt;:
+c04ee72c:       e3110040        tst     r1, #64 ; 0x40
+c04ee730:       e92d43f0        push    {r4, r5, r6, r7, r8, r9, lr}
+c04ee734:       e1a09003        mov     r9, r3
+c04ee738:       05903144        ldreq   r3, [r0, #324]  ; 0x144
+c04ee73c:       e24dd014        sub     sp, sp, #20
+
+$ readelf -u .ARM.unwind_idx vmlinux
+0xc04ee72c &lt;__skb_recv_datagram&gt;: 0x8004adb0
+  Compact model index: 0
+  0x04      vsp = vsp + 20
+  0xad      pop {r4, r5, r6, r7, r8, r9, r14}
+  0xb0      finish</code></pre>
+<p>输出了函数的地址和对应的编码。接下输出的是编码对应的出栈伪指令，这些伪指令正好是函数栈操作的逆过程，用于回溯。</p>
+<p>内核编译选项</p>
+<pre><code class="makefile">ifeq ($(CONFIG_ARM_UNWIND),y)
+CFLAGS_ABI  +=-funwind-tables
+endif</code></pre>
+<h2 id="内核实现"><a href="#内核实现" class="headerlink" title="内核实现"></a>内核实现</h2><p>APCS会产生更多的代码指令，对性能有影响，使用unwind的方式会生成额外的段，但不影响性能。</p>
+<p>文件 <code>arch/arm/kernel/traps.c</code></p>
+<pre><code class="c">#ifdef CONFIG_ARM_UNWIND
+static inline void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
+{
+    unwind_backtrace(regs, tsk);
+}
+#else
+static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
+{
+    unsigned int fp, mode;
+    int ok = 1;
+
+    printk(&quot;Backtrace: &quot;);
+
+    if (!tsk)
+        tsk = current;
+
+    if (regs) {
+        fp = frame_pointer(regs);
+        mode = processor_mode(regs);
+    } else if (tsk != current) {
+        fp = thread_saved_fp(tsk);
+        mode = 0x10;
+    } else {
+        asm(&quot;mov %0, fp&quot; : &quot;=r&quot; (fp) : : &quot;cc&quot;);
+        mode = 0x10;
+    }
+
+    if (!fp) {
+        pr_cont(&quot;no frame pointer&quot;);
+        ok = 0;
+    } else if (verify_stack(fp)) {
+        pr_cont(&quot;invalid frame pointer 0x%08x&quot;, fp);
+        ok = 0;
+    } else if (fp &lt; (unsigned long)end_of_stack(tsk))
+        pr_cont(&quot;frame pointer underflow&quot;);
+    pr_cont(&quot;\n&quot;);
+
+    if (ok)
+        c_backtrace(fp, mode);
+}
+#endif</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://blog.csdn.net/itismine/article/details/4752489" target="_blank" rel="noopener">APCS，ARM 过程调用标准(ARM Procedure Call Standard) </a></li>
+<li><a href="https://www.linuxidc.com/Linux/2013-03/81247.htm" target="_blank" rel="noopener">ARM FP寄存器及frame pointer介绍</a></li>
+<li><a href="https://www.alivepea.me/prog/how-backtrace-work/" target="_blank" rel="noopener">Stack backtrace 的实现</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+        <category>C</category>
+        <category>Debug</category>
+        <category>BackTrace</category>
+      </categories>
+      <tags>
+        <tag>stack</tag>
+        <tag>backtrace</tag>
+        <tag>unwind</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>GitHub 搜索技巧</title>
     <url>/2020/03/25/searching-on-github/</url>
     <content><![CDATA[<p>GitHub 搜索技巧，用于准确搜索到相关资源</p>
@@ -23229,163 +23271,6 @@ self.cursor.execute(sql)</code></pre>
         <tag>python</tag>
         <tag>spider</tag>
         <tag>scrapy</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>ARM stack backtrace的实现</title>
-    <url>/2020/03/17/arm-stack-backtrace/</url>
-    <content><![CDATA[<p>介绍 arm 体系下如何实现 stack backtrace</p>
-<a id="more"></a>
-
-<h2 id="APCS"><a href="#APCS" class="headerlink" title="APCS"></a>APCS</h2><p>APCS (ARM Procedure Call Standard)，ARM 过程调用标准规范了 arm 寄存器的使用、过程调用时出栈和入栈的约定。如下图示意：</p>
-<p><img src="/images/linux/apcs_t.png" alt=""></p>
-<p>函数的栈帧由 <code>fp</code> 和 <code>sp</code> 标记边界。如果编译器遵循APCS，形成结构化的函数调用栈，就可以解析当前栈(callee)结构，从而得到调用栈(caller)的结构，这样就输出了整个回溯栈。</p>
-<p>编译器选项 <code>-g</code> 生成栈帧信息 <code>.debug_frame</code></p>
-<pre><code class="shell">$ readelf -S output/out.elf
-There are 18 section headers, starting at offset 0x1bb0fd0:
-
-节头：
-  [Nr] Name              Type            Addr     Off    Size   ES Flg Lk Inf Al
-  [ 0]                   NULL            00000000 000000 000000 00      0   0  0
-  [ 1] .text             PROGBITS        90000000 001000 6c132c 04  AX  0   0 1024
-  [ 2] .devtab           PROGBITS        906c132c 6c232c 000c8c 00  WA  0   0  8
-  [ 3] .bss              NOBITS          906c1fb8 6c2fb8 16a568 00  WA  0   0  8
-  [ 4] .debug_abbrev     PROGBITS        00000000 6c2fb8 0b82a7 00      0   0  1
-  [ 5] .debug_info       PROGBITS        00000000 77b25f a37035 00      0   0  1
-  [ 6] .debug_line       PROGBITS        00000000 11b2294 3bb5fc 00      0   0  1
-  [ 7] .debug_pubnames   PROGBITS        00000000 156d890 04911e 00      0   0  1
-  [ 8] .debug_pubtypes   PROGBITS        00000000 15b69ae 166807 00      0   0  1
-  [ 9] .debug_aranges    PROGBITS        00000000 171d1b5 018900 00      0   0  1
-  [10] .debug_str        PROGBITS        00000000 1735ab5 0c4732 01  MS  0   0  1
-  [11] .comment          PROGBITS        00000000 17fa1e7 0000cf 01  MS  0   0  1
-  [12] .debug_frame      PROGBITS        00000000 17fa2b8 08c8b0 00      0   0  4
-  [13] .debug_ranges     PROGBITS        00000000 1886b68 056380 00      0   0  1
-  [14] .debug_loc        PROGBITS        00000000 18dcee8 2d402b 00      0   0  1
-  [15] .shstrtab         STRTAB          00000000 1bb0f13 0000bd 00      0   0  1
-  [16] .symtab           SYMTAB          00000000 1bb12a0 071130 10     17 14593  4
-  [17] .strtab           STRTAB          00000000 1c223d0 086411 00      0   0  1</code></pre>
-<p>内核编译选项</p>
-<pre><code class="makefile">ifeq ($(CONFIG_FRAME_POINTER),y)
-KBUILD_CFLAGS   +=-fno-omit-frame-pointer -mapcs -mno-sched-prolog
-endif</code></pre>
-<h2 id="unwind"><a href="#unwind" class="headerlink" title="unwind"></a>unwind</h2><p>APCS的缺陷是，维护栈框的指令过多，栈消耗大，占用的寄存器也过多，比如每次调用都必须将 <code>r11,r12,lr,pc</code> 入栈。使用unwind就能避免这些问题，生产指令的效率要有用的多。它的原理是记录每个函数的入栈指令(一般比APCS的入栈要少的多)到特殊的段 <code>.ARM.unwind_idx</code> <code>.ARM.unwind_tab</code>。</p>
-<pre><code class="shell">$ readelf -S vmlinux
-There are 33 section headers, starting at offset 0xa33ba8:
-
-节头：
-  [Nr] Name              Type            Addr     Off    Size   ES Flg Lk Inf Al
-  [ 0]                   NULL            00000000 000000 000000 00      0   0  0
-  [ 1] .head.text        PROGBITS        c0008000 008000 00026c 00  AX  0   0  4
-  [ 2] .text             PROGBITS        c0100000 010000 55e3dc 00  AX  0   0 64
-  [ 3] .fixup            PROGBITS        c065e3dc 56e3dc 00001c 00  AX  0   0  4
-  [ 4] .rodata           PROGBITS        c0700000 570000 105fc8 00  WA  0   0 4096
-  [ 5] __bug_table       PROGBITS        c0805fc8 675fc8 0057a8 00   A  0   0  4
-  [ 6] __ksymtab         PROGBITS        c080b770 67b770 006e28 00   A  0   0  4
-  [ 7] __ksymtab_gpl     PROGBITS        c0812598 682598 005d10 00   A  0   0  4
-  [ 8] __ksymtab_strings PROGBITS        c08182a8 6882a8 01e235 00   A  0   0  1
-  [ 9] __param           PROGBITS        c08364e0 6a64e0 000d34 00   A  0   0  4
-  [10] __modver          PROGBITS        c0837214 6a7214 000dec 00   A  0   0  4
-  [11] __ex_table        PROGBITS        c0838000 6a8000 001038 00   A  0   0  8
-  [12] .ARM.unwind_idx   ARM_EXIDX       c0839038 6a9038 0273d8 00  AL 17   0  4
-  [13] .ARM.unwind_tab   PROGBITS        c0860410 6d0410 003630 00   A  0   0  4
-  [14] .notes            NOTE            c0863a40 6d3a40 000024 00  AX  0   0  4
-  [15] .vectors          PROGBITS        ffff0000 6e0000 000020 00  AX  0   0  4
-  [16] .stubs            PROGBITS        ffff1000 6e1000 0002ac 00  AX  0   0 32
-  [17] .init.text        PROGBITS        c09002e0 6f02e0 0440d0 00  AX  0   0 32
-  [18] .exit.text        PROGBITS        c09443b0 7343b0 000ee4 00  AX  0   0  4
-  [19] .init.arch.info   PROGBITS        c0945294 735294 0000d0 00   A  0   0  4
-  [20] .init.tagtable    PROGBITS        c0945364 735364 000048 00   A  0   0  4
-  [21] .init.smpalt      PROGBITS        c09453ac 7353ac 00bd10 00   A  0   0  4
-  [22] .init.pv_table    PROGBITS        c09510bc 7410bc 00064c 00   A  0   0  1
-  [23] .init.data        PROGBITS        c0952000 742000 00a194 00  WA  0   0 4096
-  [24] .data..percpu     PROGBITS        c095d000 74d000 0067cc 00  WA  0   0 64
-  [25] .data             PROGBITS        c0a00000 760000 0609ac 00  WA  0   0 64
-  [26] .data..page_align PROGBITS        c0a61000 7c1000 001000 00  WA  0   0 4096
-  [27] .bss              NOBITS          c0a62000 7c2000 03260c 00  WA  0   0 64
-  [28] .comment          PROGBITS        00000000 7c2000 00004e 01  MS  0   0  1
-  [29] .ARM.attributes   ARM_ATTRIBUTES  00000000 7c204e 00002f 00      0   0  1
-  [30] .symtab           SYMTAB          00000000 7c2080 167560 10     31 77680  4
-  [31] .strtab           STRTAB          00000000 9295e0 10a46c 00      0   0  1
-  [32] .shstrtab         STRTAB          00000000 a33a4c 00015a 00      0   0  1
-
-$ objdump -D vmlinu
-c04ee72c &lt;__skb_recv_datagram&gt;:
-c04ee72c:       e3110040        tst     r1, #64 ; 0x40
-c04ee730:       e92d43f0        push    {r4, r5, r6, r7, r8, r9, lr}
-c04ee734:       e1a09003        mov     r9, r3
-c04ee738:       05903144        ldreq   r3, [r0, #324]  ; 0x144
-c04ee73c:       e24dd014        sub     sp, sp, #20
-
-$ readelf -u .ARM.unwind_idx vmlinux
-0xc04ee72c &lt;__skb_recv_datagram&gt;: 0x8004adb0
-  Compact model index: 0
-  0x04      vsp = vsp + 20
-  0xad      pop {r4, r5, r6, r7, r8, r9, r14}
-  0xb0      finish</code></pre>
-<p>输出了函数的地址和对应的编码。接下输出的是编码对应的出栈伪指令，这些伪指令正好是函数栈操作的逆过程，用于回溯。</p>
-<p>内核编译选项</p>
-<pre><code class="makefile">ifeq ($(CONFIG_ARM_UNWIND),y)
-CFLAGS_ABI  +=-funwind-tables
-endif</code></pre>
-<h2 id="内核实现"><a href="#内核实现" class="headerlink" title="内核实现"></a>内核实现</h2><p>APCS会产生更多的代码指令，对性能有影响，使用unwind的方式会生成额外的段，但不影响性能。</p>
-<p>文件 <code>arch/arm/kernel/traps.c</code></p>
-<pre><code class="c">#ifdef CONFIG_ARM_UNWIND
-static inline void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
-{
-    unwind_backtrace(regs, tsk);
-}
-#else
-static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
-{
-    unsigned int fp, mode;
-    int ok = 1;
-
-    printk(&quot;Backtrace: &quot;);
-
-    if (!tsk)
-        tsk = current;
-
-    if (regs) {
-        fp = frame_pointer(regs);
-        mode = processor_mode(regs);
-    } else if (tsk != current) {
-        fp = thread_saved_fp(tsk);
-        mode = 0x10;
-    } else {
-        asm(&quot;mov %0, fp&quot; : &quot;=r&quot; (fp) : : &quot;cc&quot;);
-        mode = 0x10;
-    }
-
-    if (!fp) {
-        pr_cont(&quot;no frame pointer&quot;);
-        ok = 0;
-    } else if (verify_stack(fp)) {
-        pr_cont(&quot;invalid frame pointer 0x%08x&quot;, fp);
-        ok = 0;
-    } else if (fp &lt; (unsigned long)end_of_stack(tsk))
-        pr_cont(&quot;frame pointer underflow&quot;);
-    pr_cont(&quot;\n&quot;);
-
-    if (ok)
-        c_backtrace(fp, mode);
-}
-#endif</code></pre>
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="https://blog.csdn.net/itismine/article/details/4752489" target="_blank" rel="noopener">APCS，ARM 过程调用标准(ARM Procedure Call Standard) </a></li>
-<li><a href="https://www.linuxidc.com/Linux/2013-03/81247.htm" target="_blank" rel="noopener">ARM FP寄存器及frame pointer介绍</a></li>
-<li><a href="https://www.alivepea.me/prog/how-backtrace-work/" target="_blank" rel="noopener">Stack backtrace 的实现</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-        <category>C</category>
-        <category>Debug</category>
-        <category>BackTrace</category>
-      </categories>
-      <tags>
-        <tag>stack</tag>
-        <tag>backtrace</tag>
-        <tag>unwind</tag>
       </tags>
   </entry>
   <entry>
@@ -25441,8 +25326,8 @@ libtest.a(rmdec.c.o): warning: defined here</code></pre><h2 id="原因"><a href=
         <category>ubuntu</category>
       </categories>
       <tags>
-        <tag>git</tag>
         <tag>ubuntu</tag>
+        <tag>git</tag>
         <tag>ssh</tag>
       </tags>
   </entry>
@@ -25472,6 +25357,336 @@ libtest.a(rmdec.c.o): warning: defined here</code></pre><h2 id="原因"><a href=
         <tag>linux</tag>
         <tag>jenkins</tag>
         <tag>ci</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>DVB PSI/SI 组成</title>
+    <url>/2021/06/03/dvb-psi-si/</url>
+    <content><![CDATA[<p>DVB PSI 基础知识</p>
+<a id="more"></a>
+
+<h2 id="PSI-SI关键词"><a href="#PSI-SI关键词" class="headerlink" title="PSI/SI关键词"></a>PSI/SI关键词</h2><table>
+<thead>
+<tr>
+<th align="center">序号</th>
+<th align="center">关键字</th>
+<th align="center">全拼</th>
+<th align="center">翻译</th>
+<th align="left">备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1</td>
+<td align="center">PSI</td>
+<td align="center">Program Specific Information</td>
+<td align="center">节目引导信息</td>
+<td align="left">对单一码流的描述</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="center">SI</td>
+<td align="center">Service Information</td>
+<td align="center">业务信息</td>
+<td align="left">对系统中所有码流的描述，包含了PSI（PSI+9张表）</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="center">TS包</td>
+<td align="center">Transport Packet</td>
+<td align="center">传输包</td>
+<td align="left">数字视音频、图文数据打包成TS包</td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td align="center">TS</td>
+<td align="center">Transport Stream</td>
+<td align="center">传输流（TS流）</td>
+<td align="left">一个频道（多个节目及业务）的TS包复用后称TS流</td>
+</tr>
+<tr>
+<td align="center">5</td>
+<td align="center">PAT</td>
+<td align="center">Program Association Table</td>
+<td align="center">节目关联表</td>
+<td align="left">将节目号码和节目映射表PID相关联，获取数据的开始</td>
+</tr>
+<tr>
+<td align="center">6</td>
+<td align="center">PMT</td>
+<td align="center">Program Map Table</td>
+<td align="center">节目映射表</td>
+<td align="left">指定一个或多个节目的PID</td>
+</tr>
+<tr>
+<td align="center">7</td>
+<td align="center">CAT</td>
+<td align="center">Conditional Access Table</td>
+<td align="center">条件接收表</td>
+<td align="left">将一个或多个专用EMM流分别与唯一的PID相关联</td>
+</tr>
+<tr>
+<td align="center">8</td>
+<td align="center">NIT</td>
+<td align="center">Network Information Table</td>
+<td align="center">网络信息表</td>
+<td align="left">描述整个网络，如多少TS流、频点和调制方式等信息</td>
+</tr>
+<tr>
+<td align="center">9</td>
+<td align="center">SDT</td>
+<td align="center">Service Description Table</td>
+<td align="center"><strong>业务</strong>描述表</td>
+<td align="left">包含业务数据（如业务名称、起始时间、持续时间等）</td>
+</tr>
+<tr>
+<td align="center">10</td>
+<td align="center">BAT</td>
+<td align="center">Bouquet Association Table</td>
+<td align="center">业务群关联表</td>
+<td align="left">给出业务群的名称及其业务列表等信息</td>
+</tr>
+<tr>
+<td align="center">11</td>
+<td align="center">EIT</td>
+<td align="center">Event Information Table</td>
+<td align="center"><strong>事件</strong>信息表</td>
+<td align="left">包含事件或节目相关数据，是生成EPG的主要表</td>
+</tr>
+<tr>
+<td align="center">12</td>
+<td align="center">RST</td>
+<td align="center">Running Status Table</td>
+<td align="center">运行状态表</td>
+<td align="left">给出事件的状态（运行/非运行）</td>
+</tr>
+<tr>
+<td align="center">13</td>
+<td align="center">TDT</td>
+<td align="center">Time&amp;Date Table</td>
+<td align="center">时间和日期表</td>
+<td align="left">给出当前事件和日期相关信息，更新频繁</td>
+</tr>
+<tr>
+<td align="center">14</td>
+<td align="center">TOT</td>
+<td align="center">Time Offset Table</td>
+<td align="center">时间偏移表</td>
+<td align="left">给出了当前时间日期与本地时间偏移的信息</td>
+</tr>
+<tr>
+<td align="center">15</td>
+<td align="center">ST</td>
+<td align="center">Stuffing Table</td>
+<td align="center">填充表</td>
+<td align="left">用于使现有的段无效，如在一个传输系统的边界</td>
+</tr>
+<tr>
+<td align="center">16</td>
+<td align="center">SIT</td>
+<td align="center">Stuffing Information Table</td>
+<td align="center">选择信息表</td>
+<td align="left">仅用于码流片段中，如记录的一段码流，包含描述该码流片段业务信息段的地方</td>
+</tr>
+<tr>
+<td align="center">17</td>
+<td align="center">DIT</td>
+<td align="center">Discontinuity Information Table</td>
+<td align="center">间断信息表</td>
+<td align="left">仅用于码流片段，如记录的一段码流中，它将插入到码流片段业务信息间断的地方</td>
+</tr>
+</tbody></table>
+<blockquote>
+<ul>
+<li><code>PAT</code>,<code>PMT</code>,<code>CAT</code>,<code>NIT</code>为<strong>PSI信息</strong>,由<strong>MPEG2标准</strong>定义,NIT是由<strong>SI标准</strong>规定</li>
+<li><code>SDT</code>,<code>BAT</code>,<code>EIT</code>,<code>RST</code>,<code>TDT</code>,<code>TOT</code>,<code>ST</code>,<code>SIT</code>,<code>DIT</code>为<strong>SI信息</strong></li>
+</ul>
+</blockquote>
+<h2 id="业务-Service-与事件-Event"><a href="#业务-Service-与事件-Event" class="headerlink" title="业务(Service)与事件(Event)"></a>业务(Service)与事件(Event)</h2><p><code>业务</code>就是指“频道”，<code>事件</code>就是“节目”.</p>
+<blockquote>
+<p>举个例子：CCTV1是一个频道，也就是我们所说的“业务（Service）”；《新闻联播》是一个节目，也就是我们所说的“事件(Event)”。</p>
+</blockquote>
+<h2 id="SI信息的构成"><a href="#SI信息的构成" class="headerlink" title="SI信息的构成"></a>SI信息的构成</h2><blockquote>
+<p>SI信息内容是按照 <code>network(网络)</code> -&gt; <code>transport strem（传输流）</code> -&gt; <code>service（业务）</code> -&gt; <code>event（事件）</code>的分层顺序描述</p>
+</blockquote>
+<p><img src="/images/dvb/psisi.png" alt=""></p>
+<p>为了能有效地从众多的数据包中组织起SI信息，而使用了很多的标识。有Network_id(网络标识)、 Original_network_id(原始网络标识)、Transport_stream_id(传输流标识)、Service id(业务标识)、eventid_id(事件标识)、Bouquet_id(业务群组标识)。</p>
+<ul>
+<li>一个网络信息由network_id来定位。</li>
+<li>一个TS由network_id、Original_network_id、Transport_stream_id来定位，标明这个流在那个网络播发，它原属那个网络，并给它加上标识。</li>
+<li>一个业务由network_id、Original_network_id、Transport_stream_id、service_id来定位，标明这个业务在那个网络播发，它原属那个网络和那个流，并给它加上标识。这体现在SDT表中。</li>
+<li>一个事件由network_id、Original_network_id、Transport_stream_id、service_id、event_id来定位，标明这个事件在那个网络播发，它原属那个网络和那个流及那个业务，并给它加上标识。这体现在EIT表中。</li>
+</ul>
+<h3 id="SI和SI信息的各种表的PID"><a href="#SI和SI信息的各种表的PID" class="headerlink" title="SI和SI信息的各种表的PID"></a>SI和SI信息的各种表的PID</h3><table>
+<thead>
+<tr>
+<th align="center">Table</th>
+<th align="center">PID</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">PAT</td>
+<td align="center">0x0000</td>
+</tr>
+<tr>
+<td align="center">CAT</td>
+<td align="center">0x0001</td>
+</tr>
+<tr>
+<td align="center">TSDT</td>
+<td align="center">0x0002</td>
+</tr>
+<tr>
+<td align="center">NIT,ST</td>
+<td align="center">0x0010</td>
+</tr>
+<tr>
+<td align="center">SDT,BAT,ST</td>
+<td align="center">0x0011</td>
+</tr>
+<tr>
+<td align="center">EIT,ST</td>
+<td align="center">0x0012</td>
+</tr>
+<tr>
+<td align="center">RST,ST</td>
+<td align="center">0x0013</td>
+</tr>
+<tr>
+<td align="center">TDT,TOT,ST</td>
+<td align="center">0x0014</td>
+</tr>
+<tr>
+<td align="center">DIT</td>
+<td align="center">0x001E</td>
+</tr>
+<tr>
+<td align="center">SIT</td>
+<td align="center">0x001F</td>
+</tr>
+</tbody></table>
+]]></content>
+      <categories>
+        <category>DVB</category>
+      </categories>
+      <tags>
+        <tag>dvb</tag>
+        <tag>psi</tag>
+        <tag>si</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>异步非阻塞I/O</title>
+    <url>/2014/12/15/aio/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<hr>
+<p><strong>专注于用户空间的系统级编程–即内核之上的所有内容。</strong></p>
+<p>对I/O操作的分类主要基于时间和占有两个角度进行划分：<br>从时间角度可分为同步操作和异步操作；<br>从资源占有角度可分为阻塞操作和非阻塞操作。<br>从而UNXI可以构造出4种不同的I/O操作模型：</p>
+<ul>
+<li><strong>同步阻塞I/O</strong></li>
+<li><strong>同步非阻塞I/O</strong></li>
+<li><strong>异步阻塞I/O</strong></li>
+<li><strong>异步非阻塞I/O</strong>，AIO</li>
+</ul>
+<p>AIO是将I/O操作与应用程序的计算操作重叠执行的一种模型，即实现I/O操作与计算操作的有效分离。<br>AIO背后的基本思想是允许进程发起很多I/O操作，而不用阻塞或等待任何操作完成。<br>异步非阻塞I/O模型是一种处理与I/O重叠进行的模型。<br>读请求会立即返回，说明read请求已经成功发起了。<br>在后台完成读操作时，应用程序然后会执行其他处理操作。<br>当read的响应到达时，就会产生一个信号或执行一个基于线程的回调函数来完成这次 I/O 处理过程。</p>
+<p><img src="http://www.myexception.cn/img/2013/08/08/103815107.gif" alt=""></p>
+<p>在一个进程中为了执行多个I/O请求而对计算操作和I/O处理进行重叠处理的能力利用了处理速度与 I/O 速度之间的差异。<br>当一个或多个I/O请求挂起时，CPU可以执行其他任务；<br>或者更为常见的是，在发起其他I/O的同时对已经完成的I/O进行操作。</p>
+<p>AIO在当前Linux下主要有两种AIO实现技术：一种是glibc库函数实现，另一种是Linux内核实现，并由libaio库进行封装</p>
+<p>glibc库中的AIO实现，需要在编译时<code>-lrt</code>：</p>
+<pre><code>#include &lt;aio.h&gt;
+
+//请求异步读操作
+int aio_read(struct aiocb *aiocbp);
+//检查异步请求的状态
+int aio_error(const struct aiocb *aiocbp);
+//获得完成的异步请求的返回状态
+ssize_t aio_return(struct aiocb *aiocbp);
+//请求异步写操作
+int aio_write(struct aiocb *aiocbp);
+//挂起调用进程，直到一个或多个异步请求已经完成（或失败）
+int aio_suspend(const struct aiocb * const aiocb_list[],
+                int nitems, const struct timespec *timeout);
+//取消异步 I/O 请求
+int aio_cancel(int fd, struct aiocb *aiocbp);
+//发起一系列 I/O 操作
+int lio_listio(int mode, struct aiocb *const aiocb_list[],
+                int nitems, struct sigevent *sevp);</code></pre><p>在异步非阻塞I/O中，我们可以同时发起多个传输操作。<br>这需要每个传输操作都有惟一的上下文，<br>这样我们才能在它们完成时区分到底是哪个传输操作完成了。<br>在 AIO 中，这是一个 aiocb（AIO I/O Control Block）结构。<br>这个结构包含了有关传输的所有信息，包括为数据准备的用户缓冲区。<br>在产生 I/O （称为完成）通知时，aiocb 结构就被用来惟一标识所完成的 I/O 操作。<br>定义如下：</p>
+<pre><code>#include &lt;aiocb.h&gt;
+
+struct aiocb {
+    /* The order of these fields is implementation-dependent */
+
+    int             aio_fildes;     /* File descriptor */
+    off_t           aio_offset;     /* File offset */
+    volatile void  *aio_buf;        /* Location of buffer */
+    size_t          aio_nbytes;     /* Length of transfer */
+    int             aio_reqprio;    /* Request priority */
+    struct sigevent aio_sigevent;   /* Notification method */
+    int             aio_lio_opcode; /* Operation to be performed;
+                                    lio_listio() only */
+
+    /* Various implementation-internal fields not shown */
+};</code></pre><p>sigevent 结构告诉 AIO 在 I/O 操作完成时应该执行什么操作。<br>我们将在 AIO 的展示中对这个结构进行探索。<br>现在我们将展示各个 AIO 的 API 函数是如何工作的，以及我们应该如何使用它们。</p>
+<p>AIO通知：通过信号实现异步通知和通过函数回调来实现</p>
+<ol>
+<li><a href="http://blog.csdn.net/yfkiss/article/details/7516589" target="_blank" rel="noopener">网络编程–IO模型示例</a></li>
+<li><a href="http://www.ibm.com/developerworks/cn/linux/l-async/" target="_blank" rel="noopener">使用异步 I/O 大大提高应用程序的性能</a></li>
+<li><a href="http://www.wzxue.com/linux-kernel-aio%E8%BF%99%E4%B8%AA%E5%A5%87%E8%91%A9/" target="_blank" rel="noopener">Linux kernel AIO这个奇葩</a></li>
+<li><a href="http://nicedayyep.iteye.com/blog/89773" target="_blank" rel="noopener">Linux下的服务器开发模型 Epoll和AIO的讨论</a></li>
+<li><a href="http://blog.csdn.net/sparkliang/article/details/4836536" target="_blank" rel="noopener">Epoll vs. IOCP</a></li>
+<li><a href="http://bbs.chinaunix.net/thread-1942420-1-1.html" target="_blank" rel="noopener">异步,epoll和aio</a></li>
+</ol>
+<p>转载：</p>
+<p><strong>异步IO</strong>就是把IO提交给系统，让系统替你做，做完了再用某种方式通知你(通过信号，或者其他异步方式<br>通知，这时候，操作系统已经帮你完成IO操作，具体来说就是你那个作为传入参数的的buffer的指针所指向<br>的空间已经读到了数据或者你的buffer的数据已经写出去了）；</p>
+<p><strong>非阻塞IO</strong>就是你要通过某种方式不定时地向系统询问你是否可以开始做某个IO( 轮询啊 )，当可以开始<br>后，是要自己来完成IO(也就是说还要自己调用一次read来填充buffer或者write来不buffer的数据写出去)；</p>
+<p><strong>epoll和aio（这里的aio是指linux 2.6内核后提供的aio api）区别：</strong></p>
+<p>aio是异步非阻塞的。其实是aio是用线程池实现了异步IO。</p>
+<p>epoll在这方面的定义上有点复杂，首先epoll的fd集里面每一个fd都是非阻塞的，但是epoll（还<br>select poll ）在调用时阻塞等待fd可用，然后epoll只是一个异步通知机制，只是在fd可用时通知你，并<br>没有做任何IO操作，所以不是传统的异步。</p>
+]]></content>
+      <categories>
+        <category>Linux System Programming</category>
+      </categories>
+      <tags>
+        <tag>I/O</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>github push避免输入用户名和密码</title>
+    <url>/2015/03/04/git-push/</url>
+    <content><![CDATA[<p>github上传代码时，每次都需要输入用户名和密码，原因是使用了https方式进行push：</p>
+<pre><code>$ git clone https://github.com/breezetemple/breezetemple.github.com.git</code></pre><p>使用以下命令更换为使用ssh方式：</p>
+<pre><code>$ git remote -v
+origin  https://github.com/breezetemple/breezetemple.github.com.git (fetch)
+origin  https://github.com/breezetemple/breezetemple.github.com.git (push)
+$ git remote rm origin
+$ git remote add origin git@github.com:breezetemple/breezetemple.github.com.git
+$ git push origin master 
+Everything up-to-date</code></pre><p>或者使用如下命令初始化：</p>
+<pre><code>git clone git@github.com:breezetemple/breezetemple.github.com.git</code></pre><p>另外，需要将ssh pub key上传到github：</p>
+<pre><code>$ ls ~/.ssh/id_rsa.pub                
+/home/yanwzh/.ssh/id_rsa.pub
+$ xclip -sel clip &lt; ~/.ssh/id_rsa.pub</code></pre>]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>GitHub</category>
+      </categories>
+      <tags>
+        <tag>git</tag>
+        <tag>github</tag>
       </tags>
   </entry>
   <entry>
@@ -28666,8 +28881,8 @@ net.core.wmem_max = 16777216</code></pre><p>一般来说，<strong>理论上的R
         <category>Linux</category>
         <category>Socket</category>
         <category>Network</category>
-        <category>Tools</category>
         <category>TCP</category>
+        <category>Tools</category>
         <category>Network</category>
       </categories>
       <tags>
@@ -35494,8 +35709,8 @@ rtsp://192.168.128.5/?src=1&amp;fe=1&amp;freq=12720&amp;pol=v&amp;msys=dvbs2&amp
 ]]></content>
       <categories>
         <category>Network</category>
-        <category>Tools</category>
         <category>TCP</category>
+        <category>Tools</category>
         <category>HTTP</category>
         <category>Network</category>
       </categories>
@@ -43804,419 +44019,6 @@ X-User-Agent: redsonic
       </tags>
   </entry>
   <entry>
-    <title>DLNA DMR 和 DMP 分析</title>
-    <url>/2019/03/27/dlna-dmr-and-dmp/</url>
-    <content><![CDATA[<p>使用<code>wireshark</code>抓包分析<code>DMR</code>和<code>DMP</code>实现，包括设备发现、控制、播放等过程</p>
-<a id="more"></a>
-
-<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><ul>
-<li>DMS: <a href="https://help.ubuntu.com/community/MiniDLNA" target="_blank" rel="noopener">minidlna</a></li>
-<li>DMR: <a href="https://github.com/hzeller/gmrender-resurrect.git" target="_blank" rel="noopener">gmrender-resurrect</a></li>
-<li>DMP: <a href="https://github.com/videolan/vlc" target="_blank" rel="noopener">VLC</a></li>
-<li>抓包数据 <a href="https://github.com/breezetemple/Breeze-Vim/blob/master/data/dlna/DLNA-Render.pcapng" target="_blank" rel="noopener">DMR-Wireshark</a></li>
-<li>抓包数据 <a href="https://github.com/breezetemple/Breeze-Vim/blob/master/data/dlna/DLNA-DMP.pcapng" target="_blank" rel="noopener">DMP-Wireshark</a></li>
-</ul>
-<h2 id="DMR-流程"><a href="#DMR-流程" class="headerlink" title="DMR 流程"></a>DMR 流程</h2><p><code>Notify</code>或应答<code>M-SEARCH</code>-&gt;应答<code>GET XML/SCPD</code>-&gt;<code>SOAP ACTION</code>-&gt;<code>GET DATA</code>-&gt;<code>PLAY</code></p>
-<h3 id="DMR-设备入网广播"><a href="#DMR-设备入网广播" class="headerlink" title="DMR 设备入网广播"></a>DMR 设备入网广播</h3><p>使用<code>ssdp:alive</code>通知消息，协议<code>upnpv2.0 1.2</code>，包含三种数据包</p>
-<ol>
-<li>Three discovery messages for the root device.</li>
-<li>Two discovery messages for each embedded device. 可选项，在本次抓包中不存在</li>
-<li>Once for each service type in each device.</li>
-</ol>
-<p>结构如下：</p>
-<p><img src="/images/dlna/1553563823157.png" alt="1553563823157"></p>
-<p><img src="/images/dlna/1553563848007.png" alt="1553563848007"></p>
-<p><img src="/images/dlna/1553563870264.png" alt="1553563870264"></p>
-<p><code>Frame 33-35</code>为表 1 数据，<code>Frame 36-38</code>为表 3 数据，分别为三种<code>service</code></p>
-<ol>
-<li><code>NT: urn:schemas-upnp-org:service:AVTransport:1\r\n</code></li>
-<li><code>NT: urn:schemas-upnp-org:service:ConnectionManager:1\r\n</code></li>
-<li><code>NT: urn:schemas-upnp-org:service:RenderingControl:1\r\n</code></li>
-</ol>
-<p>相关代码：</p>
-<p><code>33-35</code>为<code>libupnp:UpnpSendAdvertisement</code></p>
-<p><code>36-38</code>为<code>libupnp:</code></p>
-<h3 id="DMC-入网搜索设备"><a href="#DMC-入网搜索设备" class="headerlink" title="DMC 入网搜索设备"></a>DMC 入网搜索设备</h3><p>发送<code>M-SEARCH ssdp:discover</code>发现设备，协议<code>upnpv2.0: 1.3</code></p>
-<p><img src="/images/dlna/1553565538242.png" alt="1553565538242"></p>
-<p>应答格式</p>
-<p><img src="/images/dlna/1553565566078.png" alt="1553565566078"></p>
-<p>对应帧为<code>243-253</code>，对应两种<code>ST search target</code></p>
-<ol>
-<li><code>upnp:rootdevice</code>，Search for root devices only.</li>
-<li><code>urn:schemas-upnp-org:device:deviceType:ver</code>，Search for any device of this type where <code>deviceType</code> and<code>ver</code> are defined by the UPnP Forum working committee.<ul>
-<li><code>ST: urn:schemas-upnp-org:device:MediaServer:1\r\n</code></li>
-<li><code>ST: urn:schemas-upnp-org:device:MediaRenderer:1\r\n</code></li>
-</ul>
-</li>
-</ol>
-<p>应答帧<code>Frame 251</code>，信息如下</p>
-<pre><code class="xml">HTTP/1.1 200 OK
-CACHE-CONTROL: max-age=100
-DATE: Tue, 26 Mar 2019 00:57:36 GMT
-EXT:
-LOCATION: http://192.168.199.183:49494/description.xml
-OPT: &quot;http://schemas.upnp.org/upnp/1/0/&quot;; ns=01
-01-NLS: 066fa5e8-4f62-11e9-9d14-bbebc675453c
-SERVER: Linux/4.13.0-45-generic, UPnP/1.0, Portable SDK for UPnP devices/1.6.22
-X-User-Agent: redsonic
-ST: urn:schemas-upnp-org:device:MediaRenderer:1
-USN: uuid:GMediaRender-1_0-000-000-002::urn:schemas-upnp-org:device:MediaRenderer:1</code></pre>
-<h3 id="DMC-获取描述文件"><a href="#DMC-获取描述文件" class="headerlink" title="DMC 获取描述文件"></a>DMC 获取描述文件</h3><p>通过<code>HTTP GET/POST</code>来完成，协议<code>upnp: 2</code></p>
-<p><img src="/images/dlna/1553566959878.png" alt="1553566959878"></p>
-<p><code>Frame 257</code></p>
-<pre><code>GET /description.xml HTTP/1.1
-HOST: 192.168.199.183:49494
-DATE: Tue, 26 Mar 2019 00:57:35 GMT
-CONNECTION: close
-USER-AGENT: Linux/4.4.23+ UPnP/1.0 HUAWEI_iCOS/iCOS V1R1C00 DLNADOC/1.50</code></pre><p>应答帧<code>258-261</code>使用<code>TCP</code>发送数据</p>
-<pre><code>HTTP/1.1 200 OK
-CONTENT-LENGTH: 2073
-CONTENT-TYPE: text/xml
-DATE: Tue, 26 Mar 2019 00:57:36 GMT
-LAST-MODIFIED: Tue, 26 Mar 2019 00:56:44 GMT
-SERVER: Linux/4.13.0-45-generic, UPnP/1.0, Portable SDK for UPnP devices/1.6.22
-X-User-Agent: redsonic
-CONNECTION: close</code></pre><p><code>description.xml</code>如下</p>
-<pre><code class="xml">&lt;root xmlns=&quot;urn:schemas-upnp-org:device-1-0&quot;&gt;
-&lt;specVersion&gt;
-&lt;major&gt;1&lt;/major&gt;
-&lt;minor&gt;0&lt;/minor&gt;
-&lt;/specVersion&gt;
-&lt;device&gt;
-&lt;deviceType&gt;urn:schemas-upnp-org:device:MediaRenderer:1&lt;/deviceType&gt;
-&lt;presentationURL/&gt;
-&lt;friendlyName&gt;My Renderer&lt;/friendlyName&gt;
-&lt;manufacturer&gt;Ivo Clarysse, Henner Zeller&lt;/manufacturer&gt;
-&lt;manufacturerURL&gt;http://github.com/hzeller/gmrender-resurrect&lt;/manufacturerURL&gt;
-&lt;modelDescription&gt;gmediarender 0.0.7-git&lt;/modelDescription&gt;
-&lt;modelName&gt;gmediarender&lt;/modelName&gt;
-&lt;modelNumber&gt;2018-08-18_a7b0b1b&lt;/modelNumber&gt;
-&lt;modelURL&gt;http://github.com/hzeller/gmrender-resurrect&lt;/modelURL&gt;
-&lt;UDN&gt;uuid:GMediaRender-1_0-000-000-002&lt;/UDN&gt;
-&lt;iconList&gt;
-&lt;icon&gt;
-&lt;mimetype&gt;image/png&lt;/mimetype&gt;
-&lt;width&gt;64&lt;/width&gt;
-&lt;height&gt;64&lt;/height&gt;
-&lt;depth&gt;24&lt;/depth&gt;
-&lt;url&gt;/upnp/grender-64x64.png&lt;/url&gt;
-&lt;/icon&gt;
-&lt;icon&gt;
-&lt;mimetype&gt;image/png&lt;/mimetype&gt;
-&lt;width&gt;128&lt;/width&gt;
-&lt;height&gt;128&lt;/height&gt;
-&lt;depth&gt;24&lt;/depth&gt;
-&lt;url&gt;/upnp/grender-128x128.png&lt;/url&gt;
-&lt;/icon&gt;
-&lt;/iconList&gt;
-&lt;serviceList&gt;
-&lt;service&gt;
-&lt;serviceType&gt;urn:schemas-upnp-org:service:AVTransport:1&lt;/serviceType&gt;
-&lt;serviceId&gt;urn:upnp-org:serviceId:AVTransport&lt;/serviceId&gt;
-&lt;SCPDURL&gt;/upnp/rendertransportSCPD.xml&lt;/SCPDURL&gt;
-&lt;controlURL&gt;/upnp/control/rendertransport1&lt;/controlURL&gt;
-&lt;eventSubURL&gt;/upnp/event/rendertransport1&lt;/eventSubURL&gt;
-&lt;/service&gt;
-&lt;service&gt;
-&lt;serviceType&gt;urn:schemas-upnp-org:service:ConnectionManager:1&lt;/serviceType&gt;
-&lt;serviceId&gt;urn:upnp-org:serviceId:ConnectionManager&lt;/serviceId&gt;
-&lt;SCPDURL&gt;/upnp/renderconnmgrSCPD.xml&lt;/SCPDURL&gt;
-&lt;controlURL&gt;/upnp/control/renderconnmgr1&lt;/controlURL&gt;
-&lt;eventSubURL&gt;/upnp/event/renderconnmgr1&lt;/eventSubURL&gt;
-&lt;/service&gt;
-&lt;service&gt;
-&lt;serviceType&gt;urn:schemas-upnp-org:service:RenderingControl:1&lt;/serviceType&gt;
-&lt;serviceId&gt;urn:upnp-org:serviceId:RenderingControl&lt;/serviceId&gt;
-&lt;SCPDURL&gt;/upnp/rendercontrolSCPD.xml&lt;/SCPDURL&gt;
-&lt;controlURL&gt;/upnp/control/rendercontrol1&lt;/controlURL&gt;
-&lt;eventSubURL&gt;/upnp/event/rendercontrol1&lt;/eventSubURL&gt;
-&lt;/service&gt;
-&lt;/serviceList&gt;
-&lt;/device&gt;
-&lt;URLBase&gt;http://192.168.199.183:49494/&lt;/URLBase&gt;
-&lt;/root&gt;</code></pre>
-<p><code>service</code>分析</p>
-<pre><code>&lt;service&gt;
-&lt;serviceType&gt;urn:schemas-upnp-org:service:RenderingControl:1&lt;/serviceType&gt;
-&lt;serviceId&gt;urn:upnp-org:serviceId:RenderingControl&lt;/serviceId&gt;
-&lt;SCPDURL&gt;/upnp/rendercontrolSCPD.xml&lt;/SCPDURL&gt;
-&lt;controlURL&gt;/upnp/control/rendercontrol1&lt;/controlURL&gt;
-&lt;eventSubURL&gt;/upnp/event/rendercontrol1&lt;/eventSubURL&gt;
-&lt;/service&gt;</code></pre><ul>
-<li><code>serviceType</code>: UPnP service type</li>
-<li><code>serviceId</code>: Service identifier</li>
-<li><code>SCPDURL</code>: URL for service description clause 2.5</li>
-<li><code>controlURL</code>: URL for control clause 3</li>
-<li><code>eventSubURL</code>: URL for eventing clause 4</li>
-</ul>
-<p>数据包分析</p>
-<ol>
-<li><code>Frame 282-298</code>获取<code>/upnp/rendertransportSCPD.xml</code></li>
-<li><code>Frame 309-315</code>获取<code>/upnp/renderconnmgrSCPD.xml</code></li>
-<li><code>Frame 325-337</code>获取<code>/upnp/rendercontrolSCPD.xml</code></li>
-</ol>
-<ul>
-<li><a href="https://github.com/breezetemple/Breeze-Vim/blob/master/data/dlna/rendertransportSCPD.xml" target="_blank" rel="noopener">rendertransportSCPD.xml</a></li>
-<li><a href="https://github.com/breezetemple/Breeze-Vim/blob/master/data/dlna/renderconnmgrSCPD.xml" target="_blank" rel="noopener">renderconnmgrSCPD.xml</a></li>
-<li><a href="https://github.com/breezetemple/Breeze-Vim/blob/master/data/dlna/rendercontrolSCPD.xml" target="_blank" rel="noopener">rendercontrolSCPD.xml</a></li>
-</ul>
-<p><code>353</code>订阅消息，<code>upnp2.0： 4.1</code></p>
-<pre><code>SUBSCRIBE /upnp/event/rendertransport1 HTTP/1.1
-HOST: 192.168.199.183:49494
-CALLBACK: &lt;http://192.168.199.114:49153/&gt;
-NT: upnp:event
-TIMEOUT: Second-300
-CONNECTION: close</code></pre><p><code>355</code>为应答</p>
-<pre><code>HTTP/1.1 200 OK
-DATE: Tue, 26 Mar 2019 00:57:37 GMT
-SERVER: Linux/4.13.0-45-generic, UPnP/1.0, Portable SDK for UPnP devices/1.6.22
-CONTENT-LENGTH: 0
-X-User-Agent: redsonic
-SID: uuid:263cbdde-4f62-11e9-9d14-bbebc675453c
-TIMEOUT: Second-300</code></pre><p><code>366</code>发送消息<code>NOTIFY</code>，<code>upnp2.0 4.3.2 Unicast eventing: Event messages: NOTIFY</code></p>
-<pre><code>NOTIFY / HTTP/1.1
-HOST: 192.168.199.114:49153
-CONTENT-TYPE: text/xml; charset=&quot;utf-8&quot;
-CONTENT-LENGTH: 2168
-NT: upnp:event
-NTS: upnp:propchange
-SID: uuid:263cbdde-4f62-11e9-9d14-bbebc675453c
-SEQ: 0
-
-&lt;e:propertyset xmlns:e=&quot;urn:schemas-upnp-org:event-1-0&quot;&gt;
-&lt;e:property&gt;
-&lt;LastChange&gt;&amp;lt;?xml version=&quot;1.0&quot;?&amp;gt;
-&amp;lt;Event xmlns=&quot;urn:schemas-upnp-org:metadata-1-0/AVT/&quot;&amp;gt;
-&amp;lt;InstanceID val=&quot;0&quot;&amp;gt;
-&amp;lt;TransportStatus val=&quot;OK&quot;&amp;gt;&amp;lt;/TransportStatus&amp;gt;
-&amp;lt;NextAVTransportURI val=&quot;&quot;&amp;gt;&amp;lt;/NextAVTransportURI&amp;gt;
-&amp;lt;NextAVTransportURIMetaData val=&quot;&quot;&amp;gt;&amp;lt;/NextAVTransportURIMetaData&amp;gt;
-&amp;lt;CurrentTrackMetaData val=&quot;&quot;&amp;gt;&amp;lt;/CurrentTrackMetaData&amp;gt;
-&amp;lt;RelativeCounterPosition val=&quot;2147483647&quot;&amp;gt;&amp;lt;/RelativeCounterPosition&amp;gt;
-&amp;lt;PlaybackStorageMedium val=&quot;UNKNOWN&quot;&amp;gt;&amp;lt;/PlaybackStorageMedium&amp;gt;
-&amp;lt;RelativeTimePosition val=&quot;0:00:00&quot;&amp;gt;&amp;lt;/RelativeTimePosition&amp;gt;
-&amp;lt;PossibleRecordStorageMedia val=&quot;NOT_IMPLEMENTED&quot;&amp;gt;&amp;lt;/PossibleRecordStorageMedia&amp;gt;
-&amp;lt;CurrentPlayMode val=&quot;NORMAL&quot;&amp;gt;&amp;lt;/CurrentPlayMode&amp;gt;
-&amp;lt;TransportPlaySpeed val=&quot;1&quot;&amp;gt;&amp;lt;/TransportPlaySpeed&amp;gt;
-&amp;lt;PossiblePlaybackStorageMedia val=&quot;NETWORK,UNKNOWN&quot;&amp;gt;&amp;lt;/PossiblePlaybackStorageMedia&amp;gt;
-&amp;lt;AbsoluteTimePosition val=&quot;NOT_IMPLEMENTED&quot;&amp;gt;&amp;lt;/AbsoluteTimePosition&amp;gt;
-&amp;lt;CurrentTrack val=&quot;0&quot;&amp;gt;&amp;lt;/CurrentTrack&amp;gt;
-&amp;lt;CurrentTrackURI val=&quot;&quot;&amp;gt;&amp;lt;/CurrentTrackURI&amp;gt;
-&amp;lt;CurrentTransportActions val=&quot;PLAY&quot;&amp;gt;&amp;lt;/CurrentTransportActions&amp;gt;
-&amp;lt;NumberOfTracks val=&quot;0&quot;&amp;gt;&amp;lt;/NumberOfTracks&amp;gt;
-&amp;lt;AVTransportURI val=&quot;&quot;&amp;gt;&amp;lt;/AVTransportURI&amp;gt;
-&amp;lt;AbsoluteCounterPosition val=&quot;2147483647&quot;&amp;gt;&amp;lt;/AbsoluteCounterPosition&amp;gt;
-&amp;lt;CurrentRecordQualityMode val=&quot;NOT_IMPLEMENTED&quot;&amp;gt;&amp;lt;/CurrentRecordQualityMode&amp;gt;
-&amp;lt;CurrentMediaDuration val=&quot;&quot;&amp;gt;&amp;lt;/CurrentMediaDuration&amp;gt;
-&amp;lt;AVTransportURIMetaData val=&quot;&quot;&amp;gt;&amp;lt;/AVTransportURIMetaData&amp;gt;
-&amp;lt;RecordStorageMedium val=&quot;NOT_IMPLEMENTED&quot;&amp;gt;&amp;lt;/RecordStorageMedium&amp;gt;
-&amp;lt;RecordMediumWriteStatus val=&quot;NOT_IMPLEMENTED&quot;&amp;gt;&amp;lt;/RecordMediumWriteStatus&amp;gt;
-&amp;lt;CurrentTrackDuration val=&quot;0:00:00&quot;&amp;gt;&amp;lt;/CurrentTrackDuration&amp;gt;
-&amp;lt;TransportState val=&quot;STOPPED&quot;&amp;gt;&amp;lt;/TransportState&amp;gt;
-&amp;lt;PossibleRecordQualityModes val=&quot;NOT_IMPLEMENTED&quot;&amp;gt;&amp;lt;/PossibleRecordQualityModes&amp;gt;
-&amp;lt;/InstanceID&amp;gt;
-&amp;lt;/Event&amp;gt;
-&lt;/LastChange&gt;
-&lt;/e:property&gt;
-&lt;/e:propertyset&gt;</code></pre><p><code>511</code>发送<code>SOAPACTION</code></p>
-<pre><code>POST /upnp/control/rendertransport1 HTTP/1.1
-HOST: 192.168.199.183:49494
-Content-Length: 264
-CONTENT-TYPE: text/xml; charset=&quot;utf-8&quot;
-SOAPACTION: &quot;urn:schemas-upnp-org:service:AVTransport:1#Stop&quot;
-USER-AGENT: Linux/4.4.23+ UPnP/1.0 HUAWEI_iCOS/iCOS V1R1C00 DLNADOC/1.50
-CONNECTION: close
-
-&lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;
-&lt;s:Body&gt;&lt;u:Stop xmlns:u=&quot;urn:schemas-upnp-org:service:AVTransport:1&quot;&gt;
-&lt;InstanceID&gt;0&lt;/InstanceID&gt;
-&lt;/u:Stop&gt;
-&lt;/s:Body&gt;
-&lt;/s:Envelope&gt;</code></pre><p><code>521</code></p>
-<pre><code>POST /upnp/control/rendertransport1 HTTP/1.1
-HOST: 192.168.199.183:49494
-Content-Length: 1168
-CONTENT-TYPE: text/xml; charset=&quot;utf-8&quot;
-SOAPACTION: &quot;urn:schemas-upnp-org:service:AVTransport:1#SetAVTransportURI&quot;
-USER-AGENT: Linux/4.4.23+ UPnP/1.0 HUAWEI_iCOS/iCOS V1R1C00 DLNADOC/1.50
-CONNECTION: close
-
-&lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;
-&lt;s:Body&gt;&lt;u:SetAVTransportURI xmlns:u=&quot;urn:schemas-upnp-org:service:AVTransport:1&quot;&gt;
-&lt;InstanceID&gt;0&lt;/InstanceID&gt;
-&lt;CurrentURI&gt;http://192.168.199.114:49152/upnp/service/local/98070551/0/0.jpg&lt;/CurrentURI&gt;
-&lt;CurrentURIMetaData&gt;&amp;lt;DIDL-Lite xmlns=&amp;quot;urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/&amp;quot; xmlns:dc=&amp;quot;http://purl.org/dc/elements/1.1/&amp;quot; xmlns:upnp=&amp;quot;urn:schemas-upnp-org:metadata-1-0/upnp/&amp;quot; xmlns:dlna=&amp;quot;urn:schemas-dlna-org:metadata-1-0/&amp;quot; xmlns:huawei=&amp;quot;urn:schemas-upnp-org:metadata-1-0/upnp/huawei/&amp;quot;&amp;gt;&amp;lt;item id=&amp;quot;0&amp;quot; parentID=&amp;quot;-1&amp;quot; restricted=&amp;quot;1&amp;quot;&amp;gt;&amp;lt;dc:title&amp;gt;dlna_default_image&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res protocolInfo=&amp;quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_OP=01&amp;quot; size=&amp;quot;501872&amp;quot;&amp;gt;http://192.168.199.114:49152/upnp/service/local/98070551/0/0.jpg&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;/DIDL-Lite&amp;gt;&lt;/CurrentURIMetaData&gt;
-&lt;/u:SetAVTransportURI&gt;
-&lt;/s:Body&gt;
-&lt;/s:Envelope&gt;</code></pre><p><code>533 EVENT NOTIFY</code></p>
-<p><code>541 PLAY</code></p>
-<pre><code>POST /upnp/control/rendertransport1 HTTP/1.1
-HOST: 192.168.199.183:49494
-Content-Length: 282
-CONTENT-TYPE: text/xml; charset=&quot;utf-8&quot;
-SOAPACTION: &quot;urn:schemas-upnp-org:service:AVTransport:1#Play&quot;
-USER-AGENT: Linux/4.4.23+ UPnP/1.0 HUAWEI_iCOS/iCOS V1R1C00 DLNADOC/1.50
-CONNECTION: close
-
-&lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;
-&lt;s:Body&gt;&lt;u:Play xmlns:u=&quot;urn:schemas-upnp-org:service:AVTransport:1&quot;&gt;
-&lt;InstanceID&gt;0&lt;/InstanceID&gt;
-&lt;Speed&gt;1&lt;/Speed&gt;
-&lt;/u:Play&gt;
-&lt;/s:Body&gt;
-&lt;/s:Envelope&gt;</code></pre><p><code>565 DMR 获取图片数据</code></p>
-<pre><code>GET /upnp/service/local/98070551/0/0.jpg HTTP/1.1
-Host: 192.168.199.114:49152
-Connection: close
-icy-metadata: 1
-User-Agent: GStreamer souphttpsrc 1.12.3 libsoup/2.60.1</code></pre><h3 id="切换节目"><a href="#切换节目" class="headerlink" title="切换节目"></a>切换节目</h3><p><code>1514：STOP</code></p>
-<p><code>1524：SOAPACTION: &quot;urn:schemas-upnp-org:service:AVTransport:1#SetAVTransportURI&quot;\r\n</code></p>
-<p><code>1544：SOAPACTION: &quot;urn:schemas-upnp-org:service:AVTransport:1#Play&quot;\r\n</code></p>
-<p><code>1563 GET Video</code></p>
-<h2 id="DMP-抓包分析"><a href="#DMP-抓包分析" class="headerlink" title="DMP 抓包分析"></a>DMP 抓包分析</h2><p>大致流程<code>discover</code>-&gt;<code>description</code>-&gt;<code>post soapaction</code>-&gt;<code>get Data</code>-&gt;<code>Play</code></p>
-<h3 id="Discover"><a href="#Discover" class="headerlink" title="Discover"></a>Discover</h3><p><code>DMP</code>即<code>client</code>发送<code>M-SEARCH ssdp:discover</code>来发现<code>server</code>，<code>Frame270</code></p>
-<pre><code>M-SEARCH * HTTP/1.1
-HOST: 239.255.255.250:1900
-MAN: &quot;ssdp:discover&quot;
-MX: 5
-ST: urn:schemas-upnp-org:device:MediaServer:1</code></pre><p>相关代码<code>libupnp:UpnpSearchAsync</code>，<code>vlc</code>有相关实现，应答如下，<code>Frame271</code></p>
-<pre><code>HTTP/1.1 200 OK
-CACHE-CONTROL: max-age=1810
-DATE: Tue, 26 Mar 2019 03:25:52 GMT
-ST: urn:schemas-upnp-org:device:MediaServer:1
-USN: uuid:4d696e69-444c-164e-9d41-28d2446289b1::urn:schemas-upnp-org:device:MediaServer:1
-EXT:
-SERVER: 4.13.0-37-generic DLNADOC/1.50 UPnP/1.0 MiniDLNA/1.2.1
-LOCATION: http://192.168.199.183:8200/rootDesc.xml
-Content-Length: 0</code></pre><h3 id="Description"><a href="#Description" class="headerlink" title="Description"></a>Description</h3><p>根据<code>LOACTION</code>获取描述文件，请求如下，<code>Frame275</code></p>
-<pre><code>GET /rootDesc.xml HTTP/1.1
-HOST: 192.168.199.183:8200
-DATE: Tue, 26 Mar 2019 03:25:51 GMT
-CONNECTION: close
-USER-AGENT: Linux/4.4.23+, UPnP/1.0, Portable SDK for UPnP devices/1.6.19</code></pre><p>应答中传输描述文件，如下</p>
-<pre><code class="xml">&lt;root xmlns=&quot;urn:schemas-upnp-org:device-1-0&quot;&gt;
-&lt;specVersion&gt;
-&lt;major&gt;1&lt;/major&gt;
-&lt;minor&gt;0&lt;/minor&gt;
-&lt;/specVersion&gt;
-&lt;device&gt;
-&lt;deviceType&gt;urn:schemas-upnp-org:device:MediaServer:1&lt;/deviceType&gt;
-&lt;friendlyName&gt;My DLNA XXX&lt;/friendlyName&gt;
-&lt;manufacturer&gt;Justin Maggard&lt;/manufacturer&gt;
-&lt;manufacturerURL&gt;http://www.netgear.com/&lt;/manufacturerURL&gt;
-&lt;modelDescription&gt;MiniDLNA on Linux&lt;/modelDescription&gt;
-&lt;modelName&gt;Windows Media Connect compatible (MiniDLNA)&lt;/modelName&gt;
-&lt;modelNumber&gt;1&lt;/modelNumber&gt;
-&lt;modelURL&gt;http://www.netgear.com&lt;/modelURL&gt;
-&lt;serialNumber&gt;12345678&lt;/serialNumber&gt;
-&lt;UDN&gt;uuid:4d696e69-444c-164e-9d41-28d2446289b1&lt;/UDN&gt;
-&lt;dlna:X_DLNADOC xmlns:dlna=&quot;urn:schemas-dlna-org:device-1-0&quot;&gt;DMS-1.50&lt;/dlna:X_DLNADOC&gt;
-&lt;presentationURL&gt;/&lt;/presentationURL&gt;
-&lt;iconList&gt;
-&lt;icon&gt;
-&lt;mimetype&gt;image/png&lt;/mimetype&gt;
-&lt;width&gt;48&lt;/width&gt;
-&lt;height&gt;48&lt;/height&gt;
-&lt;depth&gt;24&lt;/depth&gt;
-&lt;url&gt;/icons/sm.png&lt;/url&gt;
-&lt;/icon&gt;
-&lt;icon&gt;
-&lt;mimetype&gt;image/png&lt;/mimetype&gt;
-&lt;width&gt;120&lt;/width&gt;
-&lt;height&gt;120&lt;/height&gt;
-&lt;depth&gt;24&lt;/depth&gt;
-&lt;url&gt;/icons/lrg.png&lt;/url&gt;
-&lt;/icon&gt;
-&lt;icon&gt;
-&lt;mimetype&gt;image/jpeg&lt;/mimetype&gt;
-&lt;width&gt;48&lt;/width&gt;
-&lt;height&gt;48&lt;/height&gt;
-&lt;depth&gt;24&lt;/depth&gt;
-&lt;url&gt;/icons/sm.jpg&lt;/url&gt;
-&lt;/icon&gt;
-&lt;icon&gt;
-&lt;mimetype&gt;image/jpeg&lt;/mimetype&gt;
-&lt;width&gt;120&lt;/width&gt;
-&lt;height&gt;120&lt;/height&gt;
-&lt;depth&gt;24&lt;/depth&gt;
-&lt;url&gt;/icons/lrg.jpg&lt;/url&gt;
-&lt;/icon&gt;
-&lt;/iconList&gt;
-&lt;serviceList&gt;
-&lt;service&gt;
-&lt;serviceType&gt;urn:schemas-upnp-org:service:ContentDirectory:1&lt;/serviceType&gt;
-&lt;serviceId&gt;urn:upnp-org:serviceId:ContentDirectory&lt;/serviceId&gt;
-&lt;controlURL&gt;/ctl/ContentDir&lt;/controlURL&gt;
-&lt;eventSubURL&gt;/evt/ContentDir&lt;/eventSubURL&gt;
-&lt;SCPDURL&gt;/ContentDir.xml&lt;/SCPDURL&gt;
-&lt;/service&gt;
-&lt;service&gt;
-&lt;serviceType&gt;urn:schemas-upnp-org:service:ConnectionManager:1&lt;/serviceType&gt;
-&lt;serviceId&gt;urn:upnp-org:serviceId:ConnectionManager&lt;/serviceId&gt;
-&lt;controlURL&gt;/ctl/ConnectionMgr&lt;/controlURL&gt;
-&lt;eventSubURL&gt;/evt/ConnectionMgr&lt;/eventSubURL&gt;
-&lt;SCPDURL&gt;/ConnectionMgr.xml&lt;/SCPDURL&gt;
-&lt;/service&gt;
-&lt;service&gt;
-&lt;serviceType&gt;
-urn:microsoft.com:service:X_MS_MediaReceiverRegistrar:1
-&lt;/serviceType&gt;
-&lt;serviceId&gt;
-urn:microsoft.com:serviceId:X_MS_MediaReceiverRegistrar
-&lt;/serviceId&gt;
-&lt;controlURL&gt;/ctl/X_MS_MediaReceiverRegistrar&lt;/controlURL&gt;
-&lt;eventSubURL&gt;/evt/X_MS_MediaReceiverRegistrar&lt;/eventSubURL&gt;
-&lt;SCPDURL&gt;/X_MS_MediaReceiverRegistrar.xml&lt;/SCPDURL&gt;
-&lt;/service&gt;
-&lt;/serviceList&gt;
-&lt;/device&gt;
-&lt;/root&gt;</code></pre>
-<h3 id="POST-SOAPACTION"><a href="#POST-SOAPACTION" class="headerlink" title="POST SOAPACTION"></a>POST SOAPACTION</h3><p>根据<code>xml</code>中描述的<code>service</code>选择相关操作，例如操作文件夹请求如下，<code>Frame335</code></p>
-<pre><code>POST /ctl/ContentDir HTTP/1.1
-HOST: 192.168.199.183:8200
-CONTENT-LENGTH: 440
-CONTENT-TYPE: text/xml; charset=&quot;utf-8&quot;
-SOAPACTION: &quot;urn:schemas-upnp-org:service:ContentDirectory:1#Browse&quot;
-USER-AGENT: Linux/4.4.23+, UPnP/1.0, Portable SDK for UPnP devices/1.6.19
-
-&lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;
-&lt;s:Body&gt;&lt;u:Browse xmlns:u=&quot;urn:schemas-upnp-org:service:ContentDirectory:1&quot;&gt;
-&lt;ObjectID&gt;0&lt;/ObjectID&gt;
-&lt;BrowseFlag&gt;BrowseDirectChildren&lt;/BrowseFlag&gt;
-&lt;Filter&gt;*&lt;/Filter&gt;
-&lt;StartingIndex&gt;0&lt;/StartingIndex&gt;
-&lt;RequestedCount&gt;5000&lt;/RequestedCount&gt;
-&lt;SortCriteria&gt;&lt;/SortCriteria&gt;
-&lt;/u:Browse&gt;
-&lt;/s:Body&gt;
-&lt;/s:Envelope&gt;</code></pre><p><code>Frame 442-569</code>为翻到文件夹最底层，会传输大量图片数据上来</p>
-<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
-&lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;&lt;s:Body&gt;&lt;u:BrowseResponse xmlns:u=&quot;urn:schemas-upnp-org:service:ContentDirectory:1&quot;&gt;&lt;Result&gt;&amp;lt;DIDL-Lite xmlns:dc=&quot;http://purl.org/dc/elements/1.1/&quot; xmlns:upnp=&quot;urn:schemas-upnp-org:metadata-1-0/upnp/&quot; xmlns=&quot;urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/&quot; xmlns:dlna=&quot;urn:schemas-dlna-org:metadata-1-0/&quot;&amp;gt;
-&amp;lt;item id=&quot;3$FF0$64$13$B&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$B&quot;&amp;gt;&amp;lt;dc:title&amp;gt;543161&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;532088&quot; resolution=&quot;2048x1345&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25615.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x575&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25615.jpg?width=1024,height=575&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x359&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25615.jpg?width=640,height=359&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x89&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25615.jpg?width=160,height=89&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$2B&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$2B&quot;&amp;gt;&amp;lt;dc:title&amp;gt;543159&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;461737&quot; resolution=&quot;1920x1260&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25616.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x671&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25616.jpg?width=1024,height=671&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x419&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25616.jpg?width=640,height=419&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x104&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25616.jpg?width=160,height=104&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$2D&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$2D&quot;&amp;gt;&amp;lt;dc:title&amp;gt;543117&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;674720&quot; resolution=&quot;2880x1800&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25618.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x639&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25618.jpg?width=1024,height=639&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x399&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25618.jpg?width=640,height=399&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x98&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25618.jpg?width=160,height=98&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$2F&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$2F&quot;&amp;gt;&amp;lt;dc:title&amp;gt;543019&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;753825&quot; resolution=&quot;1920x1200&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25620.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x639&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25620.jpg?width=1024,height=639&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x399&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25620.jpg?width=640,height=399&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x99&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25620.jpg?width=160,height=99&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$31&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$31&quot;&amp;gt;&amp;lt;dc:title&amp;gt;543128&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;836038&quot; resolution=&quot;2048x1325&quot;  protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25603.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x681&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25603.jpg?width=1024,height=681&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x426&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25603.jpg?width=640,height=426&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x106&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25603.jpg?width=160,height=106&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$21&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$21&quot;&amp;gt;&amp;lt;dc:title&amp;gt;542965&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;1726194&quot; resolution=&quot;1920x1200&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25606.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x639&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25606.jpg?width=1024,height=639&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x399&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25606.jpg?width=640,height=399&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x99&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25606.jpg?width=160,height=99&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$23&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$23&quot;&amp;gt;&amp;lt;dc:title&amp;gt;542998&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;2904437&quot; resolution=&quot;1920x1200&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25608.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x639&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25608.jpg?width=1024,height=639&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x399&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25608.jpg?width=640,height=399&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x99&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25608.jpg?width=160,height=99&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$2C&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$2C&quot;&amp;gt;&amp;lt;dc:title&amp;gt;542934&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;1098202&quot; resolution=&quot;2048x1360&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25617.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x680&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25617.jpg?width=1024,height=680&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x425&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25617.jpg?width=640,height=425&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x106&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25617.jpg?width=160,height=106&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$2E&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$2E&quot;&amp;gt;&amp;lt;dc:title&amp;gt;542994&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;970686&quot; resolution=&quot;1920x1200&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25619.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x639&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25619.jpg?width=1024,height=639&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x399&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25619.jpg?width=640,height=399&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x99&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25619.jpg?width=160,height=99&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;/DIDL-Lite&amp;gt;&lt;/Result&gt;
-&lt;NumberReturned&gt;50&lt;/NumberReturned&gt;
-&lt;TotalMatches&gt;50&lt;/TotalMatches&gt;
-&lt;UpdateID&gt;1&lt;/UpdateID&gt;&lt;/u:BrowseResponse&gt;&lt;/s:Body&gt;&lt;/s:Envelope&gt;</code></pre>
-<p>播放某个具体图片请求，<code>Frame 755</code></p>
-<pre><code>GET /MediaItems/25602.jpg HTTP/1.1
-Host: 192.168.199.183:8200
-Accept: */*
-Accept-Language: en_US
-User-Agent: VLC/3.0.4 LibVLC/3.0.4
-Range: bytes=0-</code></pre>]]></content>
-      <categories>
-        <category>Network</category>
-        <category>UPnP</category>
-      </categories>
-      <tags>
-        <tag>upnp</tag>
-        <tag>dlna</tag>
-        <tag>ssdp</tag>
-        <tag>soap</tag>
-        <tag>dmr</tag>
-        <tag>dmp</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>openssl 和 wolfssl 及交叉编译移植</title>
     <url>/2019/04/03/cros-compile-openssl-and-wolfssl/</url>
     <content><![CDATA[<p>嵌入式方案中使用<code>openssl</code>以及<code>wolfssl</code>记录</p>
@@ -44656,6 +44458,419 @@ $ tree -L 2
       <tags>
         <tag>openssl</tag>
         <tag>wolfssl</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>DLNA DMR 和 DMP 分析</title>
+    <url>/2019/03/27/dlna-dmr-and-dmp/</url>
+    <content><![CDATA[<p>使用<code>wireshark</code>抓包分析<code>DMR</code>和<code>DMP</code>实现，包括设备发现、控制、播放等过程</p>
+<a id="more"></a>
+
+<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><ul>
+<li>DMS: <a href="https://help.ubuntu.com/community/MiniDLNA" target="_blank" rel="noopener">minidlna</a></li>
+<li>DMR: <a href="https://github.com/hzeller/gmrender-resurrect.git" target="_blank" rel="noopener">gmrender-resurrect</a></li>
+<li>DMP: <a href="https://github.com/videolan/vlc" target="_blank" rel="noopener">VLC</a></li>
+<li>抓包数据 <a href="https://github.com/breezetemple/Breeze-Vim/blob/master/data/dlna/DLNA-Render.pcapng" target="_blank" rel="noopener">DMR-Wireshark</a></li>
+<li>抓包数据 <a href="https://github.com/breezetemple/Breeze-Vim/blob/master/data/dlna/DLNA-DMP.pcapng" target="_blank" rel="noopener">DMP-Wireshark</a></li>
+</ul>
+<h2 id="DMR-流程"><a href="#DMR-流程" class="headerlink" title="DMR 流程"></a>DMR 流程</h2><p><code>Notify</code>或应答<code>M-SEARCH</code>-&gt;应答<code>GET XML/SCPD</code>-&gt;<code>SOAP ACTION</code>-&gt;<code>GET DATA</code>-&gt;<code>PLAY</code></p>
+<h3 id="DMR-设备入网广播"><a href="#DMR-设备入网广播" class="headerlink" title="DMR 设备入网广播"></a>DMR 设备入网广播</h3><p>使用<code>ssdp:alive</code>通知消息，协议<code>upnpv2.0 1.2</code>，包含三种数据包</p>
+<ol>
+<li>Three discovery messages for the root device.</li>
+<li>Two discovery messages for each embedded device. 可选项，在本次抓包中不存在</li>
+<li>Once for each service type in each device.</li>
+</ol>
+<p>结构如下：</p>
+<p><img src="/images/dlna/1553563823157.png" alt="1553563823157"></p>
+<p><img src="/images/dlna/1553563848007.png" alt="1553563848007"></p>
+<p><img src="/images/dlna/1553563870264.png" alt="1553563870264"></p>
+<p><code>Frame 33-35</code>为表 1 数据，<code>Frame 36-38</code>为表 3 数据，分别为三种<code>service</code></p>
+<ol>
+<li><code>NT: urn:schemas-upnp-org:service:AVTransport:1\r\n</code></li>
+<li><code>NT: urn:schemas-upnp-org:service:ConnectionManager:1\r\n</code></li>
+<li><code>NT: urn:schemas-upnp-org:service:RenderingControl:1\r\n</code></li>
+</ol>
+<p>相关代码：</p>
+<p><code>33-35</code>为<code>libupnp:UpnpSendAdvertisement</code></p>
+<p><code>36-38</code>为<code>libupnp:</code></p>
+<h3 id="DMC-入网搜索设备"><a href="#DMC-入网搜索设备" class="headerlink" title="DMC 入网搜索设备"></a>DMC 入网搜索设备</h3><p>发送<code>M-SEARCH ssdp:discover</code>发现设备，协议<code>upnpv2.0: 1.3</code></p>
+<p><img src="/images/dlna/1553565538242.png" alt="1553565538242"></p>
+<p>应答格式</p>
+<p><img src="/images/dlna/1553565566078.png" alt="1553565566078"></p>
+<p>对应帧为<code>243-253</code>，对应两种<code>ST search target</code></p>
+<ol>
+<li><code>upnp:rootdevice</code>，Search for root devices only.</li>
+<li><code>urn:schemas-upnp-org:device:deviceType:ver</code>，Search for any device of this type where <code>deviceType</code> and<code>ver</code> are defined by the UPnP Forum working committee.<ul>
+<li><code>ST: urn:schemas-upnp-org:device:MediaServer:1\r\n</code></li>
+<li><code>ST: urn:schemas-upnp-org:device:MediaRenderer:1\r\n</code></li>
+</ul>
+</li>
+</ol>
+<p>应答帧<code>Frame 251</code>，信息如下</p>
+<pre><code class="xml">HTTP/1.1 200 OK
+CACHE-CONTROL: max-age=100
+DATE: Tue, 26 Mar 2019 00:57:36 GMT
+EXT:
+LOCATION: http://192.168.199.183:49494/description.xml
+OPT: &quot;http://schemas.upnp.org/upnp/1/0/&quot;; ns=01
+01-NLS: 066fa5e8-4f62-11e9-9d14-bbebc675453c
+SERVER: Linux/4.13.0-45-generic, UPnP/1.0, Portable SDK for UPnP devices/1.6.22
+X-User-Agent: redsonic
+ST: urn:schemas-upnp-org:device:MediaRenderer:1
+USN: uuid:GMediaRender-1_0-000-000-002::urn:schemas-upnp-org:device:MediaRenderer:1</code></pre>
+<h3 id="DMC-获取描述文件"><a href="#DMC-获取描述文件" class="headerlink" title="DMC 获取描述文件"></a>DMC 获取描述文件</h3><p>通过<code>HTTP GET/POST</code>来完成，协议<code>upnp: 2</code></p>
+<p><img src="/images/dlna/1553566959878.png" alt="1553566959878"></p>
+<p><code>Frame 257</code></p>
+<pre><code>GET /description.xml HTTP/1.1
+HOST: 192.168.199.183:49494
+DATE: Tue, 26 Mar 2019 00:57:35 GMT
+CONNECTION: close
+USER-AGENT: Linux/4.4.23+ UPnP/1.0 HUAWEI_iCOS/iCOS V1R1C00 DLNADOC/1.50</code></pre><p>应答帧<code>258-261</code>使用<code>TCP</code>发送数据</p>
+<pre><code>HTTP/1.1 200 OK
+CONTENT-LENGTH: 2073
+CONTENT-TYPE: text/xml
+DATE: Tue, 26 Mar 2019 00:57:36 GMT
+LAST-MODIFIED: Tue, 26 Mar 2019 00:56:44 GMT
+SERVER: Linux/4.13.0-45-generic, UPnP/1.0, Portable SDK for UPnP devices/1.6.22
+X-User-Agent: redsonic
+CONNECTION: close</code></pre><p><code>description.xml</code>如下</p>
+<pre><code class="xml">&lt;root xmlns=&quot;urn:schemas-upnp-org:device-1-0&quot;&gt;
+&lt;specVersion&gt;
+&lt;major&gt;1&lt;/major&gt;
+&lt;minor&gt;0&lt;/minor&gt;
+&lt;/specVersion&gt;
+&lt;device&gt;
+&lt;deviceType&gt;urn:schemas-upnp-org:device:MediaRenderer:1&lt;/deviceType&gt;
+&lt;presentationURL/&gt;
+&lt;friendlyName&gt;My Renderer&lt;/friendlyName&gt;
+&lt;manufacturer&gt;Ivo Clarysse, Henner Zeller&lt;/manufacturer&gt;
+&lt;manufacturerURL&gt;http://github.com/hzeller/gmrender-resurrect&lt;/manufacturerURL&gt;
+&lt;modelDescription&gt;gmediarender 0.0.7-git&lt;/modelDescription&gt;
+&lt;modelName&gt;gmediarender&lt;/modelName&gt;
+&lt;modelNumber&gt;2018-08-18_a7b0b1b&lt;/modelNumber&gt;
+&lt;modelURL&gt;http://github.com/hzeller/gmrender-resurrect&lt;/modelURL&gt;
+&lt;UDN&gt;uuid:GMediaRender-1_0-000-000-002&lt;/UDN&gt;
+&lt;iconList&gt;
+&lt;icon&gt;
+&lt;mimetype&gt;image/png&lt;/mimetype&gt;
+&lt;width&gt;64&lt;/width&gt;
+&lt;height&gt;64&lt;/height&gt;
+&lt;depth&gt;24&lt;/depth&gt;
+&lt;url&gt;/upnp/grender-64x64.png&lt;/url&gt;
+&lt;/icon&gt;
+&lt;icon&gt;
+&lt;mimetype&gt;image/png&lt;/mimetype&gt;
+&lt;width&gt;128&lt;/width&gt;
+&lt;height&gt;128&lt;/height&gt;
+&lt;depth&gt;24&lt;/depth&gt;
+&lt;url&gt;/upnp/grender-128x128.png&lt;/url&gt;
+&lt;/icon&gt;
+&lt;/iconList&gt;
+&lt;serviceList&gt;
+&lt;service&gt;
+&lt;serviceType&gt;urn:schemas-upnp-org:service:AVTransport:1&lt;/serviceType&gt;
+&lt;serviceId&gt;urn:upnp-org:serviceId:AVTransport&lt;/serviceId&gt;
+&lt;SCPDURL&gt;/upnp/rendertransportSCPD.xml&lt;/SCPDURL&gt;
+&lt;controlURL&gt;/upnp/control/rendertransport1&lt;/controlURL&gt;
+&lt;eventSubURL&gt;/upnp/event/rendertransport1&lt;/eventSubURL&gt;
+&lt;/service&gt;
+&lt;service&gt;
+&lt;serviceType&gt;urn:schemas-upnp-org:service:ConnectionManager:1&lt;/serviceType&gt;
+&lt;serviceId&gt;urn:upnp-org:serviceId:ConnectionManager&lt;/serviceId&gt;
+&lt;SCPDURL&gt;/upnp/renderconnmgrSCPD.xml&lt;/SCPDURL&gt;
+&lt;controlURL&gt;/upnp/control/renderconnmgr1&lt;/controlURL&gt;
+&lt;eventSubURL&gt;/upnp/event/renderconnmgr1&lt;/eventSubURL&gt;
+&lt;/service&gt;
+&lt;service&gt;
+&lt;serviceType&gt;urn:schemas-upnp-org:service:RenderingControl:1&lt;/serviceType&gt;
+&lt;serviceId&gt;urn:upnp-org:serviceId:RenderingControl&lt;/serviceId&gt;
+&lt;SCPDURL&gt;/upnp/rendercontrolSCPD.xml&lt;/SCPDURL&gt;
+&lt;controlURL&gt;/upnp/control/rendercontrol1&lt;/controlURL&gt;
+&lt;eventSubURL&gt;/upnp/event/rendercontrol1&lt;/eventSubURL&gt;
+&lt;/service&gt;
+&lt;/serviceList&gt;
+&lt;/device&gt;
+&lt;URLBase&gt;http://192.168.199.183:49494/&lt;/URLBase&gt;
+&lt;/root&gt;</code></pre>
+<p><code>service</code>分析</p>
+<pre><code>&lt;service&gt;
+&lt;serviceType&gt;urn:schemas-upnp-org:service:RenderingControl:1&lt;/serviceType&gt;
+&lt;serviceId&gt;urn:upnp-org:serviceId:RenderingControl&lt;/serviceId&gt;
+&lt;SCPDURL&gt;/upnp/rendercontrolSCPD.xml&lt;/SCPDURL&gt;
+&lt;controlURL&gt;/upnp/control/rendercontrol1&lt;/controlURL&gt;
+&lt;eventSubURL&gt;/upnp/event/rendercontrol1&lt;/eventSubURL&gt;
+&lt;/service&gt;</code></pre><ul>
+<li><code>serviceType</code>: UPnP service type</li>
+<li><code>serviceId</code>: Service identifier</li>
+<li><code>SCPDURL</code>: URL for service description clause 2.5</li>
+<li><code>controlURL</code>: URL for control clause 3</li>
+<li><code>eventSubURL</code>: URL for eventing clause 4</li>
+</ul>
+<p>数据包分析</p>
+<ol>
+<li><code>Frame 282-298</code>获取<code>/upnp/rendertransportSCPD.xml</code></li>
+<li><code>Frame 309-315</code>获取<code>/upnp/renderconnmgrSCPD.xml</code></li>
+<li><code>Frame 325-337</code>获取<code>/upnp/rendercontrolSCPD.xml</code></li>
+</ol>
+<ul>
+<li><a href="https://github.com/breezetemple/Breeze-Vim/blob/master/data/dlna/rendertransportSCPD.xml" target="_blank" rel="noopener">rendertransportSCPD.xml</a></li>
+<li><a href="https://github.com/breezetemple/Breeze-Vim/blob/master/data/dlna/renderconnmgrSCPD.xml" target="_blank" rel="noopener">renderconnmgrSCPD.xml</a></li>
+<li><a href="https://github.com/breezetemple/Breeze-Vim/blob/master/data/dlna/rendercontrolSCPD.xml" target="_blank" rel="noopener">rendercontrolSCPD.xml</a></li>
+</ul>
+<p><code>353</code>订阅消息，<code>upnp2.0： 4.1</code></p>
+<pre><code>SUBSCRIBE /upnp/event/rendertransport1 HTTP/1.1
+HOST: 192.168.199.183:49494
+CALLBACK: &lt;http://192.168.199.114:49153/&gt;
+NT: upnp:event
+TIMEOUT: Second-300
+CONNECTION: close</code></pre><p><code>355</code>为应答</p>
+<pre><code>HTTP/1.1 200 OK
+DATE: Tue, 26 Mar 2019 00:57:37 GMT
+SERVER: Linux/4.13.0-45-generic, UPnP/1.0, Portable SDK for UPnP devices/1.6.22
+CONTENT-LENGTH: 0
+X-User-Agent: redsonic
+SID: uuid:263cbdde-4f62-11e9-9d14-bbebc675453c
+TIMEOUT: Second-300</code></pre><p><code>366</code>发送消息<code>NOTIFY</code>，<code>upnp2.0 4.3.2 Unicast eventing: Event messages: NOTIFY</code></p>
+<pre><code>NOTIFY / HTTP/1.1
+HOST: 192.168.199.114:49153
+CONTENT-TYPE: text/xml; charset=&quot;utf-8&quot;
+CONTENT-LENGTH: 2168
+NT: upnp:event
+NTS: upnp:propchange
+SID: uuid:263cbdde-4f62-11e9-9d14-bbebc675453c
+SEQ: 0
+
+&lt;e:propertyset xmlns:e=&quot;urn:schemas-upnp-org:event-1-0&quot;&gt;
+&lt;e:property&gt;
+&lt;LastChange&gt;&amp;lt;?xml version=&quot;1.0&quot;?&amp;gt;
+&amp;lt;Event xmlns=&quot;urn:schemas-upnp-org:metadata-1-0/AVT/&quot;&amp;gt;
+&amp;lt;InstanceID val=&quot;0&quot;&amp;gt;
+&amp;lt;TransportStatus val=&quot;OK&quot;&amp;gt;&amp;lt;/TransportStatus&amp;gt;
+&amp;lt;NextAVTransportURI val=&quot;&quot;&amp;gt;&amp;lt;/NextAVTransportURI&amp;gt;
+&amp;lt;NextAVTransportURIMetaData val=&quot;&quot;&amp;gt;&amp;lt;/NextAVTransportURIMetaData&amp;gt;
+&amp;lt;CurrentTrackMetaData val=&quot;&quot;&amp;gt;&amp;lt;/CurrentTrackMetaData&amp;gt;
+&amp;lt;RelativeCounterPosition val=&quot;2147483647&quot;&amp;gt;&amp;lt;/RelativeCounterPosition&amp;gt;
+&amp;lt;PlaybackStorageMedium val=&quot;UNKNOWN&quot;&amp;gt;&amp;lt;/PlaybackStorageMedium&amp;gt;
+&amp;lt;RelativeTimePosition val=&quot;0:00:00&quot;&amp;gt;&amp;lt;/RelativeTimePosition&amp;gt;
+&amp;lt;PossibleRecordStorageMedia val=&quot;NOT_IMPLEMENTED&quot;&amp;gt;&amp;lt;/PossibleRecordStorageMedia&amp;gt;
+&amp;lt;CurrentPlayMode val=&quot;NORMAL&quot;&amp;gt;&amp;lt;/CurrentPlayMode&amp;gt;
+&amp;lt;TransportPlaySpeed val=&quot;1&quot;&amp;gt;&amp;lt;/TransportPlaySpeed&amp;gt;
+&amp;lt;PossiblePlaybackStorageMedia val=&quot;NETWORK,UNKNOWN&quot;&amp;gt;&amp;lt;/PossiblePlaybackStorageMedia&amp;gt;
+&amp;lt;AbsoluteTimePosition val=&quot;NOT_IMPLEMENTED&quot;&amp;gt;&amp;lt;/AbsoluteTimePosition&amp;gt;
+&amp;lt;CurrentTrack val=&quot;0&quot;&amp;gt;&amp;lt;/CurrentTrack&amp;gt;
+&amp;lt;CurrentTrackURI val=&quot;&quot;&amp;gt;&amp;lt;/CurrentTrackURI&amp;gt;
+&amp;lt;CurrentTransportActions val=&quot;PLAY&quot;&amp;gt;&amp;lt;/CurrentTransportActions&amp;gt;
+&amp;lt;NumberOfTracks val=&quot;0&quot;&amp;gt;&amp;lt;/NumberOfTracks&amp;gt;
+&amp;lt;AVTransportURI val=&quot;&quot;&amp;gt;&amp;lt;/AVTransportURI&amp;gt;
+&amp;lt;AbsoluteCounterPosition val=&quot;2147483647&quot;&amp;gt;&amp;lt;/AbsoluteCounterPosition&amp;gt;
+&amp;lt;CurrentRecordQualityMode val=&quot;NOT_IMPLEMENTED&quot;&amp;gt;&amp;lt;/CurrentRecordQualityMode&amp;gt;
+&amp;lt;CurrentMediaDuration val=&quot;&quot;&amp;gt;&amp;lt;/CurrentMediaDuration&amp;gt;
+&amp;lt;AVTransportURIMetaData val=&quot;&quot;&amp;gt;&amp;lt;/AVTransportURIMetaData&amp;gt;
+&amp;lt;RecordStorageMedium val=&quot;NOT_IMPLEMENTED&quot;&amp;gt;&amp;lt;/RecordStorageMedium&amp;gt;
+&amp;lt;RecordMediumWriteStatus val=&quot;NOT_IMPLEMENTED&quot;&amp;gt;&amp;lt;/RecordMediumWriteStatus&amp;gt;
+&amp;lt;CurrentTrackDuration val=&quot;0:00:00&quot;&amp;gt;&amp;lt;/CurrentTrackDuration&amp;gt;
+&amp;lt;TransportState val=&quot;STOPPED&quot;&amp;gt;&amp;lt;/TransportState&amp;gt;
+&amp;lt;PossibleRecordQualityModes val=&quot;NOT_IMPLEMENTED&quot;&amp;gt;&amp;lt;/PossibleRecordQualityModes&amp;gt;
+&amp;lt;/InstanceID&amp;gt;
+&amp;lt;/Event&amp;gt;
+&lt;/LastChange&gt;
+&lt;/e:property&gt;
+&lt;/e:propertyset&gt;</code></pre><p><code>511</code>发送<code>SOAPACTION</code></p>
+<pre><code>POST /upnp/control/rendertransport1 HTTP/1.1
+HOST: 192.168.199.183:49494
+Content-Length: 264
+CONTENT-TYPE: text/xml; charset=&quot;utf-8&quot;
+SOAPACTION: &quot;urn:schemas-upnp-org:service:AVTransport:1#Stop&quot;
+USER-AGENT: Linux/4.4.23+ UPnP/1.0 HUAWEI_iCOS/iCOS V1R1C00 DLNADOC/1.50
+CONNECTION: close
+
+&lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;
+&lt;s:Body&gt;&lt;u:Stop xmlns:u=&quot;urn:schemas-upnp-org:service:AVTransport:1&quot;&gt;
+&lt;InstanceID&gt;0&lt;/InstanceID&gt;
+&lt;/u:Stop&gt;
+&lt;/s:Body&gt;
+&lt;/s:Envelope&gt;</code></pre><p><code>521</code></p>
+<pre><code>POST /upnp/control/rendertransport1 HTTP/1.1
+HOST: 192.168.199.183:49494
+Content-Length: 1168
+CONTENT-TYPE: text/xml; charset=&quot;utf-8&quot;
+SOAPACTION: &quot;urn:schemas-upnp-org:service:AVTransport:1#SetAVTransportURI&quot;
+USER-AGENT: Linux/4.4.23+ UPnP/1.0 HUAWEI_iCOS/iCOS V1R1C00 DLNADOC/1.50
+CONNECTION: close
+
+&lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;
+&lt;s:Body&gt;&lt;u:SetAVTransportURI xmlns:u=&quot;urn:schemas-upnp-org:service:AVTransport:1&quot;&gt;
+&lt;InstanceID&gt;0&lt;/InstanceID&gt;
+&lt;CurrentURI&gt;http://192.168.199.114:49152/upnp/service/local/98070551/0/0.jpg&lt;/CurrentURI&gt;
+&lt;CurrentURIMetaData&gt;&amp;lt;DIDL-Lite xmlns=&amp;quot;urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/&amp;quot; xmlns:dc=&amp;quot;http://purl.org/dc/elements/1.1/&amp;quot; xmlns:upnp=&amp;quot;urn:schemas-upnp-org:metadata-1-0/upnp/&amp;quot; xmlns:dlna=&amp;quot;urn:schemas-dlna-org:metadata-1-0/&amp;quot; xmlns:huawei=&amp;quot;urn:schemas-upnp-org:metadata-1-0/upnp/huawei/&amp;quot;&amp;gt;&amp;lt;item id=&amp;quot;0&amp;quot; parentID=&amp;quot;-1&amp;quot; restricted=&amp;quot;1&amp;quot;&amp;gt;&amp;lt;dc:title&amp;gt;dlna_default_image&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res protocolInfo=&amp;quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_OP=01&amp;quot; size=&amp;quot;501872&amp;quot;&amp;gt;http://192.168.199.114:49152/upnp/service/local/98070551/0/0.jpg&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;/DIDL-Lite&amp;gt;&lt;/CurrentURIMetaData&gt;
+&lt;/u:SetAVTransportURI&gt;
+&lt;/s:Body&gt;
+&lt;/s:Envelope&gt;</code></pre><p><code>533 EVENT NOTIFY</code></p>
+<p><code>541 PLAY</code></p>
+<pre><code>POST /upnp/control/rendertransport1 HTTP/1.1
+HOST: 192.168.199.183:49494
+Content-Length: 282
+CONTENT-TYPE: text/xml; charset=&quot;utf-8&quot;
+SOAPACTION: &quot;urn:schemas-upnp-org:service:AVTransport:1#Play&quot;
+USER-AGENT: Linux/4.4.23+ UPnP/1.0 HUAWEI_iCOS/iCOS V1R1C00 DLNADOC/1.50
+CONNECTION: close
+
+&lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;
+&lt;s:Body&gt;&lt;u:Play xmlns:u=&quot;urn:schemas-upnp-org:service:AVTransport:1&quot;&gt;
+&lt;InstanceID&gt;0&lt;/InstanceID&gt;
+&lt;Speed&gt;1&lt;/Speed&gt;
+&lt;/u:Play&gt;
+&lt;/s:Body&gt;
+&lt;/s:Envelope&gt;</code></pre><p><code>565 DMR 获取图片数据</code></p>
+<pre><code>GET /upnp/service/local/98070551/0/0.jpg HTTP/1.1
+Host: 192.168.199.114:49152
+Connection: close
+icy-metadata: 1
+User-Agent: GStreamer souphttpsrc 1.12.3 libsoup/2.60.1</code></pre><h3 id="切换节目"><a href="#切换节目" class="headerlink" title="切换节目"></a>切换节目</h3><p><code>1514：STOP</code></p>
+<p><code>1524：SOAPACTION: &quot;urn:schemas-upnp-org:service:AVTransport:1#SetAVTransportURI&quot;\r\n</code></p>
+<p><code>1544：SOAPACTION: &quot;urn:schemas-upnp-org:service:AVTransport:1#Play&quot;\r\n</code></p>
+<p><code>1563 GET Video</code></p>
+<h2 id="DMP-抓包分析"><a href="#DMP-抓包分析" class="headerlink" title="DMP 抓包分析"></a>DMP 抓包分析</h2><p>大致流程<code>discover</code>-&gt;<code>description</code>-&gt;<code>post soapaction</code>-&gt;<code>get Data</code>-&gt;<code>Play</code></p>
+<h3 id="Discover"><a href="#Discover" class="headerlink" title="Discover"></a>Discover</h3><p><code>DMP</code>即<code>client</code>发送<code>M-SEARCH ssdp:discover</code>来发现<code>server</code>，<code>Frame270</code></p>
+<pre><code>M-SEARCH * HTTP/1.1
+HOST: 239.255.255.250:1900
+MAN: &quot;ssdp:discover&quot;
+MX: 5
+ST: urn:schemas-upnp-org:device:MediaServer:1</code></pre><p>相关代码<code>libupnp:UpnpSearchAsync</code>，<code>vlc</code>有相关实现，应答如下，<code>Frame271</code></p>
+<pre><code>HTTP/1.1 200 OK
+CACHE-CONTROL: max-age=1810
+DATE: Tue, 26 Mar 2019 03:25:52 GMT
+ST: urn:schemas-upnp-org:device:MediaServer:1
+USN: uuid:4d696e69-444c-164e-9d41-28d2446289b1::urn:schemas-upnp-org:device:MediaServer:1
+EXT:
+SERVER: 4.13.0-37-generic DLNADOC/1.50 UPnP/1.0 MiniDLNA/1.2.1
+LOCATION: http://192.168.199.183:8200/rootDesc.xml
+Content-Length: 0</code></pre><h3 id="Description"><a href="#Description" class="headerlink" title="Description"></a>Description</h3><p>根据<code>LOACTION</code>获取描述文件，请求如下，<code>Frame275</code></p>
+<pre><code>GET /rootDesc.xml HTTP/1.1
+HOST: 192.168.199.183:8200
+DATE: Tue, 26 Mar 2019 03:25:51 GMT
+CONNECTION: close
+USER-AGENT: Linux/4.4.23+, UPnP/1.0, Portable SDK for UPnP devices/1.6.19</code></pre><p>应答中传输描述文件，如下</p>
+<pre><code class="xml">&lt;root xmlns=&quot;urn:schemas-upnp-org:device-1-0&quot;&gt;
+&lt;specVersion&gt;
+&lt;major&gt;1&lt;/major&gt;
+&lt;minor&gt;0&lt;/minor&gt;
+&lt;/specVersion&gt;
+&lt;device&gt;
+&lt;deviceType&gt;urn:schemas-upnp-org:device:MediaServer:1&lt;/deviceType&gt;
+&lt;friendlyName&gt;My DLNA XXX&lt;/friendlyName&gt;
+&lt;manufacturer&gt;Justin Maggard&lt;/manufacturer&gt;
+&lt;manufacturerURL&gt;http://www.netgear.com/&lt;/manufacturerURL&gt;
+&lt;modelDescription&gt;MiniDLNA on Linux&lt;/modelDescription&gt;
+&lt;modelName&gt;Windows Media Connect compatible (MiniDLNA)&lt;/modelName&gt;
+&lt;modelNumber&gt;1&lt;/modelNumber&gt;
+&lt;modelURL&gt;http://www.netgear.com&lt;/modelURL&gt;
+&lt;serialNumber&gt;12345678&lt;/serialNumber&gt;
+&lt;UDN&gt;uuid:4d696e69-444c-164e-9d41-28d2446289b1&lt;/UDN&gt;
+&lt;dlna:X_DLNADOC xmlns:dlna=&quot;urn:schemas-dlna-org:device-1-0&quot;&gt;DMS-1.50&lt;/dlna:X_DLNADOC&gt;
+&lt;presentationURL&gt;/&lt;/presentationURL&gt;
+&lt;iconList&gt;
+&lt;icon&gt;
+&lt;mimetype&gt;image/png&lt;/mimetype&gt;
+&lt;width&gt;48&lt;/width&gt;
+&lt;height&gt;48&lt;/height&gt;
+&lt;depth&gt;24&lt;/depth&gt;
+&lt;url&gt;/icons/sm.png&lt;/url&gt;
+&lt;/icon&gt;
+&lt;icon&gt;
+&lt;mimetype&gt;image/png&lt;/mimetype&gt;
+&lt;width&gt;120&lt;/width&gt;
+&lt;height&gt;120&lt;/height&gt;
+&lt;depth&gt;24&lt;/depth&gt;
+&lt;url&gt;/icons/lrg.png&lt;/url&gt;
+&lt;/icon&gt;
+&lt;icon&gt;
+&lt;mimetype&gt;image/jpeg&lt;/mimetype&gt;
+&lt;width&gt;48&lt;/width&gt;
+&lt;height&gt;48&lt;/height&gt;
+&lt;depth&gt;24&lt;/depth&gt;
+&lt;url&gt;/icons/sm.jpg&lt;/url&gt;
+&lt;/icon&gt;
+&lt;icon&gt;
+&lt;mimetype&gt;image/jpeg&lt;/mimetype&gt;
+&lt;width&gt;120&lt;/width&gt;
+&lt;height&gt;120&lt;/height&gt;
+&lt;depth&gt;24&lt;/depth&gt;
+&lt;url&gt;/icons/lrg.jpg&lt;/url&gt;
+&lt;/icon&gt;
+&lt;/iconList&gt;
+&lt;serviceList&gt;
+&lt;service&gt;
+&lt;serviceType&gt;urn:schemas-upnp-org:service:ContentDirectory:1&lt;/serviceType&gt;
+&lt;serviceId&gt;urn:upnp-org:serviceId:ContentDirectory&lt;/serviceId&gt;
+&lt;controlURL&gt;/ctl/ContentDir&lt;/controlURL&gt;
+&lt;eventSubURL&gt;/evt/ContentDir&lt;/eventSubURL&gt;
+&lt;SCPDURL&gt;/ContentDir.xml&lt;/SCPDURL&gt;
+&lt;/service&gt;
+&lt;service&gt;
+&lt;serviceType&gt;urn:schemas-upnp-org:service:ConnectionManager:1&lt;/serviceType&gt;
+&lt;serviceId&gt;urn:upnp-org:serviceId:ConnectionManager&lt;/serviceId&gt;
+&lt;controlURL&gt;/ctl/ConnectionMgr&lt;/controlURL&gt;
+&lt;eventSubURL&gt;/evt/ConnectionMgr&lt;/eventSubURL&gt;
+&lt;SCPDURL&gt;/ConnectionMgr.xml&lt;/SCPDURL&gt;
+&lt;/service&gt;
+&lt;service&gt;
+&lt;serviceType&gt;
+urn:microsoft.com:service:X_MS_MediaReceiverRegistrar:1
+&lt;/serviceType&gt;
+&lt;serviceId&gt;
+urn:microsoft.com:serviceId:X_MS_MediaReceiverRegistrar
+&lt;/serviceId&gt;
+&lt;controlURL&gt;/ctl/X_MS_MediaReceiverRegistrar&lt;/controlURL&gt;
+&lt;eventSubURL&gt;/evt/X_MS_MediaReceiverRegistrar&lt;/eventSubURL&gt;
+&lt;SCPDURL&gt;/X_MS_MediaReceiverRegistrar.xml&lt;/SCPDURL&gt;
+&lt;/service&gt;
+&lt;/serviceList&gt;
+&lt;/device&gt;
+&lt;/root&gt;</code></pre>
+<h3 id="POST-SOAPACTION"><a href="#POST-SOAPACTION" class="headerlink" title="POST SOAPACTION"></a>POST SOAPACTION</h3><p>根据<code>xml</code>中描述的<code>service</code>选择相关操作，例如操作文件夹请求如下，<code>Frame335</code></p>
+<pre><code>POST /ctl/ContentDir HTTP/1.1
+HOST: 192.168.199.183:8200
+CONTENT-LENGTH: 440
+CONTENT-TYPE: text/xml; charset=&quot;utf-8&quot;
+SOAPACTION: &quot;urn:schemas-upnp-org:service:ContentDirectory:1#Browse&quot;
+USER-AGENT: Linux/4.4.23+, UPnP/1.0, Portable SDK for UPnP devices/1.6.19
+
+&lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;
+&lt;s:Body&gt;&lt;u:Browse xmlns:u=&quot;urn:schemas-upnp-org:service:ContentDirectory:1&quot;&gt;
+&lt;ObjectID&gt;0&lt;/ObjectID&gt;
+&lt;BrowseFlag&gt;BrowseDirectChildren&lt;/BrowseFlag&gt;
+&lt;Filter&gt;*&lt;/Filter&gt;
+&lt;StartingIndex&gt;0&lt;/StartingIndex&gt;
+&lt;RequestedCount&gt;5000&lt;/RequestedCount&gt;
+&lt;SortCriteria&gt;&lt;/SortCriteria&gt;
+&lt;/u:Browse&gt;
+&lt;/s:Body&gt;
+&lt;/s:Envelope&gt;</code></pre><p><code>Frame 442-569</code>为翻到文件夹最底层，会传输大量图片数据上来</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;&lt;s:Body&gt;&lt;u:BrowseResponse xmlns:u=&quot;urn:schemas-upnp-org:service:ContentDirectory:1&quot;&gt;&lt;Result&gt;&amp;lt;DIDL-Lite xmlns:dc=&quot;http://purl.org/dc/elements/1.1/&quot; xmlns:upnp=&quot;urn:schemas-upnp-org:metadata-1-0/upnp/&quot; xmlns=&quot;urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/&quot; xmlns:dlna=&quot;urn:schemas-dlna-org:metadata-1-0/&quot;&amp;gt;
+&amp;lt;item id=&quot;3$FF0$64$13$B&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$B&quot;&amp;gt;&amp;lt;dc:title&amp;gt;543161&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;532088&quot; resolution=&quot;2048x1345&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25615.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x575&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25615.jpg?width=1024,height=575&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x359&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25615.jpg?width=640,height=359&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x89&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25615.jpg?width=160,height=89&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$2B&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$2B&quot;&amp;gt;&amp;lt;dc:title&amp;gt;543159&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;461737&quot; resolution=&quot;1920x1260&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25616.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x671&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25616.jpg?width=1024,height=671&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x419&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25616.jpg?width=640,height=419&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x104&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25616.jpg?width=160,height=104&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$2D&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$2D&quot;&amp;gt;&amp;lt;dc:title&amp;gt;543117&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;674720&quot; resolution=&quot;2880x1800&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25618.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x639&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25618.jpg?width=1024,height=639&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x399&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25618.jpg?width=640,height=399&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x98&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25618.jpg?width=160,height=98&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$2F&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$2F&quot;&amp;gt;&amp;lt;dc:title&amp;gt;543019&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;753825&quot; resolution=&quot;1920x1200&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25620.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x639&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25620.jpg?width=1024,height=639&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x399&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25620.jpg?width=640,height=399&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x99&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25620.jpg?width=160,height=99&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$31&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$31&quot;&amp;gt;&amp;lt;dc:title&amp;gt;543128&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;836038&quot; resolution=&quot;2048x1325&quot;  protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25603.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x681&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25603.jpg?width=1024,height=681&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x426&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25603.jpg?width=640,height=426&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x106&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25603.jpg?width=160,height=106&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$21&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$21&quot;&amp;gt;&amp;lt;dc:title&amp;gt;542965&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;1726194&quot; resolution=&quot;1920x1200&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25606.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x639&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25606.jpg?width=1024,height=639&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x399&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25606.jpg?width=640,height=399&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x99&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25606.jpg?width=160,height=99&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$23&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$23&quot;&amp;gt;&amp;lt;dc:title&amp;gt;542998&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;2904437&quot; resolution=&quot;1920x1200&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25608.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x639&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25608.jpg?width=1024,height=639&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x399&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25608.jpg?width=640,height=399&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x99&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25608.jpg?width=160,height=99&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$2C&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$2C&quot;&amp;gt;&amp;lt;dc:title&amp;gt;542934&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;1098202&quot; resolution=&quot;2048x1360&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25617.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x680&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25617.jpg?width=1024,height=680&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x425&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25617.jpg?width=640,height=425&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x106&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25617.jpg?width=160,height=106&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;item id=&quot;3$FF0$64$13$2E&quot; parentID=&quot;3$FF0&quot; restricted=&quot;1&quot; refID=&quot;64$13$2E&quot;&amp;gt;&amp;lt;dc:title&amp;gt;542994&amp;lt;/dc:title&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.imageItem.photo&amp;lt;/upnp:class&amp;gt;&amp;lt;res size=&quot;970686&quot; resolution=&quot;1920x1200&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/MediaItems/25619.jpg&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;1024x639&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25619.jpg?width=1024,height=639&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;640x399&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25619.jpg?width=640,height=399&amp;lt;/res&amp;gt;&amp;lt;res resolution=&quot;160x99&quot; protocolInfo=&quot;http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00F00000000000000000000000000000&quot;&amp;gt;http://192.168.199.183:8200/Resized/25619.jpg?width=160,height=99&amp;lt;/res&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;/DIDL-Lite&amp;gt;&lt;/Result&gt;
+&lt;NumberReturned&gt;50&lt;/NumberReturned&gt;
+&lt;TotalMatches&gt;50&lt;/TotalMatches&gt;
+&lt;UpdateID&gt;1&lt;/UpdateID&gt;&lt;/u:BrowseResponse&gt;&lt;/s:Body&gt;&lt;/s:Envelope&gt;</code></pre>
+<p>播放某个具体图片请求，<code>Frame 755</code></p>
+<pre><code>GET /MediaItems/25602.jpg HTTP/1.1
+Host: 192.168.199.183:8200
+Accept: */*
+Accept-Language: en_US
+User-Agent: VLC/3.0.4 LibVLC/3.0.4
+Range: bytes=0-</code></pre>]]></content>
+      <categories>
+        <category>Network</category>
+        <category>UPnP</category>
+      </categories>
+      <tags>
+        <tag>upnp</tag>
+        <tag>dlna</tag>
+        <tag>ssdp</tag>
+        <tag>soap</tag>
+        <tag>dmr</tag>
+        <tag>dmp</tag>
       </tags>
   </entry>
   <entry>
