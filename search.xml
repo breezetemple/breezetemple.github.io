@@ -8654,25 +8654,6 @@ $ mount</code></pre>
       </tags>
   </entry>
   <entry>
-    <title>git-am-patch-different-repository</title>
-    <url>/2017/07/20/git-am-patch-different-repository/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<p>跨仓库使用patch</p>
-<p>repo A</p>
-<pre><code>git format-patch -1 xxxxxxxx
-git format-patch HEAD^
-git format-patch -M branch1/branch2</code></pre><p>repo B</p>
-<pre><code>git am -3 0001.patch</code></pre><p>这种方式很容易导致冲突，尤其是<strong>新增、删除及重命名文件</strong>，使用如下方式</p>
-<pre><code>git am --directory=&#39;platform/&#39; 0001.patch</code></pre><ul>
-<li>—-directory=’platform’ 为repo A与repo B之间的差异</li>
-</ul>
-<p>–directory=<root></p>
-<pre><code>Prepend &lt;root&gt; to all filenames.
-If a &quot;-p&quot; argument was also passed, it is applied before prepending the new root.
-For example, a patch that talks about updating a/git-gui.sh to b/git-gui.sh can be applied to the file in the working tree modules/git-gui/git-gui.sh by running git apply --directory=modules/git-gui.</code></pre>]]></content>
-  </entry>
-  <entry>
     <title>gcc 各个编译优化等级下不同的编译优化选项</title>
     <url>/2017/07/03/gcc-optimization/</url>
     <content><![CDATA[<p><code>GCC</code> 优化级别</p>
@@ -8801,6 +8782,25 @@ For example, a patch that talks about updating a/git-gui.sh to b/git-gui.sh can 
       <tags>
         <tag>gcc</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>git-am-patch-different-repository</title>
+    <url>/2017/07/20/git-am-patch-different-repository/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<p>跨仓库使用patch</p>
+<p>repo A</p>
+<pre><code>git format-patch -1 xxxxxxxx
+git format-patch HEAD^
+git format-patch -M branch1/branch2</code></pre><p>repo B</p>
+<pre><code>git am -3 0001.patch</code></pre><p>这种方式很容易导致冲突，尤其是<strong>新增、删除及重命名文件</strong>，使用如下方式</p>
+<pre><code>git am --directory=&#39;platform/&#39; 0001.patch</code></pre><ul>
+<li>—-directory=’platform’ 为repo A与repo B之间的差异</li>
+</ul>
+<p>–directory=<root></p>
+<pre><code>Prepend &lt;root&gt; to all filenames.
+If a &quot;-p&quot; argument was also passed, it is applied before prepending the new root.
+For example, a patch that talks about updating a/git-gui.sh to b/git-gui.sh can be applied to the file in the working tree modules/git-gui/git-gui.sh by running git apply --directory=modules/git-gui.</code></pre>]]></content>
   </entry>
   <entry>
     <title>sqlite</title>
@@ -10457,6 +10457,143 @@ void show_registers(struct pt_regs *fp)    </code></pre><h2 id="分析函数show
       <tags>
         <tag>linux</tag>
         <tag>proc</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Movian 插件加载分析</title>
+    <url>/2018/01/10/movian-plugin-load/</url>
+    <content><![CDATA[<p>分析源文件 <code>src/plugins.c</code></p>
+<a id="more"></a>
+
+<h2 id="install"><a href="#install" class="headerlink" title="install"></a>install</h2><p><code>plugin_install</code> -&gt; <code>plugin_load</code> -&gt; <code>ecmascript_plugin_load</code></p>
+<h3 id="plugin-load"><a href="#plugin-load" class="headerlink" title="plugin_load"></a>plugin_load</h3><p>解析 <code>plugin.json</code> 文件</p>
+<pre><code>//plugin.json 路径
+snprintf(ctrlfile, sizeof(ctrlfile), &quot;%s/plugin.json&quot;, url);
+
+// 读取文件内容
+if((b = fa_load(ctrlfile,
+                FA_LOAD_ERRBUF(errbuf2, sizeof(errbuf2)),
+                NULL)) == NULL) {
+  snprintf(errbuf, errlen, &quot;Unable to load %s -- %s&quot;, ctrlfile, errbuf2);
+  return -1;
+}
+
+// 解析 json 文件
+ctrl = htsmsg_json_deserialize2(buf_cstr(b), errbuf, errlen);
+
+// 获取数据
+const char *type = htsmsg_get_str(ctrl, &quot;type&quot;);
+const char *id   = htsmsg_get_str(ctrl, &quot;id&quot;);
+const char *version = htsmsg_get_str(ctrl, &quot;version&quot;);
+const char *file = htsmsg_get_str(ctrl, &quot;file&quot;);
+
+//js 文件路径
+snprintf(fullpath, sizeof(fullpath), &quot;%s/%s&quot;, url, file);
+
+int version = htsmsg_get_u32_or_default(ctrl, &quot;apiversion&quot;, 1);
+
+// 打开 js 文件
+hts_mutex_unlock(&amp;plugin_mutex);
+r = ecmascript_plugin_load(id, fullpath, errbuf, errlen, version,
+                           buf_cstr(b), pflags);
+hts_mutex_lock(&amp;plugin_mutex);</code></pre><h3 id="scmascript-plugin-load"><a href="#scmascript-plugin-load" class="headerlink" title="scmascript_plugin_load"></a>scmascript_plugin_load</h3><pre><code>int
+ecmascript_plugin_load(const char *id, const char *url,
+                       char *errbuf, size_t errlen,
+                       int version, const char *manifest,
+                       int flags)
+{
+  char storage[PATH_MAX];
+
+  snprintf(storage, sizeof(storage),
+           &quot;%s/plugins/%s&quot;, gconf.persistent_path, id);
+
+  es_context_t *ec = es_context_create(id, flags | ECMASCRIPT_PLUGIN,
+                                       url, storage);
+
+  duk_context *ctx = es_context_begin(ec);
+
+  duk_push_global_object(ctx);
+
+  int plugin_obj_idx = duk_push_object(ctx);
+
+  duk_push_string(ctx, id);
+  duk_put_prop_string(ctx, plugin_obj_idx, &quot;id&quot;);
+
+  duk_push_string(ctx, url);
+  duk_put_prop_string(ctx, plugin_obj_idx, &quot;url&quot;);
+
+  duk_push_string(ctx, manifest);
+  duk_put_prop_string(ctx, plugin_obj_idx, &quot;manifest&quot;);
+
+  duk_push_int(ctx, version);
+  duk_put_prop_string(ctx, plugin_obj_idx, &quot;apiversion&quot;);
+  if(ec-&gt;ec_path) {
+    duk_push_string(ctx, ec-&gt;ec_path);
+    duk_put_prop_string(ctx, plugin_obj_idx, &quot;path&quot;);
+  }
+
+  //Plugin object {&quot;id&quot;: , &quot;url&quot;: , &quot;manifest&quot;: , &quot;apiversion&quot;: , &quot;path&quot;: }
+  duk_put_prop_string(ctx, -2, &quot;Plugin&quot;);
+  duk_pop(ctx);
+
+  if(version == 1) {
+
+    int64_t ts0 = arch_get_ts();
+
+    // 根据文件及路径编译为函数
+    if(es_load_and_compile(ec, &quot;dataroot://res/ecmascript/legacy/api-v1.js&quot;,
+                           ctx))
+      goto bad;
+
+    int64_t ts1 = arch_get_ts();
+
+    // 执行函数
+    if(duk_pcall(ctx, 0)) {
+      es_dump_err(ctx);
+      goto bad;
+    }
+
+    int64_t ts2 = arch_get_ts();
+
+    //xx.js 编译
+    if(es_load_and_compile(ec, url, ctx)) {
+      duk_pop(ctx);
+      goto bad;
+    }
+
+    int64_t ts3 = arch_get_ts();
+
+    duk_swap_top(ctx, 0);
+    // 执行
+    if(duk_pcall_method(ctx, 0))
+      es_dump_err(ctx);
+
+    int64_t ts4 = arch_get_ts();
+
+    es_debug(ec, &quot;API v1 emulation: Compile:%dms Exec:%dms&quot;,
+             ((int)(ts1 - ts0)) / 1000,
+             ((int)(ts2 - ts1)) / 1000);
+
+    es_debug(ec, &quot;Plugin main:      Compile:%dms Exec:%dms&quot;,
+             ((int)(ts3 - ts2)) / 1000,
+             ((int)(ts4 - ts3)) / 1000);
+
+  } else {
+    es_exec(ec, url, ctx);
+  }
+
+ bad:
+  es_context_end(ec, 1, ctx);
+
+  es_context_release(ec);
+
+  return 0;
+}</code></pre>]]></content>
+      <categories>
+        <category>Movian</category>
+      </categories>
+      <tags>
+        <tag>movian</tag>
       </tags>
   </entry>
   <entry>
@@ -15021,324 +15158,6 @@ Transmission Control Protocol, Src Port: 35720, Dst Port: 443, Seq: 1, Ack: 5402
       </tags>
   </entry>
   <entry>
-    <title>Movian 插件加载分析</title>
-    <url>/2018/01/10/movian-plugin-load/</url>
-    <content><![CDATA[<p>分析源文件 <code>src/plugins.c</code></p>
-<a id="more"></a>
-
-<h2 id="install"><a href="#install" class="headerlink" title="install"></a>install</h2><p><code>plugin_install</code> -&gt; <code>plugin_load</code> -&gt; <code>ecmascript_plugin_load</code></p>
-<h3 id="plugin-load"><a href="#plugin-load" class="headerlink" title="plugin_load"></a>plugin_load</h3><p>解析 <code>plugin.json</code> 文件</p>
-<pre><code>//plugin.json 路径
-snprintf(ctrlfile, sizeof(ctrlfile), &quot;%s/plugin.json&quot;, url);
-
-// 读取文件内容
-if((b = fa_load(ctrlfile,
-                FA_LOAD_ERRBUF(errbuf2, sizeof(errbuf2)),
-                NULL)) == NULL) {
-  snprintf(errbuf, errlen, &quot;Unable to load %s -- %s&quot;, ctrlfile, errbuf2);
-  return -1;
-}
-
-// 解析 json 文件
-ctrl = htsmsg_json_deserialize2(buf_cstr(b), errbuf, errlen);
-
-// 获取数据
-const char *type = htsmsg_get_str(ctrl, &quot;type&quot;);
-const char *id   = htsmsg_get_str(ctrl, &quot;id&quot;);
-const char *version = htsmsg_get_str(ctrl, &quot;version&quot;);
-const char *file = htsmsg_get_str(ctrl, &quot;file&quot;);
-
-//js 文件路径
-snprintf(fullpath, sizeof(fullpath), &quot;%s/%s&quot;, url, file);
-
-int version = htsmsg_get_u32_or_default(ctrl, &quot;apiversion&quot;, 1);
-
-// 打开 js 文件
-hts_mutex_unlock(&amp;plugin_mutex);
-r = ecmascript_plugin_load(id, fullpath, errbuf, errlen, version,
-                           buf_cstr(b), pflags);
-hts_mutex_lock(&amp;plugin_mutex);</code></pre><h3 id="scmascript-plugin-load"><a href="#scmascript-plugin-load" class="headerlink" title="scmascript_plugin_load"></a>scmascript_plugin_load</h3><pre><code>int
-ecmascript_plugin_load(const char *id, const char *url,
-                       char *errbuf, size_t errlen,
-                       int version, const char *manifest,
-                       int flags)
-{
-  char storage[PATH_MAX];
-
-  snprintf(storage, sizeof(storage),
-           &quot;%s/plugins/%s&quot;, gconf.persistent_path, id);
-
-  es_context_t *ec = es_context_create(id, flags | ECMASCRIPT_PLUGIN,
-                                       url, storage);
-
-  duk_context *ctx = es_context_begin(ec);
-
-  duk_push_global_object(ctx);
-
-  int plugin_obj_idx = duk_push_object(ctx);
-
-  duk_push_string(ctx, id);
-  duk_put_prop_string(ctx, plugin_obj_idx, &quot;id&quot;);
-
-  duk_push_string(ctx, url);
-  duk_put_prop_string(ctx, plugin_obj_idx, &quot;url&quot;);
-
-  duk_push_string(ctx, manifest);
-  duk_put_prop_string(ctx, plugin_obj_idx, &quot;manifest&quot;);
-
-  duk_push_int(ctx, version);
-  duk_put_prop_string(ctx, plugin_obj_idx, &quot;apiversion&quot;);
-  if(ec-&gt;ec_path) {
-    duk_push_string(ctx, ec-&gt;ec_path);
-    duk_put_prop_string(ctx, plugin_obj_idx, &quot;path&quot;);
-  }
-
-  //Plugin object {&quot;id&quot;: , &quot;url&quot;: , &quot;manifest&quot;: , &quot;apiversion&quot;: , &quot;path&quot;: }
-  duk_put_prop_string(ctx, -2, &quot;Plugin&quot;);
-  duk_pop(ctx);
-
-  if(version == 1) {
-
-    int64_t ts0 = arch_get_ts();
-
-    // 根据文件及路径编译为函数
-    if(es_load_and_compile(ec, &quot;dataroot://res/ecmascript/legacy/api-v1.js&quot;,
-                           ctx))
-      goto bad;
-
-    int64_t ts1 = arch_get_ts();
-
-    // 执行函数
-    if(duk_pcall(ctx, 0)) {
-      es_dump_err(ctx);
-      goto bad;
-    }
-
-    int64_t ts2 = arch_get_ts();
-
-    //xx.js 编译
-    if(es_load_and_compile(ec, url, ctx)) {
-      duk_pop(ctx);
-      goto bad;
-    }
-
-    int64_t ts3 = arch_get_ts();
-
-    duk_swap_top(ctx, 0);
-    // 执行
-    if(duk_pcall_method(ctx, 0))
-      es_dump_err(ctx);
-
-    int64_t ts4 = arch_get_ts();
-
-    es_debug(ec, &quot;API v1 emulation: Compile:%dms Exec:%dms&quot;,
-             ((int)(ts1 - ts0)) / 1000,
-             ((int)(ts2 - ts1)) / 1000);
-
-    es_debug(ec, &quot;Plugin main:      Compile:%dms Exec:%dms&quot;,
-             ((int)(ts3 - ts2)) / 1000,
-             ((int)(ts4 - ts3)) / 1000);
-
-  } else {
-    es_exec(ec, url, ctx);
-  }
-
- bad:
-  es_context_end(ec, 1, ctx);
-
-  es_context_release(ec);
-
-  return 0;
-}</code></pre>]]></content>
-      <categories>
-        <category>Movian</category>
-      </categories>
-      <tags>
-        <tag>movian</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Movian Plugin Development</title>
-    <url>/2018/01/10/movian-plugin-development/</url>
-    <content><![CDATA[<p>Movian Development</p>
-<a id="more"></a>
-
-<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
-<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
-<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
-<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
-<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
-<pre><code class="json">{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;apiversion&quot;: 1,
-  &quot;id&quot;: &quot;headweb&quot;,
-  &quot;file&quot;: &quot;headweb.js&quot;,
-  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
-  &quot;version&quot;: &quot;1.5.3&quot;,
-  &quot;author&quot;: &quot;Andreas Öman&quot;,
-  &quot;title&quot;: &quot;Headweb&quot;,
-  &quot;icon&quot;: &quot;headweb_square.png&quot;,
-  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
-  &quot;category&quot;: &quot;video&quot;,
-  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
-  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
-}</code></pre>
-<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
-<ul>
-<li>ecmascript - loads the plugin using Duktape.</li>
-<li>views - used for user interface (screen keyboard plugin)</li>
-</ul>
-<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
-<ul>
-<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
-<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
-</ul>
-<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
-<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
-<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
-<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
-<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
-<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
-<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
-<ul>
-<li>“tv” - online TV</li>
-<li>“video” - streaming video</li>
-<li>“music” - streaming music</li>
-<li>“glwview” - UI extentions</li>
-<li>“subtitles” - subtitles</li>
-<li>“glwosk” - on screen keyboard</li>
-</ul>
-<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
-<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
-<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
-<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
-<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
-<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
-<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
-<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
-<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
-<pre><code>{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;file&quot;: &quot;testplugin.js&quot;,
-  &quot;id&quot;: &quot;testplugin&quot;
-}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
-<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
-  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
-})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
-<pre><code>(function(plugin) {
-  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
-    showtime.print(&quot;I was called&quot;);
-  })
-})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
-<p><code>somafa</code> 中的 <code>start URI</code></p>
-<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
-...
-}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
-<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
-<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
-<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
-<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
-<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
-<ul>
-<li>Direct URL</li>
-<li>Via a video page</li>
-</ul>
-<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
-<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
-<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
-<p>To use it first do:</p>
-<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
-      <categories>
-        <category>Movian</category>
-      </categories>
-      <tags>
-        <tag>movian</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>vim-highlight-syntax</title>
-    <url>/2017/12/19/vim-highlight-syntax/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
-<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
-<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
-<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
-<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
-<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
-<pre><code>:syntax
---- 语法项目 ---
-cLabel         xxx default case
-cStructure     xxx union struct typedef enum
-cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
-                   _Thread_local auto
-cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
-cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
-cStatement     xxx return goto asm continue break
-                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
-<p><code>:help group-name</code></p>
-<pre><code>:help group-name
-
-(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
-
-        *Comment        any comment
-
-        *Constant       any constant
-         String         a string constant: &quot;this is a string&quot;
-         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
-         Number         a number constant: 234, 0xff
-         Boolean        a boolean constant: TRUE, false
-         Float          a floating point constant: 2.3e10
-
-        *Identifier     any variable name
-         Function       function name (also: methods for classes)
-        *Statement      any statement
-         Conditional    if, then, else, endif, switch, etc.
-         Repeat         for, do, while, etc.
-         Label          case, default, etc.
-         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
-         Keyword        any other keyword
-         Exception      try, catch, throw
-
-        *PreProc        generic Preprocessor
-         Include        preprocessor #include
-         Define         preprocessor #define
-         Macro          same as Define
-         PreCondit      preprocessor #if, #else, #endif, etc.
-
-        *Type           int, long, char, etc.
-         StorageClass   static, register, volatile, etc.
-         Structure      struct, union, enum, etc.
-         Typedef        A typedef
-
-        *Special        any special symbol
-         SpecialChar    special character in a constant
-         Tag            you can use CTRL-] on this
-         Delimiter      character that needs attention
-         SpecialComment special things inside a comment
-         Debug          debugging statements
-
-        *Underlined     text that stands out, HTML links
-
-        *Ignore         left blank, hidden  hl-Ignore
-
-        *Error          any erroneous construct
-        *Todo           anything that needs extra attention; mostly the
-                        keywords TODO FIXME and XXX</code></pre>]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Editor</category>
-      </categories>
-      <tags>
-        <tag>vim</tag>
-        <tag>highlight</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Linux 内核 4.9 无法挂载文件系统</title>
     <url>/2018/11/07/Linux-Kernel-4-9-Unable-to-mount-root-fs/</url>
     <content><![CDATA[<p>Linux 内核 4.9 启动时发现无法挂载文件系统，检查 <code>Documentation/Changes</code> 中的 <code>Current Minimal Requirements</code></p>
@@ -15735,6 +15554,187 @@ Wiphy phy0
         <tag>wireless</tag>
         <tag>iw</tag>
         <tag>iwconfig</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Movian Plugin Development</title>
+    <url>/2018/01/10/movian-plugin-development/</url>
+    <content><![CDATA[<p>Movian Development</p>
+<a id="more"></a>
+
+<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
+<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
+<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
+<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
+<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
+<pre><code class="json">{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;apiversion&quot;: 1,
+  &quot;id&quot;: &quot;headweb&quot;,
+  &quot;file&quot;: &quot;headweb.js&quot;,
+  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
+  &quot;version&quot;: &quot;1.5.3&quot;,
+  &quot;author&quot;: &quot;Andreas Öman&quot;,
+  &quot;title&quot;: &quot;Headweb&quot;,
+  &quot;icon&quot;: &quot;headweb_square.png&quot;,
+  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
+  &quot;category&quot;: &quot;video&quot;,
+  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
+  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
+}</code></pre>
+<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
+<ul>
+<li>ecmascript - loads the plugin using Duktape.</li>
+<li>views - used for user interface (screen keyboard plugin)</li>
+</ul>
+<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
+<ul>
+<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
+<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
+</ul>
+<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
+<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
+<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
+<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
+<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
+<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
+<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
+<ul>
+<li>“tv” - online TV</li>
+<li>“video” - streaming video</li>
+<li>“music” - streaming music</li>
+<li>“glwview” - UI extentions</li>
+<li>“subtitles” - subtitles</li>
+<li>“glwosk” - on screen keyboard</li>
+</ul>
+<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
+<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
+<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
+<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
+<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
+<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
+<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
+<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
+<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
+<pre><code>{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;file&quot;: &quot;testplugin.js&quot;,
+  &quot;id&quot;: &quot;testplugin&quot;
+}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
+<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
+  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
+})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
+<pre><code>(function(plugin) {
+  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
+    showtime.print(&quot;I was called&quot;);
+  })
+})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
+<p><code>somafa</code> 中的 <code>start URI</code></p>
+<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
+...
+}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
+<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
+<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
+<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
+<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
+<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
+<ul>
+<li>Direct URL</li>
+<li>Via a video page</li>
+</ul>
+<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
+<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
+<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
+<p>To use it first do:</p>
+<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
+      <categories>
+        <category>Movian</category>
+      </categories>
+      <tags>
+        <tag>movian</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>vim-highlight-syntax</title>
+    <url>/2017/12/19/vim-highlight-syntax/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
+<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
+<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
+<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
+<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
+<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
+<pre><code>:syntax
+--- 语法项目 ---
+cLabel         xxx default case
+cStructure     xxx union struct typedef enum
+cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
+                   _Thread_local auto
+cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
+cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
+cStatement     xxx return goto asm continue break
+                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
+<p><code>:help group-name</code></p>
+<pre><code>:help group-name
+
+(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
+
+        *Comment        any comment
+
+        *Constant       any constant
+         String         a string constant: &quot;this is a string&quot;
+         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
+         Number         a number constant: 234, 0xff
+         Boolean        a boolean constant: TRUE, false
+         Float          a floating point constant: 2.3e10
+
+        *Identifier     any variable name
+         Function       function name (also: methods for classes)
+        *Statement      any statement
+         Conditional    if, then, else, endif, switch, etc.
+         Repeat         for, do, while, etc.
+         Label          case, default, etc.
+         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
+         Keyword        any other keyword
+         Exception      try, catch, throw
+
+        *PreProc        generic Preprocessor
+         Include        preprocessor #include
+         Define         preprocessor #define
+         Macro          same as Define
+         PreCondit      preprocessor #if, #else, #endif, etc.
+
+        *Type           int, long, char, etc.
+         StorageClass   static, register, volatile, etc.
+         Structure      struct, union, enum, etc.
+         Typedef        A typedef
+
+        *Special        any special symbol
+         SpecialChar    special character in a constant
+         Tag            you can use CTRL-] on this
+         Delimiter      character that needs attention
+         SpecialComment special things inside a comment
+         Debug          debugging statements
+
+        *Underlined     text that stands out, HTML links
+
+        *Ignore         left blank, hidden  hl-Ignore
+
+        *Error          any erroneous construct
+        *Todo           anything that needs extra attention; mostly the
+                        keywords TODO FIXME and XXX</code></pre>]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Editor</category>
+      </categories>
+      <tags>
+        <tag>vim</tag>
+        <tag>highlight</tag>
       </tags>
   </entry>
   <entry>
@@ -16869,51 +16869,6 @@ git push $SOURCE --tags</code></pre>
       </tags>
   </entry>
   <entry>
-    <title>kernel 内核 uIamge 与 zImage 区别</title>
-    <url>/2018/11/28/linux-kernel-uImage-zImage/</url>
-    <content><![CDATA[<p><code>Linux</code> 编译可以生成 <code>uImage</code>、 <code>Image</code> 以及 <code>zImage</code> 内核，其中 <code>uImage</code> 是 <code>uboot</code> 专用内核映像文件</p>
-<a id="more"></a>
-
-<h2 id="内核编译"><a href="#内核编译" class="headerlink" title="内核编译"></a>内核编译</h2><p><code>Linux</code> 内核编译默认生成 <code>Image</code> 和 <code>zImage</code>，其中 <code>Image</code> 为内核映像文件，而 <code>zImage</code> 为内核的一种映像压缩文件</p>
-<p><code>uImage</code> 为 <code>uboot</code> 专用的映像文件，是在 <code>zImage</code> 之前加上一个长度为 64 字节的头，说明这个内核的版本、加载位置、生成时间、大小等信息；其 0x40 之后与 <code>zImage</code> 没区别，64 字节头部结构如下</p>
-<pre><code class="c">typedef struct image_header {
-    uint32_tih_magic;
-    uint32_tih_hcrc;
-    uint32_tih_time;
-    uint32_tih_size;
-    uint32_tih_load;
-    uint32_tih_ep;
-    uint32_tih_dcrc;
-    uint8_tih_os;
-    uint8_tih_arch;
-    uint8_tih_type;
-    uint8_tih_comp;
-    uint8_tih_name[IH_NMLEN];
-} image_header_t;</code></pre>
-<p><code>zImage</code> 由 <code>vmlinux</code> <code>objcopy</code> 出来的纯二进制文件以及解压缩程序组成， <code>zImage</code> 自带了解压缩程序</p>
-<p><code>uImage</code> 和 <code>zImage</code> 都是压缩后的内核映像。而 <code>uImage</code> 是用 <code>mkimage 工具</code> 根据 <code>zImage</code> 制作而来的</p>
-<p>编译 <code>uImage</code> 需要指定 <code>make ARCH=arm CROSS_COMPILE=arm-linux- uImage LOADADDR=0x8000</code></p>
-<h2 id="LOADADDR"><a href="#LOADADDR" class="headerlink" title="LOADADDR"></a>LOADADDR</h2><p>当编译 <code>uImage</code> 时需要指定一个参数 <code>LOADADDR</code>，指定内核映像所在的地址，对于 <code>arm</code> 来将这个是惯例</p>
-<blockquote>
-<p>Despite the ability to place zImage anywhere within memory, convention has it that it is loaded at the base of physical RAM plus an offset of 0x8000 (32K). This leaves space for the parameter block usually placed at offset 0x100, zero page exception vectors and page tables. This convention is very common.</p>
-</blockquote>
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="https://blog.csdn.net/chenqiai0/article/details/8533625" target="_blank" rel="noopener">Image uImage zImage U-Boot 的区别</a></li>
-<li><a href="https://stackoverflow.com/questions/31725605/building-kernel-uimage-using-loadaddr" target="_blank" rel="noopener">Building kernel uImage using LOADADDR</a></li>
-<li><a href="http://www.simtec.co.uk/products/SWLINUX/files/booting_article.html" target="_blank" rel="noopener">Booting ARM Linux</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>uboot</tag>
-        <tag>uImage</tag>
-        <tag>zImage</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>使用 repo manfiest 管理项目代码</title>
     <url>/2018/11/27/repo-manfiest-management/</url>
     <content><![CDATA[<p>使用 <code>repo</code> 管理工程代码，需要切换不同仓库和不同分支，记录如下</p>
@@ -16977,6 +16932,51 @@ git push</code></pre>
         <tag>linux</tag>
         <tag>repo</tag>
         <tag>ssh</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>kernel 内核 uIamge 与 zImage 区别</title>
+    <url>/2018/11/28/linux-kernel-uImage-zImage/</url>
+    <content><![CDATA[<p><code>Linux</code> 编译可以生成 <code>uImage</code>、 <code>Image</code> 以及 <code>zImage</code> 内核，其中 <code>uImage</code> 是 <code>uboot</code> 专用内核映像文件</p>
+<a id="more"></a>
+
+<h2 id="内核编译"><a href="#内核编译" class="headerlink" title="内核编译"></a>内核编译</h2><p><code>Linux</code> 内核编译默认生成 <code>Image</code> 和 <code>zImage</code>，其中 <code>Image</code> 为内核映像文件，而 <code>zImage</code> 为内核的一种映像压缩文件</p>
+<p><code>uImage</code> 为 <code>uboot</code> 专用的映像文件，是在 <code>zImage</code> 之前加上一个长度为 64 字节的头，说明这个内核的版本、加载位置、生成时间、大小等信息；其 0x40 之后与 <code>zImage</code> 没区别，64 字节头部结构如下</p>
+<pre><code class="c">typedef struct image_header {
+    uint32_tih_magic;
+    uint32_tih_hcrc;
+    uint32_tih_time;
+    uint32_tih_size;
+    uint32_tih_load;
+    uint32_tih_ep;
+    uint32_tih_dcrc;
+    uint8_tih_os;
+    uint8_tih_arch;
+    uint8_tih_type;
+    uint8_tih_comp;
+    uint8_tih_name[IH_NMLEN];
+} image_header_t;</code></pre>
+<p><code>zImage</code> 由 <code>vmlinux</code> <code>objcopy</code> 出来的纯二进制文件以及解压缩程序组成， <code>zImage</code> 自带了解压缩程序</p>
+<p><code>uImage</code> 和 <code>zImage</code> 都是压缩后的内核映像。而 <code>uImage</code> 是用 <code>mkimage 工具</code> 根据 <code>zImage</code> 制作而来的</p>
+<p>编译 <code>uImage</code> 需要指定 <code>make ARCH=arm CROSS_COMPILE=arm-linux- uImage LOADADDR=0x8000</code></p>
+<h2 id="LOADADDR"><a href="#LOADADDR" class="headerlink" title="LOADADDR"></a>LOADADDR</h2><p>当编译 <code>uImage</code> 时需要指定一个参数 <code>LOADADDR</code>，指定内核映像所在的地址，对于 <code>arm</code> 来将这个是惯例</p>
+<blockquote>
+<p>Despite the ability to place zImage anywhere within memory, convention has it that it is loaded at the base of physical RAM plus an offset of 0x8000 (32K). This leaves space for the parameter block usually placed at offset 0x100, zero page exception vectors and page tables. This convention is very common.</p>
+</blockquote>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://blog.csdn.net/chenqiai0/article/details/8533625" target="_blank" rel="noopener">Image uImage zImage U-Boot 的区别</a></li>
+<li><a href="https://stackoverflow.com/questions/31725605/building-kernel-uimage-using-loadaddr" target="_blank" rel="noopener">Building kernel uImage using LOADADDR</a></li>
+<li><a href="http://www.simtec.co.uk/products/SWLINUX/files/booting_article.html" target="_blank" rel="noopener">Booting ARM Linux</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>uboot</tag>
+        <tag>uImage</tag>
+        <tag>zImage</tag>
       </tags>
   </entry>
   <entry>
@@ -20047,7 +20047,7 @@ ArrayList : size()
 @enduml
 ` ` `</code></pre>
 <p>效果：</p>
-<img src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBjb250ZW50U2NyaXB0VHlwZT0iYXBwbGljYXRpb24vZWNtYXNjcmlwdCIgY29udGVudFN0eWxlVHlwZT0idGV4dC9jc3MiIGhlaWdodD0iMjE1cHgiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiIHN0eWxlPSJ3aWR0aDoxNThweDtoZWlnaHQ6MjE1cHg7YmFja2dyb3VuZDojRkZGRkZGOyIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIwIDAgMTU4IDIxNSIgd2lkdGg9IjE1OHB4IiB6b29tQW5kUGFuPSJtYWduaWZ5Ij48ZGVmcz48ZmlsdGVyIGhlaWdodD0iMzAwJSIgaWQ9ImZ4djBuZGc3N2FrcmciIHdpZHRoPSIzMDAlIiB4PSItMSIgeT0iLTEiPjxmZUdhdXNzaWFuQmx1ciByZXN1bHQ9ImJsdXJPdXQiIHN0ZERldmlhdGlvbj0iMi4wIi8+PGZlQ29sb3JNYXRyaXggaW49ImJsdXJPdXQiIHJlc3VsdD0iYmx1ck91dDIiIHR5cGU9Im1hdHJpeCIgdmFsdWVzPSIwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAuNCAwIi8+PGZlT2Zmc2V0IGR4PSI0LjAiIGR5PSI0LjAiIGluPSJibHVyT3V0MiIgcmVzdWx0PSJibHVyT3V0MyIvPjxmZUJsZW5kIGluPSJTb3VyY2VHcmFwaGljIiBpbjI9ImJsdXJPdXQzIiBtb2RlPSJub3JtYWwiLz48L2ZpbHRlcj48L2RlZnM+PGc+PCEtLU1ENT1bYWE3ZjU4NjUzMmUxODcxOWU2Y2VmYTcwZmM2NTA1ODNdCmNsYXNzIE9iamVjdC0tPjxyZWN0IGZpbGw9IiNGRUZFQ0UiIGZpbHRlcj0idXJsKCNmeHYwbmRnNzdha3JnKSIgaGVpZ2h0PSI2MC44MDQ3IiBpZD0iT2JqZWN0IiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuNTsiIHdpZHRoPSI3MiIgeD0iMzkuNSIgeT0iNyIvPjxlbGxpcHNlIGN4PSI1NC41IiBjeT0iMjMiIGZpbGw9IiNBREQxQjIiIHJ4PSIxMSIgcnk9IjExIiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuMDsiLz48cGF0aCBkPSJNNTYuODQzOCwxOC42NzE5IEM1NS45MDYzLDE4LjIzNDQgNTUuMzEyNSwxOC4wOTM4IDU0LjQzNzUsMTguMDkzOCBDNTEuODEyNSwxOC4wOTM4IDQ5LjgxMjUsMjAuMTcxOSA0OS44MTI1LDIyLjg5MDYgTDQ5LjgxMjUsMjQuMDE1NiBDNDkuODEyNSwyNi41OTM4IDUxLjkyMTksMjguNDg0NCA1NC44MTI1LDI4LjQ4NDQgQzU2LjAzMTMsMjguNDg0NCA1Ny4xODc1LDI4LjE4NzUgNTcuOTM3NSwyNy42NDA2IEM1OC41MTU2LDI3LjIzNDQgNTguODQzOCwyNi43ODEzIDU4Ljg0MzgsMjYuMzkwNiBDNTguODQzOCwyNS45Mzc1IDU4LjQ1MzEsMjUuNTQ2OSA1Ny45ODQ0LDI1LjU0NjkgQzU3Ljc2NTYsMjUuNTQ2OSA1Ny41NjI1LDI1LjYyNSA1Ny4zNzUsMjUuODEyNSBDNTYuOTIxOSwyNi4yOTY5IDU2LjkyMTksMjYuMjk2OSA1Ni43MzQ0LDI2LjM5MDYgQzU2LjMxMjUsMjYuNjU2MyA1NS42MjUsMjYuNzgxMyA1NC44NTk0LDI2Ljc4MTMgQzUyLjgxMjUsMjYuNzgxMyA1MS41MTU2LDI1LjY4NzUgNTEuNTE1NiwyMy45ODQ0IEw1MS41MTU2LDIyLjg5MDYgQzUxLjUxNTYsMjEuMTA5NCA1Mi43NjU2LDE5Ljc5NjkgNTQuNSwxOS43OTY5IEM1NS4wNzgxLDE5Ljc5NjkgNTUuNjg3NSwxOS45NTMxIDU2LjE1NjMsMjAuMjAzMSBDNTYuNjQwNiwyMC40ODQ0IDU2LjgxMjUsMjAuNzAzMSA1Ni45MDYzLDIxLjEwOTQgQzU2Ljk2ODgsMjEuNTE1NiA1NywyMS42NDA2IDU3LjE0MDYsMjEuNzY1NiBDNTcuMjgxMywyMS45MDYzIDU3LjUxNTYsMjIuMDE1NiA1Ny43MzQ0LDIyLjAxNTYgQzU4LDIyLjAxNTYgNTguMjY1NiwyMS44NzUgNTguNDM3NSwyMS42NTYzIEM1OC41NDY5LDIxLjUgNTguNTc4MSwyMS4zMTI1IDU4LjU3ODEsMjAuODkwNiBMNTguNTc4MSwxOS40Njg4IEM1OC41NzgxLDE5LjAzMTMgNTguNTYyNSwxOC45MDYzIDU4LjQ2ODgsMTguNzUgQzU4LjMxMjUsMTguNDg0NCA1OC4wMzEzLDE4LjM0MzggNTcuNzM0NCwxOC4zNDM4IEM1Ny40Mzc1LDE4LjM0MzggNTcuMjM0NCwxOC40Mzc1IDU3LjAxNTYsMTguNzUgTDU2Ljg0MzgsMTguNjcxOSBaICIgZmlsbD0iIzAwMDAwMCIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmciIHRleHRMZW5ndGg9IjQwIiB4PSI2OC41IiB5PSIyNy4xNTQzIj5PYmplY3Q8L3RleHQ+PGxpbmUgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjU7IiB4MT0iNDAuNSIgeDI9IjExMC41IiB5MT0iMzkiIHkyPSIzOSIvPjxsaW5lIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS41OyIgeDE9IjQwLjUiIHgyPSIxMTAuNSIgeTE9IjQ3IiB5Mj0iNDciLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nIiB0ZXh0TGVuZ3RoPSI0NiIgeD0iNDUuNSIgeT0iNjEuMjEwNCI+ZXF1YWxzKCk8L3RleHQ+PCEtLU1ENT1bYWI4ODcxZWQ2MzdmNDA3MDdiODY2YmE2NTk3NzM0YmNdCmNsYXNzIEFycmF5TGlzdC0tPjxyZWN0IGZpbGw9IiNGRUZFQ0UiIGZpbHRlcj0idXJsKCNmeHYwbmRnNzdha3JnKSIgaGVpZ2h0PSI3My42MDk0IiBpZD0iQXJyYXlMaXN0IiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuNTsiIHdpZHRoPSIxMzciIHg9IjciIHk9IjEyOCIvPjxlbGxpcHNlIGN4PSI0NS44NSIgY3k9IjE0NCIgZmlsbD0iI0FERDFCMiIgcng9IjExIiByeT0iMTEiIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS4wOyIvPjxwYXRoIGQ9Ik00OC4xOTM4LDEzOS42NzE5IEM0Ny4yNTYzLDEzOS4yMzQ0IDQ2LjY2MjUsMTM5LjA5MzggNDUuNzg3NSwxMzkuMDkzOCBDNDMuMTYyNSwxMzkuMDkzOCA0MS4xNjI1LDE0MS4xNzE5IDQxLjE2MjUsMTQzLjg5MDYgTDQxLjE2MjUsMTQ1LjAxNTYgQzQxLjE2MjUsMTQ3LjU5MzggNDMuMjcxOSwxNDkuNDg0NCA0Ni4xNjI1LDE0OS40ODQ0IEM0Ny4zODEzLDE0OS40ODQ0IDQ4LjUzNzUsMTQ5LjE4NzUgNDkuMjg3NSwxNDguNjQwNiBDNDkuODY1NiwxNDguMjM0NCA1MC4xOTM4LDE0Ny43ODEzIDUwLjE5MzgsMTQ3LjM5MDYgQzUwLjE5MzgsMTQ2LjkzNzUgNDkuODAzMSwxNDYuNTQ2OSA0OS4zMzQ0LDE0Ni41NDY5IEM0OS4xMTU2LDE0Ni41NDY5IDQ4LjkxMjUsMTQ2LjYyNSA0OC43MjUsMTQ2LjgxMjUgQzQ4LjI3MTksMTQ3LjI5NjkgNDguMjcxOSwxNDcuMjk2OSA0OC4wODQ0LDE0Ny4zOTA2IEM0Ny42NjI1LDE0Ny42NTYzIDQ2Ljk3NSwxNDcuNzgxMyA0Ni4yMDk0LDE0Ny43ODEzIEM0NC4xNjI1LDE0Ny43ODEzIDQyLjg2NTYsMTQ2LjY4NzUgNDIuODY1NiwxNDQuOTg0NCBMNDIuODY1NiwxNDMuODkwNiBDNDIuODY1NiwxNDIuMTA5NCA0NC4xMTU2LDE0MC43OTY5IDQ1Ljg1LDE0MC43OTY5IEM0Ni40MjgxLDE0MC43OTY5IDQ3LjAzNzUsMTQwLjk1MzEgNDcuNTA2MywxNDEuMjAzMSBDNDcuOTkwNiwxNDEuNDg0NCA0OC4xNjI1LDE0MS43MDMxIDQ4LjI1NjMsMTQyLjEwOTQgQzQ4LjMxODgsMTQyLjUxNTYgNDguMzUsMTQyLjY0MDYgNDguNDkwNiwxNDIuNzY1NiBDNDguNjMxMywxNDIuOTA2MyA0OC44NjU2LDE0My4wMTU2IDQ5LjA4NDQsMTQzLjAxNTYgQzQ5LjM1LDE0My4wMTU2IDQ5LjYxNTYsMTQyLjg3NSA0OS43ODc1LDE0Mi42NTYzIEM0OS44OTY5LDE0Mi41IDQ5LjkyODEsMTQyLjMxMjUgNDkuOTI4MSwxNDEuODkwNiBMNDkuOTI4MSwxNDAuNDY4OCBDNDkuOTI4MSwxNDAuMDMxMyA0OS45MTI1LDEzOS45MDYzIDQ5LjgxODgsMTM5Ljc1IEM0OS42NjI1LDEzOS40ODQ0IDQ5LjM4MTMsMTM5LjM0MzggNDkuMDg0NCwxMzkuMzQzOCBDNDguNzg3NSwxMzkuMzQzOCA0OC41ODQ0LDEzOS40Mzc1IDQ4LjM2NTYsMTM5Ljc1IEw0OC4xOTM4LDEzOS42NzE5IFogIiBmaWxsPSIjMDAwMDAwIi8+PHRleHQgZmlsbD0iIzAwMDAwMCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGxlbmd0aEFkanVzdD0ic3BhY2luZyIgdGV4dExlbmd0aD0iNTIiIHg9IjY1LjE1IiB5PSIxNDguMTU0MyI+QXJyYXlMaXN0PC90ZXh0PjxsaW5lIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS41OyIgeDE9IjgiIHgyPSIxNDMiIHkxPSIxNjAiIHkyPSIxNjAiLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nIiB0ZXh0TGVuZ3RoPSIxMjUiIHg9IjEzIiB5PSIxNzQuMjEwNCI+T2JqZWN0W10gZWxlbWVudERhdGE8L3RleHQ+PGxpbmUgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjU7IiB4MT0iOCIgeDI9IjE0MyIgeTE9IjE4MC44MDQ3IiB5Mj0iMTgwLjgwNDciLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nIiB0ZXh0TGVuZ3RoPSIzMiIgeD0iMTMiIHk9IjE5NS4wMTUxIj5zaXplKCk8L3RleHQ+PCEtLU1ENT1bNzhlZDNkNTRjNmFkOTZmYjY0MzRhNGU0NWFhNGI1ZjBdCnJldmVyc2UgbGluayBPYmplY3QgdG8gQXJyYXlMaXN0LS0+PHBhdGggY29kZUxpbmU9IjEiIGQ9Ik03NS41LDg4LjUwNSBDNzUuNSwxMDEuNjIxIDc1LjUsMTE1LjUxMjggNzUuNSwxMjcuNzU1NSAiIGZpbGw9Im5vbmUiIGlkPSJPYmplY3QtYmFja3RvLUFycmF5TGlzdCIgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjA7Ii8+PHBvbHlnb24gZmlsbD0ibm9uZSIgcG9pbnRzPSI2OC41MDAxLDg4LjI0Miw3NS41LDY4LjI0Miw4Mi41MDAxLDg4LjI0Miw2OC41MDAxLDg4LjI0MiIgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjA7Ii8+PCEtLU1ENT1bMGJhZDFjNDJjYzliZTBmYTg2YTQ3NjhhZTYxMTgwMjldCkBzdGFydHVtbA0KT2JqZWN0IDx8LSAtIEFycmF5TGlzdA0KT2JqZWN0IDogZXF1YWxzKCkNCkFycmF5TGlzdCA6IE9iamVjdFtdIGVsZW1lbnREYXRhDQpBcnJheUxpc3QgOiBzaXplKCkNCkBlbmR1bWwNCgpQbGFudFVNTCB2ZXJzaW9uIDEuMjAyMS43KFN1biBNYXkgMjMgMTI6NDA6MDcgVVRDIDIwMjEpCihHUEwgc291cmNlIGRpc3RyaWJ1dGlvbikKSmF2YSBSdW50aW1lOiBKYXZhKFRNKSBTRSBSdW50aW1lIEVudmlyb25tZW50CkpWTTogSmF2YSBIb3RTcG90KFRNKSA2NC1CaXQgU2VydmVyIFZNCkRlZmF1bHQgRW5jb2Rpbmc6IFVURi04Ckxhbmd1YWdlOiBlbgpDb3VudHJ5OiBVUwotLT48L2c+PC9zdmc+'>
+<img src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBjb250ZW50U2NyaXB0VHlwZT0iYXBwbGljYXRpb24vZWNtYXNjcmlwdCIgY29udGVudFN0eWxlVHlwZT0idGV4dC9jc3MiIGhlaWdodD0iMjE1cHgiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiIHN0eWxlPSJ3aWR0aDoxNThweDtoZWlnaHQ6MjE1cHg7YmFja2dyb3VuZDojRkZGRkZGOyIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIwIDAgMTU4IDIxNSIgd2lkdGg9IjE1OHB4IiB6b29tQW5kUGFuPSJtYWduaWZ5Ij48ZGVmcz48ZmlsdGVyIGhlaWdodD0iMzAwJSIgaWQ9ImZ4djBuZGc3N2FrcmciIHdpZHRoPSIzMDAlIiB4PSItMSIgeT0iLTEiPjxmZUdhdXNzaWFuQmx1ciByZXN1bHQ9ImJsdXJPdXQiIHN0ZERldmlhdGlvbj0iMi4wIi8+PGZlQ29sb3JNYXRyaXggaW49ImJsdXJPdXQiIHJlc3VsdD0iYmx1ck91dDIiIHR5cGU9Im1hdHJpeCIgdmFsdWVzPSIwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAuNCAwIi8+PGZlT2Zmc2V0IGR4PSI0LjAiIGR5PSI0LjAiIGluPSJibHVyT3V0MiIgcmVzdWx0PSJibHVyT3V0MyIvPjxmZUJsZW5kIGluPSJTb3VyY2VHcmFwaGljIiBpbjI9ImJsdXJPdXQzIiBtb2RlPSJub3JtYWwiLz48L2ZpbHRlcj48L2RlZnM+PGc+PCEtLU1ENT1bYWE3ZjU4NjUzMmUxODcxOWU2Y2VmYTcwZmM2NTA1ODNdCmNsYXNzIE9iamVjdC0tPjxyZWN0IGZpbGw9IiNGRUZFQ0UiIGZpbHRlcj0idXJsKCNmeHYwbmRnNzdha3JnKSIgaGVpZ2h0PSI2MC44MDQ3IiBpZD0iT2JqZWN0IiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuNTsiIHdpZHRoPSI3MiIgeD0iMzkuNSIgeT0iNyIvPjxlbGxpcHNlIGN4PSI1NC41IiBjeT0iMjMiIGZpbGw9IiNBREQxQjIiIHJ4PSIxMSIgcnk9IjExIiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuMDsiLz48cGF0aCBkPSJNNTYuODQzOCwxOC42NzE5IEM1NS45MDYzLDE4LjIzNDQgNTUuMzEyNSwxOC4wOTM4IDU0LjQzNzUsMTguMDkzOCBDNTEuODEyNSwxOC4wOTM4IDQ5LjgxMjUsMjAuMTcxOSA0OS44MTI1LDIyLjg5MDYgTDQ5LjgxMjUsMjQuMDE1NiBDNDkuODEyNSwyNi41OTM4IDUxLjkyMTksMjguNDg0NCA1NC44MTI1LDI4LjQ4NDQgQzU2LjAzMTMsMjguNDg0NCA1Ny4xODc1LDI4LjE4NzUgNTcuOTM3NSwyNy42NDA2IEM1OC41MTU2LDI3LjIzNDQgNTguODQzOCwyNi43ODEzIDU4Ljg0MzgsMjYuMzkwNiBDNTguODQzOCwyNS45Mzc1IDU4LjQ1MzEsMjUuNTQ2OSA1Ny45ODQ0LDI1LjU0NjkgQzU3Ljc2NTYsMjUuNTQ2OSA1Ny41NjI1LDI1LjYyNSA1Ny4zNzUsMjUuODEyNSBDNTYuOTIxOSwyNi4yOTY5IDU2LjkyMTksMjYuMjk2OSA1Ni43MzQ0LDI2LjM5MDYgQzU2LjMxMjUsMjYuNjU2MyA1NS42MjUsMjYuNzgxMyA1NC44NTk0LDI2Ljc4MTMgQzUyLjgxMjUsMjYuNzgxMyA1MS41MTU2LDI1LjY4NzUgNTEuNTE1NiwyMy45ODQ0IEw1MS41MTU2LDIyLjg5MDYgQzUxLjUxNTYsMjEuMTA5NCA1Mi43NjU2LDE5Ljc5NjkgNTQuNSwxOS43OTY5IEM1NS4wNzgxLDE5Ljc5NjkgNTUuNjg3NSwxOS45NTMxIDU2LjE1NjMsMjAuMjAzMSBDNTYuNjQwNiwyMC40ODQ0IDU2LjgxMjUsMjAuNzAzMSA1Ni45MDYzLDIxLjEwOTQgQzU2Ljk2ODgsMjEuNTE1NiA1NywyMS42NDA2IDU3LjE0MDYsMjEuNzY1NiBDNTcuMjgxMywyMS45MDYzIDU3LjUxNTYsMjIuMDE1NiA1Ny43MzQ0LDIyLjAxNTYgQzU4LDIyLjAxNTYgNTguMjY1NiwyMS44NzUgNTguNDM3NSwyMS42NTYzIEM1OC41NDY5LDIxLjUgNTguNTc4MSwyMS4zMTI1IDU4LjU3ODEsMjAuODkwNiBMNTguNTc4MSwxOS40Njg4IEM1OC41NzgxLDE5LjAzMTMgNTguNTYyNSwxOC45MDYzIDU4LjQ2ODgsMTguNzUgQzU4LjMxMjUsMTguNDg0NCA1OC4wMzEzLDE4LjM0MzggNTcuNzM0NCwxOC4zNDM4IEM1Ny40Mzc1LDE4LjM0MzggNTcuMjM0NCwxOC40Mzc1IDU3LjAxNTYsMTguNzUgTDU2Ljg0MzgsMTguNjcxOSBaICIgZmlsbD0iIzAwMDAwMCIvPjx0ZXh0IGZpbGw9IiMwMDAwMDAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmciIHRleHRMZW5ndGg9IjQwIiB4PSI2OC41IiB5PSIyNy4xNTQzIj5PYmplY3Q8L3RleHQ+PGxpbmUgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjU7IiB4MT0iNDAuNSIgeDI9IjExMC41IiB5MT0iMzkiIHkyPSIzOSIvPjxsaW5lIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS41OyIgeDE9IjQwLjUiIHgyPSIxMTAuNSIgeTE9IjQ3IiB5Mj0iNDciLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nIiB0ZXh0TGVuZ3RoPSI0NiIgeD0iNDUuNSIgeT0iNjEuMjEwNCI+ZXF1YWxzKCk8L3RleHQ+PCEtLU1ENT1bYWI4ODcxZWQ2MzdmNDA3MDdiODY2YmE2NTk3NzM0YmNdCmNsYXNzIEFycmF5TGlzdC0tPjxyZWN0IGZpbGw9IiNGRUZFQ0UiIGZpbHRlcj0idXJsKCNmeHYwbmRnNzdha3JnKSIgaGVpZ2h0PSI3My42MDk0IiBpZD0iQXJyYXlMaXN0IiBzdHlsZT0ic3Ryb2tlOiNBODAwMzY7c3Ryb2tlLXdpZHRoOjEuNTsiIHdpZHRoPSIxMzciIHg9IjciIHk9IjEyOCIvPjxlbGxpcHNlIGN4PSI0NS44NSIgY3k9IjE0NCIgZmlsbD0iI0FERDFCMiIgcng9IjExIiByeT0iMTEiIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS4wOyIvPjxwYXRoIGQ9Ik00OC4xOTM4LDEzOS42NzE5IEM0Ny4yNTYzLDEzOS4yMzQ0IDQ2LjY2MjUsMTM5LjA5MzggNDUuNzg3NSwxMzkuMDkzOCBDNDMuMTYyNSwxMzkuMDkzOCA0MS4xNjI1LDE0MS4xNzE5IDQxLjE2MjUsMTQzLjg5MDYgTDQxLjE2MjUsMTQ1LjAxNTYgQzQxLjE2MjUsMTQ3LjU5MzggNDMuMjcxOSwxNDkuNDg0NCA0Ni4xNjI1LDE0OS40ODQ0IEM0Ny4zODEzLDE0OS40ODQ0IDQ4LjUzNzUsMTQ5LjE4NzUgNDkuMjg3NSwxNDguNjQwNiBDNDkuODY1NiwxNDguMjM0NCA1MC4xOTM4LDE0Ny43ODEzIDUwLjE5MzgsMTQ3LjM5MDYgQzUwLjE5MzgsMTQ2LjkzNzUgNDkuODAzMSwxNDYuNTQ2OSA0OS4zMzQ0LDE0Ni41NDY5IEM0OS4xMTU2LDE0Ni41NDY5IDQ4LjkxMjUsMTQ2LjYyNSA0OC43MjUsMTQ2LjgxMjUgQzQ4LjI3MTksMTQ3LjI5NjkgNDguMjcxOSwxNDcuMjk2OSA0OC4wODQ0LDE0Ny4zOTA2IEM0Ny42NjI1LDE0Ny42NTYzIDQ2Ljk3NSwxNDcuNzgxMyA0Ni4yMDk0LDE0Ny43ODEzIEM0NC4xNjI1LDE0Ny43ODEzIDQyLjg2NTYsMTQ2LjY4NzUgNDIuODY1NiwxNDQuOTg0NCBMNDIuODY1NiwxNDMuODkwNiBDNDIuODY1NiwxNDIuMTA5NCA0NC4xMTU2LDE0MC43OTY5IDQ1Ljg1LDE0MC43OTY5IEM0Ni40MjgxLDE0MC43OTY5IDQ3LjAzNzUsMTQwLjk1MzEgNDcuNTA2MywxNDEuMjAzMSBDNDcuOTkwNiwxNDEuNDg0NCA0OC4xNjI1LDE0MS43MDMxIDQ4LjI1NjMsMTQyLjEwOTQgQzQ4LjMxODgsMTQyLjUxNTYgNDguMzUsMTQyLjY0MDYgNDguNDkwNiwxNDIuNzY1NiBDNDguNjMxMywxNDIuOTA2MyA0OC44NjU2LDE0My4wMTU2IDQ5LjA4NDQsMTQzLjAxNTYgQzQ5LjM1LDE0My4wMTU2IDQ5LjYxNTYsMTQyLjg3NSA0OS43ODc1LDE0Mi42NTYzIEM0OS44OTY5LDE0Mi41IDQ5LjkyODEsMTQyLjMxMjUgNDkuOTI4MSwxNDEuODkwNiBMNDkuOTI4MSwxNDAuNDY4OCBDNDkuOTI4MSwxNDAuMDMxMyA0OS45MTI1LDEzOS45MDYzIDQ5LjgxODgsMTM5Ljc1IEM0OS42NjI1LDEzOS40ODQ0IDQ5LjM4MTMsMTM5LjM0MzggNDkuMDg0NCwxMzkuMzQzOCBDNDguNzg3NSwxMzkuMzQzOCA0OC41ODQ0LDEzOS40Mzc1IDQ4LjM2NTYsMTM5Ljc1IEw0OC4xOTM4LDEzOS42NzE5IFogIiBmaWxsPSIjMDAwMDAwIi8+PHRleHQgZmlsbD0iIzAwMDAwMCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGxlbmd0aEFkanVzdD0ic3BhY2luZyIgdGV4dExlbmd0aD0iNTIiIHg9IjY1LjE1IiB5PSIxNDguMTU0MyI+QXJyYXlMaXN0PC90ZXh0PjxsaW5lIHN0eWxlPSJzdHJva2U6I0E4MDAzNjtzdHJva2Utd2lkdGg6MS41OyIgeDE9IjgiIHgyPSIxNDMiIHkxPSIxNjAiIHkyPSIxNjAiLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nIiB0ZXh0TGVuZ3RoPSIxMjUiIHg9IjEzIiB5PSIxNzQuMjEwNCI+T2JqZWN0W10gZWxlbWVudERhdGE8L3RleHQ+PGxpbmUgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjU7IiB4MT0iOCIgeDI9IjE0MyIgeTE9IjE4MC44MDQ3IiB5Mj0iMTgwLjgwNDciLz48dGV4dCBmaWxsPSIjMDAwMDAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nIiB0ZXh0TGVuZ3RoPSIzMiIgeD0iMTMiIHk9IjE5NS4wMTUxIj5zaXplKCk8L3RleHQ+PCEtLU1ENT1bNzhlZDNkNTRjNmFkOTZmYjY0MzRhNGU0NWFhNGI1ZjBdCnJldmVyc2UgbGluayBPYmplY3QgdG8gQXJyYXlMaXN0LS0+PHBhdGggY29kZUxpbmU9IjEiIGQ9Ik03NS41LDg4LjUwNSBDNzUuNSwxMDEuNjIxIDc1LjUsMTE1LjUxMjggNzUuNSwxMjcuNzU1NSAiIGZpbGw9Im5vbmUiIGlkPSJPYmplY3QtYmFja3RvLUFycmF5TGlzdCIgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjA7Ii8+PHBvbHlnb24gZmlsbD0ibm9uZSIgcG9pbnRzPSI2OC41MDAxLDg4LjI0Miw3NS41LDY4LjI0Miw4Mi41MDAxLDg4LjI0Miw2OC41MDAxLDg4LjI0MiIgc3R5bGU9InN0cm9rZTojQTgwMDM2O3N0cm9rZS13aWR0aDoxLjA7Ii8+PCEtLU1ENT1bYjg5MGMxZmYwNTBiODdmOTk0ZmU4MzM0ODM0MTcyZjBdCkBzdGFydHVtbA0KT2JqZWN0IDx8LSAtIEFycmF5TGlzdA0KT2JqZWN0IDogZXF1YWxzKCkNCkFycmF5TGlzdCA6IE9iamVjdFtdIGVsZW1lbnREYXRhDQpBcnJheUxpc3QgOiBzaXplKCkNCkBlbmR1bWwNCgpQbGFudFVNTCB2ZXJzaW9uIDEuMjAyMS45YmV0YTIoVW5rbm93biBjb21waWxlIHRpbWUpCihHUEwgc291cmNlIGRpc3RyaWJ1dGlvbikKSmF2YSBSdW50aW1lOiBKYXZhKFRNKSBTRSBSdW50aW1lIEVudmlyb25tZW50CkpWTTogSmF2YSBIb3RTcG90KFRNKSA2NC1CaXQgU2VydmVyIFZNCkRlZmF1bHQgRW5jb2Rpbmc6IFVURi04Ckxhbmd1YWdlOiBlbgpDb3VudHJ5OiBVUwotLT48L2c+PC9zdmc+'>
 
 <h2 id="Markdown-Preview-Enhanced"><a href="#Markdown-Preview-Enhanced" class="headerlink" title="Markdown Preview Enhanced"></a><strong>Markdown Preview Enhanced</strong></h2><p><strong>Markdown Preview Enhanced</strong> 是一款为 <a href="https://atom.io/packages/markdown-preview-enhanced" target="_blank" rel="noopener"><strong>Atom</strong></a> 以及 <a href="https://marketplace.visualstudio.com/items?itemName=shd101wyy.markdown-preview-enhanced" target="_blank" rel="noopener"><strong>Visual Studio Code</strong></a> 编辑器编写的<strong>超级强大的</strong> Markdown 插件。 这款插件意在让你拥有飘逸的 Markdown 写作体验。</p>
 <p><strong>Markdown Preview Enhanced</strong> 内部支持 <code>flow charts</code>, <code>sequence diagrams</code>, <code>mermaid</code>, <code>PlantUML</code>, <code>WaveDrom</code>, <code>GraphViz</code>，<code>Vega &amp; Vega-lite</code>，<code>Ditaa</code> 图像渲染。 你也可以通过使用 <a href="https://shd101wyy.github.io/markdown-preview-enhanced/#/zh-cn/code-chunk" target="_blank" rel="noopener">Code Chunk</a> 来渲染 <code>TikZ</code>, <code>Python Matplotlib</code>, <code>Plotly</code> 等图像。</p>
@@ -21646,107 +21646,6 @@ docker0: flags=4099&lt;UP,BROADCAST,MULTICAST&gt;  mtu 1500
         <tag>bs4</tag>
         <tag>requests</tag>
         <tag>spider</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>objdump 解析目标文件各个段</title>
-    <url>/2019/12/10/nm-code-segment/</url>
-    <content><![CDATA[<p>目标文件 <code>.o</code> 中 <code>text</code>、 <code>bss</code>、 <code>data</code> 和 <code>rodata</code> 区别和联系</p>
-<a id="more"></a>
-
-<p>目标文件只是ELF文件的<strong>可重定位文件(Relocatable file)</strong>，常用分析ELF文件工具如下</p>
-<ol>
-<li>objdump</li>
-<li>readelf</li>
-<li>nm</li>
-</ol>
-<h2 id="text"><a href="#text" class="headerlink" title=".text"></a>.text</h2><p>代码段，也有可能包含一些只读的常数变量，例如字符串常量等。只读。</p>
-<h2 id="bss"><a href="#bss" class="headerlink" title=".bss"></a>.bss</h2><p>没有初始化的和初始化为0的全局变量和静态变量，并不给该段的数据分配空间，只是记录数据所需空间的大小，运行时在栈上分配。</p>
-<h2 id="data"><a href="#data" class="headerlink" title=".data"></a>.data</h2><p>已初始化非0全局变量和静态变量，需要分配空间用于存储数据。</p>
-<h2 id="rodata"><a href="#rodata" class="headerlink" title=".rodata"></a>.rodata</h2><p><code>ro</code> 表示为只读数据段，存放C中的字符串和常量，优化后会只存储一份。常量并不一定在此段，有可能存放在代码段。</p>
-<h2 id="example"><a href="#example" class="headerlink" title="example"></a>example</h2><pre><code class="c">static int x1 = 0;
-static int x2 = 1234;
-
-int main()
-{
-    return 0;
-}</code></pre>
-<p>使用 <code>objdump -x -s -d a.out</code> 查找如下</p>
-<pre><code>00000000006bb330 l     O .bss   0000000000000004 x1
-00000000006b90f0 l     O .data  0000000000000004 x2
-.
-Contents of section .data:
- 6b90e0 00000000 00000000 00000000 00000000  ................
- 6b90f0 34120000 00000000 00080000 00000000  4...............</code></pre><p><code>x1</code> 放入 <code>.bss</code> 段；<code>x2</code> 放入 <code>.data</code> 段。</p>
-<h2 id="nm-vs-objdump"><a href="#nm-vs-objdump" class="headerlink" title="nm vs objdump"></a>nm vs objdump</h2><p><code>nm</code> 与 <code>objdump</code> 标志不统一，需要注意区分</p>
-<h3 id="nm"><a href="#nm" class="headerlink" title="nm"></a>nm</h3><a href="/2015/04/05/nm-symbols/" title="nm symbols 类型及程序组成">nm symbols 类型及程序组成</a>
-
-<p>查看详细信息 <code>man nm</code></p>
-<h3 id="objdump"><a href="#objdump" class="headerlink" title="objdump"></a>objdump</h3><p>查看详细信息 <code>man objdump</code></p>
-<ul>
-<li><code>l</code> local</li>
-<li><code>g</code> global</li>
-<li><code>u</code> unique global</li>
-<li><code>!</code> both global and local</li>
-<li><code>w</code> weak</li>
-<li><code>C</code> The symbol denotes a constructor</li>
-<li><code>W</code> warning</li>
-<li><code>I</code> The symbol is an indirect reference to another symbol</li>
-<li><code>i</code> a function to be evaluated during reloc processing</li>
-<li><code>d</code> a debugging symbol</li>
-<li><code>D</code> a dynamic symbol</li>
-<li><code>F</code> function</li>
-<li><code>f</code> file</li>
-<li><code>O</code> object</li>
-</ul>
-<h3 id="example-1"><a href="#example-1" class="headerlink" title="example"></a>example</h3><pre><code class="shell">$ tree
-.
-├── a.out
-├── one.c   // extern unsigned long start_time;
-├── two.c   // unsigned long start_time = 0;
-└── main.c  // start_time = _get_time();
-
-$ nm one.o | grep start_time
-00000004 C start_time
-$ nm two.o | grep start_time
-00000000 B start_time
-$ nm main.o | grep start_time
-00000004 C start_time
-$ nm a.out | grep start_time
-97d6c6c4 B start_time
-
-$ objdump -x -s a.out | grep start_time
-97d6c6c4 g     O .bss    00000004 start_time
- 0640 0e000067 5f737461 72745f74 696d6500  ...start_time.
- 1ae0 675f7374 6172745f 74696d65 00df0e00  start_time....
-$ objdump -x -s one.o | grep start_time
-00000004       O *COM*    00000004 start_time
-00000ef5 ADDR32   start_time
-0000003c ADDR32   start_time
-$ objdump -x -s main.o | grep start_time
-00000004       O *COM*    00000004 start_time
-00000262 ADDR32   start_time
-000000e4 ADDR32   start_time
-$ objdump -x -s two.o | grep start_time
- 32 .bss.start_time 00000004  00000000  00000000  000015c8  2**2
-00000000 l    d  .bss.start_time    00000000 .bss.start_time
-00000000 g     O .bss.start_time    00000004 start_time
-000006d7 ADDR32   .bss.start_time</code></pre>
-<p>注意变量 <code>start_time</code> 在各个文件中的标志</p>
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="https://blog.51cto.com/12810168/2321531" target="_blank" rel="noopener">程序的结构体系（十）</a></li>
-<li><a href="https://www.jianshu.com/p/863b279c941e" target="_blank" rel="noopener">使用readelf和objdump解析目标文件</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>C</category>
-        <category>Linker</category>
-      </categories>
-      <tags>
-        <tag>ld</tag>
-        <tag>nm</tag>
-        <tag>objdump</tag>
-        <tag>readelf</tag>
       </tags>
   </entry>
   <entry>
@@ -24616,6 +24515,107 @@ $ size -A -d a.out</code></pre>
       </tags>
   </entry>
   <entry>
+    <title>objdump 解析目标文件各个段</title>
+    <url>/2019/12/10/nm-code-segment/</url>
+    <content><![CDATA[<p>目标文件 <code>.o</code> 中 <code>text</code>、 <code>bss</code>、 <code>data</code> 和 <code>rodata</code> 区别和联系</p>
+<a id="more"></a>
+
+<p>目标文件只是ELF文件的<strong>可重定位文件(Relocatable file)</strong>，常用分析ELF文件工具如下</p>
+<ol>
+<li>objdump</li>
+<li>readelf</li>
+<li>nm</li>
+</ol>
+<h2 id="text"><a href="#text" class="headerlink" title=".text"></a>.text</h2><p>代码段，也有可能包含一些只读的常数变量，例如字符串常量等。只读。</p>
+<h2 id="bss"><a href="#bss" class="headerlink" title=".bss"></a>.bss</h2><p>没有初始化的和初始化为0的全局变量和静态变量，并不给该段的数据分配空间，只是记录数据所需空间的大小，运行时在栈上分配。</p>
+<h2 id="data"><a href="#data" class="headerlink" title=".data"></a>.data</h2><p>已初始化非0全局变量和静态变量，需要分配空间用于存储数据。</p>
+<h2 id="rodata"><a href="#rodata" class="headerlink" title=".rodata"></a>.rodata</h2><p><code>ro</code> 表示为只读数据段，存放C中的字符串和常量，优化后会只存储一份。常量并不一定在此段，有可能存放在代码段。</p>
+<h2 id="example"><a href="#example" class="headerlink" title="example"></a>example</h2><pre><code class="c">static int x1 = 0;
+static int x2 = 1234;
+
+int main()
+{
+    return 0;
+}</code></pre>
+<p>使用 <code>objdump -x -s -d a.out</code> 查找如下</p>
+<pre><code>00000000006bb330 l     O .bss   0000000000000004 x1
+00000000006b90f0 l     O .data  0000000000000004 x2
+.
+Contents of section .data:
+ 6b90e0 00000000 00000000 00000000 00000000  ................
+ 6b90f0 34120000 00000000 00080000 00000000  4...............</code></pre><p><code>x1</code> 放入 <code>.bss</code> 段；<code>x2</code> 放入 <code>.data</code> 段。</p>
+<h2 id="nm-vs-objdump"><a href="#nm-vs-objdump" class="headerlink" title="nm vs objdump"></a>nm vs objdump</h2><p><code>nm</code> 与 <code>objdump</code> 标志不统一，需要注意区分</p>
+<h3 id="nm"><a href="#nm" class="headerlink" title="nm"></a>nm</h3><a href="/2015/04/05/nm-symbols/" title="nm symbols 类型及程序组成">nm symbols 类型及程序组成</a>
+
+<p>查看详细信息 <code>man nm</code></p>
+<h3 id="objdump"><a href="#objdump" class="headerlink" title="objdump"></a>objdump</h3><p>查看详细信息 <code>man objdump</code></p>
+<ul>
+<li><code>l</code> local</li>
+<li><code>g</code> global</li>
+<li><code>u</code> unique global</li>
+<li><code>!</code> both global and local</li>
+<li><code>w</code> weak</li>
+<li><code>C</code> The symbol denotes a constructor</li>
+<li><code>W</code> warning</li>
+<li><code>I</code> The symbol is an indirect reference to another symbol</li>
+<li><code>i</code> a function to be evaluated during reloc processing</li>
+<li><code>d</code> a debugging symbol</li>
+<li><code>D</code> a dynamic symbol</li>
+<li><code>F</code> function</li>
+<li><code>f</code> file</li>
+<li><code>O</code> object</li>
+</ul>
+<h3 id="example-1"><a href="#example-1" class="headerlink" title="example"></a>example</h3><pre><code class="shell">$ tree
+.
+├── a.out
+├── one.c   // extern unsigned long start_time;
+├── two.c   // unsigned long start_time = 0;
+└── main.c  // start_time = _get_time();
+
+$ nm one.o | grep start_time
+00000004 C start_time
+$ nm two.o | grep start_time
+00000000 B start_time
+$ nm main.o | grep start_time
+00000004 C start_time
+$ nm a.out | grep start_time
+97d6c6c4 B start_time
+
+$ objdump -x -s a.out | grep start_time
+97d6c6c4 g     O .bss    00000004 start_time
+ 0640 0e000067 5f737461 72745f74 696d6500  ...start_time.
+ 1ae0 675f7374 6172745f 74696d65 00df0e00  start_time....
+$ objdump -x -s one.o | grep start_time
+00000004       O *COM*    00000004 start_time
+00000ef5 ADDR32   start_time
+0000003c ADDR32   start_time
+$ objdump -x -s main.o | grep start_time
+00000004       O *COM*    00000004 start_time
+00000262 ADDR32   start_time
+000000e4 ADDR32   start_time
+$ objdump -x -s two.o | grep start_time
+ 32 .bss.start_time 00000004  00000000  00000000  000015c8  2**2
+00000000 l    d  .bss.start_time    00000000 .bss.start_time
+00000000 g     O .bss.start_time    00000004 start_time
+000006d7 ADDR32   .bss.start_time</code></pre>
+<p>注意变量 <code>start_time</code> 在各个文件中的标志</p>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://blog.51cto.com/12810168/2321531" target="_blank" rel="noopener">程序的结构体系（十）</a></li>
+<li><a href="https://www.jianshu.com/p/863b279c941e" target="_blank" rel="noopener">使用readelf和objdump解析目标文件</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>C</category>
+        <category>Linker</category>
+      </categories>
+      <tags>
+        <tag>ld</tag>
+        <tag>nm</tag>
+        <tag>objdump</tag>
+        <tag>readelf</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>字符集与字符编码</title>
     <url>/2020/08/24/character-sets-and-character-encoding/</url>
     <content><![CDATA[<p>介绍如下几种概念</p>
@@ -25687,6 +25687,87 @@ libtest.a(rmdec.c.o): warning: defined here</code></pre><h2 id="原因"><a href=
         <tag>dvb</tag>
         <tag>psi</tag>
         <tag>si</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>优化 c 程序可执行文件大小</title>
+    <url>/2021/07/13/how-to-make-smaller-c-binaries/</url>
+    <content><![CDATA[<p>优化 elf 大小的各种方式</p>
+<a id="more"></a>
+
+<h2 id="编译优化等级"><a href="#编译优化等级" class="headerlink" title="编译优化等级"></a>编译优化等级</h2><ul>
+<li><code>-O0</code> 默认</li>
+<li><code>-O1</code></li>
+<li><code>-O2</code></li>
+<li><code>-O3</code></li>
+<li><code>-Ofast</code></li>
+<li><code>Os</code></li>
+</ul>
+<p>应该使用 <code>-Os</code> 来保证编译的 elf 最小，禁用了类似 <code>inline</code> 之类的编译优化选项，同时对性能敏感的代码使用 <code>#pragma</code> 来保证</p>
+<pre><code class="c">#pragma GCC push_options
+#pragma GCC optimize (&quot;O2&quot;)
+
+/*
+ * Code that needs optimizing O2
+ */
+
+#pragma GCC pop_options</code></pre>
+<h2 id="Linker-Garbage-Collection"><a href="#Linker-Garbage-Collection" class="headerlink" title="Linker Garbage Collection"></a>Linker Garbage Collection</h2><p>将不使用的 <code>function</code>、<code>data</code> 从 elf 中删除</p>
+<pre><code class="makefile">CFLAGS += -ffunction-sections -fdata-sections
+LDFLAGS += -Wl,--gc-sections</code></pre>
+<p><strong>需要避免某些符号被优化掉，例如中断向量，使用 KEEP</strong></p>
+<pre><code class="ld">    .text :
+    {
+        KEEP(*(.vectors .vectors.*))
+            [...]
+    } &gt; rom</code></pre>
+<h2 id="strip-elf"><a href="#strip-elf" class="headerlink" title="strip elf"></a>strip elf</h2><p>去除非必要段</p>
+<pre><code class="shell">$ objcopy -S -g out.elf
+$ strip -S --strip-unneeded --remove-section=.note.gnu.gold-version --remove-section=.comment --remove-section=.note --remove-section=.note.gnu.build-id --remove-section=.note.ABI-tag</code></pre>
+<ul>
+<li>Remove all symbol and relocation information</li>
+<li>Remove all debugging symbols &amp; sections</li>
+<li>Remove all symbols not needed by relocations</li>
+</ul>
+<h2 id="m32"><a href="#m32" class="headerlink" title="-m32"></a><code>-m32</code></h2><p>Use <code>-m32</code> to compile a 32-bit binary. 32-bit binaries are smaller than 64-bit binaries because pointers are shorter.</p>
+<h2 id="Options"><a href="#Options" class="headerlink" title="Options"></a>Options</h2><ul>
+<li><code>-fno-stack-protector</code></li>
+<li><code>-fomit-frame-pointer</code></li>
+<li><code>-fno-math-errno</code>, and don’t check the errno after calling math functions.</li>
+<li>Try <code>-fno-unroll-loops</code>, sometimes it makes the file smaller.</li>
+<li><code>-fmerge-all-constants</code></li>
+<li><code>-fno-ident</code>, this will prevent the generation of the .ident assembler directive, which adds an identification of the compiler to the binary.</li>
+<li><code>-mfpmath=387</code> <code>-mfancy-math-387</code> to make floating point computations shorter.</li>
+<li>If you don’t need double precision, but float preecision is enough, use -fshort-double -fsingle-precision-constant .</li>
+<li>If you don’t need IEEE-conformat floating point calculations, use -ffast-math .</li>
+<li>Use -Wl,-z,norelro for linking, which is equivalent to ld -z norelro .</li>
+<li>Use -Wl,–hash-style=gnu for linking, which is equivalent to ld –hash-style=gnu . You may also try =sysv instead of =gnu, sometimes it’s smaller by a couple of bytes. The goal here is to avoid =both, which is the default on some systems.</li>
+<li>Use -Wl,–build-id=none for linking, which is equivalent to ld –build-id=none .</li>
+<li>Get more flags from the Os list in diet.c of diet libc, for about 15 architectures.</li>
+<li>Don’t use these flags: -pie, -fpie, -fPIE, -fpic, -fPIC. Some of these are useful in shared libraries, so enable them only when compiling shared libraries.</li>
+</ul>
+<h2 id="C"><a href="#C" class="headerlink" title="C++"></a>C++</h2><ul>
+<li>use <code>-fno-exceptions</code> if your code doesn’t use exceptions.</li>
+<li>use <code>-fno-rtti</code> if your code doesn’t use RTTI (run-time type identification) or dynamic_cast.</li>
+<li>use <code>-fvtable-gc</code> to let the linker know about and remove unused virtual method tables.</li>
+</ul>
+<h2 id="i386"><a href="#i386" class="headerlink" title="i386"></a>i386</h2><ul>
+<li>use -mpreferred-stack-boundary=2 .</li>
+<li>use -falign-functions=1 -falign-jumps=1 -falign-loops=1 .</li>
+</ul>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://ptspts.blogspot.com/2013/12/how-to-make-smaller-c-and-c-binaries.html" target="_blank" rel="noopener"><strong>How to make smaller C and C++ binaries</strong></a></li>
+<li><a href="https://interrupt.memfault.com/blog/code-size-optimization-gcc-flags" target="_blank" rel="noopener">Code Size Optimization: GCC Compiler Flags</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>C</category>
+        <category>GCC</category>
+      </categories>
+      <tags>
+        <tag>gcc</tag>
+        <tag>c</tag>
+        <tag>elf</tag>
       </tags>
   </entry>
   <entry>
