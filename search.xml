@@ -13257,324 +13257,6 @@ sigaction(SIGCHLD, &amp;sa, NULL);</code></pre>
       </tags>
   </entry>
   <entry>
-    <title>Movian 插件加载分析</title>
-    <url>/2018/01/10/movian-plugin-load/</url>
-    <content><![CDATA[<p>分析源文件 <code>src/plugins.c</code></p>
-<a id="more"></a>
-
-<h2 id="install"><a href="#install" class="headerlink" title="install"></a>install</h2><p><code>plugin_install</code> -&gt; <code>plugin_load</code> -&gt; <code>ecmascript_plugin_load</code></p>
-<h3 id="plugin-load"><a href="#plugin-load" class="headerlink" title="plugin_load"></a>plugin_load</h3><p>解析 <code>plugin.json</code> 文件</p>
-<pre><code>//plugin.json 路径
-snprintf(ctrlfile, sizeof(ctrlfile), &quot;%s/plugin.json&quot;, url);
-
-// 读取文件内容
-if((b = fa_load(ctrlfile,
-                FA_LOAD_ERRBUF(errbuf2, sizeof(errbuf2)),
-                NULL)) == NULL) {
-  snprintf(errbuf, errlen, &quot;Unable to load %s -- %s&quot;, ctrlfile, errbuf2);
-  return -1;
-}
-
-// 解析 json 文件
-ctrl = htsmsg_json_deserialize2(buf_cstr(b), errbuf, errlen);
-
-// 获取数据
-const char *type = htsmsg_get_str(ctrl, &quot;type&quot;);
-const char *id   = htsmsg_get_str(ctrl, &quot;id&quot;);
-const char *version = htsmsg_get_str(ctrl, &quot;version&quot;);
-const char *file = htsmsg_get_str(ctrl, &quot;file&quot;);
-
-//js 文件路径
-snprintf(fullpath, sizeof(fullpath), &quot;%s/%s&quot;, url, file);
-
-int version = htsmsg_get_u32_or_default(ctrl, &quot;apiversion&quot;, 1);
-
-// 打开 js 文件
-hts_mutex_unlock(&amp;plugin_mutex);
-r = ecmascript_plugin_load(id, fullpath, errbuf, errlen, version,
-                           buf_cstr(b), pflags);
-hts_mutex_lock(&amp;plugin_mutex);</code></pre><h3 id="scmascript-plugin-load"><a href="#scmascript-plugin-load" class="headerlink" title="scmascript_plugin_load"></a>scmascript_plugin_load</h3><pre><code>int
-ecmascript_plugin_load(const char *id, const char *url,
-                       char *errbuf, size_t errlen,
-                       int version, const char *manifest,
-                       int flags)
-{
-  char storage[PATH_MAX];
-
-  snprintf(storage, sizeof(storage),
-           &quot;%s/plugins/%s&quot;, gconf.persistent_path, id);
-
-  es_context_t *ec = es_context_create(id, flags | ECMASCRIPT_PLUGIN,
-                                       url, storage);
-
-  duk_context *ctx = es_context_begin(ec);
-
-  duk_push_global_object(ctx);
-
-  int plugin_obj_idx = duk_push_object(ctx);
-
-  duk_push_string(ctx, id);
-  duk_put_prop_string(ctx, plugin_obj_idx, &quot;id&quot;);
-
-  duk_push_string(ctx, url);
-  duk_put_prop_string(ctx, plugin_obj_idx, &quot;url&quot;);
-
-  duk_push_string(ctx, manifest);
-  duk_put_prop_string(ctx, plugin_obj_idx, &quot;manifest&quot;);
-
-  duk_push_int(ctx, version);
-  duk_put_prop_string(ctx, plugin_obj_idx, &quot;apiversion&quot;);
-  if(ec-&gt;ec_path) {
-    duk_push_string(ctx, ec-&gt;ec_path);
-    duk_put_prop_string(ctx, plugin_obj_idx, &quot;path&quot;);
-  }
-
-  //Plugin object {&quot;id&quot;: , &quot;url&quot;: , &quot;manifest&quot;: , &quot;apiversion&quot;: , &quot;path&quot;: }
-  duk_put_prop_string(ctx, -2, &quot;Plugin&quot;);
-  duk_pop(ctx);
-
-  if(version == 1) {
-
-    int64_t ts0 = arch_get_ts();
-
-    // 根据文件及路径编译为函数
-    if(es_load_and_compile(ec, &quot;dataroot://res/ecmascript/legacy/api-v1.js&quot;,
-                           ctx))
-      goto bad;
-
-    int64_t ts1 = arch_get_ts();
-
-    // 执行函数
-    if(duk_pcall(ctx, 0)) {
-      es_dump_err(ctx);
-      goto bad;
-    }
-
-    int64_t ts2 = arch_get_ts();
-
-    //xx.js 编译
-    if(es_load_and_compile(ec, url, ctx)) {
-      duk_pop(ctx);
-      goto bad;
-    }
-
-    int64_t ts3 = arch_get_ts();
-
-    duk_swap_top(ctx, 0);
-    // 执行
-    if(duk_pcall_method(ctx, 0))
-      es_dump_err(ctx);
-
-    int64_t ts4 = arch_get_ts();
-
-    es_debug(ec, &quot;API v1 emulation: Compile:%dms Exec:%dms&quot;,
-             ((int)(ts1 - ts0)) / 1000,
-             ((int)(ts2 - ts1)) / 1000);
-
-    es_debug(ec, &quot;Plugin main:      Compile:%dms Exec:%dms&quot;,
-             ((int)(ts3 - ts2)) / 1000,
-             ((int)(ts4 - ts3)) / 1000);
-
-  } else {
-    es_exec(ec, url, ctx);
-  }
-
- bad:
-  es_context_end(ec, 1, ctx);
-
-  es_context_release(ec);
-
-  return 0;
-}</code></pre>]]></content>
-      <categories>
-        <category>Movian</category>
-      </categories>
-      <tags>
-        <tag>movian</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Movian Plugin Development</title>
-    <url>/2018/01/10/movian-plugin-development/</url>
-    <content><![CDATA[<p>Movian Development</p>
-<a id="more"></a>
-
-<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
-<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
-<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
-<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
-<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
-<pre><code class="json">{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;apiversion&quot;: 1,
-  &quot;id&quot;: &quot;headweb&quot;,
-  &quot;file&quot;: &quot;headweb.js&quot;,
-  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
-  &quot;version&quot;: &quot;1.5.3&quot;,
-  &quot;author&quot;: &quot;Andreas Öman&quot;,
-  &quot;title&quot;: &quot;Headweb&quot;,
-  &quot;icon&quot;: &quot;headweb_square.png&quot;,
-  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
-  &quot;category&quot;: &quot;video&quot;,
-  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
-  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
-}</code></pre>
-<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
-<ul>
-<li>ecmascript - loads the plugin using Duktape.</li>
-<li>views - used for user interface (screen keyboard plugin)</li>
-</ul>
-<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
-<ul>
-<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
-<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
-</ul>
-<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
-<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
-<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
-<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
-<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
-<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
-<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
-<ul>
-<li>“tv” - online TV</li>
-<li>“video” - streaming video</li>
-<li>“music” - streaming music</li>
-<li>“glwview” - UI extentions</li>
-<li>“subtitles” - subtitles</li>
-<li>“glwosk” - on screen keyboard</li>
-</ul>
-<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
-<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
-<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
-<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
-<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
-<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
-<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
-<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
-<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
-<pre><code>{
-  &quot;type&quot;: &quot;ecmascript&quot;,
-  &quot;file&quot;: &quot;testplugin.js&quot;,
-  &quot;id&quot;: &quot;testplugin&quot;
-}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
-<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
-  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
-})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
-<pre><code>(function(plugin) {
-  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
-    showtime.print(&quot;I was called&quot;);
-  })
-})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
-<p><code>somafa</code> 中的 <code>start URI</code></p>
-<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
-...
-}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
-<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
-<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
-<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
-<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
-<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
-<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
-<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
-<ul>
-<li>Direct URL</li>
-<li>Via a video page</li>
-</ul>
-<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
-<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
-<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
-<p>To use it first do:</p>
-<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
-      <categories>
-        <category>Movian</category>
-      </categories>
-      <tags>
-        <tag>movian</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>vim-highlight-syntax</title>
-    <url>/2017/12/19/vim-highlight-syntax/</url>
-    <content><![CDATA[<a id="more"></a>
-
-<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
-<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
-<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
-<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
-<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
-<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
-<pre><code>:syntax
---- 语法项目 ---
-cLabel         xxx default case
-cStructure     xxx union struct typedef enum
-cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
-                   _Thread_local auto
-cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
-cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
-cStatement     xxx return goto asm continue break
-                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
-<p><code>:help group-name</code></p>
-<pre><code>:help group-name
-
-(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
-
-        *Comment        any comment
-
-        *Constant       any constant
-         String         a string constant: &quot;this is a string&quot;
-         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
-         Number         a number constant: 234, 0xff
-         Boolean        a boolean constant: TRUE, false
-         Float          a floating point constant: 2.3e10
-
-        *Identifier     any variable name
-         Function       function name (also: methods for classes)
-        *Statement      any statement
-         Conditional    if, then, else, endif, switch, etc.
-         Repeat         for, do, while, etc.
-         Label          case, default, etc.
-         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
-         Keyword        any other keyword
-         Exception      try, catch, throw
-
-        *PreProc        generic Preprocessor
-         Include        preprocessor #include
-         Define         preprocessor #define
-         Macro          same as Define
-         PreCondit      preprocessor #if, #else, #endif, etc.
-
-        *Type           int, long, char, etc.
-         StorageClass   static, register, volatile, etc.
-         Structure      struct, union, enum, etc.
-         Typedef        A typedef
-
-        *Special        any special symbol
-         SpecialChar    special character in a constant
-         Tag            you can use CTRL-] on this
-         Delimiter      character that needs attention
-         SpecialComment special things inside a comment
-         Debug          debugging statements
-
-        *Underlined     text that stands out, HTML links
-
-        *Ignore         left blank, hidden  hl-Ignore
-
-        *Error          any erroneous construct
-        *Todo           anything that needs extra attention; mostly the
-                        keywords TODO FIXME and XXX</code></pre>]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Editor</category>
-      </categories>
-      <tags>
-        <tag>vim</tag>
-        <tag>highlight</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>在内网服务器搭建 CI(Jenkins + Gerrit)</title>
     <url>/2018/08/22/jenkins-gerrit-in-server/</url>
     <content><![CDATA[<p>在内网服务器搭建 CI 系统，主要实现</p>
@@ -13945,6 +13627,245 @@ int main()
       </tags>
   </entry>
   <entry>
+    <title>Movian 插件加载分析</title>
+    <url>/2018/01/10/movian-plugin-load/</url>
+    <content><![CDATA[<p>分析源文件 <code>src/plugins.c</code></p>
+<a id="more"></a>
+
+<h2 id="install"><a href="#install" class="headerlink" title="install"></a>install</h2><p><code>plugin_install</code> -&gt; <code>plugin_load</code> -&gt; <code>ecmascript_plugin_load</code></p>
+<h3 id="plugin-load"><a href="#plugin-load" class="headerlink" title="plugin_load"></a>plugin_load</h3><p>解析 <code>plugin.json</code> 文件</p>
+<pre><code>//plugin.json 路径
+snprintf(ctrlfile, sizeof(ctrlfile), &quot;%s/plugin.json&quot;, url);
+
+// 读取文件内容
+if((b = fa_load(ctrlfile,
+                FA_LOAD_ERRBUF(errbuf2, sizeof(errbuf2)),
+                NULL)) == NULL) {
+  snprintf(errbuf, errlen, &quot;Unable to load %s -- %s&quot;, ctrlfile, errbuf2);
+  return -1;
+}
+
+// 解析 json 文件
+ctrl = htsmsg_json_deserialize2(buf_cstr(b), errbuf, errlen);
+
+// 获取数据
+const char *type = htsmsg_get_str(ctrl, &quot;type&quot;);
+const char *id   = htsmsg_get_str(ctrl, &quot;id&quot;);
+const char *version = htsmsg_get_str(ctrl, &quot;version&quot;);
+const char *file = htsmsg_get_str(ctrl, &quot;file&quot;);
+
+//js 文件路径
+snprintf(fullpath, sizeof(fullpath), &quot;%s/%s&quot;, url, file);
+
+int version = htsmsg_get_u32_or_default(ctrl, &quot;apiversion&quot;, 1);
+
+// 打开 js 文件
+hts_mutex_unlock(&amp;plugin_mutex);
+r = ecmascript_plugin_load(id, fullpath, errbuf, errlen, version,
+                           buf_cstr(b), pflags);
+hts_mutex_lock(&amp;plugin_mutex);</code></pre><h3 id="scmascript-plugin-load"><a href="#scmascript-plugin-load" class="headerlink" title="scmascript_plugin_load"></a>scmascript_plugin_load</h3><pre><code>int
+ecmascript_plugin_load(const char *id, const char *url,
+                       char *errbuf, size_t errlen,
+                       int version, const char *manifest,
+                       int flags)
+{
+  char storage[PATH_MAX];
+
+  snprintf(storage, sizeof(storage),
+           &quot;%s/plugins/%s&quot;, gconf.persistent_path, id);
+
+  es_context_t *ec = es_context_create(id, flags | ECMASCRIPT_PLUGIN,
+                                       url, storage);
+
+  duk_context *ctx = es_context_begin(ec);
+
+  duk_push_global_object(ctx);
+
+  int plugin_obj_idx = duk_push_object(ctx);
+
+  duk_push_string(ctx, id);
+  duk_put_prop_string(ctx, plugin_obj_idx, &quot;id&quot;);
+
+  duk_push_string(ctx, url);
+  duk_put_prop_string(ctx, plugin_obj_idx, &quot;url&quot;);
+
+  duk_push_string(ctx, manifest);
+  duk_put_prop_string(ctx, plugin_obj_idx, &quot;manifest&quot;);
+
+  duk_push_int(ctx, version);
+  duk_put_prop_string(ctx, plugin_obj_idx, &quot;apiversion&quot;);
+  if(ec-&gt;ec_path) {
+    duk_push_string(ctx, ec-&gt;ec_path);
+    duk_put_prop_string(ctx, plugin_obj_idx, &quot;path&quot;);
+  }
+
+  //Plugin object {&quot;id&quot;: , &quot;url&quot;: , &quot;manifest&quot;: , &quot;apiversion&quot;: , &quot;path&quot;: }
+  duk_put_prop_string(ctx, -2, &quot;Plugin&quot;);
+  duk_pop(ctx);
+
+  if(version == 1) {
+
+    int64_t ts0 = arch_get_ts();
+
+    // 根据文件及路径编译为函数
+    if(es_load_and_compile(ec, &quot;dataroot://res/ecmascript/legacy/api-v1.js&quot;,
+                           ctx))
+      goto bad;
+
+    int64_t ts1 = arch_get_ts();
+
+    // 执行函数
+    if(duk_pcall(ctx, 0)) {
+      es_dump_err(ctx);
+      goto bad;
+    }
+
+    int64_t ts2 = arch_get_ts();
+
+    //xx.js 编译
+    if(es_load_and_compile(ec, url, ctx)) {
+      duk_pop(ctx);
+      goto bad;
+    }
+
+    int64_t ts3 = arch_get_ts();
+
+    duk_swap_top(ctx, 0);
+    // 执行
+    if(duk_pcall_method(ctx, 0))
+      es_dump_err(ctx);
+
+    int64_t ts4 = arch_get_ts();
+
+    es_debug(ec, &quot;API v1 emulation: Compile:%dms Exec:%dms&quot;,
+             ((int)(ts1 - ts0)) / 1000,
+             ((int)(ts2 - ts1)) / 1000);
+
+    es_debug(ec, &quot;Plugin main:      Compile:%dms Exec:%dms&quot;,
+             ((int)(ts3 - ts2)) / 1000,
+             ((int)(ts4 - ts3)) / 1000);
+
+  } else {
+    es_exec(ec, url, ctx);
+  }
+
+ bad:
+  es_context_end(ec, 1, ctx);
+
+  es_context_release(ec);
+
+  return 0;
+}</code></pre>]]></content>
+      <categories>
+        <category>Movian</category>
+      </categories>
+      <tags>
+        <tag>movian</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Movian Plugin Development</title>
+    <url>/2018/01/10/movian-plugin-development/</url>
+    <content><![CDATA[<p>Movian Development</p>
+<a id="more"></a>
+
+<p><a href="https://movian.tv/projects/movian/wiki/PluginDevelopment" target="_blank" rel="noopener">movian development</a></p>
+<h2 id="overview"><a href="#overview" class="headerlink" title="overview"></a>overview</h2><p>Movian 插件使用 <code>ECMAScript</code> 编写，从 <code>v4.9.401</code> 起使用解析器 <a href="http://duktape.org" target="_blank" rel="noopener">Duktape</a></p>
+<p>Movian plugins do not interact directly to the user via the user interface (similar to a web browser) but rather respond to browse and search requests and populate the internal data model with information that is then presented to the user via Movian’s user interface(s).</p>
+<h2 id="Structure-of-a-plugin"><a href="#Structure-of-a-plugin" class="headerlink" title="Structure of a plugin"></a>Structure of a plugin</h2><p>每个插件都在它自己的目录中。该目录必须包含一个 <code>plugin.json</code> 文件，其中包含有关该插件的信息。除了 <code>plugin.json</code> 文件之外，对插件目录中文件的命名没有进一步的限制，或者文件放在子目录中等等</p>
+<h3 id="plugin-json"><a href="#plugin-json" class="headerlink" title="plugin.json"></a>plugin.json</h3><p><code>Headweb</code> 插件为例：</p>
+<pre><code class="json">{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;apiversion&quot;: 1,
+  &quot;id&quot;: &quot;headweb&quot;,
+  &quot;file&quot;: &quot;headweb.js&quot;,
+  &quot;showtimeVersion&quot;: &quot;4.1.22&quot;,
+  &quot;version&quot;: &quot;1.5.3&quot;,
+  &quot;author&quot;: &quot;Andreas Öman&quot;,
+  &quot;title&quot;: &quot;Headweb&quot;,
+  &quot;icon&quot;: &quot;headweb_square.png&quot;,
+  &quot;synopsis&quot;: &quot;Headweb online video&quot;,
+  &quot;category&quot;: &quot;video&quot;,
+  &quot;description&quot;: &quot;&lt;p&gt;Headweb is a Swedish online video store.&lt;p&gt;For more information, visit &lt;a href=\&quot;http://www.headweb.com\&quot;&gt;http://www.headweb.com&lt;/a&gt;&quot;,
+  &quot;homepage&quot;:&quot;https://github.com/andoma/showtime-plugin-headweb&quot;
+}</code></pre>
+<h4 id="type-REQUIRED"><a href="#type-REQUIRED" class="headerlink" title="type (REQUIRED)"></a>type (REQUIRED)</h4><p>Type of plugin, as described by the following list.</p>
+<ul>
+<li>ecmascript - loads the plugin using Duktape.</li>
+<li>views - used for user interface (screen keyboard plugin)</li>
+</ul>
+<h4 id="apiversion-OPTIONAL"><a href="#apiversion-OPTIONAL" class="headerlink" title="apiversion (OPTIONAL)"></a>apiversion (OPTIONAL)</h4><p>Only applicable if type is ecmascript, ie. when running using the Duktape engine. This controls the API exposed by Movian to the plugin.</p>
+<ul>
+<li>1 - The version 1 API is the default and is compatible with the API which was exposed through the old SpiderMonkey engine.</li>
+<li>2 - The version 2 API is a new API which more resembles modern ECMAScript using modules and CommonJS interfaces. Please try to use this.</li>
+</ul>
+<p>The version 1 API is emulated using the version 2 API using a wrapper. The emulation code can be found here <a href="https://github.com/andoma/showtime/blob/master/resources/ecmascript/legacy/api-v1.js" target="_blank" rel="noopener">api-v1</a></p>
+<h4 id="id-REQUIRED"><a href="#id-REQUIRED" class="headerlink" title="id (REQUIRED)"></a>id (REQUIRED)</h4><p>Unique identifier for a plugin. The IDs are assigned by the Movian project. Any ID starting with the string “test” is reserved for development and can be used by plugin developers until a final ID has been assigned. The assigned IDs will be ASCII lowercase. To get an ID please mail <a href="mailto:andreas@lonelycoder.com">andreas@lonelycoder.com</a></p>
+<h4 id="file-REQUIRED"><a href="#file-REQUIRED" class="headerlink" title="file (REQUIRED)"></a>file (REQUIRED)</h4><p>Name of the plugin executable/script. <strong>Usually it’s a good idea to give the file a name resembling the plugin ID.</strong></p>
+<h4 id="title-RECOMMENDED"><a href="#title-RECOMMENDED" class="headerlink" title="title (RECOMMENDED)"></a>title (RECOMMENDED)</h4><p>Short title of the Plugin. If omitted the ‘id’ field will be used instead which might look a bit bad due to lowercasing, etc</p>
+<h4 id="showtimeVersion-RECOMMENDED"><a href="#showtimeVersion-RECOMMENDED" class="headerlink" title="showtimeVersion (RECOMMENDED)"></a>showtimeVersion (RECOMMENDED)</h4><p>Minimum version required of Movian for this plugin to work. If the current version of Movian is less than this version the user won’t be able to install the plugin but will be notified about what version of Movian is required. The same goes if a plugin is updated and the new version requires a newer version of Movian. Then the user will be refused to upgrade the plugin. If this field is omitted Movian will assume the plugin works on all versions of Movian.</p>
+<h4 id="version-RECOMMENDED"><a href="#version-RECOMMENDED" class="headerlink" title="version (RECOMMENDED)"></a>version (RECOMMENDED)</h4><p>Version of the plugin. If this does not match the current installed version of a user’s plugin the user will be presented with the possibility to upgrade the plugin. If the field is omitted Movian will set the version to “Unknown”</p>
+<h4 id="category-RECOMMENDED"><a href="#category-RECOMMENDED" class="headerlink" title="category (RECOMMENDED)"></a>category (RECOMMENDED)</h4><p>Category of the plugin. If the field is omitted Movian will set the category to “Unknown”. Following categories are known:</p>
+<ul>
+<li>“tv” - online TV</li>
+<li>“video” - streaming video</li>
+<li>“music” - streaming music</li>
+<li>“glwview” - UI extentions</li>
+<li>“subtitles” - subtitles</li>
+<li>“glwosk” - on screen keyboard</li>
+</ul>
+<h4 id="synopsis-RECOMMENDED"><a href="#synopsis-RECOMMENDED" class="headerlink" title="synopsis (RECOMMENDED)"></a>synopsis (RECOMMENDED)</h4><p>A short one line summary of the plugin or the service it accesses</p>
+<h4 id="author-OPTIONAL"><a href="#author-OPTIONAL" class="headerlink" title="author (OPTIONAL)"></a>author (OPTIONAL)</h4><p>Plugin developer. Any UTF-8 characters are valid.</p>
+<h4 id="homepage-RECOMMENDED"><a href="#homepage-RECOMMENDED" class="headerlink" title="homepage (RECOMMENDED)"></a>homepage (RECOMMENDED)</h4><p>An URI with the location of the plugin homepage</p>
+<h4 id="icon-OPTIONAL"><a href="#icon-OPTIONAL" class="headerlink" title="icon (OPTIONAL)"></a>icon (OPTIONAL)</h4><p>Path to plugin icon. The path is relative to the plugin root directory. If no icon is available Movian will use a placeholder image instead.</p>
+<h4 id="description-OPTIONAL"><a href="#description-OPTIONAL" class="headerlink" title="description (OPTIONAL)"></a>description (OPTIONAL)</h4><p>Long RichText formatted (some HTML features are supported) description of the plugin.</p>
+<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><h3 id="debug"><a href="#debug" class="headerlink" title="debug"></a>debug</h3><p>You can reload the development plugin at any time by pressing <code>Shift+F5</code> in Movian</p>
+<pre><code>./build.linux/showtime -d -p testplugin</code></pre><p>Go ahead and create the directory:</p>
+<pre><code>mkdir testplugin</code></pre><p>Edit the JSON file with your favorite text editor:</p>
+<pre><code>vim testplugin/plugin.json</code></pre><p>And put the required fields in there:</p>
+<pre><code>{
+  &quot;type&quot;: &quot;ecmascript&quot;,
+  &quot;file&quot;: &quot;testplugin.js&quot;,
+  &quot;id&quot;: &quot;testplugin&quot;
+}</code></pre><p>Now go ahead and edit the ECMAScript file</p>
+<pre><code>vim testplugin/testplugin.js</code></pre><pre><code>(function(plugin) {
+  showtime.print(&quot;Hello! I&#39;m a plugin running inside Movian &quot; + showtime.currentVersionString);
+})(this);</code></pre><h3 id="URI"><a href="#URI" class="headerlink" title="URI"></a>URI</h3><p>Almost everything in Movian has an URI. This is used for crossplugin communications and interaction with user via unified search edit box at the top of the home screen. Each plugin registers URI starting with plugin’s ID.</p>
+<pre><code>(function(plugin) {
+  plugin.addURI(&quot;testplugin:hello&quot;, function(page) {
+    showtime.print(&quot;I was called&quot;);
+  })
+})(this);</code></pre><p><code>testplugin:helllo</code> 是 <code>URI</code>，将触发函数</p>
+<p><code>somafa</code> 中的 <code>start URI</code></p>
+<pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
+...
+}</code></pre><p><code>somafm:start</code> 触发函数 <code>start</code></p>
+<h2 id="ECMAScript-API-reference"><a href="#ECMAScript-API-reference" class="headerlink" title="ECMAScript API reference"></a>ECMAScript API reference</h2><p>This <a href="https://movian.tv/projects/movian/wiki/JSAPIREF" target="_blank" rel="noopener">API</a> is effective for plugins with apiversion: 1</p>
+<h3 id="Service-object"><a href="#Service-object" class="headerlink" title="Service object"></a>Service object</h3><p><code>res/ecmascript/modules/movian/service.js</code></p>
+<h3 id="Showtime-object"><a href="#Showtime-object" class="headerlink" title="Showtime object"></a>Showtime object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Plugin-object"><a href="#Plugin-object" class="headerlink" title="Plugin object"></a>Plugin object</h3><p><code>res/ecmascript/legacy/api-v1.js</code></p>
+<h3 id="Page-object"><a href="#Page-object" class="headerlink" title="Page object"></a>Page object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Item-object"><a href="#Item-object" class="headerlink" title="Item object"></a>Item object</h3><p><code>res/ecmascript/modules/movian/page.js</code></p>
+<h3 id="Settings-object"><a href="#Settings-object" class="headerlink" title="Settings object"></a>Settings object</h3><p><code>res/ecmascript/modules/movian/settings.js</code></p>
+<h3 id="HTTP-response-object"><a href="#HTTP-response-object" class="headerlink" title="HTTP response object"></a>HTTP response object</h3><p><code>res/ecmascript/modules/movian/http.js</code></p>
+<h3 id="Playing-a-video-file"><a href="#Playing-a-video-file" class="headerlink" title="Playing a video file"></a>Playing a video file</h3><p>Playing (or more correctly referring to) a video can be done in two ways.</p>
+<ul>
+<li>Direct URL</li>
+<li>Via a video page</li>
+</ul>
+<h2 id="XML-parsing-in-ECMAScript"><a href="#XML-parsing-in-ECMAScript" class="headerlink" title="XML parsing in ECMAScript"></a>XML parsing in ECMAScript</h2><p>When using ECMAScript and Duktape the plugins need to rely on Movian’s XML parser. To access do:</p>
+<pre><code>var XML = require(&#39;showtime/xml&#39;);</code></pre><h2 id="Parsing-HTML-with-Movian"><a href="#Parsing-HTML-with-Movian" class="headerlink" title="Parsing HTML with Movian"></a>Parsing HTML with Movian</h2><p>Starting with version 4.9.389 Movian features a HTML parsing library called <a href="https://github.com/google/gumbo-parser" target="_blank" rel="noopener">gumbo</a>.</p>
+<p>This allows parsing of a HTML DOM using APIs not very different from a normal browser.</p>
+<p>To use it first do:</p>
+<pre><code>var html = require(&#39;showtime/html&#39;);</code></pre>]]></content>
+      <categories>
+        <category>Movian</category>
+      </categories>
+      <tags>
+        <tag>movian</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>iwpriv 命令</title>
     <url>/2018/09/19/iwpriv/</url>
     <content><![CDATA[<p><code>iwpriv</code> 工具通过 <code>ioctl</code> 动态获取相应无线网卡驱动的 <code>private_args</code> 所有扩展参数</p>
@@ -14107,6 +14028,85 @@ int main()
         <tag>linux</tag>
         <tag>iwpriv</tag>
         <tag>wifi</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>vim-highlight-syntax</title>
+    <url>/2017/12/19/vim-highlight-syntax/</url>
+    <content><![CDATA[<a id="more"></a>
+
+<h2 id="显示颜色"><a href="#显示颜色" class="headerlink" title="显示颜色"></a>显示颜色</h2><pre><code class="bash">(x=`tput op` y=`printf %76s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)</code></pre>
+<p><a href="https://github.com/lilydjwg/colorizer" target="_blank" rel="noopener">colorizer</a></p>
+<p><a href="https://github.com/guns/xterm-color-table.vim" target="_blank" rel="noopener">xterm-color-table.vim</a> 使用命令 <code>:XtermColorTable</code></p>
+<h2 id="显示语法"><a href="#显示语法" class="headerlink" title="显示语法"></a>显示语法</h2><p><a href="https://github.com/fogine/vim-syntaxattr" target="_blank" rel="noopener">vim-syntaxattr</a> 使用命令 <code>:call SyntaxAttr()</code></p>
+<h2 id="HighLight-Syntax"><a href="#HighLight-Syntax" class="headerlink" title="HighLight Syntax"></a>HighLight Syntax</h2><p><a href="http://vimdoc.sourceforge.net/htmldoc/syntax.html" target="_blank" rel="noopener">Syntax</a></p>
+<h2 id="help"><a href="#help" class="headerlink" title="help"></a>help</h2><p><code>:syntax</code></p>
+<pre><code>:syntax
+--- 语法项目 ---
+cLabel         xxx default case
+cStructure     xxx union struct typedef enum
+cStorageClass  xxx inline const volatile alignas register thread_local _Noreturn static extern _Alignas _Atomic restrict noreturn
+                   _Thread_local auto
+cInclude       xxx match /^\s*\zs\(%:\|#\)\s*include\&gt;\s*[&quot;&lt;]/  display contains=cIncluded
+cDefine        xxx start=/^\s*\zs\(%:\|#\)\s*\(define\|undef\)\&gt;/ skip=/\\$/ end=/$/  keepend contains=ALLBUT,@cPreProcGroup,@Spell
+cStatement     xxx return goto asm continue break
+                   links to Statement</code></pre><p><code>:help highlight-groups</code></p>
+<p><code>:help group-name</code></p>
+<pre><code>:help group-name
+
+(if syntax highlighting works properly you can see the actual color, except for &quot;Ignore&quot;):
+
+        *Comment        any comment
+
+        *Constant       any constant
+         String         a string constant: &quot;this is a string&quot;
+         Character      a character constant: &#39;c&#39;, &#39;\n&#39;
+         Number         a number constant: 234, 0xff
+         Boolean        a boolean constant: TRUE, false
+         Float          a floating point constant: 2.3e10
+
+        *Identifier     any variable name
+         Function       function name (also: methods for classes)
+        *Statement      any statement
+         Conditional    if, then, else, endif, switch, etc.
+         Repeat         for, do, while, etc.
+         Label          case, default, etc.
+         Operator       &quot;sizeof&quot;, &quot;+&quot;, &quot;*&quot;, etc.
+         Keyword        any other keyword
+         Exception      try, catch, throw
+
+        *PreProc        generic Preprocessor
+         Include        preprocessor #include
+         Define         preprocessor #define
+         Macro          same as Define
+         PreCondit      preprocessor #if, #else, #endif, etc.
+
+        *Type           int, long, char, etc.
+         StorageClass   static, register, volatile, etc.
+         Structure      struct, union, enum, etc.
+         Typedef        A typedef
+
+        *Special        any special symbol
+         SpecialChar    special character in a constant
+         Tag            you can use CTRL-] on this
+         Delimiter      character that needs attention
+         SpecialComment special things inside a comment
+         Debug          debugging statements
+
+        *Underlined     text that stands out, HTML links
+
+        *Ignore         left blank, hidden  hl-Ignore
+
+        *Error          any erroneous construct
+        *Todo           anything that needs extra attention; mostly the
+                        keywords TODO FIXME and XXX</code></pre>]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Editor</category>
+      </categories>
+      <tags>
+        <tag>vim</tag>
+        <tag>highlight</tag>
       </tags>
   </entry>
   <entry>
@@ -25690,6 +25690,90 @@ libtest.a(rmdec.c.o): warning: defined here</code></pre><h2 id="原因"><a href=
       </tags>
   </entry>
   <entry>
+    <title>嵌入式内对齐及相关位运算</title>
+    <url>/2021/07/28/memory-alignment/</url>
+    <content><![CDATA[<p>嵌入式内存对齐及位运算解析</p>
+<a id="more"></a>
+
+<h2 id="内存对齐"><a href="#内存对齐" class="headerlink" title="内存对齐"></a>内存对齐</h2><p><a href="https://murphypei.github.io/blog/2020/04/memory-align" target="_blank" rel="noopener">浅谈内存对齐</a><br><a href="https://blog.csdn.net/vector03/article/details/40977679?utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromMachineLearnPai2%7Edefault-3.control&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromMachineLearnPai2%7Edefault-3.control" target="_blank" rel="noopener">位运算</a><br><a href="https://embeddedartistry.com/blog/2017/02/22/generating-aligned-memory/" target="_blank" rel="noopener">Generating Aligned Memory</a></p>
+<h3 id="栈"><a href="#栈" class="headerlink" title="栈"></a>栈</h3><p><code>gcc</code> 修饰 <code>__attribute__((aligned(32)))</code></p>
+<h3 id="堆"><a href="#堆" class="headerlink" title="堆"></a>堆</h3><p>各种内存分配算法保证，为了保证内存对齐，<code>malloc</code>时需要申请比所要求的内存大的容量，这样可以<strong>向下</strong>寻找一个保证是对齐大小的整倍数的内存地址</p>
+<p>如果 <code>n</code> 为以2为底的m (m &gt; 0, m = 1, 2, 3, …)次幂指数,当以 <code>n</code> 为对齐边界时,称 <code>n – 1</code> 为该对齐边界的对齐掩码(align mask).</p>
+<pre><code class="c">#define is_align(A, n) ((A) &amp; ((n) - 1) == 0)</code></pre>
+<p>对齐方式：</p>
+<ul>
+<li>上对齐 align up / round up</li>
+<li>下对齐 align down / round down</li>
+</ul>
+<pre><code class="c">#define align_down(A, n) ((A) &amp; ~((n) - 1)) # 舍弃对齐低位
+#define align_up(A, n) (((A) + ((n) - 1)) &amp; !((n) - 1)) # + (n) - 1 跳到下个区间，然后 align down 对齐 </code></pre>
+<p>计算内存对齐偏移量：</p>
+<pre><code class="c">#define align_offset(A, n) (((A) &amp; ((n) - 1) == 0) ? 0 : \
+   ((n) - (A) &amp; ((n) - 1)) &amp; ((n) - 1)) </code></pre>
+<p><strong>DLMalloc</strong></p>
+<pre><code class="c">/* The bit mask value corresponding to MALLOC_ALIGNMENT */
+#define CHUNK_ALIGN_MASK    (MALLOC_ALIGNMENT - SIZE_T_ONE)
+
+/* True if address a has acceptable alignment */
+#define is_aligned(A)       (((size_t)((A)) &amp; (CHUNK_ALIGN_MASK)) == 0)
+
+/* the number of bytes to offset an address to align it */
+#define align_offset(A)\
+ ((((size_t)(A) &amp; CHUNK_ALIGN_MASK) == 0)? 0 :\
+  ((MALLOC_ALIGNMENT - ((size_t)(A) &amp; CHUNK_ALIGN_MASK)) &amp; CHUNK_ALIGN_MASK))</code></pre>
+<p>最后一步 <code>&amp; CHUNK_ALIGN_MASK</code> 是多余的</p>
+<p><strong>TLSF</strong></p>
+<pre><code class="c">#define BLOCK_ALIGN (sizeof(void *) * 2)
+
+#define MEM_ALIGN         ((BLOCK_ALIGN) - 1)
+#define ROUNDUP_SIZE(_r)          (((_r) + MEM_ALIGN) &amp; ~MEM_ALIGN)
+#define ROUNDDOWN_SIZE(_r)        ((_r) &amp; ~MEM_ALIGN)
+
+size = (size &lt; MIN_BLOCK_SIZE) ? MIN_BLOCK_SIZE : ROUNDUP_SIZE(size);</code></pre>
+<blockquote>
+<p>malloc内存对齐实现</p>
+</blockquote>
+<ul>
+<li>计算申请内存大小：ori_size + 控制块 + alignment</li>
+<li>申请内存</li>
+<li>align down获取内存对齐首地址</li>
+</ul>
+<h2 id="结构体对齐"><a href="#结构体对齐" class="headerlink" title="结构体对齐"></a>结构体对齐</h2><h3 id="不存在-pragma-pack"><a href="#不存在-pragma-pack" class="headerlink" title="不存在 #pragma pack"></a>不存在 <code>#pragma pack</code></h3><ol>
+<li>第一个成员的首地址为0</li>
+<li>每个成员的首地址是自身大小的整数倍</li>
+<li>结构体的总大小，为其成员中所含最大类型的整数倍</li>
+</ol>
+<pre><code class="c">struct test
+{
+  char a;   //1 + p1
+  short b;  //2
+  char c;   //1 + p1
+};
+
+struct test
+{
+  char a;   //1 + p3
+  int  b;   //4
+  short c;  //2 + p2
+};
+</code></pre>
+<h3 id="存在-pragma-pack"><a href="#存在-pragma-pack" class="headerlink" title="存在 #pragma pack"></a>存在 <code>#pragma pack</code></h3><blockquote>
+<p>按照这个宏声明的和实际数据类型中最大值较小的那个来决定</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>C</category>
+        <category>Memory</category>
+      </categories>
+      <tags>
+        <tag>c</tag>
+        <tag>memory</tag>
+        <tag>tlsf</tag>
+        <tag>align</tag>
+        <tag>dlmalloc</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>优化 c 程序可执行文件大小</title>
     <url>/2021/07/13/how-to-make-smaller-c-binaries/</url>
     <content><![CDATA[<p>优化 elf 大小的各种方式</p>
@@ -29783,6 +29867,116 @@ $ git config --global push.default simple</code></pre><p>还有一种情况，�
       </tags>
   </entry>
   <entry>
+    <title>Git 工作流程[转载]</title>
+    <url>/2016/02/23/git-workflow/</url>
+    <content><![CDATA[<script type="text/javascript">
+$(document).ready(function(){
+        $("h2,h3,h4,h5,h6").each(function(i,item){
+            var tag = $(item).get(0).localName;
+            $(item).attr("id","wow"+i);
+            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
+            $(".newh2").css("margin-left",0);
+            $(".newh3").css("margin-left",20);
+            $(".newh4").css("margin-left",40);
+            $(".newh5").css("margin-left",60);
+            $(".newh6").css("margin-left",80);
+            });
+        });
+</script>
+<div id="category"></div>
+
+<p>作者： 阮一峰<br>日期： 2015年12月24日<br><a href="http://www.ruanyifeng.com/blog/2015/12/git-workflow.html" target="_blank" rel="noopener">原文</a></p>
+<p>Git 作为一个源码管理系统，不可避免涉及到多人协作。<br>协作必须有一个规范的工作流程，让大家有效地合作，使得项目井井有条地发展下去。<br>“工作流程”在英语里，叫做”workflow”或者”flow”，原意是水流，比喻项目像水流那样，顺畅、自然地向前流动，不会发生冲击、对撞、甚至漩涡。</p>
+<p><img src="/images/git/git_workflow.png" alt="Git Workflow" title="git workflow"></p>
+<p>本文介绍三种广泛使用的工作流程：</p>
+<ul>
+<li><strong>Git flow</strong></li>
+<li><strong>Github flow</strong></li>
+<li><strong>Gitlab flow</strong></li>
+</ul>
+<p>如果你对Git还不是很熟悉，可以先阅读下面的文章。</p>
+<ul>
+<li><a href="http://www.ruanyifeng.com/blog/2015/08/git-use-process.html" target="_blank" rel="noopener">《Git 使用规范流程》</a></li>
+<li><a href="http://www.ruanyifeng.com/blog/2015/12/git-cheat-sheet.html" target="_blank" rel="noopener">《常用 Git 命令清单》</a></li>
+<li><a href="http://www.ruanyifeng.com/blog/2014/06/git_remote.html" target="_blank" rel="noopener">《Git 远程操作详解》</a></li>
+</ul>
+<h2 id="功能驱动"><a href="#功能驱动" class="headerlink" title="功能驱动"></a>功能驱动</h2><p>本文的三种工作流程，有一个共同点：都采用<a href="https://en.wikipedia.org/wiki/Feature-driven_development" target="_blank" rel="noopener">“功能驱动式开发”</a>（Feature-driven development，简称FDD）。</p>
+<p>它指的是，需求是开发的起点，先有需求再有功能分支（feature branch）或者补丁分支（hotfix branch）。<br>完成开发后，该分支就合并到主分支，然后被删除。</p>
+<h2 id="Git-flow"><a href="#Git-flow" class="headerlink" title="Git flow"></a>Git flow</h2><p>最早诞生、并得到广泛采用的一种工作流程，就是Git flow 。</p>
+<h3 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h3><p>它最主要的特点有两个。</p>
+<p><img src="/images/git/gitflow.png" alt="gitflow" title="gitflow"></p>
+<p>首先，项目存在两个长期分支。</p>
+<ul>
+<li><strong>主分支master</strong></li>
+<li><strong>开发分支develop</strong></li>
+</ul>
+<p>前者用于存放对外发布的版本，任何时候在这个分支拿到的，都是稳定的分布版；后者用于日常开发，存放最新的开发版。</p>
+<p>其次，项目存在三种短期分支。</p>
+<ul>
+<li><strong>功能分支（feature branch）</strong></li>
+<li><strong>补丁分支（hotfix branch）</strong></li>
+<li><strong>预发分支（release branch）</strong></li>
+</ul>
+<p>一旦完成开发，它们就会被合并进develop或master，然后被删除。<br>Git flow 的详细介绍，请阅读我翻译的中文版<a href="http://www.ruanyifeng.com/blog/2012/07/git.html" target="_blank" rel="noopener">《Git 分支管理策略》</a>。</p>
+<h3 id="评价"><a href="#评价" class="headerlink" title="评价"></a>评价</h3><p>Git flow的优点是清晰可控，缺点是相对复杂，需要同时维护两个长期分支。<br>大多数工具都将master当作默认分支，可是开发是在develop分支进行的，这导致经常要切换分支，非常烦人。<br>更大问题在于，这个模式是基于”版本发布”的，目标是一段时间以后产出一个新版本。<br>但是，很多网站项目是”持续发布”，代码一有变动，就部署一次。<br>这时，master分支和develop分支的差别不大，没必要维护两个长期分支。</p>
+<h2 id="Github-flow"><a href="#Github-flow" class="headerlink" title="Github flow"></a>Github flow</h2><p>Github flow 是Git flow的简化版，专门配合”持续发布”。它是 Github.com 使用的工作流程。</p>
+<h3 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h3><p>它只有一个长期分支，就是master，因此用起来非常简单。<br>官方推荐的<a href="https://guides.github.com/introduction/flow/index.html" target="_blank" rel="noopener">流程</a>如下。</p>
+<p><img src="/images/git/github_flow.png" alt="github flow" title="github flow"></p>
+<ol>
+<li>根据需求，从master拉出新分支，不区分功能分支或补丁分支。</li>
+<li>新分支开发完成后，或者需要讨论的时候，就向master发起一个<a href="https://help.github.com/articles/using-pull-requests/" target="_blank" rel="noopener">pull request</a>（简称PR）。</li>
+<li>Pull Request既是一个通知，让别人注意到你的请求，又是一种对话机制，大家一起评审和讨论你的代码。对话过程中，你还可以不断提交代码。</li>
+<li>你的Pull Request被接受，合并进master，重新部署后，原来你拉出来的那个分支就被删除。（先部署再合并也可。）</li>
+</ol>
+<h3 id="评价-1"><a href="#评价-1" class="headerlink" title="评价"></a>评价</h3><p>Github flow 的最大优点就是简单，对于”持续发布”的产品，可以说是最合适的流程。<br>问题在于它的假设：master分支的更新与产品的发布是一致的。也就是说，master分支的最新代码，默认就是当前的线上代码。<br>可是，有些时候并非如此，代码合并进入master分支，并不代表它就能立刻发布。<br>比如，苹果商店的APP提交审核以后，等一段时间才能上架。<br>这时，如果还有新的代码提交，master分支就会与刚发布的版本不一致。<br>另一个例子是，有些公司有发布窗口，只有指定时间才能发布，这也会导致线上版本落后于master分支。<br>上面这种情况，只有master一个主分支就不够用了。<br>通常，你不得不在master分支以外，另外新建一个production分支跟踪线上版本。</p>
+<h2 id="Gitlab-flow"><a href="#Gitlab-flow" class="headerlink" title="Gitlab flow"></a>Gitlab flow</h2><p>Gitlab flow 是 Git flow 与 Github flow 的综合。<br>它吸取了两者的优点，既有适应不同开发环境的弹性，又有单一主分支的简单和便利。<br>它是 Gitlab.com 推荐的做法。</p>
+<h3 id="上游优先"><a href="#上游优先" class="headerlink" title="上游优先"></a>上游优先</h3><p>Gitlab flow 的最大原则叫做”上游优先”（upsteam first），即只存在一个主分支master，它是所有其他分支的”上游”。<br>只有上游分支采纳的代码变化，才能应用到其他分支。</p>
+<p><a href="https://www.chromium.org/chromium-os/chromiumos-design-docs/upstream-first" target="_blank" rel="noopener">Chromium项目</a>就是一个例子，<br>它明确规定，上游分支依次为：</p>
+<ul>
+<li><strong>Linus Torvalds的分支</strong></li>
+<li><strong>子系统（比如netdev）的分支</strong></li>
+<li><strong>设备厂商（比如三星）的分支</strong></li>
+</ul>
+<h3 id="持续发布"><a href="#持续发布" class="headerlink" title="持续发布"></a>持续发布</h3><p>Gitlab flow 分成两种情况，适应不同的开发流程。</p>
+<p><img src="/images/git/gitlab_flow1.png" alt="gitlab flow" title="gitlab flow"></p>
+<p>对于”持续发布”的项目，它建议在master分支以外，再建立不同的环境分支。<br>比如，”开发环境”的分支是master，”预发环境”的分支是pre-production，”生产环境”的分支是production。</p>
+<p>开发分支是预发分支的”上游”，预发分支又是生产分支的”上游”。<br>代码的变化，必须由”上游”向”下游”发展。<br>比如，生产环境出现了bug，这时就要新建一个功能分支，先把它合并到master，确认没有问题，<br>再cherry-pick到pre-production，这一步也没有问题，才进入production。<br>只有紧急情况，才允许跳过上游，直接合并到下游分支。</p>
+<h3 id="版本发布"><a href="#版本发布" class="headerlink" title="版本发布"></a>版本发布</h3><p><img src="/images/git/gitlab_release.png" alt="gitlab release" title="gitlab release"></p>
+<p>对于”版本发布”的项目，建议的做法是每一个稳定版本，都要从master分支拉出一个分支，比如2-3-stable、2-4-stable等等。<br>以后，只有修补bug，才允许将代码合并到这些分支，并且此时要更新小版本号。</p>
+<h2 id="一些小技巧"><a href="#一些小技巧" class="headerlink" title="一些小技巧"></a>一些小技巧</h2><h3 id="Pull-Request"><a href="#Pull-Request" class="headerlink" title="Pull Request"></a>Pull Request</h3><p><img src="/images/git/merge.png" alt="merge" title="merge"></p>
+<p>功能分支合并进master分支，必须通过Pull Request（Gitlab里面叫做 Merge Request）。</p>
+<p><img src="/images/git/request.png" alt="request" title="request"></p>
+<p>前面说过，Pull Request本质是一种对话机制，你可以在提交的时候，<br>@相关<a href="https://github.com/blog/1004-mention-autocompletion" target="_blank" rel="noopener">人员</a>或<a href="https://github.com/blog/1121-introducing-team-mentions" target="_blank" rel="noopener">团队</a>，引起他们的注意。</p>
+<h3 id="Protected-branch"><a href="#Protected-branch" class="headerlink" title="Protected branch"></a>Protected branch</h3><p>master分支应该受到保护，不是每个人都可以修改这个分支，以及拥有审批 Pull Request 的权力。</p>
+<p><a href="https://help.github.com/articles/about-protected-branches/" target="_blank" rel="noopener">Github</a><br>和 <a href="http://doc.gitlab.com/ce/permissions/permissions.html" target="_blank" rel="noopener">Gitlab</a> 都提供”保护分支”（Protected branch）这个功能。</p>
+<h3 id="Issue"><a href="#Issue" class="headerlink" title="Issue"></a>Issue</h3><p>Issue 用于 Bug追踪和需求管理。建议先新建 Issue，再新建对应的功能分支。功能分支总是为了解决一个或多个 Issue。<br>功能分支的名称，可以与issue的名字保持一致，并且以issue的编号起首，比如”15-require-a-password-to-change-it”。</p>
+<p>开发完成后，在提交说明里面，可以写上”fixes #14”或者”closes #67”。<br>Github规定，只要commit message里面有下面这些<a href="https://help.github.com/articles/closing-issues-via-commit-messages/" target="_blank" rel="noopener">动词</a> + 编号，<br>就会关闭对应的issue。</p>
+<ul>
+<li>close</li>
+<li>closes</li>
+<li>closed</li>
+<li>fix</li>
+<li>fixes</li>
+<li>fixed</li>
+<li>resolve</li>
+<li>resolves</li>
+<li>resolved</li>
+</ul>
+<p>这种方式还可以一次关闭多个issue，或者关闭其他代码库的issue，格式是username/repository#issue_number。<br>Pull Request被接受以后，issue关闭，原始分支就应该删除。如果以后该issue重新打开，新分支可以复用原来的名字。</p>
+<h3 id="Merge节点"><a href="#Merge节点" class="headerlink" title="Merge节点"></a>Merge节点</h3><p>Git有两种合并：一种是”直进式合并”（fast forward），不生成单独的合并节点；<br>另一种是”非直进式合并”（none fast-forword），会生成单独节点。</p>
+<p>前者不利于保持commit信息的清晰，也不利于以后的回滚，建议总是采用后者（即使用–no-ff参数）。<br>只要发生合并，就要有一个单独的合并节点。</p>
+<h3 id="Squash-多个commit"><a href="#Squash-多个commit" class="headerlink" title="Squash 多个commit"></a>Squash 多个commit</h3><p>为了便于他人阅读你的提交，也便于cherry-pick或撤销代码变化，在发起Pull Request之前，应该把多个commit合并成一个。<br>（前提是，该分支只有你一个人开发，且没有跟master合并过。）</p>
+<p>这可以采用rebase命令附带的squash操作，具体方法请参考我写的<a href="http://www.ruanyifeng.com/blog/2015/08/git-use-process.html" target="_blank" rel="noopener">《Git 使用规范流程》</a>。</p>
+]]></content>
+      <categories>
+        <category>Tools</category>
+        <category>Git</category>
+      </categories>
+      <tags>
+        <tag>git</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>堆和栈</title>
     <url>/2016/04/24/programmer-stack-and-heap/</url>
     <content><![CDATA[<script type="text/javascript">
@@ -30011,116 +30205,6 @@ int main() {
       </categories>
       <tags>
         <tag>float</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Git 工作流程[转载]</title>
-    <url>/2016/02/23/git-workflow/</url>
-    <content><![CDATA[<script type="text/javascript">
-$(document).ready(function(){
-        $("h2,h3,h4,h5,h6").each(function(i,item){
-            var tag = $(item).get(0).localName;
-            $(item).attr("id","wow"+i);
-            $("#category").append('<a class="new'+tag+'" href="#wow'+i+'">'+$(this).text()+'</a></br>');
-            $(".newh2").css("margin-left",0);
-            $(".newh3").css("margin-left",20);
-            $(".newh4").css("margin-left",40);
-            $(".newh5").css("margin-left",60);
-            $(".newh6").css("margin-left",80);
-            });
-        });
-</script>
-<div id="category"></div>
-
-<p>作者： 阮一峰<br>日期： 2015年12月24日<br><a href="http://www.ruanyifeng.com/blog/2015/12/git-workflow.html" target="_blank" rel="noopener">原文</a></p>
-<p>Git 作为一个源码管理系统，不可避免涉及到多人协作。<br>协作必须有一个规范的工作流程，让大家有效地合作，使得项目井井有条地发展下去。<br>“工作流程”在英语里，叫做”workflow”或者”flow”，原意是水流，比喻项目像水流那样，顺畅、自然地向前流动，不会发生冲击、对撞、甚至漩涡。</p>
-<p><img src="/images/git/git_workflow.png" alt="Git Workflow" title="git workflow"></p>
-<p>本文介绍三种广泛使用的工作流程：</p>
-<ul>
-<li><strong>Git flow</strong></li>
-<li><strong>Github flow</strong></li>
-<li><strong>Gitlab flow</strong></li>
-</ul>
-<p>如果你对Git还不是很熟悉，可以先阅读下面的文章。</p>
-<ul>
-<li><a href="http://www.ruanyifeng.com/blog/2015/08/git-use-process.html" target="_blank" rel="noopener">《Git 使用规范流程》</a></li>
-<li><a href="http://www.ruanyifeng.com/blog/2015/12/git-cheat-sheet.html" target="_blank" rel="noopener">《常用 Git 命令清单》</a></li>
-<li><a href="http://www.ruanyifeng.com/blog/2014/06/git_remote.html" target="_blank" rel="noopener">《Git 远程操作详解》</a></li>
-</ul>
-<h2 id="功能驱动"><a href="#功能驱动" class="headerlink" title="功能驱动"></a>功能驱动</h2><p>本文的三种工作流程，有一个共同点：都采用<a href="https://en.wikipedia.org/wiki/Feature-driven_development" target="_blank" rel="noopener">“功能驱动式开发”</a>（Feature-driven development，简称FDD）。</p>
-<p>它指的是，需求是开发的起点，先有需求再有功能分支（feature branch）或者补丁分支（hotfix branch）。<br>完成开发后，该分支就合并到主分支，然后被删除。</p>
-<h2 id="Git-flow"><a href="#Git-flow" class="headerlink" title="Git flow"></a>Git flow</h2><p>最早诞生、并得到广泛采用的一种工作流程，就是Git flow 。</p>
-<h3 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h3><p>它最主要的特点有两个。</p>
-<p><img src="/images/git/gitflow.png" alt="gitflow" title="gitflow"></p>
-<p>首先，项目存在两个长期分支。</p>
-<ul>
-<li><strong>主分支master</strong></li>
-<li><strong>开发分支develop</strong></li>
-</ul>
-<p>前者用于存放对外发布的版本，任何时候在这个分支拿到的，都是稳定的分布版；后者用于日常开发，存放最新的开发版。</p>
-<p>其次，项目存在三种短期分支。</p>
-<ul>
-<li><strong>功能分支（feature branch）</strong></li>
-<li><strong>补丁分支（hotfix branch）</strong></li>
-<li><strong>预发分支（release branch）</strong></li>
-</ul>
-<p>一旦完成开发，它们就会被合并进develop或master，然后被删除。<br>Git flow 的详细介绍，请阅读我翻译的中文版<a href="http://www.ruanyifeng.com/blog/2012/07/git.html" target="_blank" rel="noopener">《Git 分支管理策略》</a>。</p>
-<h3 id="评价"><a href="#评价" class="headerlink" title="评价"></a>评价</h3><p>Git flow的优点是清晰可控，缺点是相对复杂，需要同时维护两个长期分支。<br>大多数工具都将master当作默认分支，可是开发是在develop分支进行的，这导致经常要切换分支，非常烦人。<br>更大问题在于，这个模式是基于”版本发布”的，目标是一段时间以后产出一个新版本。<br>但是，很多网站项目是”持续发布”，代码一有变动，就部署一次。<br>这时，master分支和develop分支的差别不大，没必要维护两个长期分支。</p>
-<h2 id="Github-flow"><a href="#Github-flow" class="headerlink" title="Github flow"></a>Github flow</h2><p>Github flow 是Git flow的简化版，专门配合”持续发布”。它是 Github.com 使用的工作流程。</p>
-<h3 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h3><p>它只有一个长期分支，就是master，因此用起来非常简单。<br>官方推荐的<a href="https://guides.github.com/introduction/flow/index.html" target="_blank" rel="noopener">流程</a>如下。</p>
-<p><img src="/images/git/github_flow.png" alt="github flow" title="github flow"></p>
-<ol>
-<li>根据需求，从master拉出新分支，不区分功能分支或补丁分支。</li>
-<li>新分支开发完成后，或者需要讨论的时候，就向master发起一个<a href="https://help.github.com/articles/using-pull-requests/" target="_blank" rel="noopener">pull request</a>（简称PR）。</li>
-<li>Pull Request既是一个通知，让别人注意到你的请求，又是一种对话机制，大家一起评审和讨论你的代码。对话过程中，你还可以不断提交代码。</li>
-<li>你的Pull Request被接受，合并进master，重新部署后，原来你拉出来的那个分支就被删除。（先部署再合并也可。）</li>
-</ol>
-<h3 id="评价-1"><a href="#评价-1" class="headerlink" title="评价"></a>评价</h3><p>Github flow 的最大优点就是简单，对于”持续发布”的产品，可以说是最合适的流程。<br>问题在于它的假设：master分支的更新与产品的发布是一致的。也就是说，master分支的最新代码，默认就是当前的线上代码。<br>可是，有些时候并非如此，代码合并进入master分支，并不代表它就能立刻发布。<br>比如，苹果商店的APP提交审核以后，等一段时间才能上架。<br>这时，如果还有新的代码提交，master分支就会与刚发布的版本不一致。<br>另一个例子是，有些公司有发布窗口，只有指定时间才能发布，这也会导致线上版本落后于master分支。<br>上面这种情况，只有master一个主分支就不够用了。<br>通常，你不得不在master分支以外，另外新建一个production分支跟踪线上版本。</p>
-<h2 id="Gitlab-flow"><a href="#Gitlab-flow" class="headerlink" title="Gitlab flow"></a>Gitlab flow</h2><p>Gitlab flow 是 Git flow 与 Github flow 的综合。<br>它吸取了两者的优点，既有适应不同开发环境的弹性，又有单一主分支的简单和便利。<br>它是 Gitlab.com 推荐的做法。</p>
-<h3 id="上游优先"><a href="#上游优先" class="headerlink" title="上游优先"></a>上游优先</h3><p>Gitlab flow 的最大原则叫做”上游优先”（upsteam first），即只存在一个主分支master，它是所有其他分支的”上游”。<br>只有上游分支采纳的代码变化，才能应用到其他分支。</p>
-<p><a href="https://www.chromium.org/chromium-os/chromiumos-design-docs/upstream-first" target="_blank" rel="noopener">Chromium项目</a>就是一个例子，<br>它明确规定，上游分支依次为：</p>
-<ul>
-<li><strong>Linus Torvalds的分支</strong></li>
-<li><strong>子系统（比如netdev）的分支</strong></li>
-<li><strong>设备厂商（比如三星）的分支</strong></li>
-</ul>
-<h3 id="持续发布"><a href="#持续发布" class="headerlink" title="持续发布"></a>持续发布</h3><p>Gitlab flow 分成两种情况，适应不同的开发流程。</p>
-<p><img src="/images/git/gitlab_flow1.png" alt="gitlab flow" title="gitlab flow"></p>
-<p>对于”持续发布”的项目，它建议在master分支以外，再建立不同的环境分支。<br>比如，”开发环境”的分支是master，”预发环境”的分支是pre-production，”生产环境”的分支是production。</p>
-<p>开发分支是预发分支的”上游”，预发分支又是生产分支的”上游”。<br>代码的变化，必须由”上游”向”下游”发展。<br>比如，生产环境出现了bug，这时就要新建一个功能分支，先把它合并到master，确认没有问题，<br>再cherry-pick到pre-production，这一步也没有问题，才进入production。<br>只有紧急情况，才允许跳过上游，直接合并到下游分支。</p>
-<h3 id="版本发布"><a href="#版本发布" class="headerlink" title="版本发布"></a>版本发布</h3><p><img src="/images/git/gitlab_release.png" alt="gitlab release" title="gitlab release"></p>
-<p>对于”版本发布”的项目，建议的做法是每一个稳定版本，都要从master分支拉出一个分支，比如2-3-stable、2-4-stable等等。<br>以后，只有修补bug，才允许将代码合并到这些分支，并且此时要更新小版本号。</p>
-<h2 id="一些小技巧"><a href="#一些小技巧" class="headerlink" title="一些小技巧"></a>一些小技巧</h2><h3 id="Pull-Request"><a href="#Pull-Request" class="headerlink" title="Pull Request"></a>Pull Request</h3><p><img src="/images/git/merge.png" alt="merge" title="merge"></p>
-<p>功能分支合并进master分支，必须通过Pull Request（Gitlab里面叫做 Merge Request）。</p>
-<p><img src="/images/git/request.png" alt="request" title="request"></p>
-<p>前面说过，Pull Request本质是一种对话机制，你可以在提交的时候，<br>@相关<a href="https://github.com/blog/1004-mention-autocompletion" target="_blank" rel="noopener">人员</a>或<a href="https://github.com/blog/1121-introducing-team-mentions" target="_blank" rel="noopener">团队</a>，引起他们的注意。</p>
-<h3 id="Protected-branch"><a href="#Protected-branch" class="headerlink" title="Protected branch"></a>Protected branch</h3><p>master分支应该受到保护，不是每个人都可以修改这个分支，以及拥有审批 Pull Request 的权力。</p>
-<p><a href="https://help.github.com/articles/about-protected-branches/" target="_blank" rel="noopener">Github</a><br>和 <a href="http://doc.gitlab.com/ce/permissions/permissions.html" target="_blank" rel="noopener">Gitlab</a> 都提供”保护分支”（Protected branch）这个功能。</p>
-<h3 id="Issue"><a href="#Issue" class="headerlink" title="Issue"></a>Issue</h3><p>Issue 用于 Bug追踪和需求管理。建议先新建 Issue，再新建对应的功能分支。功能分支总是为了解决一个或多个 Issue。<br>功能分支的名称，可以与issue的名字保持一致，并且以issue的编号起首，比如”15-require-a-password-to-change-it”。</p>
-<p>开发完成后，在提交说明里面，可以写上”fixes #14”或者”closes #67”。<br>Github规定，只要commit message里面有下面这些<a href="https://help.github.com/articles/closing-issues-via-commit-messages/" target="_blank" rel="noopener">动词</a> + 编号，<br>就会关闭对应的issue。</p>
-<ul>
-<li>close</li>
-<li>closes</li>
-<li>closed</li>
-<li>fix</li>
-<li>fixes</li>
-<li>fixed</li>
-<li>resolve</li>
-<li>resolves</li>
-<li>resolved</li>
-</ul>
-<p>这种方式还可以一次关闭多个issue，或者关闭其他代码库的issue，格式是username/repository#issue_number。<br>Pull Request被接受以后，issue关闭，原始分支就应该删除。如果以后该issue重新打开，新分支可以复用原来的名字。</p>
-<h3 id="Merge节点"><a href="#Merge节点" class="headerlink" title="Merge节点"></a>Merge节点</h3><p>Git有两种合并：一种是”直进式合并”（fast forward），不生成单独的合并节点；<br>另一种是”非直进式合并”（none fast-forword），会生成单独节点。</p>
-<p>前者不利于保持commit信息的清晰，也不利于以后的回滚，建议总是采用后者（即使用–no-ff参数）。<br>只要发生合并，就要有一个单独的合并节点。</p>
-<h3 id="Squash-多个commit"><a href="#Squash-多个commit" class="headerlink" title="Squash 多个commit"></a>Squash 多个commit</h3><p>为了便于他人阅读你的提交，也便于cherry-pick或撤销代码变化，在发起Pull Request之前，应该把多个commit合并成一个。<br>（前提是，该分支只有你一个人开发，且没有跟master合并过。）</p>
-<p>这可以采用rebase命令附带的squash操作，具体方法请参考我写的<a href="http://www.ruanyifeng.com/blog/2015/08/git-use-process.html" target="_blank" rel="noopener">《Git 使用规范流程》</a>。</p>
-]]></content>
-      <categories>
-        <category>Tools</category>
-        <category>Git</category>
-      </categories>
-      <tags>
-        <tag>git</tag>
       </tags>
   </entry>
   <entry>
