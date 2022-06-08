@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="通过配置优化文件读写性能">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux kernel vm pagecache 配置优化项">
+<meta property="og:url" content="http://yoursite.com/2020/12/28/linux-kernel-sysctl-vm-pagecache/index.html">
+<meta property="og:site_name">
+<meta property="og:description" content="通过配置优化文件读写性能">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-12-28T04:58:24.000Z">
+<meta property="article:modified_time" content="2022-06-08T05:22:10.558Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="proc">
+<meta property="article:tag" content="sysctl">
+<meta property="article:tag" content="pagecache">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2020/12/28/linux-kernel-sysctl-vm-pagecache/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linux kernel vm pagecache 配置优化项 | </title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title"></span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/12/28/linux-kernel-sysctl-vm-pagecache/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux kernel vm pagecache 配置优化项
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-12-28 12:58:24" itemprop="dateCreated datePublished" datetime="2020-12-28T12:58:24+08:00">2020-12-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2022-06-08 13:22:10" itemprop="dateModified" datetime="2022-06-08T13:22:10+08:00">2022-06-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/MM/" itemprop="url" rel="index">
+                    <span itemprop="name">MM</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>1.7k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>2 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>通过配置优化文件读写性能</p>
+<a id="more"></a>
+
+<h2 id="dirty-background-bytes-amp-dirty-background-ratio"><a href="#dirty-background-bytes-amp-dirty-background-ratio" class="headerlink" title="dirty_background_bytes &amp; dirty_background_ratio"></a>dirty_background_bytes &amp; dirty_background_ratio</h2><ol>
+<li>当系统脏页的比例超过 <code>dirty_background_ratio</code> 或者所占内存数量超过 <code>dirty_background_bytes</code> 设定的阈值时，启动相关内核线程 <code>pdflush/flush/kdmflush</code> 开始将脏页写入磁盘。</li>
+<li>如果该值过大，同时又有进程大量未使用 <code>DIRECT_IO</code> 写磁盘时，会使 pagecache 占用对应比例的系统内存</li>
+<li>两个参数是相对的，只能指定其中一个。当其中一个参数文件被写入时，会立即开始计算脏页限制，并且会将另一个参数的值清零</li>
+<li>是内存可以填充脏数据的百分比</li>
+</ol>
+<pre><code class="shell"># 字节
+vm.dirty_background_bytes = 0
+# 百分比
+vm.dirty_background_ratio = 10</code></pre>
+<h2 id="dirty-bytes-amp-dirty-ratio"><a href="#dirty-bytes-amp-dirty-ratio" class="headerlink" title="dirty_bytes &amp; dirty_ratio"></a>dirty_bytes &amp; dirty_ratio</h2><ol>
+<li>当系统脏页达到系统内存 <code>dirty_bytes</code> / <code>dirty_ratio</code> 阈值时，系统就会阻塞新的写请求，直到脏页被回写到磁盘</li>
+<li>此值过低时，遇到写入突增时，会造成短时间内 pagecache 脏页快速上升，造成写请求耗时增加</li>
+<li>当该值太高时，会造成内核 flush 脏页时，超过内核限制的 120s 导致进程挂起或中断</li>
+<li>两个参数是相对的，只能指定其中一个。当其中一个参数文件被写入时，会立即开始计算脏页限制，并且会将另一个参数的值清零</li>
+<li>是可以用脏数据填充的绝对最大系统内存量</li>
+<li>是保证内存中不会存在过量脏数据的保护机制</li>
+</ol>
+<pre><code class="shell">vm.dirty_bytes = 0
+vm.dirty_ratio = 20</code></pre>
+<h2 id="dirty-expire-centisecs"><a href="#dirty-expire-centisecs" class="headerlink" title="dirty_expire_centisecs"></a>dirty_expire_centisecs</h2><ol>
+<li>指定脏数据能存活的时间。在这里它的值是 30 秒。当 <code>pdflush/flush/kdmflush</code> 在运行的时候，他们会检查是否有数据超过这个时限，如果有则会把它异步地写到磁盘中</li>
+<li>当该值太小时，会造成 IO 提高过多</li>
+</ol>
+<pre><code class="shell"># 1/100s
+vm.dirty_expire_centisecs = 3000</code></pre>
+<h2 id="dirty-writeback-centisecs"><a href="#dirty-writeback-centisecs" class="headerlink" title="dirty_writeback_centisecs"></a>dirty_writeback_centisecs</h2><ol>
+<li>指定多长时间 <code>pdflush/flush/kdmflush</code> 这些进程会唤醒一次，然后检查是否有缓存需要清理</li>
+<li>如果设置为 0，则禁止周期性地唤醒回写线程</li>
+</ol>
+<pre><code class="shell"># 1/100s
+vm.dirty_writeback_centisecs = 100</code></pre>
+<h2 id="vfs-cache-pressure"><a href="#vfs-cache-pressure" class="headerlink" title="vfs_cache_pressure"></a>vfs_cache_pressure</h2><h2 id="drop-caches"><a href="#drop-caches" class="headerlink" title="drop_caches"></a>drop_caches</h2><h2 id="查看相关信息"><a href="#查看相关信息" class="headerlink" title="查看相关信息"></a>查看相关信息</h2><ul>
+<li>sysctl<pre><code class="shell">$ sysctl -a | grep dirty
+vm.dirty_background_bytes = 0
+vm.dirty_background_ratio = 10
+vm.dirty_bytes = 0
+vm.dirty_expire_centisecs = 3000
+vm.dirty_ratio = 20
+vm.dirty_writeback_centisecs = 500
+vm.dirtytime_expire_seconds = 43200</code></pre>
+</li>
+<li>vmstat<pre><code class="shell">$ cat /proc/vmstat | egrep &quot;dirty|writeback&quot;
+nr_dirty 103
+nr_writeback 0
+nr_writeback_temp 0
+nr_dirty_threshold 83638
+nr_dirty_background_threshold 41768</code></pre>
+</li>
+</ul>
+<h2 id="优化配置"><a href="#优化配置" class="headerlink" title="优化配置"></a>优化配置</h2><h3 id="减少缓存"><a href="#减少缓存" class="headerlink" title="减少缓存"></a>减少缓存</h3><p>快速的磁盘子系统，减少数据丢失风险</p>
+<pre><code class="shell">vm.dirty_background_ratio = 5
+vm.dirty_ratio = 10</code></pre>
+<h3 id="增加缓存"><a href="#增加缓存" class="headerlink" title="增加缓存"></a>增加缓存</h3><p>数据不是关键的，可丢失，允许存在更多的脏页</p>
+<pre><code class="shell">vm.dirty_background_ratio = 50
+vm.dirty_ratio = 80</code></pre>
+<h3 id="增减都用"><a href="#增减都用" class="headerlink" title="增减都用"></a>增减都用</h3><p>应对突发数据高峰，允许大量 IO 存储在缓存中，后台慢慢异步刷新</p>
+<pre><code class="shell">vm.dirty_background_ratio = 5
+vm.dirty_ratio = 80</code></pre>
+<p>系统后台进程在脏数据达到 5% 时就开始异步清理，但在 80% 之前系统不会强制同步写磁盘</p>
+<h2 id="IO-调度"><a href="#IO-调度" class="headerlink" title="IO 调度"></a>IO 调度</h2><p><a href="https://www.cnblogs.com/276815076/p/5687814.html" target="_blank" rel="noopener">linux I/O优化 磁盘读写参数设置</a></p>
+<ul>
+<li><code>/sys/block/sdX/queue/scheduler</code></li>
+<li><code>/sys/block/sdX/queue/nr_requests</code></li>
+<li><code>/sys/block/sdX/queue/read_ahead_kb</code></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/proc/" rel="tag"># proc</a>
+              <a href="/tags/sysctl/" rel="tag"># sysctl</a>
+              <a href="/tags/pagecache/" rel="tag"># pagecache</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2020/12/24/802-11-wlan-packets-and-protocols/" rel="next" title="802.11 帧结构及协议分析">
+                  <i class="fa fa-chevron-left"></i> 802.11 帧结构及协议分析
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2021/01/06/linux-memory-performance-analysis/" rel="prev" title="Linux内存性能分析">
+                  Linux内存性能分析 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#dirty-background-bytes-amp-dirty-background-ratio"><span class="nav-number">1.</span> <span class="nav-text">dirty_background_bytes &amp; dirty_background_ratio</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#dirty-bytes-amp-dirty-ratio"><span class="nav-number">2.</span> <span class="nav-text">dirty_bytes &amp; dirty_ratio</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#dirty-expire-centisecs"><span class="nav-number">3.</span> <span class="nav-text">dirty_expire_centisecs</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#dirty-writeback-centisecs"><span class="nav-number">4.</span> <span class="nav-text">dirty_writeback_centisecs</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#vfs-cache-pressure"><span class="nav-number">5.</span> <span class="nav-text">vfs_cache_pressure</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#drop-caches"><span class="nav-number">6.</span> <span class="nav-text">drop_caches</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#查看相关信息"><span class="nav-number">7.</span> <span class="nav-text">查看相关信息</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#优化配置"><span class="nav-number">8.</span> <span class="nav-text">优化配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#减少缓存"><span class="nav-number">8.1.</span> <span class="nav-text">减少缓存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#增加缓存"><span class="nav-number">8.2.</span> <span class="nav-text">增加缓存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#增减都用"><span class="nav-number">8.3.</span> <span class="nav-text">增减都用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IO-调度"><span class="nav-number">9.</span> <span class="nav-text">IO 调度</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">501</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">538</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com" title="GitHub &rarr; https://github.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.3m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">19:26</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme: 'forest',
+      logLevel: 3,
+      flowchart: { curve: 'linear' },
+      gantt: { axisFormat: '%m/%d/%Y' },
+      sequence: { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="Packet Size ,Window Size and Socket Buffer In TCP Nagel and Delayed Ack SO_SNDBUF and SO_RCVBUF TCP Window FULL TCP Window ZERO sack BDP(bandwidth-delay product) and RTT(round trip time) 重传超时时间(RTO)">
+<meta property="og:type" content="article">
+<meta property="og:title" content="tcp 性能优化">
+<meta property="og:url" content="http://yoursite.com/2021/03/30/tcp-optimization/index.html">
+<meta property="og:site_name">
+<meta property="og:description" content="Packet Size ,Window Size and Socket Buffer In TCP Nagel and Delayed Ack SO_SNDBUF and SO_RCVBUF TCP Window FULL TCP Window ZERO sack BDP(bandwidth-delay product) and RTT(round trip time) 重传超时时间(RTO)">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/images/socket/cwnd.png">
+<meta property="og:image" content="http://yoursite.com/images/socket/cwnd.jpg">
+<meta property="article:published_time" content="2021-03-30T02:32:42.000Z">
+<meta property="article:modified_time" content="2022-06-08T05:22:10.558Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="tcp">
+<meta property="article:tag" content="setsockopt">
+<meta property="article:tag" content="SO_RCVBUF">
+<meta property="article:tag" content="Nagel">
+<meta property="article:tag" content="Delayed Ack">
+<meta property="article:tag" content="TCP Window Size">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/images/socket/cwnd.png">
+
+<link rel="canonical" href="http://yoursite.com/2021/03/30/tcp-optimization/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>tcp 性能优化 | </title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title"></span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2021/03/30/tcp-optimization/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          tcp 性能优化
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-03-30 10:32:42" itemprop="dateCreated datePublished" datetime="2021-03-30T10:32:42+08:00">2021-03-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2022-06-08 13:22:10" itemprop="dateModified" datetime="2022-06-08T13:22:10+08:00">2022-06-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/Socket/" itemprop="url" rel="index">
+                    <span itemprop="name">Socket</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/TCP/" itemprop="url" rel="index">
+                    <span itemprop="name">TCP</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>5.2k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <ul>
+<li>Packet Size ,Window Size and Socket Buffer In TCP</li>
+<li>Nagel and Delayed Ack</li>
+<li>SO_SNDBUF and SO_RCVBUF</li>
+<li>TCP Window FULL</li>
+<li>TCP Window ZERO</li>
+<li>sack</li>
+<li>BDP(bandwidth-delay product) and RTT(round trip time)</li>
+<li>重传超时时间(RTO)</li>
+<li>Interactive Data Flow and Bulk Data Flow</li>
+<li>RWND and CWND</li>
+</ul>
+<a id="more"></a>
+
+<h2 id="TCP-Window-Size"><a href="#TCP-Window-Size" class="headerlink" title="TCP Window Size"></a>TCP Window Size</h2><ul>
+<li><code>SO_SNDBUF</code> send buffer size at the sender</li>
+<li><code>SO_RCVBUF</code> receive buffer size at the receiver</li>
+</ul>
+<p>用于 TCP 握手中 TCP Window Size，影响吞吐</p>
+<ul>
+<li><strong>使用 wireshark tcp 时序图分析问题</strong></li>
+<li><strong>接收窗口的大小对性能的影响，RTT 越大影响越明显</strong></li>
+</ul>
+<p>BDP = RTT * (Bandwidth / 8)</p>
+<h2 id="TCP-QUICKACK"><a href="#TCP-QUICKACK" class="headerlink" title="TCP_QUICKACK"></a><code>TCP_QUICKACK</code></h2><pre><code class="shell">$ man 7 tcp
+TCP_QUICKACK (since Linux 2.4.4)
+              Enable  quickack mode if set or disable quickack mode if cleared.  In quickack mode, acks are sent immediately, rather than delayed if
+              needed in accordance to normal TCP operation.  This flag is not permanent, it only enables a switch to or from quickack mode.   Subse‐
+              quent  operation  of  the TCP protocol will once again enter/leave quickack mode depending on internal protocol processing and factors
+              such as delayed ack timeouts occurring and data transfer.  This option should not be used in code intended to be portable.</code></pre>
+<p><code>TCP_QUICKACK</code> 不是永久的，需要在每次调用 recv 后重新设置</p>
+<h2 id="传输速率"><a href="#传输速率" class="headerlink" title="传输速率"></a>传输速率</h2><ul>
+<li>RWND</li>
+<li>CWND：Congestion Window，拥塞窗口，负责控制单位时间内，数据发送端的报文发送量。TCP 协议规定，一个 RTT（Round-Trip Time，往返时延，大家常说的 ping 值）时间内，数据发送端只能发送 CWND 个数据包（注意不是字节数）。TCP 协议利用 CWND/RTT 来控制速度。这个值是根据丢包动态计算出来的</li>
+<li>SS：Slow Start，慢启动阶段。TCP 刚开始传输的时候，速度是慢慢涨起来的，除非遇到丢包，否则速度会一直指数性增长（标准 TCP 协议的拥塞控制算法，例如 cubic 就是如此。很多其它拥塞控制算法或其它厂商可能修改过慢启动增长特性，未必符合指数特性）</li>
+<li>CA：Congestion Avoid，拥塞避免阶段。当 TCP 数据发送方感知到有丢包后，会降低 CWND，此时速度会下降，CWND 再次增长时，不再像 SS 那样指数增，而是线性增（同理，标准 TCP 协议的拥塞控制算法，例如 cubic 是这样，很多其它拥塞控制算法或其它厂商可能修改过慢启动增长特性，未必符合这个特性）</li>
+<li>ssthresh：Slow Start Threshold，慢启动阈值。当数据发送方感知到丢包时，会记录此时的 CWND，并计算合理的 ssthresh 值（ssthresh &lt;= 丢包时的 CWND），当 CWND 重新由小至大增长，直到 sshtresh 时，不再 SS 而是 CA。但因为数据确认超时（数据发送端始终收不到对端的接收确认报文），发送端会骤降 CWND 到最初始的状态</li>
+<li>tcp_wmem 对应send buffer，也就是滑动窗口大小</li>
+</ul>
+<p><img src="/images/socket/cwnd.png" alt=""></p>
+<p><img src="/images/socket/cwnd.jpg" alt=""></p>
+<p>上图一旦发生丢包，cwnd降到1 ssthresh降到cwnd/2,一夜回到解放前，太保守了，实际大多情况下都是公网带宽还有空余但是链路过长，非带宽不够丢包概率增大，对此没必要这么保守（tcp诞生的背景主要针对局域网、双绞线来设计，偏保守）。RTT越大的网络环境（长肥管道）这个问题越是严重，表现就是传输速度抖动非常厉害</p>
+<ul>
+<li>超时重传：ssthresh降到cwnd/2 cwnd降到1</li>
+<li>快速重传：CWND降低到一半并降低ssthresh</li>
+</ul>
+<h2 id="Socket-Options"><a href="#Socket-Options" class="headerlink" title="Socket Options"></a>Socket Options</h2><pre><code class="c">#include &lt;sys/socket.h&gt;
+
+int getsockopt(int sockfd, int level, int optname, void *optval, socklen_t *optlen);
+int setsockopt(int sockfd, int level, int optname, const void *optval socklen_t optlen);
+
+/* Both return: 0 if OK,–1 on error */</code></pre>
+<p>参数列表</p>
+<table class="table table-striped table-hover">
+<thead>
+<tr>
+<th><em>level</em></th>
+<th><em>optname</em></th>
+<th><code>get</code></th>
+<th><code>set</code></th>
+<th>Description</th>
+<th>Flag</th>
+<th>Datatype</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SOL_SOCKET</code></td>
+<td><code>SO_BROADCAST</code></td>
+<td>x</td>
+<td>x</td>
+<td>Permit sending of broadcast datagrams</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>SO_DEBUG</code></td>
+<td>x</td>
+<td>x</td>
+<td>Enable debug tracing</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>SO_DONTROUTE</code></td>
+<td>x</td>
+<td>x</td>
+<td>Bypass routing table lookup</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>SO_ERROR</code></td>
+<td>x</td>
+<td></td>
+<td>Get pending error and clear</td>
+<td></td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>SO_KEEPALIVE</code></td>
+<td>x</td>
+<td>x</td>
+<td>Periodically test if connection still alive</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>SO_LINGER</code></td>
+<td>x</td>
+<td>x</td>
+<td>Linger on close if data to send</td>
+<td></td>
+<td><code>linger{}</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>SO_OOBINLINE</code></td>
+<td>x</td>
+<td>x</td>
+<td>Leave received out-of-band data inline</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>SO_RCVBUF</code></td>
+<td>x</td>
+<td>x</td>
+<td>Receive buffer size</td>
+<td></td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>SO_SNDBUF</code></td>
+<td>x</td>
+<td>x</td>
+<td>Send buffer size</td>
+<td></td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>SO_RCVLOWAT</code></td>
+<td>x</td>
+<td>x</td>
+<td>Receive buffer low-water mark</td>
+<td></td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>SO_SNDLOWAT</code></td>
+<td>x</td>
+<td>x</td>
+<td>Send buffer low-water mark</td>
+<td></td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>SO_RCVTIMEO</code></td>
+<td>x</td>
+<td>x</td>
+<td>Receive timeout</td>
+<td></td>
+<td><code>timeval{}</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>SO_SNDTIMEO</code></td>
+<td>x</td>
+<td>x</td>
+<td>Send timeout</td>
+<td></td>
+<td><code>timeval{}</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>SO_REUSEADDR</code></td>
+<td>x</td>
+<td>x</td>
+<td>Allow local address reuse</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>SO_REUSEPORT</code></td>
+<td>x</td>
+<td>x</td>
+<td>Allow local port reuse</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>SO_TYPE</code></td>
+<td>x</td>
+<td></td>
+<td>Get socket type</td>
+<td></td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>SO_USELOOPBACK</code></td>
+<td>x</td>
+<td>x</td>
+<td>Routing socket gets copy of what it sends</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td><code>IPPROTO_IP</code></td>
+<td><code>IP_HDRINCL</code></td>
+<td>x</td>
+<td>x</td>
+<td>IP header included with data</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IP_OPTIONS</code></td>
+<td>x</td>
+<td>x</td>
+<td>IP header options</td>
+<td></td>
+<td>(see text)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>IP_RECVDSTADDR</code></td>
+<td>x</td>
+<td>x</td>
+<td>Return destination IP address</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IP_RECVIF</code></td>
+<td>x</td>
+<td>x</td>
+<td>Return destination IP address</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IP_TOS</code></td>
+<td>x</td>
+<td>x</td>
+<td>Type-of-service and precedence</td>
+<td></td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IP_TTL</code></td>
+<td>x</td>
+<td>x</td>
+<td>TTL</td>
+<td></td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IP_MULTICAST_IF</code></td>
+<td>x</td>
+<td>x</td>
+<td>Specify outgoing interface</td>
+<td></td>
+<td><code>in_addr{}</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IP_MULTICAST_TTL</code></td>
+<td>x</td>
+<td>x</td>
+<td>Specify outgoing TTL</td>
+<td></td>
+<td><code>u_char</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IP_MULTICAST_LOOP</code></td>
+<td>x</td>
+<td>x</td>
+<td>Specify loopback</td>
+<td></td>
+<td><code>u_char</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IP_{ADD,DROP}_MEMBERSHIP</code></td>
+<td></td>
+<td>x</td>
+<td>Join or leave multicast group</td>
+<td></td>
+<td><code>ip_mreq{}</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IP_{BLOCK,UNBLOCK}_SOURCE</code></td>
+<td></td>
+<td>x</td>
+<td>Block or unblock multicast source</td>
+<td></td>
+<td><code>ip_mreq_source{}</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IP_{ADD,DROP}_SOURCE_MEMBERSHIP</code></td>
+<td></td>
+<td>x</td>
+<td>Join or leave source-specific multicast</td>
+<td></td>
+<td><code>ip_mreq_source{}</code></td>
+</tr>
+<tr>
+<td><code>IPPROTO_ICMPV6</code></td>
+<td><code>ICMP6_FILTER</code></td>
+<td>x</td>
+<td>x</td>
+<td>Specify ICMPv6 message types to pass</td>
+<td></td>
+<td><code>icmp6_filter{}</code></td>
+</tr>
+<tr>
+<td><code>IPPROTO_IPV6</code></td>
+<td><code>IPV6_CHECKSUM</code></td>
+<td>x</td>
+<td>x</td>
+<td>Offset of checksum field for raw sockets</td>
+<td></td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_DONTFRAG</code></td>
+<td>x</td>
+<td>x</td>
+<td>Drop instead of fragment large packets</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_NEXTHOP</code></td>
+<td>x</td>
+<td>x</td>
+<td>Specify next-hop address</td>
+<td></td>
+<td><code>sockaddr_in6{}</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_PATHMTU</code></td>
+<td>x</td>
+<td></td>
+<td>Retrieve current path MTU</td>
+<td></td>
+<td><code>ip6_mtuinfo{}</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_RECVDSTOPTS</code></td>
+<td>x</td>
+<td></td>
+<td>Receive destination options</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_RECVHOPLIMIT</code></td>
+<td>x</td>
+<td>x</td>
+<td>Receive unicast hop limit</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_RECVHOPOPTS</code></td>
+<td>x</td>
+<td>x</td>
+<td>Receive hop-by-hop options</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_RECVPATHMTU</code></td>
+<td>x</td>
+<td>x</td>
+<td>Receive path MTU</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_RECVPKTINFO</code></td>
+<td>x</td>
+<td>x</td>
+<td>Receive packet information</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_RECVRTHDR</code></td>
+<td>x</td>
+<td>x</td>
+<td>Receive source route</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_RECVTCLASS</code></td>
+<td>x</td>
+<td>x</td>
+<td>Receive traffic class</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_UNICAT_HOPS</code></td>
+<td>x</td>
+<td>x</td>
+<td>Default unicast hop limit</td>
+<td></td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_USE_MIN_MTU</code></td>
+<td>x</td>
+<td>x</td>
+<td>Use minimum MTU</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_V6ONLY</code></td>
+<td>x</td>
+<td>x</td>
+<td>Disable v4 compatibility</td>
+<td>x</td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_XXX</code></td>
+<td>x</td>
+<td>x</td>
+<td>Sticky ancillary data</td>
+<td></td>
+<td>(see text)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_MULTICAST_IF</code></td>
+<td>x</td>
+<td>x</td>
+<td>Specify outgoing interface</td>
+<td></td>
+<td><code>u_int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_MULTICAST_HOPS</code></td>
+<td>x</td>
+<td>x</td>
+<td>Specify outgoing hop limit</td>
+<td></td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_MULTICAST_LOOP</code></td>
+<td>x</td>
+<td>x</td>
+<td>Specify loopback</td>
+<td>x</td>
+<td><code>u_int</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_JOIN_GROUP</code></td>
+<td></td>
+<td>x</td>
+<td>Join multicast group</td>
+<td></td>
+<td><code>ipv6_mreq{}</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>IPV6_LEAVE_GROUP</code></td>
+<td></td>
+<td>x</td>
+<td>Leave multicast group</td>
+<td></td>
+<td><code>ipv6_mreq{}</code></td>
+</tr>
+<tr>
+<td><code>IPPROTO_IP</code> or <code>IPPROTO_IPV6</code></td>
+<td><code>MCAST_JOIN_GROUP</code></td>
+<td></td>
+<td>x</td>
+<td>Join multicast group</td>
+<td></td>
+<td><code>group_req{}</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>MCAST_LEAVE_GROUP</code></td>
+<td></td>
+<td>x</td>
+<td>Leave multicast group</td>
+<td></td>
+<td><code>group_source_req{}</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>MCAST_BLOCK_SOURCE</code></td>
+<td></td>
+<td>x</td>
+<td>Block multicast source</td>
+<td></td>
+<td><code>group_source_req{}</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>MCAST_UNBLOCK_SOURCE</code></td>
+<td></td>
+<td>x</td>
+<td>Unblock multicast source</td>
+<td></td>
+<td><code>group_source_req{}</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>MCAST_JOIN_SOURCE_GROUP</code></td>
+<td></td>
+<td>x</td>
+<td>Join source-specific multicast</td>
+<td></td>
+<td><code>group_source_req{}</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>MCAST_LEAVE_SOURCE_GROUP</code></td>
+<td></td>
+<td>x</td>
+<td>Leave source-specific multicast</td>
+<td></td>
+<td><code>group_source_req{}</code></td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ul>
+<li><a href="https://cloud.tencent.com/developer/article/1383232" target="_blank" rel="noopener">长肥管道传输之痛与解决之道</a><blockquote>
+<p>BDP RTT BBR</p>
+</blockquote>
+</li>
+<li><a href="https://zhuanlan.zhihu.com/p/53169705" target="_blank" rel="noopener">我们来说一说TCP神奇的40ms</a><blockquote>
+<p>Nagel算法 Delayed Ack机制</p>
+</blockquote>
+</li>
+<li><a href="https://cloud.tencent.com/developer/article/1004356" target="_blank" rel="noopener">Linux下TCP延迟确认(Delayed Ack)机制导致的时延问题分析</a><blockquote>
+<p><code>TCP_QUICKACK</code> Nagle算法 Delayed Ack机制 <code>/proc/sys/net/ipv4/tcpdelackmin</code></p>
+</blockquote>
+</li>
+<li><a href="https://plantegg.github.io/2019/09/28/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E6%80%A7%E8%83%BD%E5%92%8C%E5%8F%91%E9%80%81%E6%8E%A5%E6%94%B6Buffer%E7%9A%84%E5%85%B3%E7%B3%BB/" target="_blank" rel="noopener"><strong>TCP性能和发送接收窗口、Buffer的关系</strong></a><blockquote>
+<p><code>SO_SNDBUF</code> <code>SO_RCVBUF</code> <code>TCP Window Full</code> <code>TCP分析优化</code></p>
+</blockquote>
+</li>
+<li><a href="https://zhuanlan.zhihu.com/p/80043707" target="_blank" rel="noopener"><strong>TCP传输慢问题分析</strong></a><blockquote>
+<p><code>RWND</code> <code>CWND</code> <code>SACK</code> <code>TCP Window Full</code> <code>TCP zero window</code></p>
+</blockquote>
+</li>
+<li><a href="https://notes.shichao.io/unp/ch7/" target="_blank" rel="noopener">Chapter 7. Socket Options</a><blockquote>
+<p>setsockopt</p>
+</blockquote>
+</li>
+<li><a href="https://plantegg.github.io/2021/01/15/TCP%E4%BC%A0%E8%BE%93%E9%80%9F%E5%BA%A6%E6%A1%88%E4%BE%8B%E5%88%86%E6%9E%90/" target="_blank" rel="noopener">TCP传输速度案例分析</a><blockquote>
+<p>RTT SendBuffer RecvBuffer之间的影响 <code>window scaling factor</code> <code>Delayed Ack机制</code></p>
+</blockquote>
+</li>
+<li><a href="https://plantegg.github.io/2018/06/14/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E6%9C%80%E7%BB%8F%E5%85%B8%E7%9A%84TCP%E6%80%A7%E8%83%BD%E9%97%AE%E9%A2%98/" target="_blank" rel="noopener">就是要你懂TCP–TCP性能问题</a><blockquote>
+<p>Nagel算法 Delayed Ack机制</p>
+</blockquote>
+</li>
+<li><a href="https://ksmeow.moe/tcp-bbr/" target="_blank" rel="noopener">BBR（瓶颈带宽和往返传播时间）拥塞控制算法</a><blockquote>
+<p><code>CWND</code> <code>BBR</code></p>
+</blockquote>
+</li>
+<li><a href="https://cloud.tencent.com/developer/article/1629739" target="_blank" rel="noopener">30张图解： TCP 重传、滑动窗口、流量控制、拥塞控制</a></li>
+<li><a href="https://gitbook.cn/gitchat/activity/5ede2afa28b89774245e2c0f" target="_blank" rel="noopener">提升 TCP 性能的参数，你知道几个？</a><blockquote>
+<p>三次握手的性能提升 四次挥手的性能提升 数据传输的性能提升</p>
+</blockquote>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/tcp/" rel="tag"># tcp</a>
+              <a href="/tags/setsockopt/" rel="tag"># setsockopt</a>
+              <a href="/tags/SO-RCVBUF/" rel="tag"># SO_RCVBUF</a>
+              <a href="/tags/Nagel/" rel="tag"># Nagel</a>
+              <a href="/tags/Delayed-Ack/" rel="tag"># Delayed Ack</a>
+              <a href="/tags/TCP-Window-Size/" rel="tag"># TCP Window Size</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2021/03/29/tcp-option-SO-REUSEADDR/" rel="next" title="tcp 选项 SO_REUSEADDR">
+                  <i class="fa fa-chevron-left"></i> tcp 选项 SO_REUSEADDR
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2021/04/19/jenkins-shell-echo-off/" rel="prev" title="jenkins-shell-echo-off">
+                  jenkins-shell-echo-off <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP-Window-Size"><span class="nav-number">1.</span> <span class="nav-text">TCP Window Size</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP-QUICKACK"><span class="nav-number">2.</span> <span class="nav-text">TCP_QUICKACK</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#传输速率"><span class="nav-number">3.</span> <span class="nav-text">传输速率</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Socket-Options"><span class="nav-number">4.</span> <span class="nav-text">Socket Options</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">5.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">501</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">538</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com" title="GitHub &rarr; https://github.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.3m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">19:26</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme: 'forest',
+      logLevel: 3,
+      flowchart: { curve: 'linear' },
+      gantt: { axisFormat: '%m/%d/%Y' },
+      sequence: { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

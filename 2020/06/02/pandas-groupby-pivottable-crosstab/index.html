@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="Reshaping and pivot tables">
+<meta property="og:type" content="article">
+<meta property="og:title" content="pandas-groupby-pivottable-crosstab">
+<meta property="og:url" content="http://yoursite.com/2020/06/02/pandas-groupby-pivottable-crosstab/index.html">
+<meta property="og:site_name">
+<meta property="og:description" content="Reshaping and pivot tables">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-06-02T05:06:48.000Z">
+<meta property="article:modified_time" content="2022-06-08T05:22:10.554Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2020/06/02/pandas-groupby-pivottable-crosstab/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>pandas-groupby-pivottable-crosstab | </title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title"></span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/02/pandas-groupby-pivottable-crosstab/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          pandas-groupby-pivottable-crosstab
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-06-02 13:06:48" itemprop="dateCreated datePublished" datetime="2020-06-02T13:06:48+08:00">2020-06-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2022-06-08 13:22:10" itemprop="dateModified" datetime="2022-06-08T13:22:10+08:00">2022-06-08</time>
+              </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>7.9k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>7 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><a href="https://www.pypandas.cn/docs/user_guide/reshaping.html" target="_blank" rel="noopener">Reshaping and pivot tables</a></p>
+<a id="more"></a>
+
+<h2 id=""><a href="#" class="headerlink" title=""></a></h2><pre><code class="python">In [1360]: pd.pivot_table(df,index=[&quot;Manager&quot;,&quot;Rep&quot;,&#39;Product&#39;],values=[&quot;Price&quot;,&quot;Quantity&quot;],aggfunc=[np.sum],fill_value=0)
+Out[1360]: 
+                                            sum         
+                                          Price Quantity
+Manager       Rep           Product                     
+Debra Henley  Craig Booker  CPU           65000        2
+                            Maintenance    5000        2
+                            Software      10000        1
+              Daniel Hilton CPU          105000        4
+                            Software      10000        1
+              John Smith    CPU           35000        1
+                            Maintenance    5000        2
+Fred Anderson Cedric Moss   CPU           95000        3
+                            Maintenance    5000        1
+                            Software      10000        1
+              Wendy Yule    CPU          165000        7
+                            Maintenance    7000        3
+                            Monitor        5000        2
+
+
+In [1362]: df[[&#39;Manager&#39;, &#39;Rep&#39;, &#39;Price&#39;, &#39;Quantity&#39;, &#39;Product&#39;]].groupby([&quot;Manager&quot;,&quot;Rep&quot;,&#39;Product&#39;]).sum()
+Out[1362]:
+                                          Price  Quantity
+Manager       Rep           Product
+Debra Henley  Craig Booker  CPU           65000         2
+                            Maintenance    5000         2
+                            Software      10000         1
+              Daniel Hilton CPU          105000         4
+                            Software      10000         1
+              John Smith    CPU           35000         1
+                            Maintenance    5000         2
+Fred Anderson Cedric Moss   CPU           95000         3
+                            Maintenance    5000         1
+                            Software      10000         1
+              Wendy Yule    CPU          165000         7
+                            Maintenance    7000         3
+                            Monitor        5000         2</code></pre>
+<pre><code class="python">In [1414]: table = pd.pivot_table(df,index=[&quot;Manager&quot;,&quot;Rep&quot;],values=[&quot;Price&quot;,&quot;Quantity&quot;],
+      ...:                columns=[&quot;Product&quot;],aggfunc=[np.sum],fill_value=0)
+
+In [1415]: table
+Out[1415]:
+                                sum
+                              Price                              Quantity
+Product                         CPU Maintenance Monitor Software      CPU Maintenance Monitor Software
+Manager       Rep
+Debra Henley  Craig Booker    65000        5000       0    10000        2           2       0        1
+              Daniel Hilton  105000           0       0    10000        4           0       0        1
+              John Smith      35000        5000       0        0        1           2       0        0
+Fred Anderson Cedric Moss     95000        5000       0    10000        3           1       0        1
+              Wendy Yule     165000        7000    5000        0        7           3       2        0
+
+In [1416]: table.index
+Out[1416]:
+MultiIndex([( &#39;Debra Henley&#39;,  &#39;Craig Booker&#39;),
+            ( &#39;Debra Henley&#39;, &#39;Daniel Hilton&#39;),
+            ( &#39;Debra Henley&#39;,    &#39;John Smith&#39;),
+            (&#39;Fred Anderson&#39;,   &#39;Cedric Moss&#39;),
+            (&#39;Fred Anderson&#39;,    &#39;Wendy Yule&#39;)],
+           names=[&#39;Manager&#39;, &#39;Rep&#39;])
+
+In [1417]: table.columns
+Out[1417]:
+MultiIndex([(&#39;sum&#39;,    &#39;Price&#39;,         &#39;CPU&#39;),
+            (&#39;sum&#39;,    &#39;Price&#39;, &#39;Maintenance&#39;),
+            (&#39;sum&#39;,    &#39;Price&#39;,     &#39;Monitor&#39;),
+            (&#39;sum&#39;,    &#39;Price&#39;,    &#39;Software&#39;),
+            (&#39;sum&#39;, &#39;Quantity&#39;,         &#39;CPU&#39;),
+            (&#39;sum&#39;, &#39;Quantity&#39;, &#39;Maintenance&#39;),
+            (&#39;sum&#39;, &#39;Quantity&#39;,     &#39;Monitor&#39;),
+            (&#39;sum&#39;, &#39;Quantity&#39;,    &#39;Software&#39;)],
+           names=[None, None, &#39;Product&#39;])
+
+In [1418]: xx = df[[&#39;Manager&#39;, &#39;Rep&#39;, &#39;Price&#39;, &#39;Quantity&#39;, &#39;Product&#39;]].groupby([&quot;Manager&quot;,&quot;Rep&quot;,&#39;Product&#39;]).sum()
+
+In [1419]: xx
+Out[1419]:
+                                          Price  Quantity
+Manager       Rep           Product
+Debra Henley  Craig Booker  CPU           65000         2
+                            Maintenance    5000         2
+                            Software      10000         1
+              Daniel Hilton CPU          105000         4
+                            Software      10000         1
+              John Smith    CPU           35000         1
+                            Maintenance    5000         2
+Fred Anderson Cedric Moss   CPU           95000         3
+                            Maintenance    5000         1
+                            Software      10000         1
+              Wendy Yule    CPU          165000         7
+                            Maintenance    7000         3
+                            Monitor        5000         2
+
+In [1420]: xx.unstack()
+Out[1420]:
+                                Price                              Quantity
+Product                           CPU Maintenance Monitor Software      CPU Maintenance Monitor Software
+Manager       Rep
+Debra Henley  Craig Booker    65000.0      5000.0     NaN  10000.0      2.0         2.0     NaN      1.0
+              Daniel Hilton  105000.0         NaN     NaN  10000.0      4.0         NaN     NaN      1.0
+              John Smith      35000.0      5000.0     NaN      NaN      1.0         2.0     NaN      NaN
+Fred Anderson Cedric Moss     95000.0      5000.0     NaN  10000.0      3.0         1.0     NaN      1.0
+              Wendy Yule     165000.0      7000.0  5000.0      NaN      7.0         3.0     2.0      NaN
+
+In [1421]: xx.unstack().index
+Out[1421]:
+MultiIndex([( &#39;Debra Henley&#39;,  &#39;Craig Booker&#39;),
+            ( &#39;Debra Henley&#39;, &#39;Daniel Hilton&#39;),
+            ( &#39;Debra Henley&#39;,    &#39;John Smith&#39;),
+            (&#39;Fred Anderson&#39;,   &#39;Cedric Moss&#39;),
+            (&#39;Fred Anderson&#39;,    &#39;Wendy Yule&#39;)],
+           names=[&#39;Manager&#39;, &#39;Rep&#39;])
+
+In [1422]: xx.unstack().columns
+Out[1422]:
+MultiIndex([(   &#39;Price&#39;,         &#39;CPU&#39;),
+            (   &#39;Price&#39;, &#39;Maintenance&#39;),
+            (   &#39;Price&#39;,     &#39;Monitor&#39;),
+            (   &#39;Price&#39;,    &#39;Software&#39;),
+            (&#39;Quantity&#39;,         &#39;CPU&#39;),
+            (&#39;Quantity&#39;, &#39;Maintenance&#39;),
+            (&#39;Quantity&#39;,     &#39;Monitor&#39;),
+            (&#39;Quantity&#39;,    &#39;Software&#39;)],
+           names=[None, &#39;Product&#39;])
+
+In [1441]: table = pd.pivot_table(df,index=[&quot;Manager&quot;,&quot;Rep&quot;],values=[&quot;Price&quot;,&quot;Quantity&quot;],
+      ...:                columns=[&quot;Product&quot;],aggfunc={&#39;Price&#39;:np.sum, &#39;Quantity&#39;:np.sum},fill_value=0)
+
+In [1442]: table
+Out[1442]: 
+                              Price                              Quantity                             
+Product                         CPU Maintenance Monitor Software      CPU Maintenance Monitor Software
+Manager       Rep                                                                                     
+Debra Henley  Craig Booker    65000        5000       0    10000        2           2       0        1
+              Daniel Hilton  105000           0       0    10000        4           0       0        1
+              John Smith      35000        5000       0        0        1           2       0        0
+Fred Anderson Cedric Moss     95000        5000       0    10000        3           1       0        1
+              Wendy Yule     165000        7000    5000        0        7           3       2        0
+
+In [1443]: table.index
+Out[1443]:
+MultiIndex([( &#39;Debra Henley&#39;,  &#39;Craig Booker&#39;),
+            ( &#39;Debra Henley&#39;, &#39;Daniel Hilton&#39;),
+            ( &#39;Debra Henley&#39;,    &#39;John Smith&#39;),
+            (&#39;Fred Anderson&#39;,   &#39;Cedric Moss&#39;),
+            (&#39;Fred Anderson&#39;,    &#39;Wendy Yule&#39;)],
+           names=[&#39;Manager&#39;, &#39;Rep&#39;])
+
+In [1444]: table.columns
+Out[1444]:
+MultiIndex([(   &#39;Price&#39;,         &#39;CPU&#39;),
+            (   &#39;Price&#39;, &#39;Maintenance&#39;),
+            (   &#39;Price&#39;,     &#39;Monitor&#39;),
+            (   &#39;Price&#39;,    &#39;Software&#39;),
+            (&#39;Quantity&#39;,         &#39;CPU&#39;),
+            (&#39;Quantity&#39;, &#39;Maintenance&#39;),
+            (&#39;Quantity&#39;,     &#39;Monitor&#39;),
+            (&#39;Quantity&#39;,    &#39;Software&#39;)],
+           names=[None, &#39;Product&#39;])
+
+In [1445]: xx = df[[&#39;Manager&#39;, &#39;Rep&#39;, &#39;Price&#39;, &#39;Quantity&#39;, &#39;Product&#39;]].groupby([&quot;Manager&quot;,&quot;Rep&quot;,&#39;Product&#39;]).sum()
+
+In [1448]: xx.unstack()
+Out[1448]:
+                                Price                              Quantity
+Product                           CPU Maintenance Monitor Software      CPU Maintenance Monitor Software
+Manager       Rep
+Debra Henley  Craig Booker    65000.0      5000.0     NaN  10000.0      2.0         2.0     NaN      1.0
+              Daniel Hilton  105000.0         NaN     NaN  10000.0      4.0         NaN     NaN      1.0
+              John Smith      35000.0      5000.0     NaN      NaN      1.0         2.0     NaN      NaN
+Fred Anderson Cedric Moss     95000.0      5000.0     NaN  10000.0      3.0         1.0     NaN      1.0
+              Wendy Yule     165000.0      7000.0  5000.0      NaN      7.0         3.0     2.0      NaN
+
+In [1449]: xx.unstack().index
+Out[1449]:
+MultiIndex([( &#39;Debra Henley&#39;,  &#39;Craig Booker&#39;),
+            ( &#39;Debra Henley&#39;, &#39;Daniel Hilton&#39;),
+            ( &#39;Debra Henley&#39;,    &#39;John Smith&#39;),
+            (&#39;Fred Anderson&#39;,   &#39;Cedric Moss&#39;),
+            (&#39;Fred Anderson&#39;,    &#39;Wendy Yule&#39;)],
+           names=[&#39;Manager&#39;, &#39;Rep&#39;])
+
+In [1450]: xx.unstack().columns
+Out[1450]:
+MultiIndex([(   &#39;Price&#39;,         &#39;CPU&#39;),
+            (   &#39;Price&#39;, &#39;Maintenance&#39;),
+            (   &#39;Price&#39;,     &#39;Monitor&#39;),
+            (   &#39;Price&#39;,    &#39;Software&#39;),
+            (&#39;Quantity&#39;,         &#39;CPU&#39;),
+            (&#39;Quantity&#39;, &#39;Maintenance&#39;),
+            (&#39;Quantity&#39;,     &#39;Monitor&#39;),
+            (&#39;Quantity&#39;,    &#39;Software&#39;)],
+           names=[None, &#39;Product&#39;])</code></pre>
+<p>解释：</p>
+<blockquote>
+<p>aggfunc: function, list of functions, dict, default numpy.mean<br>If list of functions passed, the resulting pivot table will have hierarchical columns whose top level are the function names (inferred from the function objects themselves) If dict is passed, the key is column to aggregate and value is function or list of functions.</p>
+</blockquote>
+<h2 id="-1"><a href="#-1" class="headerlink" title=""></a></h2><pre><code class="python">pd.DataFrame(data=[df[&#39;指派给&#39;],df[&#39;创建于&#39;],df[&#39;状态&#39;],df[&#39;处理状况&#39;]]).T
+data = df[[&#39;指派给&#39;, &#39;创建于&#39;, &#39;状态&#39;, &#39;处理状况&#39;]]</code></pre>
+<p>##</p>
+<pre><code class="python">df_ori.groupby([key1, key2])[key1].count().unstack().fillna(0)
+df_ori.groupby([key1, key2]).size().sort_values(ascending=False).reset_index(name=&#39;counts&#39;)</code></pre>
+<h2 id="melt-与-pivot-table"><a href="#melt-与-pivot-table" class="headerlink" title="melt 与 pivot_table"></a><code>melt</code> 与 <code>pivot_table</code></h2><pre><code class="python">In [95]: cheese
+Out[95]:
+  first last  height  weight
+0  John  Doe     5.5     130
+1  Mary   Bo     6.0     150
+
+In [96]: redf = cheese.melt(id_vars=[&#39;first&#39;, &#39;last&#39;])
+
+In [97]: redf
+Out[97]:
+  first last variable  value
+0  John  Doe   height    5.5
+1  Mary   Bo   height    6.0
+2  John  Doe   weight  130.0
+3  Mary   Bo   weight  150.0
+
+In [98]: redf.pivot_table(values=&#39;value&#39;, index=[&#39;first&#39;, &#39;last&#39;], columns=&#39;variable&#39;).reset_index()
+Out[98]:
+variable first last  height  weight
+0         John  Doe     5.5   130.0
+1         Mary   Bo     6.0   150.0
+
+In [100]: odf = redf.pivot_table(values=&#39;value&#39;, index=[&#39;first&#39;, &#39;last&#39;], columns=&#39;variable&#39;).reset_index()
+
+In [101]: odf.columns.name = None
+
+In [102]: odf
+Out[102]:
+  first last  height  weight
+0  John  Doe     5.5   130.0
+1  Mary   Bo     6.0   150.0</code></pre>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://blog.csdn.net/starter_____/article/details/81368946" target="_blank" rel="noopener">Pandas —— 透视表pivot_table()和交叉表crosstab()</a></li>
+<li><a href="https://www.pythonf.cn/read/75778" target="_blank" rel="noopener">利用Python进行数据分组/数据透视表</a></li>
+<li><a href="https://www.dataquest.io/blog/pandas-pivot-table/" target="_blank" rel="noopener">Explore Happiness Data Using Python Pivot Tables</a></li>
+<li><a href="https://cmdlinetips.com/2018/12/pivot-table-in-python-pandas/" target="_blank" rel="noopener">3 Examples Using Pivot Table in Pandas</a></li>
+<li><a href="https://pbpython.com/pandas-pivot-table-explained.html" target="_blank" rel="noopener">Pandas Pivot Table Explained</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/31952948" target="_blank" rel="noopener">Pandas | 一文看懂透视表pivot_table</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/29539502" target="_blank" rel="noopener">使用Python数据透视表挖掘幸福数据</a></li>
+<li><a href="https://blog.csdn.net/qq_33689414/article/details/78973267" target="_blank" rel="noopener">pandas之groupby分组与pivot_table透视表</a></li>
+<li><a href="https://blog.csdn.net/S_o_l_o_n/article/details/80877805" target="_blank" rel="noopener">pandas中pivot()方法和groupby()方法的说明和对比</a></li>
+<li><a href="https://stackoverflow.com/questions/34702815/pandas-group-by-and-pivot-table-difference" target="_blank" rel="noopener">Pandas: group by and Pivot table difference</a></li>
+<li><a href="https://jakevdp.github.io/PythonDataScienceHandbook/03.09-pivot-tables.html" target="_blank" rel="noopener">Pivot Tables</a></li>
+<li><a href="https://www.digitalocean.com/community/tutorials/data-analysis-and-visualization-with-pandas-and-jupyter-notebook-in-python-3" target="_blank" rel="noopener">Data Analysis and Visualization with pandas and Jupyter Notebook in Python 3</a></li>
+<li><a href="https://www.jianshu.com/p/d74c84027613" target="_blank" rel="noopener">如何用pandas pivot_table透视表数据画图表</a></li>
+<li><a href="https://pandas.pydata.org/pandas-docs/stable/user_guide/reshaping.html" target="_blank" rel="noopener">Reshaping and pivot tables</a></li>
+<li><a href="https://orange.biolab.si/blog/2019/2019-08-27-pivot-table/" target="_blank" rel="noopener">Aggregate, Group By and Pivot with… Pivot Table!</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2020/05/29/pandas/" rel="next" title="pandas">
+                  <i class="fa fa-chevron-left"></i> pandas
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2020/06/05/pandas-data-selection/" rel="prev" title="Pandas 数据选择">
+                  Pandas 数据选择 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#"><span class="nav-number">1.</span> <span class="nav-text"></span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#-1"><span class="nav-number">2.</span> <span class="nav-text"></span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#melt-与-pivot-table"><span class="nav-number">3.</span> <span class="nav-text">melt 与 pivot_table</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">4.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">501</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">538</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com" title="GitHub &rarr; https://github.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.3m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">19:26</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme: 'forest',
+      logLevel: 3,
+      flowchart: { curve: 'linear' },
+      gantt: { axisFormat: '%m/%d/%Y' },
+      sequence: { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>

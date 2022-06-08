@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="tcpdump 基本用法汇总">
+<meta property="og:type" content="article">
+<meta property="og:title" content="tcpdump 常用命令汇总">
+<meta property="og:url" content="http://yoursite.com/2020/11/24/tcpdump/index.html">
+<meta property="og:site_name">
+<meta property="og:description" content="tcpdump 基本用法汇总">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-11-24T03:12:13.000Z">
+<meta property="article:modified_time" content="2022-06-08T05:22:10.554Z">
+<meta property="article:author" content="Breeze.Temple">
+<meta property="article:tag" content="tcpdump">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2020/11/24/tcpdump/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>tcpdump 常用命令汇总 | </title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title"></span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="Searching..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/11/24/tcpdump/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Breeze.Temple">
+      <meta itemprop="description" content="Breeze.Temple">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          tcpdump 常用命令汇总
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-11-24 11:12:13" itemprop="dateCreated datePublished" datetime="2020-11-24T11:12:13+08:00">2020-11-24</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2022-06-08 13:22:10" itemprop="dateModified" datetime="2022-06-08T13:22:10+08:00">2022-06-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index">
+                    <span itemprop="name">Tools</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>3.2k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>3 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>tcpdump 基本用法汇总</p>
+<a id="more"></a>
+
+<p><a href="https://danielmiessler.com/study/tcpdump" target="_blank" rel="noopener">A tcpdump Tutorial with Examples — 50 Ways to Isolate Traffic</a></p>
+<h2 id="参数"><a href="#参数" class="headerlink" title="参数"></a>参数</h2><p>Here are some additional ways to tweak how you call <code>tcpdump</code>.</p>
+<ul>
+<li><strong>-X</strong>: Show the packet’s <em>contents</em> in both <a href="https://en.wikipedia.org/wiki/Hexidecimal" target="_blank" rel="noopener">hex</a> and <a href="https://en.wikipedia.org/wiki/Ascii" target="_blank" rel="noopener">ascii</a>.</li>
+<li><strong>-XX</strong>: Same as <strong>-X</strong>, but also shows the ethernet header.</li>
+<li><strong>-D</strong>: Show the list of available interfaces</li>
+<li><strong>-l</strong>: Line-readable output (for viewing as you save, or sending to other commands)</li>
+<li><strong>-q</strong>: Be less verbose (more quiet) with your output.</li>
+<li><strong>-t</strong>: Give human-readable timestamp output.</li>
+<li><strong>-tttt</strong>: Give maximally human-readable timestamp output.</li>
+<li><strong>-i eth0</strong>: Listen on the eth0 interface.</li>
+<li><strong>-vv</strong>: Verbose output (more v’s gives more output).</li>
+<li><strong>-c</strong>: Only get <em>x</em> number of packets and then stop.</li>
+<li><strong>-s</strong>: Define the <em>snaplength</em> (size) of the capture in bytes. Use <code>-s0</code> to get everything, unless you are intentionally capturing less.</li>
+<li><strong>-S</strong>: Print absolute sequence numbers.</li>
+<li><strong>-e</strong>: Get the ethernet header as well.</li>
+<li><strong>-q</strong>: Show less protocol information.</li>
+<li><strong>-E</strong>: Decrypt IPSEC traffic by providing an encryption key.</li>
+</ul>
+<h2 id="everything-on-an-interface"><a href="#everything-on-an-interface" class="headerlink" title="everything on an interface"></a>everything on an interface</h2><pre><code class="shell">$ tcpdump -i eth0
+$ tcpdump -i any # get all interfaces</code></pre>
+<h2 id="find-traffic-by-ip"><a href="#find-traffic-by-ip" class="headerlink" title="find traffic by ip"></a>find traffic by ip</h2><p>using <code>host</code>, you can see traffic that’s going to or from 1.1.1.1.</p>
+<pre><code class="shell">$ tcpdump host 1.1.1.1</code></pre>
+<ul>
+<li>Expression Types: <code>host</code> <code>net</code> <code>port</code></li>
+<li>Directions: <code>src</code> <code>dst</code></li>
+<li>Types: <code>host</code> <code>net</code> <code>port</code></li>
+<li>Protocols: <code>tcp</code> <code>udp</code> <code>icmp</code></li>
+</ul>
+<h2 id="filtering-by-source-and-or-destination"><a href="#filtering-by-source-and-or-destination" class="headerlink" title="filtering by source and/or destination"></a>filtering by source and/or destination</h2><p>If you only want to see traffic in one direction or the other, you can use src and dst.</p>
+<pre><code class="shell">$ tcpdump src 1.1.1.1
+$ tcpdump dst 1.0.0.1</code></pre>
+<h2 id="finding-packets-by-network"><a href="#finding-packets-by-network" class="headerlink" title="finding packets by network"></a>finding packets by network</h2><p>To find packets going to or from a particular network or subnet, use the net option.</p>
+<pre><code class="shell">$ tcpdump net 1.2.3.0/24</code></pre>
+<h2 id="get-packet-contents-with-hex-output"><a href="#get-packet-contents-with-hex-output" class="headerlink" title="get packet contents with hex output"></a>get packet contents with hex output</h2><pre><code class="shell">$ tcpdump -c 1 -X icmp</code></pre>
+<h2 id="show-traffic-related-to-a-specific-port"><a href="#show-traffic-related-to-a-specific-port" class="headerlink" title="show traffic related to a specific port"></a>show traffic related to a specific port</h2><pre><code class="shell">$ tcpdump port 3389
+$ tcpdump src port 1025</code></pre>
+<p>Common Options:</p>
+<ul>
+<li><strong>-nn</strong>: Don’t resolve hostnames <em>or</em> port names.</li>
+<li><strong>-S</strong>: Get the entire packet.</li>
+<li><strong>-X</strong>: Get hex output.</li>
+</ul>
+<h2 id="show-traffic-of-one-protocol"><a href="#show-traffic-of-one-protocol" class="headerlink" title="show traffic of one protocol"></a>show traffic of one protocol</h2><pre><code class="shell">$ tcpdump icmp</code></pre>
+<h2 id="show-only-ip6-traffic"><a href="#show-only-ip6-traffic" class="headerlink" title="show only ip6 traffic"></a>show only ip6 traffic</h2><pre><code class="shell">$ tcpdump ip6</code></pre>
+<h2 id="find-traffic-using-port-ranges"><a href="#find-traffic-using-port-ranges" class="headerlink" title="find traffic using port ranges"></a>find traffic using port ranges</h2><pre><code class="shell">$ tcpdump portrange 21-23</code></pre>
+<h2 id="find-traffic-based-on-packet-size"><a href="#find-traffic-based-on-packet-size" class="headerlink" title="find traffic based on packet size"></a>find traffic based on packet size</h2><pre><code class="shell">$ tcpdump less 32
+$ tcpdump greater 64
+$ tcpdump &lt;= 128</code></pre>
+<h2 id="reading-writing-captures-to-a-file"><a href="#reading-writing-captures-to-a-file" class="headerlink" title="reading / writing captures to a file"></a>reading / writing captures to a file</h2><pre><code class="shell">$ tcpdump port 80 -w capture_file
+$ tcpdump -r capture_file</code></pre>
+<h2 id="Combinations"><a href="#Combinations" class="headerlink" title="Combinations"></a>Combinations</h2><ul>
+<li>AND <code>and</code> or <code>&amp;&amp;</code></li>
+<li>OR <code>or</code> or <code>||</code></li>
+<li>EXCEPT <code>not</code> or <code>!</code></li>
+</ul>
+<h3 id="raw-output-view"><a href="#raw-output-view" class="headerlink" title="raw output view"></a>raw output view</h3><pre><code class="shell">$ tcpdump -ttnnvvS</code></pre>
+<h3 id="from-specific-ip-and-destined-for-a-specific-port"><a href="#from-specific-ip-and-destined-for-a-specific-port" class="headerlink" title="from specific ip and destined for a specific port"></a>from specific ip and destined for a specific port</h3><p>Let’s find all traffic from 10.5.2.3 going to any host on port 3389.</p>
+<pre><code class="shell">$ tcpdump -nnvvS src 10.5.2.3 and dst port 3389</code></pre>
+<h3 id="from-one-network-to-another"><a href="#from-one-network-to-another" class="headerlink" title="from one network to another"></a>from one network to another</h3><p>Let’s look for all traffic coming from 192.168.x.x and going to the 10.x or 172.16.x.x networks, and we’re showing hex output with no hostname resolution and one level of extra verbosity.</p>
+<pre><code class="shell">$ tcpdump -nvX src net 192.168.0.0/16 and dst net 10.0.0.0/8 or 172.16.0.0/16</code></pre>
+<h3 id="non-icmp-traffic-going-to-a-specific-ip"><a href="#non-icmp-traffic-going-to-a-specific-ip" class="headerlink" title="non icmp traffic going to a specific ip"></a>non icmp traffic going to a specific ip</h3><p>This will show us all traffic going to 192.168.0.2 that is <em>not</em> ICMP.</p>
+<pre><code class="shell">$ tcpdump dst 192.168.0.2 and src net and not icmp</code></pre>
+<h3 id="traffic-from-a-host-that-isn’t-on-a-specific-port"><a href="#traffic-from-a-host-that-isn’t-on-a-specific-port" class="headerlink" title="traffic from a host that isn’t on a specific port"></a>traffic from a host that isn’t on a specific port</h3><p>This will show us all traffic from a host that isn’t SSH traffic (assuming default port usage).</p>
+<pre><code class="shell">$ tcpdump -vv src mars and not dst port 22</code></pre>
+<h3 id="isolate-tcp-flags"><a href="#isolate-tcp-flags" class="headerlink" title="isolate tcp flags"></a>isolate tcp flags</h3><ul>
+<li>Isolate TCP RST flags.<pre><code class="shell">$ tcpdump &#39;tcp[13] &amp; 4!=0&#39;
+$ tcpdump &#39;tcp[tcpflags] == tcp-rst&#39;</code></pre>
+</li>
+<li>Isolate TCP SYN flags.<pre><code class="shell">$ tcpdump &#39;tcp[13] &amp; 2!=0&#39;
+$ tcpdump &#39;tcp[tcpflags] == tcp-syn&#39;</code></pre>
+</li>
+<li>Isolate packets that have both the SYN and ACK flags set.<pre><code class="shell">$ tcpdump &#39;tcp[13]=18&#39;</code></pre>
+</li>
+<li>Isolate TCP URG flags.<pre><code class="shell">$ tcpdump &#39;tcp[13] &amp; 32!=0&#39;
+$ tcpdump &#39;tcp[tcpflags] == tcp-urg&#39;</code></pre>
+</li>
+<li>Isolate TCP ACK flags.<pre><code class="shell">$ tcpdump &#39;tcp[13] &amp; 16!=0&#39;
+$ tcpdump &#39;tcp[tcpflags] == tcp-ack&#39;</code></pre>
+</li>
+<li>Isolate TCP PSH flags.<pre><code class="shell">$ tcpdump &#39;tcp[13] &amp; 8!=0&#39;
+$ tcpdump &#39;tcp[tcpflags] == tcp-push&#39;</code></pre>
+</li>
+<li>Isolate TCP FIN flags.<pre><code class="shell">$ tcpdump &#39;tcp[13] &amp; 1!=0&#39;
+$ tcpdump &#39;tcp[tcpflags] == tcp-fin&#39;</code></pre>
+</li>
+</ul>
+<h2 id="recipe-examples"><a href="#recipe-examples" class="headerlink" title="recipe examples"></a>recipe examples</h2>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/tcpdump/" rel="tag"># tcpdump</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2020/11/24/config-git-with-multi-email-address/" rel="next" title="Using Git with Multiple Email Addresses">
+                  <i class="fa fa-chevron-left"></i> Using Git with Multiple Email Addresses
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2020/12/01/how-to-get-search-dirs-for-toolchain/" rel="prev" title="编辑工具链头文件和库的搜索路径">
+                  编辑工具链头文件和库的搜索路径 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#参数"><span class="nav-number">1.</span> <span class="nav-text">参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#everything-on-an-interface"><span class="nav-number">2.</span> <span class="nav-text">everything on an interface</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#find-traffic-by-ip"><span class="nav-number">3.</span> <span class="nav-text">find traffic by ip</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#filtering-by-source-and-or-destination"><span class="nav-number">4.</span> <span class="nav-text">filtering by source and&#x2F;or destination</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#finding-packets-by-network"><span class="nav-number">5.</span> <span class="nav-text">finding packets by network</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#get-packet-contents-with-hex-output"><span class="nav-number">6.</span> <span class="nav-text">get packet contents with hex output</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#show-traffic-related-to-a-specific-port"><span class="nav-number">7.</span> <span class="nav-text">show traffic related to a specific port</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#show-traffic-of-one-protocol"><span class="nav-number">8.</span> <span class="nav-text">show traffic of one protocol</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#show-only-ip6-traffic"><span class="nav-number">9.</span> <span class="nav-text">show only ip6 traffic</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#find-traffic-using-port-ranges"><span class="nav-number">10.</span> <span class="nav-text">find traffic using port ranges</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#find-traffic-based-on-packet-size"><span class="nav-number">11.</span> <span class="nav-text">find traffic based on packet size</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#reading-writing-captures-to-a-file"><span class="nav-number">12.</span> <span class="nav-text">reading &#x2F; writing captures to a file</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Combinations"><span class="nav-number">13.</span> <span class="nav-text">Combinations</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#raw-output-view"><span class="nav-number">13.1.</span> <span class="nav-text">raw output view</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#from-specific-ip-and-destined-for-a-specific-port"><span class="nav-number">13.2.</span> <span class="nav-text">from specific ip and destined for a specific port</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#from-one-network-to-another"><span class="nav-number">13.3.</span> <span class="nav-text">from one network to another</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#non-icmp-traffic-going-to-a-specific-ip"><span class="nav-number">13.4.</span> <span class="nav-text">non icmp traffic going to a specific ip</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#traffic-from-a-host-that-isn’t-on-a-specific-port"><span class="nav-number">13.5.</span> <span class="nav-text">traffic from a host that isn’t on a specific port</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#isolate-tcp-flags"><span class="nav-number">13.6.</span> <span class="nav-text">isolate tcp flags</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#recipe-examples"><span class="nav-number">14.</span> <span class="nav-text">recipe examples</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="Breeze.Temple"
+    src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">Breeze.Temple</p>
+  <div class="site-description" itemprop="description">Breeze.Temple</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">501</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">538</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com" title="GitHub &rarr; https://github.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bitbucket.org" title="BitBucket &rarr; https://bitbucket.org" rel="noopener" target="_blank"><i class="fa fa-fw fa-bitbucket"></i>BitBucket</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://breezetemple.github.io/" title="http://breezetemple.github.io/" rel="noopener" target="_blank">Breeze.Temple's HomePage</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2014 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Breeze.Temple</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">Symbols count total: </span>
+    <span title="Symbols count total">1.3m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    <span title="Reading time total">19:26</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.2.1
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.5.0
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme: 'forest',
+      logLevel: 3,
+      flowchart: { curve: 'linear' },
+      gantt: { axisFormat: '%m/%d/%Y' },
+      sequence: { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+
+  
+
+  
+
+
+  <link rel="stylesheet" href="/js/highlight/styles/solarized-dark.css">
+  <script src="/js/highlight/highlight.pack.js"></script>
+  <script type="text/javascript">
+      $(function() {
+          hljs.initHighlighting();
+      });
+  </script>
+
+</body>
+</html>
