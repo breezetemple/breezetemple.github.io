@@ -11558,6 +11558,32 @@ pthread_create(&amp;t1,&amp;attr,threadfn1,NULL);</code></pre><h2 id="Ref"><a hr
       </tags>
   </entry>
   <entry>
+    <title>kmalloc</title>
+    <url>/2018/02/08/kmalloc/</url>
+    <content><![CDATA[<p><code>kmalloc</code> 与 <code>__get_free_pages</code></p>
+<a id="more"></a>
+
+<h2 id="kmalloc"><a href="#kmalloc" class="headerlink" title="kmalloc"></a>kmalloc</h2><p><code>kmalloc</code> 可以申请的内存上限由头文件 <code>linxu/kmalloc_sizes.h</code> 来定义</p>
+<p>一般情况下上限为 <code>128k</code>，如果打开宏 <code>KMALLOC_MAX_SIZE</code> 可以申请更大的内存</p>
+<p><code>kmalloc</code> 申请的内存位于物理内存映射范围，而且在物理上是连续的，它们与真实的物理地址只有一个固定的偏移，因此存在简单的转换关系，对申请的内存大小有限制</p>
+<p>常用的 <code>flags</code>：</p>
+<ul>
+<li>GFP_ATOMIC 分配内存的过程是一个原子过程，分配内存的过程不会被（高优先级进程或中断）打断</li>
+<li>GFP_KERNEL 正常分配内存</li>
+<li>GFP_DMA 给 DMA 控制器分配内存，需要使用该标志（DMA 要求分配虚拟地址和物理地址连续）</li>
+</ul>
+<p><code>flags</code> 参考用法：</p>
+<p>|– 进程上下文，可以睡眠　　　　　GFP_KERNEL<br>|– 进程上下文，不可以睡眠　　　　GFP_ATOMIC<br>|　　|– 中断处理程序　　　　　　　GFP_ATOMIC<br>|　　|– 软中断　　　　　　　　　　GFP_ATOMIC<br>|　　|– Tasklet　　　　　　　　　GFP_ATOMIC<br>|– 用于 DMA 的内存，可以睡眠　　　GFP_DMA | GFP_KERNEL<br>|– 用于 DMA 的内存，不可以睡眠　　GFP_DMA |GFP_ATOMIC</p>
+<h2 id="get-free-pages"><a href="#get-free-pages" class="headerlink" title="__get_free_pages"></a>__get_free_pages</h2><p><code>__get_free_pages</code></p>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>How-to-use-getaddrinfo-instead-of-gethostbyname</title>
     <url>/2018/02/28/How-to-use-getaddrinfo-instead-of-gethostbyname/</url>
     <content><![CDATA[<p><code>gethostbyname</code> 与 <code>getaddrinfo</code></p>
@@ -11628,32 +11654,6 @@ int inet_pton(int af, const char *src, void *dst);</code></pre>
 <h2 id="查找主机名"><a href="#查找主机名" class="headerlink" title="查找主机名"></a>查找主机名</h2><p><code>gethostbyname</code> 和 <code>gethostbyaddr</code> 仅支持 <code>IPV4</code>，替换接口为 <code>getaddrinfo</code> 和 <code>getnameinfo</code></p>
 <p><code>name</code> -&gt; <code>IP</code> : <code>gethostbyname</code> <code>getaddrinfo</code></p>
 <p><code>IP</code> -&gt; <code>name</code> : <code>gethostbyaddr</code> <code>getnameinfo</code></p>
-]]></content>
-      <categories>
-        <category>Linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>kmalloc</title>
-    <url>/2018/02/08/kmalloc/</url>
-    <content><![CDATA[<p><code>kmalloc</code> 与 <code>__get_free_pages</code></p>
-<a id="more"></a>
-
-<h2 id="kmalloc"><a href="#kmalloc" class="headerlink" title="kmalloc"></a>kmalloc</h2><p><code>kmalloc</code> 可以申请的内存上限由头文件 <code>linxu/kmalloc_sizes.h</code> 来定义</p>
-<p>一般情况下上限为 <code>128k</code>，如果打开宏 <code>KMALLOC_MAX_SIZE</code> 可以申请更大的内存</p>
-<p><code>kmalloc</code> 申请的内存位于物理内存映射范围，而且在物理上是连续的，它们与真实的物理地址只有一个固定的偏移，因此存在简单的转换关系，对申请的内存大小有限制</p>
-<p>常用的 <code>flags</code>：</p>
-<ul>
-<li>GFP_ATOMIC 分配内存的过程是一个原子过程，分配内存的过程不会被（高优先级进程或中断）打断</li>
-<li>GFP_KERNEL 正常分配内存</li>
-<li>GFP_DMA 给 DMA 控制器分配内存，需要使用该标志（DMA 要求分配虚拟地址和物理地址连续）</li>
-</ul>
-<p><code>flags</code> 参考用法：</p>
-<p>|– 进程上下文，可以睡眠　　　　　GFP_KERNEL<br>|– 进程上下文，不可以睡眠　　　　GFP_ATOMIC<br>|　　|– 中断处理程序　　　　　　　GFP_ATOMIC<br>|　　|– 软中断　　　　　　　　　　GFP_ATOMIC<br>|　　|– Tasklet　　　　　　　　　GFP_ATOMIC<br>|– 用于 DMA 的内存，可以睡眠　　　GFP_DMA | GFP_KERNEL<br>|– 用于 DMA 的内存，不可以睡眠　　GFP_DMA |GFP_ATOMIC</p>
-<h2 id="get-free-pages"><a href="#get-free-pages" class="headerlink" title="__get_free_pages"></a>__get_free_pages</h2><p><code>__get_free_pages</code></p>
 ]]></content>
       <categories>
         <category>Linux</category>
@@ -14975,6 +14975,303 @@ Transmission Control Protocol, Src Port: 35720, Dst Port: 443, Seq: 1, Ack: 5402
       </tags>
   </entry>
   <entry>
+    <title>movian-backend</title>
+    <url>/2018/01/16/movian-backend/</url>
+    <content><![CDATA[<p><code>Movian</code> 中使用了大量的 <code>backend</code> 服务，本文来分析 <code>backend</code> 实现流程</p>
+<a id="more"></a>
+
+<h2 id="Register"><a href="#Register" class="headerlink" title="Register"></a>Register</h2><p>以 <code>Search</code> 为例</p>
+<pre><code>static inr
+search_canhandle(const char *url)
+{
+  return !strncmp(url, &quot;search:&quot;, strlen(&quot;search:&quot;));
+}
+
+static int
+search_open(prop_t *page, const char *url0, int sync)
+{
+
+}
+
+static backend_t be_search = {
+  .be_canhandle = search_canhandle,
+  .be_open = search_open,
+};
+
+BE_REGISTER(search);</code></pre><p><code>BE_REGISTER</code> 宏定义</p>
+<pre><code>#define BE_REGISTER(name)
+  INITIALIZER(backend_init_ ## name) {                                 \
+    backend_register(&amp;be_ ## name);                                    \
+  }</code></pre><p><code>INITIALIZER</code> 宏定义在 <code>src/compiler.h</code></p>
+<pre><code>#elif defined(__GNUC__)
+
+#define INITIALIZER(f) \
+   static void f(void) __attribute__((constructor)); \
+   static void f(void)
+
+#endif</code></pre><p>其中 <code>__attribute__ constructor</code> 被修饰的函数作为构造函数执行</p>
+<p>其中 <code>backend_register</code> 将 <code>be_search</code> 插入到链表 <code>backends</code> 中</p>
+<pre><code>void
+backend_register(backend_t *be)
+{
+  LIST_INSERT_HEAD(&amp;backends, be, be_global_link);
+}</code></pre><p>因此在执行到 <code>main</code> 之前已经调用 <code>backend_register</code>，完成 <code>backend</code> 注册</p>
+<h2 id="Init"><a href="#Init" class="headerlink" title="Init"></a>Init</h2><p><code>src/arch/linux/linux_main.c</code></p>
+<p><code>main</code> -&gt;<br><code>main_init</code> -&gt;<br><code>backend_init</code></p>
+<pre><code class="backend_init">void
+backend_init(void)
+{
+  backend_t *be;
+  hts_lwmutex_init(&amp;dyanamic_backends_mutex);
+  hts_mutex_init(&amp;imageloader_mutex);
+  hts_cond_init(&amp;imageloader_cond, &amp;imageloader_mutex);
+
+  TAILQ_INIT(&amp;cached_images);
+
+  LIST_FOREACH(be, &amp;backends, be_global_link)
+    if(be-&gt;be_init != NULL)
+      be-&gt;be_init();
+}</code></pre>
+<h2 id="play-video"><a href="#play-video" class="headerlink" title="play video"></a>play video</h2><p><code>UI</code> -&gt;<br><code>glw_create</code> -&gt;<br><code>class-&gt;gc_ctor</code> -&gt;<br><code>glw_video_ctor</code> -&gt;<br><code>video_playback_create</code> -&gt;<br><code>video_player_idle</code> -&gt;<br><code>play_video</code> -&gt;<br><code>backend_play_video</code></p>
+<h2 id="play-audio"><a href="#play-audio" class="headerlink" title="play audio"></a>play audio</h2><p>与 <code>video</code> 流程不一样</p>
+<p><code>be_playqueue</code> 注册</p>
+<pre><code>static backend_t be_playqueue = {
+  .be_init = playqueue_init,
+  .be_canhandle = be_playqueue_canhandle,
+  .be_open = be_playqueue_open,
+};
+
+BE_REGISTER(playqueue);</code></pre><p><code>playqueue_init</code> -&gt;<br><code>player_thread</code> -&gt;<br><code>backend_play_audio</code></p>
+<h2 id="page-open"><a href="#page-open" class="headerlink" title="page open"></a>page open</h2><p><code>backend_page_open</code> 注册为 <code>backend</code>，除此之外只给 <code>upgrade</code> 调用</p>
+<pre><code class="upgrade_open_url">static int
+upgrade_open_url(prop_t *page, const char *url, int sync)
+{
+  if(!strcmp(url, &quot;showtime:upgrade&quot;)) {
+    usage_page_open(sync, &quot;Upgrade&quot;);
+    backend_page_open(page, &quot;page:upgrade&quot;, sync);
+    upgrade_refresh();
+    prop_set(page, &quot;directClose&quot;, PROP_SET_INT, 1);
+  } else {
+    nav_open_error(page, &quot;Invalid URI&quot;);
+  }
+  return 0;
+}</code></pre>
+<pre><code>static backend_t be_page = {
+  .be_canhandle = be_page_canhandle,
+  .be_open = backend_page_open,
+};
+
+BE_REGISTER(page);</code></pre><h2 id="backend-probe"><a href="#backend-probe" class="headerlink" title="backend probe"></a>backend probe</h2><p><code>main_init</code> -&gt;<br><code>service_int</code> -&gt;<br><code>service_probe_loop</code> -&gt;<br><code>backend_probe</code></p>
+<pre><code class="backend_probe">backend_probe_result_t
+backend_probe(const char *url, char *errbuf, size_t errlen, int timeout_ms)
+{
+  if(timeout_ms &lt;= 0)
+    timeout_ms = 5000;
+
+  // 匹配 URL
+  backend_t *be = backend_canhandle(url);
+  if(be == NULL) {
+    snprintf(errbuf, errlen, &quot;No handler for URL&quot;);
+    return BACKEND_PROBE_NO_HANDLER;
+  }
+
+  if(be-&gt;be_probe == NULL)
+    return BACKEND_PROBE_OK;
+
+  // Example: .be_probe = fa_check_url
+  return be-&gt;be_probe(url, errbuf, errlen, timeout_ms);
+}</code></pre>
+<h2 id="backend-open"><a href="#backend-open" class="headerlink" title="backend open"></a>backend open</h2><p><code>search_open</code> -&gt;<br><code>backend_open</code> -&gt; <code>backend_search</code></p>
+<p>可以匹配到 <code>.be_search = plugin_search</code> <code>.be_search = ecmascript_search</code></p>
+<p>通用 <code>src/arch/linux/linux_main.c</code></p>
+<p><code>main</code> -&gt;<br><code>linux_global_eventsink</code> -&gt;<br><code>switch_ui</code></p>
+<p>将 <code>ui_current</code> 设置为 <code>ui_glw</code>，然后</p>
+<p><code>main_loop</code> -&gt;<br><code>ui_glw-&gt;start</code> -&gt;<br><code>glw_x11_start</code> -&gt;<br><code>nav_spawn</code> -&gt;<br><code>nav_create</code> -&gt;<br><code>nav_open0</code> -&gt;<br><code>nav_open_backend</code> -&gt;<br><code>nav_open_thread</code> -&gt;<br><code>back_open</code></p>
+]]></content>
+      <categories>
+        <category>Movian</category>
+      </categories>
+      <tags>
+        <tag>movian</tag>
+        <tag>backend</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>XMLHttpRequest</title>
+    <url>/2018/01/12/XMLHttpRequest/</url>
+    <content><![CDATA[<blockquote>
+<p>Level 1 XMLHttpRequest</p>
+</blockquote>
+<a id="more"></a>
+
+<h2 id="Ajax-和-XMLHttpRequest"><a href="#Ajax-和-XMLHttpRequest" class="headerlink" title="Ajax 和 XMLHttpRequest"></a>Ajax 和 XMLHttpRequest</h2><p><code>Ajax</code> <code>XMLHttpRequest</code>，细究起来它们两个是属于不同维度的 2 个概念</p>
+<p><a href="http://www.tutorialspoint.com/ajax/what_is_ajax.htm" target="_blank" rel="noopener">what is ajax?</a></p>
+<blockquote>
+<p>AJAX stands for Asynchronous JavaScript and XML. AJAX is a new technique for creating better, faster, and more interactive web applications with the help of XML, HTML, CSS, and Java Script.<br>AJAX is based on the following open standards:</p>
+</blockquote>
+<blockquote>
+<ul>
+<li>Browser-based presentation using HTML and Cascading Style Sheets (CSS).</li>
+<li>Data is stored in XML format and fetched from the server.</li>
+<li>Behind-the-scenes data fetches using XMLHttpRequest objects in the browser.</li>
+<li>JavaScript to make everything happen.</li>
+</ul>
+</blockquote>
+<p><code>ajax</code> 是一种技术方案，但并不是一种新技术。它依赖的是现有的 <code>CSS/HTML/Javascript</code>，而其中最核心的依赖是浏览器提供的 <code>XMLHttpRequest</code> 对象，是这个对象使得浏览器可以发出 <code>HTTP 请求</code> 与 <code>接收 HTTP 响应</code>。</p>
+<p>用一句话来总结两者的关系：<strong>使用 XMLHttpRequest 对象来发送一个 Ajax 请求</strong>。</p>
+<h2 id="创建-XMLHttpRequest-对象"><a href="#创建-XMLHttpRequest-对象" class="headerlink" title="创建 XMLHttpRequest 对象"></a>创建 XMLHttpRequest 对象</h2><p>所有现代浏览器 (IE7+、Firefox、Chrome、Safari 以及 Opera) 都内建了 <code>XMLHttpRequest</code> 对象。</p>
+<p>老版本的 Internet Explorer （IE5 和 IE6）使用 <code>ActiveX</code> 对象：</p>
+<pre><code class="js">var xmlhttp;
+
+if (window.XMLHttpRequest)
+    // code for all new browsers
+    xmlhttp = new XMLHttpRequest();
+else
+    // code for IE5 and IE6
+    xmlhttp = new ActiveXObject(&quot;Microsoft.XMLHTTP&quot;);</code></pre>
+<h2 id="指定回调函数"><a href="#指定回调函数" class="headerlink" title="指定回调函数"></a>指定回调函数</h2><pre><code>xmlhttp.onreadystatechange = flushlist;</code></pre><h2 id="向主机发送请求"><a href="#向主机发送请求" class="headerlink" title="向主机发送请求"></a>向主机发送请求</h2><pre><code>xmlhttp.open(&quot;GET&quot;, &quot;/programmes&quot;, true);
+xmlhttp.send();</code></pre><h2 id="等待主机应答"><a href="#等待主机应答" class="headerlink" title="等待主机应答"></a>等待主机应答</h2><p>监控 XMLHttpRequest 对象的状态变化</p>
+<pre><code class="js">function flushlist() {
+　　if ( this.readyState == 4 &amp;&amp; this.status == 200 ) {
+　　　　alert( this.responseText );
+　　} else {
+　　　　alert( this.statusText );
+　　}
+};</code></pre>
+<ul>
+<li>xhr.readyState：XMLHttpRequest 对象的状态，等于 4 表示数据已经接收完毕。</li>
+<li>xhr.status：服务器返回的状态码，等于 200 表示一切正常。</li>
+<li>xhr.responseText：服务器返回的文本数据</li>
+<li>xhr.responseXML：服务器返回的 XML 格式的数据</li>
+<li>xhr.statusText：服务器返回的状态文本。</li>
+</ul>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://segmentfault.com/a/1190000004322487" target="_blank" rel="noopener">你真的会使用 XMLHttpRequest 吗？</a></li>
+<li><a href="http://www.ruanyifeng.com/blog/2012/09/xmlhttprequest_level_2.html" target="_blank" rel="noopener">XMLHttpRequest Level 2 使用指南</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Network</category>
+        <category>Web</category>
+        <category>Mongoose</category>
+      </categories>
+      <tags>
+        <tag>www</tag>
+        <tag>xml</tag>
+        <tag>web</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>movian-plugin-tips</title>
+    <url>/2018/01/11/movian-plugin-uri/</url>
+    <content><![CDATA[<p><code>URI</code> 是 <code>Movian Plugin</code> 的入口，本篇文章分析 <code>URI</code> 的实现</p>
+<a id="more"></a>
+
+<h2 id="addURI"><a href="#addURI" class="headerlink" title="addURI"></a>addURI</h2><p><code>plugin object</code></p>
+<pre><code class="api-v1.js">addURI: function(re, callback) {
+  var page = require(&#39;movian/page&#39;);
+  return new page.Route(re, callback);
+},</code></pre>
+<p><code>page</code></p>
+<pre><code class="page.js">exports.Route = function(re, callback) {
+
+  this.route = require(&#39;native/route&#39;).create(re, function(pageprop, sync, args) {
+
+    try {
+
+      // First, convert the raw page prop object into a proxied one
+      pageprop = prop.makeProp(pageprop);
+
+      // 将参数拆分出来，传入 fun 中执行
+      // Prepend a Page object as first argument to callback
+      args.unshift(new Page(pageprop, sync, false));
+
+
+      callback.apply(null, args);
+    } catch(e) {
+
+      if(!prop.isZombie(pageprop)) {
+        throw e;
+      } else {
+        console.log(&quot;Page at route &quot; + re + &quot; was closed, error supressed&quot;);
+      }
+    }
+  });
+}</code></pre>
+<h2 id="URI-执行流程"><a href="#URI-执行流程" class="headerlink" title="URI 执行流程"></a>URI 执行流程</h2><p>在 <code>Movian</code> 输入 <code>ted:start</code> 之后的流程</p>
+<pre><code>11:15:19.974: navigator       [INFO ]: Opening search:ted:start
+11:15:19.975: ted             [DEBUG]: Opening route ^ted:start
+[prop directory {&quot;persistent&quot;, &quot;previous&quot;, &quot;how&quot;, &quot;close&quot;, &quot;url&quot;, &quot;parentUrl&quot;, &quot;directClose&quot;, &quot;eventSink&quot;, &quot;bookmarked&quot;, &quot;model&quot;, &quot;glw&quot;}]
+false
+[object Object]
+11:15:19.975: HTTP            [INFO ]: Connect to www.ted.com:443
+newest
+Newest
+
+
+11:30:06.881: navigator       [INFO ]: Opening ted:index:funny:Funny
+11:30:06.881: ted             [DEBUG]: Opening route ^ted:index:(.*):(.*)
+11:30:06.881: ted             [DEBUG]:   Page argument 1 : funny
+11:30:06.881: ted             [DEBUG]:   Page argument 2 : Funny
+[prop directory {&quot;persistent&quot;, &quot;previous&quot;, &quot;how&quot;, &quot;close&quot;, &quot;url&quot;, &quot;parentUrl&quot;, &quot;directClose&quot;, &quot;eventSink&quot;, &quot;bookmarked&quot;, &quot;model&quot;, &quot;glw&quot;}]
+false
+[object Object],funny,Funny</code></pre><p><code>nav_open0</code> -&gt;<br><code>nav_open_backend</code> -&gt;<br><code>nav_open_thread</code> -&gt;<br><code>backend_open</code> -&gt;<br><code>be_open</code> -&gt;<br><code>ecmascript_openuri</code> 完成参数的解析，传入函数中执行</p>
+<pre><code class="ecmascript.c">static backend_t be_ecmascript = {
+  .be_flags  = BACKEND_OPEN_CHECKS_URI,
+  .be_open   = ecmascript_openuri,
+  .be_search = ecmascript_search,
+};
+
+BE_REGISTER(ecmascript);</code></pre>
+<pre><code class="other">void backend_register(backend_t *be)
+{
+  LIST_INSERT_HEAD(&amp;backends, be, be_global_link);
+}
+
+#define BE_REGISTER(name)                                              \
+INITIALIZER(backend_init_ ## name) {                                 \
+  backend_register(&amp;be_ ## name);                                    \
+}</code></pre>
+<p>因此 <code>be_ecmascript</code> 注册到链表 <code>be</code> 中</p>
+<p>搜索 <code>URI ted:no</code> <code>locatedb_search</code></p>
+<pre><code>12:45:04.096: navigator       [INFO ]: Opening search:ted:nouri
+12:45:04.097: FA              [DEBUG]: Searcher: ted:nouri: executing &quot;locate -i -L -q -b &#39;ted:nouri&#39;&quot;
+12:45:06.085: FA              [DEBUG]: Searcher: ted:nouri: Done
+12:45:22.445: Callout         [DEBUG]: /data/OpenSourceCode/movian/src/upnp/upnp_event.c:150 executed for 1497161us
+12:45:24.057: Callout         [DEBUG]: /data/OpenSourceCode/movian/src/upnp/upnp_event.c:150 executed for 1405651us
+12:45:31.823: ted             [DEBUG]: Search for ted:no was closed, error supressed
+12:45:31.823: rutracker       [DEBUG]: Search for ted:no was closed, error supressed</code></pre><p><code>nav_open0</code> -&gt;<br><code>nav_open_backend</code> -&gt;<br><code>nav_open_thread</code> -&gt;<br><code>backend_open</code> -&gt;<br><code>be_open</code> -&gt;<br><code>locatedb_search</code> -&gt;<br><code>fa_searcher</code> -&gt;</p>
+<h2 id="examples"><a href="#examples" class="headerlink" title="examples"></a>examples</h2><pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:index:(.*):(.*)&quot;, function(page, sort, title) {
+    setPageHeader(page, plugin.getDescriptor().title + &#39; - Sorted by: &#39; + decodeURIComponent(title));
+    scraper(page, BASE_URL + &#39;/talks?sort=&#39; + sort);
+});
+
+plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
+    setPageHeader(page, plugin.getDescriptor().title + &#39; - Sort by:&#39;);
+    page.loading = true;
+    var doc = showtime.httpReq(BASE_URL + &#39;/talks&#39;).toString();
+    page.loading = false;
+    var sort = doc.match(/&lt;optgroup label=&quot;Sort by([\s\S]*?)&lt;\/optgroup&gt;/)[1];
+    // 1-uri component, 2-title
+    var re = /&lt;option value=&quot;([\s\S]*?)&quot;&gt;([\s\S]*?)&lt;\/option&gt;/g;
+    var match = re.exec(sort);
+    while (match) {
+        // sort: match[1]  title: encodeURIComponent(match[2])
+        // 与上面的 URI re 是对应的 plugin.getDescriptor().id + &quot;:index:(.*):(.*)&quot;
+        page.appendItem(plugin.getDescriptor().id + &#39;:index:&#39; + match[1] + &#39;:&#39; + encodeURIComponent(match[2]), &quot;directory&quot;, {
+            title: match[2]
+        });
+        match = re.exec(sort);
+    }
+});</code></pre>]]></content>
+      <categories>
+        <category>Movian</category>
+      </categories>
+      <tags>
+        <tag>movian</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>在 NFS 环境下使能网络</title>
     <url>/2018/11/05/nfs-with-network/</url>
     <content><![CDATA[<p>挂载网络文件系统的同时可以使用 <code>eth0</code> 访问网络</p>
@@ -15466,303 +15763,6 @@ Wiphy phy0
         <tag>wireless</tag>
         <tag>iw</tag>
         <tag>iwconfig</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>movian-backend</title>
-    <url>/2018/01/16/movian-backend/</url>
-    <content><![CDATA[<p><code>Movian</code> 中使用了大量的 <code>backend</code> 服务，本文来分析 <code>backend</code> 实现流程</p>
-<a id="more"></a>
-
-<h2 id="Register"><a href="#Register" class="headerlink" title="Register"></a>Register</h2><p>以 <code>Search</code> 为例</p>
-<pre><code>static inr
-search_canhandle(const char *url)
-{
-  return !strncmp(url, &quot;search:&quot;, strlen(&quot;search:&quot;));
-}
-
-static int
-search_open(prop_t *page, const char *url0, int sync)
-{
-
-}
-
-static backend_t be_search = {
-  .be_canhandle = search_canhandle,
-  .be_open = search_open,
-};
-
-BE_REGISTER(search);</code></pre><p><code>BE_REGISTER</code> 宏定义</p>
-<pre><code>#define BE_REGISTER(name)
-  INITIALIZER(backend_init_ ## name) {                                 \
-    backend_register(&amp;be_ ## name);                                    \
-  }</code></pre><p><code>INITIALIZER</code> 宏定义在 <code>src/compiler.h</code></p>
-<pre><code>#elif defined(__GNUC__)
-
-#define INITIALIZER(f) \
-   static void f(void) __attribute__((constructor)); \
-   static void f(void)
-
-#endif</code></pre><p>其中 <code>__attribute__ constructor</code> 被修饰的函数作为构造函数执行</p>
-<p>其中 <code>backend_register</code> 将 <code>be_search</code> 插入到链表 <code>backends</code> 中</p>
-<pre><code>void
-backend_register(backend_t *be)
-{
-  LIST_INSERT_HEAD(&amp;backends, be, be_global_link);
-}</code></pre><p>因此在执行到 <code>main</code> 之前已经调用 <code>backend_register</code>，完成 <code>backend</code> 注册</p>
-<h2 id="Init"><a href="#Init" class="headerlink" title="Init"></a>Init</h2><p><code>src/arch/linux/linux_main.c</code></p>
-<p><code>main</code> -&gt;<br><code>main_init</code> -&gt;<br><code>backend_init</code></p>
-<pre><code class="backend_init">void
-backend_init(void)
-{
-  backend_t *be;
-  hts_lwmutex_init(&amp;dyanamic_backends_mutex);
-  hts_mutex_init(&amp;imageloader_mutex);
-  hts_cond_init(&amp;imageloader_cond, &amp;imageloader_mutex);
-
-  TAILQ_INIT(&amp;cached_images);
-
-  LIST_FOREACH(be, &amp;backends, be_global_link)
-    if(be-&gt;be_init != NULL)
-      be-&gt;be_init();
-}</code></pre>
-<h2 id="play-video"><a href="#play-video" class="headerlink" title="play video"></a>play video</h2><p><code>UI</code> -&gt;<br><code>glw_create</code> -&gt;<br><code>class-&gt;gc_ctor</code> -&gt;<br><code>glw_video_ctor</code> -&gt;<br><code>video_playback_create</code> -&gt;<br><code>video_player_idle</code> -&gt;<br><code>play_video</code> -&gt;<br><code>backend_play_video</code></p>
-<h2 id="play-audio"><a href="#play-audio" class="headerlink" title="play audio"></a>play audio</h2><p>与 <code>video</code> 流程不一样</p>
-<p><code>be_playqueue</code> 注册</p>
-<pre><code>static backend_t be_playqueue = {
-  .be_init = playqueue_init,
-  .be_canhandle = be_playqueue_canhandle,
-  .be_open = be_playqueue_open,
-};
-
-BE_REGISTER(playqueue);</code></pre><p><code>playqueue_init</code> -&gt;<br><code>player_thread</code> -&gt;<br><code>backend_play_audio</code></p>
-<h2 id="page-open"><a href="#page-open" class="headerlink" title="page open"></a>page open</h2><p><code>backend_page_open</code> 注册为 <code>backend</code>，除此之外只给 <code>upgrade</code> 调用</p>
-<pre><code class="upgrade_open_url">static int
-upgrade_open_url(prop_t *page, const char *url, int sync)
-{
-  if(!strcmp(url, &quot;showtime:upgrade&quot;)) {
-    usage_page_open(sync, &quot;Upgrade&quot;);
-    backend_page_open(page, &quot;page:upgrade&quot;, sync);
-    upgrade_refresh();
-    prop_set(page, &quot;directClose&quot;, PROP_SET_INT, 1);
-  } else {
-    nav_open_error(page, &quot;Invalid URI&quot;);
-  }
-  return 0;
-}</code></pre>
-<pre><code>static backend_t be_page = {
-  .be_canhandle = be_page_canhandle,
-  .be_open = backend_page_open,
-};
-
-BE_REGISTER(page);</code></pre><h2 id="backend-probe"><a href="#backend-probe" class="headerlink" title="backend probe"></a>backend probe</h2><p><code>main_init</code> -&gt;<br><code>service_int</code> -&gt;<br><code>service_probe_loop</code> -&gt;<br><code>backend_probe</code></p>
-<pre><code class="backend_probe">backend_probe_result_t
-backend_probe(const char *url, char *errbuf, size_t errlen, int timeout_ms)
-{
-  if(timeout_ms &lt;= 0)
-    timeout_ms = 5000;
-
-  // 匹配 URL
-  backend_t *be = backend_canhandle(url);
-  if(be == NULL) {
-    snprintf(errbuf, errlen, &quot;No handler for URL&quot;);
-    return BACKEND_PROBE_NO_HANDLER;
-  }
-
-  if(be-&gt;be_probe == NULL)
-    return BACKEND_PROBE_OK;
-
-  // Example: .be_probe = fa_check_url
-  return be-&gt;be_probe(url, errbuf, errlen, timeout_ms);
-}</code></pre>
-<h2 id="backend-open"><a href="#backend-open" class="headerlink" title="backend open"></a>backend open</h2><p><code>search_open</code> -&gt;<br><code>backend_open</code> -&gt; <code>backend_search</code></p>
-<p>可以匹配到 <code>.be_search = plugin_search</code> <code>.be_search = ecmascript_search</code></p>
-<p>通用 <code>src/arch/linux/linux_main.c</code></p>
-<p><code>main</code> -&gt;<br><code>linux_global_eventsink</code> -&gt;<br><code>switch_ui</code></p>
-<p>将 <code>ui_current</code> 设置为 <code>ui_glw</code>，然后</p>
-<p><code>main_loop</code> -&gt;<br><code>ui_glw-&gt;start</code> -&gt;<br><code>glw_x11_start</code> -&gt;<br><code>nav_spawn</code> -&gt;<br><code>nav_create</code> -&gt;<br><code>nav_open0</code> -&gt;<br><code>nav_open_backend</code> -&gt;<br><code>nav_open_thread</code> -&gt;<br><code>back_open</code></p>
-]]></content>
-      <categories>
-        <category>Movian</category>
-      </categories>
-      <tags>
-        <tag>movian</tag>
-        <tag>backend</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>XMLHttpRequest</title>
-    <url>/2018/01/12/XMLHttpRequest/</url>
-    <content><![CDATA[<blockquote>
-<p>Level 1 XMLHttpRequest</p>
-</blockquote>
-<a id="more"></a>
-
-<h2 id="Ajax-和-XMLHttpRequest"><a href="#Ajax-和-XMLHttpRequest" class="headerlink" title="Ajax 和 XMLHttpRequest"></a>Ajax 和 XMLHttpRequest</h2><p><code>Ajax</code> <code>XMLHttpRequest</code>，细究起来它们两个是属于不同维度的 2 个概念</p>
-<p><a href="http://www.tutorialspoint.com/ajax/what_is_ajax.htm" target="_blank" rel="noopener">what is ajax?</a></p>
-<blockquote>
-<p>AJAX stands for Asynchronous JavaScript and XML. AJAX is a new technique for creating better, faster, and more interactive web applications with the help of XML, HTML, CSS, and Java Script.<br>AJAX is based on the following open standards:</p>
-</blockquote>
-<blockquote>
-<ul>
-<li>Browser-based presentation using HTML and Cascading Style Sheets (CSS).</li>
-<li>Data is stored in XML format and fetched from the server.</li>
-<li>Behind-the-scenes data fetches using XMLHttpRequest objects in the browser.</li>
-<li>JavaScript to make everything happen.</li>
-</ul>
-</blockquote>
-<p><code>ajax</code> 是一种技术方案，但并不是一种新技术。它依赖的是现有的 <code>CSS/HTML/Javascript</code>，而其中最核心的依赖是浏览器提供的 <code>XMLHttpRequest</code> 对象，是这个对象使得浏览器可以发出 <code>HTTP 请求</code> 与 <code>接收 HTTP 响应</code>。</p>
-<p>用一句话来总结两者的关系：<strong>使用 XMLHttpRequest 对象来发送一个 Ajax 请求</strong>。</p>
-<h2 id="创建-XMLHttpRequest-对象"><a href="#创建-XMLHttpRequest-对象" class="headerlink" title="创建 XMLHttpRequest 对象"></a>创建 XMLHttpRequest 对象</h2><p>所有现代浏览器 (IE7+、Firefox、Chrome、Safari 以及 Opera) 都内建了 <code>XMLHttpRequest</code> 对象。</p>
-<p>老版本的 Internet Explorer （IE5 和 IE6）使用 <code>ActiveX</code> 对象：</p>
-<pre><code class="js">var xmlhttp;
-
-if (window.XMLHttpRequest)
-    // code for all new browsers
-    xmlhttp = new XMLHttpRequest();
-else
-    // code for IE5 and IE6
-    xmlhttp = new ActiveXObject(&quot;Microsoft.XMLHTTP&quot;);</code></pre>
-<h2 id="指定回调函数"><a href="#指定回调函数" class="headerlink" title="指定回调函数"></a>指定回调函数</h2><pre><code>xmlhttp.onreadystatechange = flushlist;</code></pre><h2 id="向主机发送请求"><a href="#向主机发送请求" class="headerlink" title="向主机发送请求"></a>向主机发送请求</h2><pre><code>xmlhttp.open(&quot;GET&quot;, &quot;/programmes&quot;, true);
-xmlhttp.send();</code></pre><h2 id="等待主机应答"><a href="#等待主机应答" class="headerlink" title="等待主机应答"></a>等待主机应答</h2><p>监控 XMLHttpRequest 对象的状态变化</p>
-<pre><code class="js">function flushlist() {
-　　if ( this.readyState == 4 &amp;&amp; this.status == 200 ) {
-　　　　alert( this.responseText );
-　　} else {
-　　　　alert( this.statusText );
-　　}
-};</code></pre>
-<ul>
-<li>xhr.readyState：XMLHttpRequest 对象的状态，等于 4 表示数据已经接收完毕。</li>
-<li>xhr.status：服务器返回的状态码，等于 200 表示一切正常。</li>
-<li>xhr.responseText：服务器返回的文本数据</li>
-<li>xhr.responseXML：服务器返回的 XML 格式的数据</li>
-<li>xhr.statusText：服务器返回的状态文本。</li>
-</ul>
-<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="https://segmentfault.com/a/1190000004322487" target="_blank" rel="noopener">你真的会使用 XMLHttpRequest 吗？</a></li>
-<li><a href="http://www.ruanyifeng.com/blog/2012/09/xmlhttprequest_level_2.html" target="_blank" rel="noopener">XMLHttpRequest Level 2 使用指南</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Network</category>
-        <category>Web</category>
-        <category>Mongoose</category>
-      </categories>
-      <tags>
-        <tag>www</tag>
-        <tag>xml</tag>
-        <tag>web</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>movian-plugin-tips</title>
-    <url>/2018/01/11/movian-plugin-uri/</url>
-    <content><![CDATA[<p><code>URI</code> 是 <code>Movian Plugin</code> 的入口，本篇文章分析 <code>URI</code> 的实现</p>
-<a id="more"></a>
-
-<h2 id="addURI"><a href="#addURI" class="headerlink" title="addURI"></a>addURI</h2><p><code>plugin object</code></p>
-<pre><code class="api-v1.js">addURI: function(re, callback) {
-  var page = require(&#39;movian/page&#39;);
-  return new page.Route(re, callback);
-},</code></pre>
-<p><code>page</code></p>
-<pre><code class="page.js">exports.Route = function(re, callback) {
-
-  this.route = require(&#39;native/route&#39;).create(re, function(pageprop, sync, args) {
-
-    try {
-
-      // First, convert the raw page prop object into a proxied one
-      pageprop = prop.makeProp(pageprop);
-
-      // 将参数拆分出来，传入 fun 中执行
-      // Prepend a Page object as first argument to callback
-      args.unshift(new Page(pageprop, sync, false));
-
-
-      callback.apply(null, args);
-    } catch(e) {
-
-      if(!prop.isZombie(pageprop)) {
-        throw e;
-      } else {
-        console.log(&quot;Page at route &quot; + re + &quot; was closed, error supressed&quot;);
-      }
-    }
-  });
-}</code></pre>
-<h2 id="URI-执行流程"><a href="#URI-执行流程" class="headerlink" title="URI 执行流程"></a>URI 执行流程</h2><p>在 <code>Movian</code> 输入 <code>ted:start</code> 之后的流程</p>
-<pre><code>11:15:19.974: navigator       [INFO ]: Opening search:ted:start
-11:15:19.975: ted             [DEBUG]: Opening route ^ted:start
-[prop directory {&quot;persistent&quot;, &quot;previous&quot;, &quot;how&quot;, &quot;close&quot;, &quot;url&quot;, &quot;parentUrl&quot;, &quot;directClose&quot;, &quot;eventSink&quot;, &quot;bookmarked&quot;, &quot;model&quot;, &quot;glw&quot;}]
-false
-[object Object]
-11:15:19.975: HTTP            [INFO ]: Connect to www.ted.com:443
-newest
-Newest
-
-
-11:30:06.881: navigator       [INFO ]: Opening ted:index:funny:Funny
-11:30:06.881: ted             [DEBUG]: Opening route ^ted:index:(.*):(.*)
-11:30:06.881: ted             [DEBUG]:   Page argument 1 : funny
-11:30:06.881: ted             [DEBUG]:   Page argument 2 : Funny
-[prop directory {&quot;persistent&quot;, &quot;previous&quot;, &quot;how&quot;, &quot;close&quot;, &quot;url&quot;, &quot;parentUrl&quot;, &quot;directClose&quot;, &quot;eventSink&quot;, &quot;bookmarked&quot;, &quot;model&quot;, &quot;glw&quot;}]
-false
-[object Object],funny,Funny</code></pre><p><code>nav_open0</code> -&gt;<br><code>nav_open_backend</code> -&gt;<br><code>nav_open_thread</code> -&gt;<br><code>backend_open</code> -&gt;<br><code>be_open</code> -&gt;<br><code>ecmascript_openuri</code> 完成参数的解析，传入函数中执行</p>
-<pre><code class="ecmascript.c">static backend_t be_ecmascript = {
-  .be_flags  = BACKEND_OPEN_CHECKS_URI,
-  .be_open   = ecmascript_openuri,
-  .be_search = ecmascript_search,
-};
-
-BE_REGISTER(ecmascript);</code></pre>
-<pre><code class="other">void backend_register(backend_t *be)
-{
-  LIST_INSERT_HEAD(&amp;backends, be, be_global_link);
-}
-
-#define BE_REGISTER(name)                                              \
-INITIALIZER(backend_init_ ## name) {                                 \
-  backend_register(&amp;be_ ## name);                                    \
-}</code></pre>
-<p>因此 <code>be_ecmascript</code> 注册到链表 <code>be</code> 中</p>
-<p>搜索 <code>URI ted:no</code> <code>locatedb_search</code></p>
-<pre><code>12:45:04.096: navigator       [INFO ]: Opening search:ted:nouri
-12:45:04.097: FA              [DEBUG]: Searcher: ted:nouri: executing &quot;locate -i -L -q -b &#39;ted:nouri&#39;&quot;
-12:45:06.085: FA              [DEBUG]: Searcher: ted:nouri: Done
-12:45:22.445: Callout         [DEBUG]: /data/OpenSourceCode/movian/src/upnp/upnp_event.c:150 executed for 1497161us
-12:45:24.057: Callout         [DEBUG]: /data/OpenSourceCode/movian/src/upnp/upnp_event.c:150 executed for 1405651us
-12:45:31.823: ted             [DEBUG]: Search for ted:no was closed, error supressed
-12:45:31.823: rutracker       [DEBUG]: Search for ted:no was closed, error supressed</code></pre><p><code>nav_open0</code> -&gt;<br><code>nav_open_backend</code> -&gt;<br><code>nav_open_thread</code> -&gt;<br><code>backend_open</code> -&gt;<br><code>be_open</code> -&gt;<br><code>locatedb_search</code> -&gt;<br><code>fa_searcher</code> -&gt;</p>
-<h2 id="examples"><a href="#examples" class="headerlink" title="examples"></a>examples</h2><pre><code>plugin.addURI(plugin.getDescriptor().id + &quot;:index:(.*):(.*)&quot;, function(page, sort, title) {
-    setPageHeader(page, plugin.getDescriptor().title + &#39; - Sorted by: &#39; + decodeURIComponent(title));
-    scraper(page, BASE_URL + &#39;/talks?sort=&#39; + sort);
-});
-
-plugin.addURI(plugin.getDescriptor().id + &quot;:start&quot;, function(page) {
-    setPageHeader(page, plugin.getDescriptor().title + &#39; - Sort by:&#39;);
-    page.loading = true;
-    var doc = showtime.httpReq(BASE_URL + &#39;/talks&#39;).toString();
-    page.loading = false;
-    var sort = doc.match(/&lt;optgroup label=&quot;Sort by([\s\S]*?)&lt;\/optgroup&gt;/)[1];
-    // 1-uri component, 2-title
-    var re = /&lt;option value=&quot;([\s\S]*?)&quot;&gt;([\s\S]*?)&lt;\/option&gt;/g;
-    var match = re.exec(sort);
-    while (match) {
-        // sort: match[1]  title: encodeURIComponent(match[2])
-        // 与上面的 URI re 是对应的 plugin.getDescriptor().id + &quot;:index:(.*):(.*)&quot;
-        page.appendItem(plugin.getDescriptor().id + &#39;:index:&#39; + match[1] + &#39;:&#39; + encodeURIComponent(match[2]), &quot;directory&quot;, {
-            title: match[2]
-        });
-        match = re.exec(sort);
-    }
-});</code></pre>]]></content>
-      <categories>
-        <category>Movian</category>
-      </categories>
-      <tags>
-        <tag>movian</tag>
       </tags>
   </entry>
   <entry>
@@ -25506,6 +25506,24 @@ opkg install snmpd</code></pre>
 <li>netdata</li>
 <li>kms</li>
 <li>aria2</li>
+</ul>
+<h2 id="DNS"><a href="#DNS" class="headerlink" title="DNS"></a>DNS</h2><p>推荐 DNS 配置如下</p>
+<ul>
+<li>iKuai<ul>
+<li>网关 <code>192.168.1.2</code></li>
+<li>首选 DNS <code>192.168.1.2</code></li>
+<li>备选 DNS <code>233.5.5.5</code> 等公共 DNS<ul>
+<li>当旁路由 <code>192.168.1.2</code> 挂掉时可以通过备选 DNS 解析网络请求？</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>OpenWRT<ul>
+<li>网关 <code>192.168.1.1</code></li>
+<li>自定义 DNS 不能填写主路由 IP，会导致回环，查询不到 DNS？</li>
+<li>DNS 填写公共 DNS</li>
+</ul>
+</li>
 </ul>
 <h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
 <li><a href="https://post.smzdm.com/p/a78z80no/" target="_blank" rel="noopener">软路由折腾档案 篇二：3865U 软路由上手后最简单的使用教程</a></li>
@@ -42564,6 +42582,282 @@ netdev-&gt;ethtool_ops = &amp;synopGMAC_ethtool_ops;</code></pre><p><code>includ
       </tags>
   </entry>
   <entry>
+    <title>DLNA 协议分析及应用</title>
+    <url>/2019/02/25/dlan-introduction/</url>
+    <content><![CDATA[<p><code>DLNA</code>及相关协议简介</p>
+<ul>
+<li>DLNA 简介</li>
+<li>DLNA 架构</li>
+<li>DLNA 原理</li>
+<li>UPnP 组件</li>
+<li>UPnP 工作流程</li>
+<li>UPnP 消息描述</li>
+<li>UPnP 设备描述</li>
+</ul>
+<a id="more"></a>
+
+<h2 id="DLNA-简介"><a href="#DLNA-简介" class="headerlink" title="DLNA 简介"></a>DLNA 简介</h2><p>DLNA 的全称是<code>DIGITAL LIVING NETWORK ALLIANCE</code>（数字生活网络联盟）， 旨在解决个人 PC，消费电器，移动设备在内的无线网络和有线网络的互联互通，使得数字媒体和内容服务的无限制的共享和增长成为可能，目前成员公司已达 280 多家。</p>
+<h2 id="DLNA-架构"><a href="#DLNA-架构" class="headerlink" title="DLNA 架构"></a>DLNA 架构</h2><p>DLNA 将其整个应用规定成 5 个功能组件，从下到上依次为：</p>
+<ol>
+<li>网络互连：802.3 以太网，802.11WiFi，802.15 蓝牙</li>
+<li>网络协议：IPV4</li>
+<li>设备的发现控制和管理：UPnP</li>
+<li>媒体传输：HTTP/RTP</li>
+<li>媒体格式</li>
+</ol>
+<p><img src="https://liuweiqiang.win/images/dlna/dlna_overview.png" alt="DLNA ARCHITECTURE"></p>
+<p><code>DLNA</code>不是一种协议，但包括了实现相关标准所需要的一系列协议栈，<code>UPnP</code>是其中的关键协议</p>
+<p><code>DLNA</code>是基于<code>UPnP</code>协议，<code>DLNA</code>整个发现，控制，事件订阅部分都是由<code>Upnp Device Architecture</code>协议所定义，因此有必要了解下<code>UPnP</code>协议。</p>
+<p><img src="https://liuweiqiang.win/images/dlna/upnp_overview.png" alt="img"></p>
+<p><code>UPnP</code>协议结构最底层的<code>TCP/IP</code>协议是<code>UPnP</code>协议结构的基础。<code>IP</code>层用于数据的发送与接收。对于需要可靠传送的信息，使用<code>TCP</code>进行传送，反之则使用<code>UDP</code>。<code>UPnP</code>对网络物理设备没有要求，可以使用以太网、无线网、<code>IEEE1394</code>、红外进行连接，只要支持<code>IP</code>协议即可。</p>
+<p>构建在<code>TCP/IP</code>协议之上的是<code>HTTP</code>协议及其变种，这一部分是<code>UPnP</code>协议的核心部分，所有<code>UPnP</code>消息都被封装在<code>HTTP</code>协议及其变种之中。<code>HTTP</code>协议的变种是<code>HTTPU</code>和<code>HTTPMU</code>, 这些协议的格式沿袭了<code>HTTP</code>协议，只不过与<code>HTTP</code>协议不同的是它们通过<code>UDP</code>而不是<code>TCP</code>来发送消息，并且可以用于多播通信。</p>
+<p><code>UPnP</code>包含以下协议：</p>
+<ul>
+<li><code>SSDP</code>协议<br>简单服务发现协议 (Simple Service Discovery Protocol：SSDP)，内建在 HTTPU/HTTPMU 里，定义如何让网络上有的服务被发现的协议。包括控制点如何发现网络上有哪些服务，并取得这些服务的资讯，还有装置本身宣告他提供哪些服务。该协议运用在 UPnP 工作流程的设备发现部分。</li>
+<li><code>SOAP</code>协议<br>简单对象访问协议 ( Simple Object Access Protocol) 定义了可扩展标记语言 (XML) 和 HTTP 的使用来执行远程调用，包括控制点如何发送命令消息给设备，及设备接收到命令消息后如何发送响应消息给控制点。该协议运用在 UPnP 工作流程的设备控制部分。</li>
+<li><code>GENA</code>协议<br>一般事件通知架构 (Generic Event Notification Architecture：GENA) 定义在控制点想要监听设备的某个服务状态变量的状况时，控制点如何传送订阅讯息并如何接收通知讯息用的。该协议运用在 UPnP 工作流程的事件订阅部分。</li>
+</ul>
+<h2 id="DLNA-原理"><a href="#DLNA-原理" class="headerlink" title="DLNA 原理"></a>DLNA 原理</h2><p>参考 <a href="http://www.jianshu.com/p/fbc7c700cdb5" target="_blank" rel="noopener"> 《基于 DLNA 的移动端网络视频投屏技术初探》</a></p>
+<p>要实现从移动端将网络视频投放至智能电视或机顶盒，首先要保证这些设备在同一个局域网的相同网段下，即共享同一个网关，这样所有设备都能够拥有独立的 IP，从而具备相互通信的基础</p>
+<h3 id="设备发现"><a href="#设备发现" class="headerlink" title="设备发现"></a>设备发现</h3><p>当一个新的<code>Control Point</code>加入一个局域网时，为了获取当前网段里都有哪些智能设备，需要遵循<code>SSDP</code>向默认多播 IP 和端口发送获取信息的请求，这是一个 UDP 消息，所以建议在设备搜索过程多做几次发现请求，以免丢包带来的遗漏</p>
+<p>控制点可以获得的信息是：有一台设备，它的 IP 和端口号，设备描述文档 (<code>DDD</code>) 在什么位置、UUID 是什么</p>
+<h3 id="请求设备描述文档"><a href="#请求设备描述文档" class="headerlink" title="请求设备描述文档"></a>请求设备描述文档</h3><p><code>DDD</code>以及后面要说到的服务描述文档 (<code>SDD, Service Description Document</code>) 都是以 XML 格式返回给请求端的，这一步的通信则是基于 TCP/HTTP 进行可靠传输的。我们请求<code>Location</code>字段的内容即</p>
+<pre><code>http://10.2.9.152:49152/TxMediaRenderer_desc.xml</code></pre><p>响应</p>
+<pre><code>&lt;root xmlns=&quot;urn:schemas-upnp-org:device-1-0&quot; xmlns:dlna=&quot;urn:schemas-dlna-org:device-1-0&quot; configId=&quot;499354&quot;&gt;
+    &lt;specVersion&gt;
+        &lt;major&gt;1&lt;/major&gt;
+        &lt;minor&gt;1&lt;/minor&gt;
+    &lt;/specVersion&gt;
+    &lt;device&gt;
+        &lt;deviceType&gt;urn:schemas-upnp-org:device:MediaRenderer:1&lt;/deviceType&gt;
+        &lt;friendlyName&gt;我的设备&lt;/friendlyName&gt;
+        &lt;manufacturer&gt;Plutinosoft LLC&lt;/manufacturer&gt;
+        &lt;manufacturerURL&gt;http://www.plutinosoft.com&lt;/manufacturerURL&gt;
+        &lt;modelDescription&gt;Plutinosoft AV Media Renderer Device&lt;/modelDescription&gt;
+        &lt;modelName&gt;AV Renderer Device&lt;/modelName&gt;
+        &lt;modelURL&gt;http://www.plutinosoft.com/platinum&lt;/modelURL&gt;
+        &lt;UDN&gt;uuid:9c443d47158b-dmr&lt;/UDN&gt;
+        &lt;dlna:X_DLNADOC xmlns:dlna=&quot;urn:schemas-dlna-org:device-1-0&quot;&gt;DMR-1.50&lt;/dlna:X_DLNADOC&gt;
+        &lt;serviceList&gt;
+            &lt;service&gt;
+                &lt;serviceType&gt;urn:schemas-upnp-org:service:AVTransport:1&lt;/serviceType&gt;
+                &lt;serviceId&gt;urn:upnp-org:serviceId:AVTransport&lt;/serviceId&gt;
+                &lt;SCPDURL&gt;/AVTransport/9c443d47158b-dmr/scpd.xml&lt;/SCPDURL&gt;
+                &lt;controlURL&gt;/AVTransport/9c443d47158b-dmr/control.xml&lt;/controlURL&gt;
+                &lt;eventSubURL&gt;/AVTransport/9c443d47158b-dmr/event.xml&lt;/eventSubURL&gt;
+            &lt;/service&gt;
+            ...
+        &lt;/serviceList&gt;
+    &lt;/device&gt;
+&lt;/root&gt;</code></pre><p>返回设备的详细信息：设备名称、设备类型、UUID、服务列表，每个服务都有<code>serviceType</code>，<code>SCPDURL</code>，<code>serviceId</code>，<code>controlURL</code>和<code>eventSubURL</code></p>
+<h3 id="请求服务描述文档"><a href="#请求服务描述文档" class="headerlink" title="请求服务描述文档"></a>请求服务描述文档</h3><p>如何使用这个服务需要参考该服务的<code>SDD</code>。<code>SCPDURL</code>这个字段的内容就是请求<code>SDD</code>的路径地址，我们将其与之前在发现设备阶段获取到的响应消息中的 Location 字段内容中设备的 IP 和端口号拿过来，拼接成完整 URL 字符串</p>
+<pre><code>http://10.2.9.152:49152/AVTransport/9c443d47158b-dmr/scpd.xml</code></pre><p>返回一个动作列表，一个服务会包含一个或多个功能请求动作</p>
+<pre><code>&lt;scpd xmlns=&quot;urn:schemas-upnp-org:service-1-0&quot;&gt;
+    &lt;specVersion&gt;
+        &lt;major&gt;1&lt;/major&gt;
+        &lt;minor&gt;0&lt;/minor&gt;
+    &lt;/specVersion&gt;
+    &lt;actionList&gt;
+        &lt;action&gt;
+            &lt;name&gt;SetAVTransportURI&lt;/name&gt;
+            &lt;argumentList&gt;
+                &lt;argument&gt;
+                    &lt;name&gt;InstanceID&lt;/name&gt;
+                    &lt;direction&gt;in&lt;/direction&gt;
+                    &lt;relatedStateVariable&gt;A_ARG_TYPE_InstanceID&lt;/relatedStateVariable&gt;
+                &lt;/argument&gt;
+                &lt;argument&gt;
+                    &lt;name&gt;CurrentURI&lt;/name&gt;
+                    &lt;direction&gt;in&lt;/direction&gt;
+                    &lt;relatedStateVariable&gt;AVTransportURI&lt;/relatedStateVariable&gt;
+                &lt;/argument&gt;
+                &lt;argument&gt;
+                    &lt;name&gt;CurrentURIMetaData&lt;/name&gt;
+                    &lt;direction&gt;in&lt;/direction&gt;
+                    &lt;relatedStateVariable&gt;AVTransportURIMetaData&lt;/relatedStateVariable&gt;
+                &lt;/argument&gt;
+            &lt;/argumentList&gt;
+        &lt;/action&gt;
+        ...
+    &lt;/actionList&gt;
+    &lt;serviceStateTable&gt;
+        &lt;stateVariable sendEvents=&quot;no&quot;&gt;
+            &lt;name&gt;AVTransportURI&lt;/name&gt;
+            &lt;dataType&gt;string&lt;/dataType&gt;
+        &lt;/stateVariable&gt;
+        ...
+    &lt;/serviceStateTable&gt;
+&lt;/scpd&gt;</code></pre><p>如<code>SetAVTransportURI</code>这个请求的功能是将一个音视频资源的 URI 发送给渲染端。一个<code>Action</code>就好比一个 API 请求，你还需要传递一些要求的参数，这时就会用到该 Action 后面参数列表里规定的参数</p>
+<h3 id="服务动作请求"><a href="#服务动作请求" class="headerlink" title="服务动作请求"></a>服务动作请求</h3><p>有了动作所需要的全部信息，就可以按照 DLNA 规定的方式发给设备请求服务</p>
+<pre><code>POST /AVTransport/9c443d47158b-dmr/control.xml HTTP/1.1
+HOST: 10.2.9.152
+Content-Type: text/xml; charset=&quot;utf-8&quot;
+SOAPAction: &quot;urn:schemas-upnp-org:service:AVTransport:1#SetAVTransportURI&quot;
+&lt;?xml version=&quot;1.0&quot;?&gt;
+    &lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;
+    &lt;s:Body&gt;
+        &lt;u:SetAVTransportURI xmlns:u=&quot;urn:schemas-upnp-org:service:AVTransport:1&quot;&gt;
+            &lt;InstanceID&gt;0&lt;/InstanceID&gt;
+            &lt;CurrentURI&gt;yourAVURI&lt;/CurrentURI&gt;
+        &lt;/u:SetAVTransportURI&gt;
+    &lt;/s:Body&gt;
+&lt;/s:Envelope&gt;</code></pre><p>响应</p>
+<pre><code>HTTP/1.1 200 OK
+Content-Type: text/xml; charset=&quot;utf-8&quot;
+Date: Thu, 16 Feb 2017 09:09:45 GMT
+Server: OS/version UPnP/1.1 product/version
+&lt;?xml version=&quot;1.0&quot;?&gt;
+&lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;
+    &lt;s:Body&gt;
+        &lt;u:SetAVTransportURI xmlns:u=&quot;urn:schemas-upnp-org:service:AVTransport:1&quot;&gt;
+            &lt;u:SetAVTransportURIResponse&gt;
+                &lt;_xmlns:u&gt;&quot;urn:schemas-upnp-org:service:AVTransport:1&quot;&lt;/_xmlns:u&gt;
+            &lt;/u:SetAVTransportURIResponse&gt;
+        &lt;/u:SetAVTransportURI&gt;
+    &lt;/s:Body&gt;
+&lt;/s:Envelope&gt;</code></pre><h2 id="UPnP-组件"><a href="#UPnP-组件" class="headerlink" title="UPnP 组件"></a>UPnP 组件</h2><p>图为组件之间的关系：</p>
+<p><img src="https://liuweiqiang.win/images/dlna/device_overview.png" alt="img"></p>
+<ul>
+<li>服务 (Service)<br>在<code>UPnP</code>网络中，最新的控制控制单元就是服务，服务描述的设备在不同的情况下的活动和设备的状态。例如，时钟服务可以表述为时间变化（状态变化），当前的时间（时间状态）以及设置时间和读取时间两个活动，通过这两个活动，你就可以控制服务。</li>
+<li>设备 (Device)<br><code>UPnP</code>网络中定义的设备具有很广泛的含义，各种各样的家电、电脑外设、智能设备、无线设备、个人电脑等等都可以成为其中一员。一个<code>UPnP</code>设备可以是多个服务的载体和多个子设备的嵌套集。例如一台印表机有提供列印这样的服务；一台电视有提供收讯的服务，这些都属于设备。</li>
+<li>控制点 (ControlPoint)<br>在<code>UPnP</code>网络中，控制点指的是可以发现并控制其它设备的控制设备。在<code>UPnP</code>网络中，设备可以和控制点合并。也就是说，同一个设备，可以同时具有设备的功能和控制点的功能，即可以作为设备提供服务，也可以作为控制点发现和控制其它设备。</li>
+</ul>
+<h2 id="UPnP-工作流程"><a href="#UPnP-工作流程" class="headerlink" title="UPnP 工作流程"></a>UPnP 工作流程</h2><h3 id="寻址"><a href="#寻址" class="headerlink" title="寻址"></a>寻址</h3><p>UPnP 网络互连的基础是 IP 协议，因此必须先获取一个有效的 IP 地址。当设备首次与网络建立连接后，利用 DHCP 服务，使设备得到一个 IP 地址。这个 IP 地址可以是 DHCP 系统指定的，也可以是由设备选择的。设备还可以使用 Friendly Name，这就需要 DNS 来转换得到 IP</p>
+<h3 id="发现"><a href="#发现" class="headerlink" title="发现"></a>发现</h3><p>当一个设备被添加到网络后，UPnP 的发现协议允许该设备向网络上的控制点 (Control Point, CP) 通知自己拥有的服务。同样，当一个 CP 被添加到网络后，UPnP 发现协议允许该 CP 搜索网络上可用的设备。这两种情况下的组播消息一般是设备和服务的基本信息，如设备类型，唯一标识符，状态参数和指向更详细信息的一个指针等等。要注意设备信息和服务信息都是要组播出去的</p>
+<p>发现过程使用的协议是 SSDP(Simple Service Discovery Protocol，简单服务发现协议），采用 UDP 传输</p>
+<h3 id="描述"><a href="#描述" class="headerlink" title="描述"></a>描述</h3><p>描述分为两部分：</p>
+<ul>
+<li>一个是设备描述</li>
+<li>另一个是服务描述</li>
+</ul>
+<p>控制点在发现一个设备之后仍然对其知之甚少。为了使控制点了解到更多关于设备及其能力的信息或与设备进行交互，则控制点必须取得来自该设备在发现消息中所提供之 URL 的设备描述。设备可能包含其它逻辑设备，以及功能单元或服务 。对于设备的 UPnP 描述通过 XML 来表达，并包括诸如模型名称和号码、序列号、制造商名称和厂商专门网站 URL 等专门针对厂商的制造商信息。该描述还包括一列任意的嵌入式设备或服务，以及用于控制、事件触发和展示的 URL。对于每项服务，此描述均包括一列命令或动作，而服务（参数或变量）对于每个动作做出响应；针对服务的描述还包括一系列变量；这些变量模型化服务在运行时的状态，并通过数据类型、范围和事件特征进行描述。以下关于描述的部分说明了设备如何被描述，以及这些描述如何被 控制点取得。</p>
+<h3 id="控制"><a href="#控制" class="headerlink" title="控制"></a>控制</h3><p>在设备描述部分，还有关于如何控制设备的描述，会给出一个 Control URL，CP 可以向这个 URL 发送不同的控制信息就可以控制了，然后设备也可以返回一个信息反馈。</p>
+<p>这种 CP 和设备之间沟通信息按照<code>SOAP</code>(Simple Object Access Protocol) 的格式来写。消息体里面就可以写想调用的动作了，叫做 Action Invocation，可能还要传参数，比如想播放一个视频，要把视频的 URL 传过去，设备收到后会响应，表示能不能执行调用，出错的话会返回一个错误代码</p>
+<h3 id="事件"><a href="#事件" class="headerlink" title="事件"></a>事件</h3><p>在服务进行的整个时间内，只要变量值发生了变化或者模式的状态发生了改变，就产生了一个事件，该事件服务提供者（某设备的某个服务）会把该事件向整个网络进行多播。而且，CP 也可以事先向事件服务器订阅事件信息，保证将该 CP 感兴趣的事件及时准确地单播传送过来</p>
+<p>事件的订阅和推送这块用的通信协议是<code>General Event Notification Architecture(GENA)</code>，通过 HTTP/TCP/IP 传送。订阅过程如下：</p>
+<ol>
+<li>订阅。Subscriber 发送订阅消息主要包含事件 URL，服务 ID 号，这两个可以在设备服务描述信息中找到，以及寄送 URL，还会包含一个订阅期限 Duration</li>
+<li>成功订阅。Publisher 收到订阅信息，如果同意订阅的话就会为每个新 Subscriber 生成一个唯一的 ID 并记录 Subscriber 的 Duration 和 Delivery URL。还会记录一个顺序增长 EventKey 用来保证事件确实推送到 Subscriber 那里</li>
+<li>首次推送。订阅同意订阅之后还会向 Subscriber 发送一组初始变量或状态值，进行首次同步</li>
+<li>续订。Subscriber 必须在订阅到期前发送 Renewal 续订</li>
+<li>订阅到期。订阅到期后 Publisher 会把 Subscriber 的信息删除，Subscriber 又回到订阅前的状态。</li>
+<li>退订。Subscriber 发送 Cancel 信息将会取消订阅。Subscriber 因非正常退出网络的话，则不会退订直到订阅到期</li>
+<li>订阅操作失败信息。当订阅、续订和退订不能被 Publisher 接收或者出现错误时，Publisher 会发送一个错误代码</li>
+</ol>
+<h3 id="表达"><a href="#表达" class="headerlink" title="表达"></a>表达</h3><p>只要得到了设备的 URL，就可以取得该设备表达的 URL，取得该设备表达的 HTML，然后可以将此 HTML 纳入 CP 的本地浏览器上。这部分还包括与用户对话的界面，以及与用户进行会话的处理。因此设备表达可以理解成“遥控器”。这部分定义描述界面，规范界面以及传输界面内容。远程界面是供 CP 用户使用的，CP 用户通过远程界面完成设备描述的获取，控制设备，订阅收取设备事件等等</p>
+<h2 id="UPnP-消息描述"><a href="#UPnP-消息描述" class="headerlink" title="UPnP 消息描述"></a>UPnP 消息描述</h2><h3 id="UPnP-搜索"><a href="#UPnP-搜索" class="headerlink" title="UPnP 搜索"></a>UPnP 搜索</h3><pre><code>M-SEARCH * HTTP/1.1
+Man: &quot;ssdp:discover&quot; // 固定
+Mx: 10 // 等待时长
+Host: 239.255.255.250:1900 // 多播地址
+St: ssdp:all // 搜索所有 也可以指定特殊类型设备</code></pre><h3 id="UPnP-响应"><a href="#UPnP-响应" class="headerlink" title="UPnP 响应"></a>UPnP 响应</h3><pre><code>HTTP/1.1 200 OK
+CACHE-CONTROL: max-age=100 // 生命周期
+DATE: Tue, 06 Sep 2016 08:59:17 GMT // 响应时间
+EXT: // 想控制点确认 MAN 头域已经被设备理解
+LOCATION: http://192.168.31.242:49153/description.xml // 描述文件地址
+OPT: &quot;http://schemas.upnp.org/upnp/1/0/&quot;; ns=01
+01-NLS: 36b309d6-1dd2-11b2-a747-e67ed51c3f33
+SERVER: Linux/2.6.32.11.as, UPnP/1.0, Portable SDK for UPnP devices/1.6.18 // 版本信息
+X-User-Agent: redsonic
+ST: upnp:rootdevice
+USN: uuid:a22d1223-d889-b76b-0cc3-4c484a00002e::upnp:rootdevice</code></pre><h3 id="UPnP-通知"><a href="#UPnP-通知" class="headerlink" title="UPnP 通知"></a>UPnP 通知</h3><pre><code>NOTIFY * HTTP/1.1
+HOST: 239.255.255.250:1900 // 多播地址
+CACHE-CONTROL: max-age=100 // 缓存时间
+LOCATION: http://192.168.31.242:49153/description.xml // 描述文件地址
+OPT: &quot;http://schemas.upnp.org/upnp/1/0/&quot;; ns=01
+01-NLS: 36b309d6-1dd2-11b2-a747-e67ed51c3f33
+NT: urn:schemas-upnp-org:service:ConnectionManager:1
+NTS: ssdp:alive
+SERVER: Linux/2.6.32.11.as, UPnP/1.0, Portable SDK for UPnP devices/1.6.18
+X-User-Agent: redsonic
+USN: uuid:a22d1223-d889-b76b-0cc3-4c484a00002e::urn:schemas-upnp-org:service:ConnectionManager:1</code></pre><p>NT GENA 规定使用的标头。通知类型。必须采用以下一种形式。单一 URI。</p>
+<ul>
+<li>UPnP:rootdevice 向根设备发送一次。</li>
+<li>uuid:device-UUID 向每种设备 （根设备或嵌入式设备） 发送一次。 设备 UUID 由 UPnP 厂商指定。</li>
+<li>urn：schemas-UPnP-org:device:deviceType:v 向每种设备（根设备或嵌入式设备）发送一次。设备类型与版本 由 UPnP 论坛工作委员会定义。</li>
+<li>urn：schemas-UPnP-org:service:serviceType:v 向每种服务发送一次。服务类型与版本由 UPnP 论坛工作委员会 定义。</li>
+</ul>
+<p>NTS GENA 规定使用的标头。通知子类型。必须是 ssdp:alive。单一 URI。</p>
+<p>USN SSDP 要求使用的标头。 唯一服务名称。 必须是以下一种。 前缀（位于双冒号前）必须与设备描述中的 UDN 元素值相匹配。单一 URI。</p>
+<ul>
+<li>uuid:device-UUID::UPnP:rootdevice 向根设备发送一次。设备 UUID 由 UPnP 厂商指定。</li>
+<li>uuid:device-UUID 向每种设备 （根设备或嵌入式设备） 发送一次。 设备 UUID 由 UPnP 厂商指定。</li>
+<li>uuid:device-UUID::urn:schemas-UPnP-org:device:deviceType:v 向每种设备 （根设备或嵌入式设备） 发送一次。 设备 UUID 由 UPnP 厂商指定。设备类型与版本由 UPnP 论坛工作委员会定义。</li>
+<li>uuid:device-UUID::urn:schemas-UPnP-org:service:serviceType:v 向每种服务发送一次。设备 UUID 由 UPnP 厂商指定。服务类型 与版本由 UPnP 论坛工作委员会定义。</li>
+</ul>
+<h3 id="UPnP-离线"><a href="#UPnP-离线" class="headerlink" title="UPnP 离线"></a>UPnP 离线</h3><pre><code>NOTIFY * HTTP/1.1
+HOST: 239.255.255.250:1900 // 多播地址
+NT: urn:schemas-upnp-org:service:ConnectionManager:1
+NTS: ssdp:byebye
+SERVER: Linux/2.6.32.11.as, UPnP/1.0, Portable SDK for UPnP devices/1.6.18
+X-User-Agent: redsonic
+USN: uuid:a22d1223-d889-b76b-0cc3-4c484a00002e::urn:schemas-upnp-org:service:ConnectionManager:1</code></pre><h2 id="UPnP-设备描述"><a href="#UPnP-设备描述" class="headerlink" title="UPnP 设备描述"></a>UPnP 设备描述</h2><p>一个设备的 UPnP 描述包含多个特定厂商信息、所有嵌入式设备定义、设 备展示 URL、以及所有服务列表，包括控制 URL 和事件触发 URL。除了定义非 标准设备之外，UPnP 厂商可以为标准设备添加新的嵌入式设备和服务。</p>
+<pre><code>&lt;?xml version=&quot;1.0&quot;?&gt;
+&lt;root xmlns=&quot;urn:schemas-upnp-org:device-1-0&quot;&gt;
+    &lt;specVersion&gt;
+        &lt;major&gt;1&lt;/major&gt;
+        &lt;minor&gt;0&lt;/minor&gt;
+    &lt;/specVersion&gt;
+    &lt;URLBase&gt;base URL for all relative URLs&lt;/URLBase&gt;
+    &lt;device&gt;
+        &lt;deviceType&gt;urn:schemas-upnp-org:device:deviceType:v&lt;/deviceType&gt;
+        &lt;friendlyName&gt;short user-friendly title&lt;/friendlyName&gt;
+        &lt;manufacturer&gt;manufacturer name&lt;/manufacturer&gt;
+        &lt;manufacturerURL&gt;URL to manufacturer site&lt;/manufacturerURL&gt;
+        &lt;modelDescription&gt;long user-friendly title&lt;/modelDescription&gt;
+        &lt;modelName&gt;model name&lt;/modelName&gt;
+        &lt;modelNumber&gt;model number&lt;/modelNumber&gt;
+        &lt;modelURL&gt;URL to model site&lt;/modelURL&gt;
+        &lt;serialNumber&gt;manufacturer&#39;s serial number&lt;/serialNumber&gt;
+        &lt;UDN&gt;uuid:UUID&lt;/UDN&gt;
+        &lt;UPC&gt;Universal Product Code&lt;/UPC&gt;
+        &lt;iconList&gt;
+            &lt;icon&gt;
+            &lt;mimetype&gt;image/format&lt;/mimetype&gt;
+            &lt;width&gt;horizontal pixels&lt;/width&gt;
+            &lt;height&gt;vertical pixels&lt;/height&gt;
+            &lt;depth&gt;color depth&lt;/depth&gt;
+            &lt;url&gt;URL to icon&lt;/url&gt;
+            &lt;/icon&gt;
+            XML to declare other icons, if any, go here
+        &lt;/iconList&gt;
+        &lt;serviceList&gt;
+            &lt;service&gt;
+            &lt;serviceType&gt;urn:schemas-upnp-org:service:serviceType:v&lt;/serviceType&gt;
+            &lt;serviceId&gt;urn:upnp-org:serviceId:serviceID&lt;/serviceId&gt;
+            &lt;SCPDURL&gt;URL to service description&lt;/SCPDURL&gt;
+            &lt;controlURL&gt;URL for control&lt;/controlURL&gt;
+            &lt;eventSubURL&gt;URL for eventing&lt;/eventSubURL&gt;
+            &lt;/service&gt;
+            Declarations for other services defined by a UPnP Forum working committee (if any)
+            go here
+            Declarations for other services added by UPnP vendor (if any) go here
+        &lt;/serviceList&gt;
+        &lt;deviceList&gt;
+            Description of embedded devices defined by a UPnP Forum working committee (if any)
+            go here
+            Description of embedded devices added by UPnP vendor (if any) go here
+        &lt;/deviceList&gt;
+        &lt;presentationURL&gt;URL for presentation&lt;/presentationURL&gt;
+    &lt;/device&gt;
+&lt;/root&gt;</code></pre><h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
+<li><a href="https://liuweiqiang.win/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/2016/08/29/DLNA-Cling.html" target="_blank" rel="noopener">DLNA 协议分析及应用</a></li>
+<li><a href="http://lakeshire.github.io/2017/12/12//archivers/dlna-cling/" target="_blank" rel="noopener">DLNA 开源库——Cling</a></li>
+<li><a href="https://www.jianshu.com/p/91b508b0260b" target="_blank" rel="noopener">DLNA 与 UPnP 初探</a></li>
+<li><a href="http://101.96.10.64/trinea.github.io/doc/upnp/UPnP-arch-DeviceArchitecture-v1.1.pdf" target="_blank" rel="noopener">UPnP™ Device Architecture 1.1</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Network</category>
+        <category>UPnP</category>
+      </categories>
+      <tags>
+        <tag>upnp</tag>
+        <tag>dlna</tag>
+        <tag>ssdp</tag>
+        <tag>soap</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>SAT2IP 开源工程分析</title>
     <url>/2019/02/26/open-source-project-minisatip-analysis/</url>
     <content><![CDATA[<p>开源工程</p>
@@ -43493,282 +43787,6 @@ int main(int argc, char * const argv[])
         <tag>network</tag>
         <tag>http</tag>
         <tag>rtsp</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>DLNA 协议分析及应用</title>
-    <url>/2019/02/25/dlan-introduction/</url>
-    <content><![CDATA[<p><code>DLNA</code>及相关协议简介</p>
-<ul>
-<li>DLNA 简介</li>
-<li>DLNA 架构</li>
-<li>DLNA 原理</li>
-<li>UPnP 组件</li>
-<li>UPnP 工作流程</li>
-<li>UPnP 消息描述</li>
-<li>UPnP 设备描述</li>
-</ul>
-<a id="more"></a>
-
-<h2 id="DLNA-简介"><a href="#DLNA-简介" class="headerlink" title="DLNA 简介"></a>DLNA 简介</h2><p>DLNA 的全称是<code>DIGITAL LIVING NETWORK ALLIANCE</code>（数字生活网络联盟）， 旨在解决个人 PC，消费电器，移动设备在内的无线网络和有线网络的互联互通，使得数字媒体和内容服务的无限制的共享和增长成为可能，目前成员公司已达 280 多家。</p>
-<h2 id="DLNA-架构"><a href="#DLNA-架构" class="headerlink" title="DLNA 架构"></a>DLNA 架构</h2><p>DLNA 将其整个应用规定成 5 个功能组件，从下到上依次为：</p>
-<ol>
-<li>网络互连：802.3 以太网，802.11WiFi，802.15 蓝牙</li>
-<li>网络协议：IPV4</li>
-<li>设备的发现控制和管理：UPnP</li>
-<li>媒体传输：HTTP/RTP</li>
-<li>媒体格式</li>
-</ol>
-<p><img src="https://liuweiqiang.win/images/dlna/dlna_overview.png" alt="DLNA ARCHITECTURE"></p>
-<p><code>DLNA</code>不是一种协议，但包括了实现相关标准所需要的一系列协议栈，<code>UPnP</code>是其中的关键协议</p>
-<p><code>DLNA</code>是基于<code>UPnP</code>协议，<code>DLNA</code>整个发现，控制，事件订阅部分都是由<code>Upnp Device Architecture</code>协议所定义，因此有必要了解下<code>UPnP</code>协议。</p>
-<p><img src="https://liuweiqiang.win/images/dlna/upnp_overview.png" alt="img"></p>
-<p><code>UPnP</code>协议结构最底层的<code>TCP/IP</code>协议是<code>UPnP</code>协议结构的基础。<code>IP</code>层用于数据的发送与接收。对于需要可靠传送的信息，使用<code>TCP</code>进行传送，反之则使用<code>UDP</code>。<code>UPnP</code>对网络物理设备没有要求，可以使用以太网、无线网、<code>IEEE1394</code>、红外进行连接，只要支持<code>IP</code>协议即可。</p>
-<p>构建在<code>TCP/IP</code>协议之上的是<code>HTTP</code>协议及其变种，这一部分是<code>UPnP</code>协议的核心部分，所有<code>UPnP</code>消息都被封装在<code>HTTP</code>协议及其变种之中。<code>HTTP</code>协议的变种是<code>HTTPU</code>和<code>HTTPMU</code>, 这些协议的格式沿袭了<code>HTTP</code>协议，只不过与<code>HTTP</code>协议不同的是它们通过<code>UDP</code>而不是<code>TCP</code>来发送消息，并且可以用于多播通信。</p>
-<p><code>UPnP</code>包含以下协议：</p>
-<ul>
-<li><code>SSDP</code>协议<br>简单服务发现协议 (Simple Service Discovery Protocol：SSDP)，内建在 HTTPU/HTTPMU 里，定义如何让网络上有的服务被发现的协议。包括控制点如何发现网络上有哪些服务，并取得这些服务的资讯，还有装置本身宣告他提供哪些服务。该协议运用在 UPnP 工作流程的设备发现部分。</li>
-<li><code>SOAP</code>协议<br>简单对象访问协议 ( Simple Object Access Protocol) 定义了可扩展标记语言 (XML) 和 HTTP 的使用来执行远程调用，包括控制点如何发送命令消息给设备，及设备接收到命令消息后如何发送响应消息给控制点。该协议运用在 UPnP 工作流程的设备控制部分。</li>
-<li><code>GENA</code>协议<br>一般事件通知架构 (Generic Event Notification Architecture：GENA) 定义在控制点想要监听设备的某个服务状态变量的状况时，控制点如何传送订阅讯息并如何接收通知讯息用的。该协议运用在 UPnP 工作流程的事件订阅部分。</li>
-</ul>
-<h2 id="DLNA-原理"><a href="#DLNA-原理" class="headerlink" title="DLNA 原理"></a>DLNA 原理</h2><p>参考 <a href="http://www.jianshu.com/p/fbc7c700cdb5" target="_blank" rel="noopener"> 《基于 DLNA 的移动端网络视频投屏技术初探》</a></p>
-<p>要实现从移动端将网络视频投放至智能电视或机顶盒，首先要保证这些设备在同一个局域网的相同网段下，即共享同一个网关，这样所有设备都能够拥有独立的 IP，从而具备相互通信的基础</p>
-<h3 id="设备发现"><a href="#设备发现" class="headerlink" title="设备发现"></a>设备发现</h3><p>当一个新的<code>Control Point</code>加入一个局域网时，为了获取当前网段里都有哪些智能设备，需要遵循<code>SSDP</code>向默认多播 IP 和端口发送获取信息的请求，这是一个 UDP 消息，所以建议在设备搜索过程多做几次发现请求，以免丢包带来的遗漏</p>
-<p>控制点可以获得的信息是：有一台设备，它的 IP 和端口号，设备描述文档 (<code>DDD</code>) 在什么位置、UUID 是什么</p>
-<h3 id="请求设备描述文档"><a href="#请求设备描述文档" class="headerlink" title="请求设备描述文档"></a>请求设备描述文档</h3><p><code>DDD</code>以及后面要说到的服务描述文档 (<code>SDD, Service Description Document</code>) 都是以 XML 格式返回给请求端的，这一步的通信则是基于 TCP/HTTP 进行可靠传输的。我们请求<code>Location</code>字段的内容即</p>
-<pre><code>http://10.2.9.152:49152/TxMediaRenderer_desc.xml</code></pre><p>响应</p>
-<pre><code>&lt;root xmlns=&quot;urn:schemas-upnp-org:device-1-0&quot; xmlns:dlna=&quot;urn:schemas-dlna-org:device-1-0&quot; configId=&quot;499354&quot;&gt;
-    &lt;specVersion&gt;
-        &lt;major&gt;1&lt;/major&gt;
-        &lt;minor&gt;1&lt;/minor&gt;
-    &lt;/specVersion&gt;
-    &lt;device&gt;
-        &lt;deviceType&gt;urn:schemas-upnp-org:device:MediaRenderer:1&lt;/deviceType&gt;
-        &lt;friendlyName&gt;我的设备&lt;/friendlyName&gt;
-        &lt;manufacturer&gt;Plutinosoft LLC&lt;/manufacturer&gt;
-        &lt;manufacturerURL&gt;http://www.plutinosoft.com&lt;/manufacturerURL&gt;
-        &lt;modelDescription&gt;Plutinosoft AV Media Renderer Device&lt;/modelDescription&gt;
-        &lt;modelName&gt;AV Renderer Device&lt;/modelName&gt;
-        &lt;modelURL&gt;http://www.plutinosoft.com/platinum&lt;/modelURL&gt;
-        &lt;UDN&gt;uuid:9c443d47158b-dmr&lt;/UDN&gt;
-        &lt;dlna:X_DLNADOC xmlns:dlna=&quot;urn:schemas-dlna-org:device-1-0&quot;&gt;DMR-1.50&lt;/dlna:X_DLNADOC&gt;
-        &lt;serviceList&gt;
-            &lt;service&gt;
-                &lt;serviceType&gt;urn:schemas-upnp-org:service:AVTransport:1&lt;/serviceType&gt;
-                &lt;serviceId&gt;urn:upnp-org:serviceId:AVTransport&lt;/serviceId&gt;
-                &lt;SCPDURL&gt;/AVTransport/9c443d47158b-dmr/scpd.xml&lt;/SCPDURL&gt;
-                &lt;controlURL&gt;/AVTransport/9c443d47158b-dmr/control.xml&lt;/controlURL&gt;
-                &lt;eventSubURL&gt;/AVTransport/9c443d47158b-dmr/event.xml&lt;/eventSubURL&gt;
-            &lt;/service&gt;
-            ...
-        &lt;/serviceList&gt;
-    &lt;/device&gt;
-&lt;/root&gt;</code></pre><p>返回设备的详细信息：设备名称、设备类型、UUID、服务列表，每个服务都有<code>serviceType</code>，<code>SCPDURL</code>，<code>serviceId</code>，<code>controlURL</code>和<code>eventSubURL</code></p>
-<h3 id="请求服务描述文档"><a href="#请求服务描述文档" class="headerlink" title="请求服务描述文档"></a>请求服务描述文档</h3><p>如何使用这个服务需要参考该服务的<code>SDD</code>。<code>SCPDURL</code>这个字段的内容就是请求<code>SDD</code>的路径地址，我们将其与之前在发现设备阶段获取到的响应消息中的 Location 字段内容中设备的 IP 和端口号拿过来，拼接成完整 URL 字符串</p>
-<pre><code>http://10.2.9.152:49152/AVTransport/9c443d47158b-dmr/scpd.xml</code></pre><p>返回一个动作列表，一个服务会包含一个或多个功能请求动作</p>
-<pre><code>&lt;scpd xmlns=&quot;urn:schemas-upnp-org:service-1-0&quot;&gt;
-    &lt;specVersion&gt;
-        &lt;major&gt;1&lt;/major&gt;
-        &lt;minor&gt;0&lt;/minor&gt;
-    &lt;/specVersion&gt;
-    &lt;actionList&gt;
-        &lt;action&gt;
-            &lt;name&gt;SetAVTransportURI&lt;/name&gt;
-            &lt;argumentList&gt;
-                &lt;argument&gt;
-                    &lt;name&gt;InstanceID&lt;/name&gt;
-                    &lt;direction&gt;in&lt;/direction&gt;
-                    &lt;relatedStateVariable&gt;A_ARG_TYPE_InstanceID&lt;/relatedStateVariable&gt;
-                &lt;/argument&gt;
-                &lt;argument&gt;
-                    &lt;name&gt;CurrentURI&lt;/name&gt;
-                    &lt;direction&gt;in&lt;/direction&gt;
-                    &lt;relatedStateVariable&gt;AVTransportURI&lt;/relatedStateVariable&gt;
-                &lt;/argument&gt;
-                &lt;argument&gt;
-                    &lt;name&gt;CurrentURIMetaData&lt;/name&gt;
-                    &lt;direction&gt;in&lt;/direction&gt;
-                    &lt;relatedStateVariable&gt;AVTransportURIMetaData&lt;/relatedStateVariable&gt;
-                &lt;/argument&gt;
-            &lt;/argumentList&gt;
-        &lt;/action&gt;
-        ...
-    &lt;/actionList&gt;
-    &lt;serviceStateTable&gt;
-        &lt;stateVariable sendEvents=&quot;no&quot;&gt;
-            &lt;name&gt;AVTransportURI&lt;/name&gt;
-            &lt;dataType&gt;string&lt;/dataType&gt;
-        &lt;/stateVariable&gt;
-        ...
-    &lt;/serviceStateTable&gt;
-&lt;/scpd&gt;</code></pre><p>如<code>SetAVTransportURI</code>这个请求的功能是将一个音视频资源的 URI 发送给渲染端。一个<code>Action</code>就好比一个 API 请求，你还需要传递一些要求的参数，这时就会用到该 Action 后面参数列表里规定的参数</p>
-<h3 id="服务动作请求"><a href="#服务动作请求" class="headerlink" title="服务动作请求"></a>服务动作请求</h3><p>有了动作所需要的全部信息，就可以按照 DLNA 规定的方式发给设备请求服务</p>
-<pre><code>POST /AVTransport/9c443d47158b-dmr/control.xml HTTP/1.1
-HOST: 10.2.9.152
-Content-Type: text/xml; charset=&quot;utf-8&quot;
-SOAPAction: &quot;urn:schemas-upnp-org:service:AVTransport:1#SetAVTransportURI&quot;
-&lt;?xml version=&quot;1.0&quot;?&gt;
-    &lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;
-    &lt;s:Body&gt;
-        &lt;u:SetAVTransportURI xmlns:u=&quot;urn:schemas-upnp-org:service:AVTransport:1&quot;&gt;
-            &lt;InstanceID&gt;0&lt;/InstanceID&gt;
-            &lt;CurrentURI&gt;yourAVURI&lt;/CurrentURI&gt;
-        &lt;/u:SetAVTransportURI&gt;
-    &lt;/s:Body&gt;
-&lt;/s:Envelope&gt;</code></pre><p>响应</p>
-<pre><code>HTTP/1.1 200 OK
-Content-Type: text/xml; charset=&quot;utf-8&quot;
-Date: Thu, 16 Feb 2017 09:09:45 GMT
-Server: OS/version UPnP/1.1 product/version
-&lt;?xml version=&quot;1.0&quot;?&gt;
-&lt;s:Envelope xmlns:s=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; s:encodingStyle=&quot;http://schemas.xmlsoap.org/soap/encoding/&quot;&gt;
-    &lt;s:Body&gt;
-        &lt;u:SetAVTransportURI xmlns:u=&quot;urn:schemas-upnp-org:service:AVTransport:1&quot;&gt;
-            &lt;u:SetAVTransportURIResponse&gt;
-                &lt;_xmlns:u&gt;&quot;urn:schemas-upnp-org:service:AVTransport:1&quot;&lt;/_xmlns:u&gt;
-            &lt;/u:SetAVTransportURIResponse&gt;
-        &lt;/u:SetAVTransportURI&gt;
-    &lt;/s:Body&gt;
-&lt;/s:Envelope&gt;</code></pre><h2 id="UPnP-组件"><a href="#UPnP-组件" class="headerlink" title="UPnP 组件"></a>UPnP 组件</h2><p>图为组件之间的关系：</p>
-<p><img src="https://liuweiqiang.win/images/dlna/device_overview.png" alt="img"></p>
-<ul>
-<li>服务 (Service)<br>在<code>UPnP</code>网络中，最新的控制控制单元就是服务，服务描述的设备在不同的情况下的活动和设备的状态。例如，时钟服务可以表述为时间变化（状态变化），当前的时间（时间状态）以及设置时间和读取时间两个活动，通过这两个活动，你就可以控制服务。</li>
-<li>设备 (Device)<br><code>UPnP</code>网络中定义的设备具有很广泛的含义，各种各样的家电、电脑外设、智能设备、无线设备、个人电脑等等都可以成为其中一员。一个<code>UPnP</code>设备可以是多个服务的载体和多个子设备的嵌套集。例如一台印表机有提供列印这样的服务；一台电视有提供收讯的服务，这些都属于设备。</li>
-<li>控制点 (ControlPoint)<br>在<code>UPnP</code>网络中，控制点指的是可以发现并控制其它设备的控制设备。在<code>UPnP</code>网络中，设备可以和控制点合并。也就是说，同一个设备，可以同时具有设备的功能和控制点的功能，即可以作为设备提供服务，也可以作为控制点发现和控制其它设备。</li>
-</ul>
-<h2 id="UPnP-工作流程"><a href="#UPnP-工作流程" class="headerlink" title="UPnP 工作流程"></a>UPnP 工作流程</h2><h3 id="寻址"><a href="#寻址" class="headerlink" title="寻址"></a>寻址</h3><p>UPnP 网络互连的基础是 IP 协议，因此必须先获取一个有效的 IP 地址。当设备首次与网络建立连接后，利用 DHCP 服务，使设备得到一个 IP 地址。这个 IP 地址可以是 DHCP 系统指定的，也可以是由设备选择的。设备还可以使用 Friendly Name，这就需要 DNS 来转换得到 IP</p>
-<h3 id="发现"><a href="#发现" class="headerlink" title="发现"></a>发现</h3><p>当一个设备被添加到网络后，UPnP 的发现协议允许该设备向网络上的控制点 (Control Point, CP) 通知自己拥有的服务。同样，当一个 CP 被添加到网络后，UPnP 发现协议允许该 CP 搜索网络上可用的设备。这两种情况下的组播消息一般是设备和服务的基本信息，如设备类型，唯一标识符，状态参数和指向更详细信息的一个指针等等。要注意设备信息和服务信息都是要组播出去的</p>
-<p>发现过程使用的协议是 SSDP(Simple Service Discovery Protocol，简单服务发现协议），采用 UDP 传输</p>
-<h3 id="描述"><a href="#描述" class="headerlink" title="描述"></a>描述</h3><p>描述分为两部分：</p>
-<ul>
-<li>一个是设备描述</li>
-<li>另一个是服务描述</li>
-</ul>
-<p>控制点在发现一个设备之后仍然对其知之甚少。为了使控制点了解到更多关于设备及其能力的信息或与设备进行交互，则控制点必须取得来自该设备在发现消息中所提供之 URL 的设备描述。设备可能包含其它逻辑设备，以及功能单元或服务 。对于设备的 UPnP 描述通过 XML 来表达，并包括诸如模型名称和号码、序列号、制造商名称和厂商专门网站 URL 等专门针对厂商的制造商信息。该描述还包括一列任意的嵌入式设备或服务，以及用于控制、事件触发和展示的 URL。对于每项服务，此描述均包括一列命令或动作，而服务（参数或变量）对于每个动作做出响应；针对服务的描述还包括一系列变量；这些变量模型化服务在运行时的状态，并通过数据类型、范围和事件特征进行描述。以下关于描述的部分说明了设备如何被描述，以及这些描述如何被 控制点取得。</p>
-<h3 id="控制"><a href="#控制" class="headerlink" title="控制"></a>控制</h3><p>在设备描述部分，还有关于如何控制设备的描述，会给出一个 Control URL，CP 可以向这个 URL 发送不同的控制信息就可以控制了，然后设备也可以返回一个信息反馈。</p>
-<p>这种 CP 和设备之间沟通信息按照<code>SOAP</code>(Simple Object Access Protocol) 的格式来写。消息体里面就可以写想调用的动作了，叫做 Action Invocation，可能还要传参数，比如想播放一个视频，要把视频的 URL 传过去，设备收到后会响应，表示能不能执行调用，出错的话会返回一个错误代码</p>
-<h3 id="事件"><a href="#事件" class="headerlink" title="事件"></a>事件</h3><p>在服务进行的整个时间内，只要变量值发生了变化或者模式的状态发生了改变，就产生了一个事件，该事件服务提供者（某设备的某个服务）会把该事件向整个网络进行多播。而且，CP 也可以事先向事件服务器订阅事件信息，保证将该 CP 感兴趣的事件及时准确地单播传送过来</p>
-<p>事件的订阅和推送这块用的通信协议是<code>General Event Notification Architecture(GENA)</code>，通过 HTTP/TCP/IP 传送。订阅过程如下：</p>
-<ol>
-<li>订阅。Subscriber 发送订阅消息主要包含事件 URL，服务 ID 号，这两个可以在设备服务描述信息中找到，以及寄送 URL，还会包含一个订阅期限 Duration</li>
-<li>成功订阅。Publisher 收到订阅信息，如果同意订阅的话就会为每个新 Subscriber 生成一个唯一的 ID 并记录 Subscriber 的 Duration 和 Delivery URL。还会记录一个顺序增长 EventKey 用来保证事件确实推送到 Subscriber 那里</li>
-<li>首次推送。订阅同意订阅之后还会向 Subscriber 发送一组初始变量或状态值，进行首次同步</li>
-<li>续订。Subscriber 必须在订阅到期前发送 Renewal 续订</li>
-<li>订阅到期。订阅到期后 Publisher 会把 Subscriber 的信息删除，Subscriber 又回到订阅前的状态。</li>
-<li>退订。Subscriber 发送 Cancel 信息将会取消订阅。Subscriber 因非正常退出网络的话，则不会退订直到订阅到期</li>
-<li>订阅操作失败信息。当订阅、续订和退订不能被 Publisher 接收或者出现错误时，Publisher 会发送一个错误代码</li>
-</ol>
-<h3 id="表达"><a href="#表达" class="headerlink" title="表达"></a>表达</h3><p>只要得到了设备的 URL，就可以取得该设备表达的 URL，取得该设备表达的 HTML，然后可以将此 HTML 纳入 CP 的本地浏览器上。这部分还包括与用户对话的界面，以及与用户进行会话的处理。因此设备表达可以理解成“遥控器”。这部分定义描述界面，规范界面以及传输界面内容。远程界面是供 CP 用户使用的，CP 用户通过远程界面完成设备描述的获取，控制设备，订阅收取设备事件等等</p>
-<h2 id="UPnP-消息描述"><a href="#UPnP-消息描述" class="headerlink" title="UPnP 消息描述"></a>UPnP 消息描述</h2><h3 id="UPnP-搜索"><a href="#UPnP-搜索" class="headerlink" title="UPnP 搜索"></a>UPnP 搜索</h3><pre><code>M-SEARCH * HTTP/1.1
-Man: &quot;ssdp:discover&quot; // 固定
-Mx: 10 // 等待时长
-Host: 239.255.255.250:1900 // 多播地址
-St: ssdp:all // 搜索所有 也可以指定特殊类型设备</code></pre><h3 id="UPnP-响应"><a href="#UPnP-响应" class="headerlink" title="UPnP 响应"></a>UPnP 响应</h3><pre><code>HTTP/1.1 200 OK
-CACHE-CONTROL: max-age=100 // 生命周期
-DATE: Tue, 06 Sep 2016 08:59:17 GMT // 响应时间
-EXT: // 想控制点确认 MAN 头域已经被设备理解
-LOCATION: http://192.168.31.242:49153/description.xml // 描述文件地址
-OPT: &quot;http://schemas.upnp.org/upnp/1/0/&quot;; ns=01
-01-NLS: 36b309d6-1dd2-11b2-a747-e67ed51c3f33
-SERVER: Linux/2.6.32.11.as, UPnP/1.0, Portable SDK for UPnP devices/1.6.18 // 版本信息
-X-User-Agent: redsonic
-ST: upnp:rootdevice
-USN: uuid:a22d1223-d889-b76b-0cc3-4c484a00002e::upnp:rootdevice</code></pre><h3 id="UPnP-通知"><a href="#UPnP-通知" class="headerlink" title="UPnP 通知"></a>UPnP 通知</h3><pre><code>NOTIFY * HTTP/1.1
-HOST: 239.255.255.250:1900 // 多播地址
-CACHE-CONTROL: max-age=100 // 缓存时间
-LOCATION: http://192.168.31.242:49153/description.xml // 描述文件地址
-OPT: &quot;http://schemas.upnp.org/upnp/1/0/&quot;; ns=01
-01-NLS: 36b309d6-1dd2-11b2-a747-e67ed51c3f33
-NT: urn:schemas-upnp-org:service:ConnectionManager:1
-NTS: ssdp:alive
-SERVER: Linux/2.6.32.11.as, UPnP/1.0, Portable SDK for UPnP devices/1.6.18
-X-User-Agent: redsonic
-USN: uuid:a22d1223-d889-b76b-0cc3-4c484a00002e::urn:schemas-upnp-org:service:ConnectionManager:1</code></pre><p>NT GENA 规定使用的标头。通知类型。必须采用以下一种形式。单一 URI。</p>
-<ul>
-<li>UPnP:rootdevice 向根设备发送一次。</li>
-<li>uuid:device-UUID 向每种设备 （根设备或嵌入式设备） 发送一次。 设备 UUID 由 UPnP 厂商指定。</li>
-<li>urn：schemas-UPnP-org:device:deviceType:v 向每种设备（根设备或嵌入式设备）发送一次。设备类型与版本 由 UPnP 论坛工作委员会定义。</li>
-<li>urn：schemas-UPnP-org:service:serviceType:v 向每种服务发送一次。服务类型与版本由 UPnP 论坛工作委员会 定义。</li>
-</ul>
-<p>NTS GENA 规定使用的标头。通知子类型。必须是 ssdp:alive。单一 URI。</p>
-<p>USN SSDP 要求使用的标头。 唯一服务名称。 必须是以下一种。 前缀（位于双冒号前）必须与设备描述中的 UDN 元素值相匹配。单一 URI。</p>
-<ul>
-<li>uuid:device-UUID::UPnP:rootdevice 向根设备发送一次。设备 UUID 由 UPnP 厂商指定。</li>
-<li>uuid:device-UUID 向每种设备 （根设备或嵌入式设备） 发送一次。 设备 UUID 由 UPnP 厂商指定。</li>
-<li>uuid:device-UUID::urn:schemas-UPnP-org:device:deviceType:v 向每种设备 （根设备或嵌入式设备） 发送一次。 设备 UUID 由 UPnP 厂商指定。设备类型与版本由 UPnP 论坛工作委员会定义。</li>
-<li>uuid:device-UUID::urn:schemas-UPnP-org:service:serviceType:v 向每种服务发送一次。设备 UUID 由 UPnP 厂商指定。服务类型 与版本由 UPnP 论坛工作委员会定义。</li>
-</ul>
-<h3 id="UPnP-离线"><a href="#UPnP-离线" class="headerlink" title="UPnP 离线"></a>UPnP 离线</h3><pre><code>NOTIFY * HTTP/1.1
-HOST: 239.255.255.250:1900 // 多播地址
-NT: urn:schemas-upnp-org:service:ConnectionManager:1
-NTS: ssdp:byebye
-SERVER: Linux/2.6.32.11.as, UPnP/1.0, Portable SDK for UPnP devices/1.6.18
-X-User-Agent: redsonic
-USN: uuid:a22d1223-d889-b76b-0cc3-4c484a00002e::urn:schemas-upnp-org:service:ConnectionManager:1</code></pre><h2 id="UPnP-设备描述"><a href="#UPnP-设备描述" class="headerlink" title="UPnP 设备描述"></a>UPnP 设备描述</h2><p>一个设备的 UPnP 描述包含多个特定厂商信息、所有嵌入式设备定义、设 备展示 URL、以及所有服务列表，包括控制 URL 和事件触发 URL。除了定义非 标准设备之外，UPnP 厂商可以为标准设备添加新的嵌入式设备和服务。</p>
-<pre><code>&lt;?xml version=&quot;1.0&quot;?&gt;
-&lt;root xmlns=&quot;urn:schemas-upnp-org:device-1-0&quot;&gt;
-    &lt;specVersion&gt;
-        &lt;major&gt;1&lt;/major&gt;
-        &lt;minor&gt;0&lt;/minor&gt;
-    &lt;/specVersion&gt;
-    &lt;URLBase&gt;base URL for all relative URLs&lt;/URLBase&gt;
-    &lt;device&gt;
-        &lt;deviceType&gt;urn:schemas-upnp-org:device:deviceType:v&lt;/deviceType&gt;
-        &lt;friendlyName&gt;short user-friendly title&lt;/friendlyName&gt;
-        &lt;manufacturer&gt;manufacturer name&lt;/manufacturer&gt;
-        &lt;manufacturerURL&gt;URL to manufacturer site&lt;/manufacturerURL&gt;
-        &lt;modelDescription&gt;long user-friendly title&lt;/modelDescription&gt;
-        &lt;modelName&gt;model name&lt;/modelName&gt;
-        &lt;modelNumber&gt;model number&lt;/modelNumber&gt;
-        &lt;modelURL&gt;URL to model site&lt;/modelURL&gt;
-        &lt;serialNumber&gt;manufacturer&#39;s serial number&lt;/serialNumber&gt;
-        &lt;UDN&gt;uuid:UUID&lt;/UDN&gt;
-        &lt;UPC&gt;Universal Product Code&lt;/UPC&gt;
-        &lt;iconList&gt;
-            &lt;icon&gt;
-            &lt;mimetype&gt;image/format&lt;/mimetype&gt;
-            &lt;width&gt;horizontal pixels&lt;/width&gt;
-            &lt;height&gt;vertical pixels&lt;/height&gt;
-            &lt;depth&gt;color depth&lt;/depth&gt;
-            &lt;url&gt;URL to icon&lt;/url&gt;
-            &lt;/icon&gt;
-            XML to declare other icons, if any, go here
-        &lt;/iconList&gt;
-        &lt;serviceList&gt;
-            &lt;service&gt;
-            &lt;serviceType&gt;urn:schemas-upnp-org:service:serviceType:v&lt;/serviceType&gt;
-            &lt;serviceId&gt;urn:upnp-org:serviceId:serviceID&lt;/serviceId&gt;
-            &lt;SCPDURL&gt;URL to service description&lt;/SCPDURL&gt;
-            &lt;controlURL&gt;URL for control&lt;/controlURL&gt;
-            &lt;eventSubURL&gt;URL for eventing&lt;/eventSubURL&gt;
-            &lt;/service&gt;
-            Declarations for other services defined by a UPnP Forum working committee (if any)
-            go here
-            Declarations for other services added by UPnP vendor (if any) go here
-        &lt;/serviceList&gt;
-        &lt;deviceList&gt;
-            Description of embedded devices defined by a UPnP Forum working committee (if any)
-            go here
-            Description of embedded devices added by UPnP vendor (if any) go here
-        &lt;/deviceList&gt;
-        &lt;presentationURL&gt;URL for presentation&lt;/presentationURL&gt;
-    &lt;/device&gt;
-&lt;/root&gt;</code></pre><h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><ol>
-<li><a href="https://liuweiqiang.win/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/2016/08/29/DLNA-Cling.html" target="_blank" rel="noopener">DLNA 协议分析及应用</a></li>
-<li><a href="http://lakeshire.github.io/2017/12/12//archivers/dlna-cling/" target="_blank" rel="noopener">DLNA 开源库——Cling</a></li>
-<li><a href="https://www.jianshu.com/p/91b508b0260b" target="_blank" rel="noopener">DLNA 与 UPnP 初探</a></li>
-<li><a href="http://101.96.10.64/trinea.github.io/doc/upnp/UPnP-arch-DeviceArchitecture-v1.1.pdf" target="_blank" rel="noopener">UPnP™ Device Architecture 1.1</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Network</category>
-        <category>UPnP</category>
-      </categories>
-      <tags>
-        <tag>upnp</tag>
-        <tag>dlna</tag>
-        <tag>ssdp</tag>
-        <tag>soap</tag>
       </tags>
   </entry>
   <entry>
